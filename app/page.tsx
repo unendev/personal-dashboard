@@ -1,3 +1,5 @@
+'use client';
+
 import InfoStreamWidget from './components/InfoStreamWidget';
 import MusicWidget from './components/MusicWidget';
 
