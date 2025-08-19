@@ -10,13 +10,6 @@ type MusicCardProps = {
 };
 
 const MusicCard: React.FC<MusicCardProps> = ({ isPlaying, trackName, artist, album, albumArtUrl, source }) => {
-  if (!isPlaying) {
-    return (
-      <div className="w-full max-w-sm p-4 rounded-lg shadow-lg bg-gray-800 text-white">
-        <p className="text-center">Not currently playing.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full max-w-sm p-4 rounded-lg shadow-lg bg-gray-800 text-white">

@@ -91,7 +91,9 @@ const MusicWidget = () => {
 
   return (
     <div className="w-full max-w-sm mx-auto p-4 rounded-lg shadow-lg bg-gray-800 text-white">
-      <h2 className="text-xl font-bold mb-4 text-center">Last Played on Spotify</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">
+        {data?.isPlaying ? 'Playing on Spotify' : 'Last Played on Spotify'}
+      </h2>
       {renderContent()}
     </div>
   );

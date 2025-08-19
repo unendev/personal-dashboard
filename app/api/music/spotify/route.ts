@@ -6,6 +6,7 @@ const BASIC_AUTH = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64
 
 const TOKEN_ENDPOINT = `https://accounts.spotify.com/api/token`;
 const CURRENTLY_PLAYING_ENDPOINT = `https://api.spotify.com/v1/me/player/currently-playing`;
+const RECENTLY_PLAYED_ENDPOINT = `https://api.spotify.com/v1/me/player/recently-played`;
 
 // 这是一个辅助函数，用于通过 refresh_token 获取新的 access_token
 async function getAccessToken(refreshToken: string) {
@@ -55,8 +56,31 @@ export async function GET(request: NextRequest) {
     });
 
     // 如果没有歌曲在播放，Spotify 会返回 204 No Content
+    // 如果没有歌曲在播放，Spotify 会返回 204 No Content
     if (response.status === 204 || response.status > 400) {
-      return NextResponse.json({ isPlaying: false });
+      const recentlyPlayedResponse = await fetch(RECENTLY_PLAYED_ENDPOINT, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!recentlyPlayedResponse.ok) {
+        return NextResponse.json({ message: "Could not get recently played songs." });
+      }
+
+      const recentlyPlayed = await recentlyPlayedResponse.json();
+      const track = recentlyPlayed.items[0].track;
+
+      const formattedData = {
+        isPlaying: false,
+        trackName: track.name,
+        artist: track.artists.map((_artist: any) => _artist.name).join(', '),
+        album: track.album.name,
+        albumArtUrl: track.album.images[0]?.url,
+        source: 'Spotify',
+      };
+
+      return NextResponse.json(formattedData);
     }
 
     const song = await response.json();
