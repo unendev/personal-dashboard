@@ -27,22 +27,30 @@ const MusicWidget = () => {
   const effectRan = useRef(false);
 
   useEffect(() => {
-    if (code && !effectRan.current) {
-      // 将 code 发送到后端以交换 token
-      fetch(`/api/spotify/callback?code=${code}`)
-        .then(res => {
+    // 定义一个异步函数来处理回调逻辑
+    const handleCallback = async () => {
+      if (code && !effectRan.current) {
+        effectRan.current = true; // 立即将 ref 设置为 true，防止重复执行
+        try {
+          const res = await fetch(`/api/spotify/callback?code=${code}`);
           if (res.ok) {
             // 成功后，重定向到干净的 URL 并刷新数据
-            window.location.href = '/';
+            // 使用 replaceState 来避免在历史记录中留下带 code 的 URL
+            window.history.replaceState({}, '', '/');
+            // 可以在这里触发 SWR 的重新验证，而不是完全重载页面
+            // mutate('/api/music/spotify');
+            window.location.reload(); // 或者简单地重载页面来刷新所有状态
           } else {
-            // 处理错误
-            console.error('Spotify callback failed');
+            console.error('Spotify callback failed', await res.text());
           }
-        });
-    }
-    return () => {
-      effectRan.current = true;
+        } catch (error) {
+          console.error('Error during Spotify callback fetch:', error);
+        }
+      }
     };
+
+    handleCallback();
+    // 依赖项数组保持不变
   }, [code]);
 
   // 使用 useSWR hook 来获取数据
