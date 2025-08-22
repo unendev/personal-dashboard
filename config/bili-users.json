@@ -1,0 +1,14 @@
+[
+  {
+    "uid": 10885326,
+    "name": "LCTT",
+    "description": "Linux中国翻译团队",
+    "enabled": true
+  },
+  {
+    "uid": 546195,
+    "name": "哔哩哔哩UP主",
+    "description": "测试UP主",
+    "enabled": true
+  }
+]

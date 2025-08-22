@@ -98,10 +98,17 @@ const MusicWidget = () => {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto p-4 rounded-lg shadow-lg bg-gray-800 text-white">
-      <h2 className="text-xl font-bold mb-4 text-center">
-        {data?.isPlaying ? 'Playing on Spotify' : 'Last Played on Spotify'}
-      </h2>
+    <div className="glass-effect rounded-2xl p-5 hover-lift animate-fade-in-up delay-200 h-full">
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <h2 className="text-lg font-bold gradient-text">
+            {data?.isPlaying ? '正在播放' : '最近播放'}
+          </h2>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        </div>
+        <p className="text-white/60 text-xs">Spotify</p>
+      </div>
       {renderContent()}
     </div>
   );
