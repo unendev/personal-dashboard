@@ -26,11 +26,12 @@ export default function Home() {
   ];
 
   const handleLayoutChange = (config: LayoutConfig) => {
+    console.log('handleLayoutChange called with:', config);
     setLayoutConfig(config);
     // 保存布局配置到localStorage
     try {
       localStorage.setItem('dashboard-layout', JSON.stringify(config));
-      console.log('Layout saved:', config);
+      console.log('Layout saved successfully:', config);
     } catch (error) {
       console.error('Failed to save layout:', error);
     }
@@ -116,14 +117,18 @@ export default function Home() {
               <p className="text-white/60 text-xs">常用功能入口</p>
             </div>
             <div className="grid grid-cols-4 gap-3">
-              <button className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
+              <a href="/dashboard" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
+                <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🏆</div>
+                <div className="text-white font-medium text-xs">技能树</div>
+              </a>
+              <a href="/quests" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
+                <div className="text-xl mb-1 group-hover:scale-110 transition-transform">📋</div>
+                <div className="text-white font-medium text-xs">任务</div>
+              </a>
+              <a href="/log" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">📝</div>
-                <div className="text-white font-medium text-xs">笔记</div>
-              </button>
-              <button className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
-                <div className="text-xl mb-1 group-hover:scale-110 transition-transform">⏰</div>
-                <div className="text-white font-medium text-xs">提醒</div>
-              </button>
+                <div className="text-white font-medium text-xs">日志</div>
+              </a>
               <button
                 onClick={() => setShowBiliManager(!showBiliManager)}
                 className={`glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square ${
@@ -132,10 +137,6 @@ export default function Home() {
               >
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🎬</div>
                 <div className="text-white font-medium text-xs">UP主</div>
-              </button>
-              <button className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
-                <div className="text-xl mb-1 group-hover:scale-110 transition-transform">⚙️</div>
-                <div className="text-white font-medium text-xs">设置</div>
               </button>
             </div>
           </div>

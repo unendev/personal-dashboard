@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 个人门户网站imp.md
+
+.vercel

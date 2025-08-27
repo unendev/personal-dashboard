@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FreeLayoutProps, LayoutConfig, Position, Size } from '@/types/layout';
 import DraggableWidget from './DraggableWidget';
 import AdaptiveGrid from './AdaptiveGrid';
@@ -12,6 +12,12 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
   isEditing = false
 }) => {
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>(initialLayoutConfig || {});
+  const onLayoutChangeRef = useRef(onLayoutChange);
+
+  // 更新ref以避免依赖问题
+  useEffect(() => {
+    onLayoutChangeRef.current = onLayoutChange;
+  }, [onLayoutChange]);
 
   // 默认布局配置
   const getDefaultConfig = useCallback((childCount: number): LayoutConfig => {
@@ -40,66 +46,121 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
   useEffect(() => {
     const childCount = React.Children.count(children);
     if (childCount > 0 && Object.keys(layoutConfig).length === 0) {
+      console.log('Creating default config for', childCount, 'children');
       const defaultConfig = getDefaultConfig(childCount);
       setLayoutConfig(defaultConfig);
+      // 只有在编辑模式下才调用onLayoutChange，并且延迟执行
       if (isEditing) {
-        onLayoutChange?.(defaultConfig);
+        setTimeout(() => {
+          onLayoutChangeRef.current?.(defaultConfig);
+        }, 0);
       }
     }
-  }, [children, layoutConfig, getDefaultConfig, onLayoutChange, isEditing]);
+  }, [children, layoutConfig, getDefaultConfig, isEditing]);
 
   const handleWidgetMove = useCallback((id: string, position: Position) => {
-    const newConfig = {
-      ...layoutConfig,
-      [id]: {
-        ...layoutConfig[id],
-        position
-      }
-    };
-    setLayoutConfig(newConfig);
-    console.log('Widget moved:', id, position);
-    onLayoutChange?.(newConfig);
-  }, [layoutConfig, onLayoutChange]);
+    setLayoutConfig(prevConfig => {
+      const newConfig = {
+        ...prevConfig,
+        [id]: {
+          ...prevConfig[id],
+          position
+        }
+      };
+      console.log('Widget moved:', id, position);
+      // 使用ref调用onLayoutChange，避免依赖问题
+      setTimeout(() => {
+        onLayoutChangeRef.current?.(newConfig);
+      }, 0);
+      return newConfig;
+    });
+  }, []);
 
   const handleWidgetResize = useCallback((id: string, size: Size) => {
-    const newConfig = {
-      ...layoutConfig,
-      [id]: {
-        ...layoutConfig[id],
-        size
-      }
-    };
-    setLayoutConfig(newConfig);
-    onLayoutChange?.(newConfig);
-  }, [layoutConfig, onLayoutChange]);
+    setLayoutConfig(prevConfig => {
+      const newConfig = {
+        ...prevConfig,
+        [id]: {
+          ...prevConfig[id],
+          size
+        }
+      };
+      console.log('Widget resized:', id, size);
+      // 使用ref调用onLayoutChange，避免依赖问题
+      setTimeout(() => {
+        onLayoutChangeRef.current?.(newConfig);
+      }, 0);
+      return newConfig;
+    });
+  }, []);
 
 
-  // 如果没有启用自由布局模式，使用自适应网格
-  if (!isEditing) {
+  // 根据是否有保存的布局配置来决定显示方式
+  const hasSavedLayout = Object.keys(layoutConfig).length > 0 && Object.keys(layoutConfig).some(id => layoutConfig[id].position.x > 0 || layoutConfig[id].position.y > 0);
+
+  if (!isEditing && hasSavedLayout) {
+    // 有保存的布局时，使用自由布局显示
     return (
-      <AdaptiveGrid
-        columns={5}
-        gap="1.5rem"
-        className="free-layout-grid"
-      >
+      <div className="free-layout-canvas">
         {React.Children.map(children, (child, index) => {
           if (React.isValidElement(child)) {
             const id = child.key?.toString() || `widget-${index}`;
+            const config = layoutConfig[id];
+
+            if (!config) {
+              console.warn('No config found for widget:', id);
+              return null;
+            }
+
             return (
-              <div key={id} className="grid-item">
+              <DraggableWidget
+                key={id}
+                id={id}
+                position={config.position}
+                size={config.size}
+                onMove={handleWidgetMove}
+                onResize={handleWidgetResize}
+                isEditing={false}
+                zIndex={config.zIndex}
+              >
                 {child}
-              </div>
+              </DraggableWidget>
             );
           }
           return child;
         })}
-      </AdaptiveGrid>
+      </div>
     );
   }
 
-  // 自由布局模式
+  if (!isEditing) {
+    // 没有保存的布局时，使用网格布局
+    return (
+      <div className="layout-container">
+        <AdaptiveGrid
+          columns={5}
+          gap="1.5rem"
+          className="free-layout-grid"
+        >
+          {React.Children.map(children, (child, index) => {
+            if (React.isValidElement(child)) {
+              const id = child.key?.toString() || `widget-${index}`;
+              return (
+                <div key={id} className="grid-item">
+                  {child}
+                </div>
+              );
+            }
+            return child;
+          })}
+        </AdaptiveGrid>
+      </div>
+    );
+  }
+
+  // 编辑模式：显示所有组件的拖拽版本
   return (
-    <div className="free-layout-canvas">
+    <div className="free-layout-canvas editing">
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement(child)) {
           const id = child.key?.toString() || `widget-${index}`;

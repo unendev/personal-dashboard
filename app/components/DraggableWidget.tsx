@@ -101,20 +101,17 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({
   }, [isDragging, isResizing]);
 
   const widgetStyle: React.CSSProperties = {
-    position: 'relative',
-    transform: `translate(${currentPosition.x}px, ${currentPosition.y}px)`,
+    position: 'absolute',
+    left: currentPosition.x,
+    top: currentPosition.y,
     width: currentSize.width,
     height: currentSize.height,
     zIndex: isDragging ? 1000 : zIndex,
     cursor: isEditing ? 'move' : 'default',
-    transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease',
+    transition: isDragging ? 'none' : 'all 0.2s ease',
     boxShadow: isDragging
       ? '0 15px 35px rgba(0, 0, 0, 0.2)'
       : '0 4px 15px rgba(0, 0, 0, 0.1)',
-    borderRadius: '16px',
-    background: 'rgba(255, 255, 255, 0.05)',
-    backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
   };
 
   return (
