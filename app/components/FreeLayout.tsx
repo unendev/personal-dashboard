@@ -11,8 +11,10 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
   onLayoutChange,
   isEditing = false
 }) => {
-  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>(initialLayoutConfig || {});
   const onLayoutChangeRef = useRef(onLayoutChange);
+
+  // 确保 layoutConfig 始终是一个对象
+  const currentLayoutConfig = initialLayoutConfig || {};
 
   // 更新ref以避免依赖问题
   useEffect(() => {
@@ -43,60 +45,51 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
     return config;
   }, [children]);
 
-  useEffect(() => {
-    const childCount = React.Children.count(children);
-    if (childCount > 0 && Object.keys(layoutConfig).length === 0) {
-      console.log('Creating default config for', childCount, 'children');
-      const defaultConfig = getDefaultConfig(childCount);
-      setLayoutConfig(defaultConfig);
-      // 只有在编辑模式下才调用onLayoutChange，并且延迟执行
-      if (isEditing) {
-        setTimeout(() => {
-          onLayoutChangeRef.current?.(defaultConfig);
-        }, 0);
-      }
-    }
-  }, [children, layoutConfig, getDefaultConfig, isEditing]);
+  // 移除这个 useEffect，FreeLayout 应该完全受控于 initialLayoutConfig prop
+  // useEffect(() => {
+  //   const childCount = React.Children.count(children);
+  //   if (childCount > 0 && (!initialLayoutConfig || Object.keys(currentLayoutConfig).length === 0)) {
+  //     const defaultConfig = getDefaultConfig(childCount);
+  //     if (isEditing) {
+  //       setTimeout(() => {
+  //         onLayoutChangeRef.current?.(defaultConfig);
+  //       }, 0);
+  //     }
+  //   }
+  // }, [children, initialLayoutConfig, getDefaultConfig, isEditing, currentLayoutConfig]);
 
   const handleWidgetMove = useCallback((id: string, position: Position) => {
-    setLayoutConfig(prevConfig => {
+    if (currentLayoutConfig) {
       const newConfig = {
-        ...prevConfig,
+        ...currentLayoutConfig,
         [id]: {
-          ...prevConfig[id],
+          ...currentLayoutConfig[id],
           position
         }
       };
-      console.log('Widget moved:', id, position);
-      // 使用ref调用onLayoutChange，避免依赖问题
       setTimeout(() => {
         onLayoutChangeRef.current?.(newConfig);
       }, 0);
-      return newConfig;
-    });
-  }, []);
+    }
+  }, [currentLayoutConfig]);
 
   const handleWidgetResize = useCallback((id: string, size: Size) => {
-    setLayoutConfig(prevConfig => {
+    if (currentLayoutConfig) {
       const newConfig = {
-        ...prevConfig,
+        ...currentLayoutConfig,
         [id]: {
-          ...prevConfig[id],
+          ...currentLayoutConfig[id],
           size
         }
       };
-      console.log('Widget resized:', id, size);
-      // 使用ref调用onLayoutChange，避免依赖问题
       setTimeout(() => {
         onLayoutChangeRef.current?.(newConfig);
       }, 0);
-      return newConfig;
-    });
-  }, []);
-
+    }
+  }, [currentLayoutConfig]);
 
   // 根据是否有保存的布局配置来决定显示方式
-  const hasSavedLayout = Object.keys(layoutConfig).length > 0 && Object.keys(layoutConfig).some(id => layoutConfig[id].position.x > 0 || layoutConfig[id].position.y > 0);
+  const hasSavedLayout = Object.keys(currentLayoutConfig).length > 0 && Object.keys(currentLayoutConfig).some(id => currentLayoutConfig[id].position.x > 0 || currentLayoutConfig[id].position.y > 0);
 
   if (!isEditing && hasSavedLayout) {
     // 有保存的布局时，使用自由布局显示
@@ -105,10 +98,9 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
         {React.Children.map(children, (child, index) => {
           if (React.isValidElement(child)) {
             const id = child.key?.toString() || `widget-${index}`;
-            const config = layoutConfig[id];
+            const config = currentLayoutConfig[id];
 
             if (!config) {
-              console.warn('No config found for widget:', id);
               return null;
             }
 
@@ -164,10 +156,9 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement(child)) {
           const id = child.key?.toString() || `widget-${index}`;
-          const config = layoutConfig[id];
+          const config = currentLayoutConfig[id];
 
           if (!config) {
-            console.warn('No config found for widget:', id);
             return null;
           }
 

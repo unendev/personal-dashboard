@@ -22,6 +22,7 @@ model User {
   skills Skill[]
   quests Quest[]
   logs   Log[]
+  layout UserLayout?
 
   @@map("users")
 }
@@ -70,6 +71,15 @@ model Log {
   dailySummary Json?
 
   @@map("logs")
+}
+
+model UserLayout {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  layoutConfig Json
+
+  @@map("user_layouts")
 }
 
 enum QuestStatus {

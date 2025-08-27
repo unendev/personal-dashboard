@@ -6,7 +6,7 @@ interface Log {
     id: string
     title: string
   } | null
-  dailySummary?: any | null // Add dailySummary field
+  dailySummary?: Record<string, any> | null // Add dailySummary field, define as Record<string, any>
 }
 
 interface LogCardProps {
@@ -50,12 +50,20 @@ export default function LogCard({ log }: LogCardProps) {
     );
   };
 
+  const dailySummary = log.dailySummary || {}; // Default to empty object if null
+
+  const hasDailySummaryContent = Object.values(dailySummary).some(category =>
+    Object.values(category as Record<string, any>).some(subCategory =>
+      Object.values(subCategory as Record<string, any>).some(item => !!item)
+    )
+  );
+
   return (
     <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400 mb-4">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
           {log.content && <p className="text-gray-800">{log.content}</p>}
-          {!log.content && !log.dailySummary && <p className="text-gray-500 italic">无日志内容或每日总结</p>}
+          {!log.content && !hasDailySummaryContent && <p className="text-gray-500 italic">无日志内容或每日总结</p>}
         </div>
         <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
           {formatDate(log.createdAt)}
@@ -68,13 +76,13 @@ export default function LogCard({ log }: LogCardProps) {
         </div>
       )}
 
-      {log.dailySummary && (
+      {hasDailySummaryContent && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-2">每日总结</h3>
-          {renderDailySummaryCategory('价值投资 (Investment)', log.dailySummary.investment, 0)}
-          {renderDailySummaryCategory('精力补充 (Replenishment)', log.dailySummary.replenishment, 0)}
-          {renderDailySummaryCategory('系统维持 (Maintenance)', log.dailySummary.maintenance, 0)}
-          {renderDailySummaryCategory('时间黑洞 (Time Sink)', log.dailySummary.timeSink, 0)}
+          {renderDailySummaryCategory('价值投资 (Investment)', dailySummary.investment, 0)}
+          {renderDailySummaryCategory('精力补充 (Replenishment)', dailySummary.replenishment, 0)}
+          {renderDailySummaryCategory('系统维持 (Maintenance)', dailySummary.maintenance, 0)}
+          {renderDailySummaryCategory('时间黑洞 (Time Sink)', dailySummary.timeSink, 0)}
         </div>
       )}
     </div>

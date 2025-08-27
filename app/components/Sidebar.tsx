@@ -66,11 +66,13 @@ const Sidebar = () => {
         <nav className="flex-grow p-6">
           <ul className="space-y-2">
             <li>
-              <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <a href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">仪表盘</span>
               </a>
             </li>
+            {/* 移除信息流、音乐、健康按钮 */}
+            {/*
             <li>
               <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-white/20 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
@@ -89,6 +91,7 @@ const Sidebar = () => {
                 <span className="font-medium">健康</span>
               </a>
             </li>
+            */}
 
             {/* 人生进度系统 */}
             <li className="mt-4">

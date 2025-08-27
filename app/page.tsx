@@ -8,12 +8,28 @@ import LinuxDoWidget from './components/LinuxDoWidget';
 import FreeLayout from './components/FreeLayout';
 import { DailyHealthData } from '@/types/health-data';
 import { LayoutConfig } from '@/types/layout';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function Home() {
   const [showBiliManager, setShowBiliManager] = useState(false);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // 使用 useSWR 获取布局配置
+  const { data: fetchedLayout, error: layoutError } = useSWR('/api/layout', fetcher, { revalidateOnFocus: false });
+
+  // 同步 fetchedLayout 到 layoutConfig 状态
+  useEffect(() => {
+    if (fetchedLayout) {
+      setLayoutConfig(fetchedLayout);
+    } else if (layoutError) {
+      console.error('Failed to fetch layout from DB:', layoutError);
+      // 可以在这里设置一个默认布局，或者保持 layoutConfig 为 null，让 FreeLayout 处理默认布局
+    }
+  }, [fetchedLayout, layoutError]);
 
   const mockHealthData: DailyHealthData[] = [
     { date: '10-20', steps: 8500, sleepHours: 7.5, heartRate: 72, calories: 2100 },
@@ -25,33 +41,27 @@ export default function Home() {
     { date: '10-26', steps: 9200, sleepHours: 7.0, heartRate: 73, calories: 2250 },
   ];
 
-  const handleLayoutChange = (config: LayoutConfig) => {
-    console.log('handleLayoutChange called with:', config);
-    setLayoutConfig(config);
-    // 保存布局配置到localStorage
+  const saveLayoutToDB = async (config: LayoutConfig) => {
     try {
-      localStorage.setItem('dashboard-layout', JSON.stringify(config));
-      console.log('Layout saved successfully:', config);
+      const response = await fetch('/api/layout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save layout to DB');
+      }
     } catch (error) {
-      console.error('Failed to save layout:', error);
+      console.error('Error saving layout to DB:', error);
     }
   };
 
-  // 页面加载时恢复布局配置
-  React.useEffect(() => {
-    const savedLayout = localStorage.getItem('dashboard-layout');
-    if (savedLayout) {
-      try {
-        const parsed = JSON.parse(savedLayout);
-        setLayoutConfig(parsed);
-        console.log('Layout restored from localStorage:', parsed);
-      } catch (error) {
-        console.error('Failed to parse saved layout:', error);
-      }
-    } else {
-      console.log('No saved layout found, using default');
-    }
-  }, []);
+  const handleLayoutChange = (config: LayoutConfig) => {
+    setLayoutConfig(config);
+    saveLayoutToDB(config);
+  };
 
   return (
     <main className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
@@ -66,13 +76,7 @@ export default function Home() {
             <button
               onClick={() => {
                 if (isEditing && layoutConfig) {
-                  // 保存布局配置
-                  try {
-                    localStorage.setItem('dashboard-layout', JSON.stringify(layoutConfig));
-                    console.log('Layout saved on exit:', layoutConfig);
-                  } catch (error) {
-                    console.error('Failed to save layout on exit:', error);
-                  }
+                  saveLayoutToDB(layoutConfig);
                 }
                 setIsEditing(!isEditing);
               }}
