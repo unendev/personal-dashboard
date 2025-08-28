@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import CreateLogForm from '@/app/components/CreateLogForm'
 import LogCard from '@/app/components/LogCard'
+import fs from 'fs/promises';
+import path from 'path';
+import LogCategorySelector from '../components/LogCategorySelector';
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
@@ -57,15 +60,15 @@ export default async function LogPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 日志输入区域 */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-3">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-            <CreateLogForm activeQuests={activeQuests} />
+            <LogCategorySelector />
           </div>
         </div>
 
         {/* 日志列表区域 */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3 mt-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-lg font-semibold mb-4">日志历史</h2>
 

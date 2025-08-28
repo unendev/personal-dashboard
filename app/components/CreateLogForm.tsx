@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createLog } from '@/app/actions'
+import { useSearchParams } from 'next/navigation'
 
 interface Quest {
   id: string
@@ -9,94 +10,136 @@ interface Quest {
 }
 
 interface CreateLogFormProps {
-  activeQuests: Quest[]
+  // activeQuests: Quest[] // 不再需要activeQuests，通过searchParams获取
 }
 
-const initialDailySummary = {
-  investment: {
-    coreWork: {
-      projectA: '',
-      projectB: '',
-      managementCommunication: '',
-    },
-    skillUp: {
-      professionalReading: '',
-      onlineCourses: '',
-      deliberatePractice: '',
-    },
-    deepThinking: {
-      reviewPlanning: '',
-      creativeConception: '',
-    },
-    inspiration: {
-      filmTv: '',
-      reading: '',
-      games: '',
-    },
+// 初始预设一个分类、一个子分类、一个活动，方便快速记录
+const initialPresetCategories = [
+  {
+    name: '', // 默认分类名为空，用户可以直接填写
+    subCategories: [
+      {
+        name: '', // 默认子分类名为空
+        activities: [
+          { name: '', duration: '' }, // 默认一个活动
+        ],
+      },
+    ],
   },
-  replenishment: {
-    pureFun: {
-      filmTv: '',
-      reading: '',
-      games: '',
-    },
-    exercise: {
-      aerobic: '',
-      anaerobic: '',
-      gamifiedSports: '',
-    },
-    social: {
-      friends: '',
-      family: '',
-    },
-  },
-  maintenance: {
-    dailyChores: {
-      commute: '',
-      housework: '',
-    },
-    adminWork: {
-      emailProcessing: '',
-      proceduralTasks: '',
-    },
-    infoProcessing: {
-      newsBrowsing: '',
-      communitySurfing: '',
-    },
-  },
-  timeSink: {
-    mindlessBrowsing: '',
-    procrastination: '',
-  },
-};
+];
 
-export default function CreateLogForm({ activeQuests }: CreateLogFormProps) {
+export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */) {
   const [isLoading, setIsLoading] = useState(false)
-  const [dailySummaryData, setDailySummaryData] = useState(initialDailySummary);
+  const searchParams = useSearchParams()
+  const urlCategory = searchParams.get('category')
+  const urlSubcategory = searchParams.get('subcategory')
 
-  const handleDailySummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const path = name.split('.');
-    setDailySummaryData(prevData => {
-      const newData = { ...prevData };
-      let current: any = newData;
-      for (let i = 0; i < path.length - 1; i++) {
-        current[path[i]] = current[path[i]] || {};
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return newData;
-    });
+  const [categories, setCategories] = useState<any[]>(() => {
+    if (urlCategory && urlSubcategory) {
+      return [
+        {
+          name: urlCategory,
+          subCategories: [
+            {
+              name: urlSubcategory,
+              activities: [
+                { name: '', duration: '' },
+              ],
+            },
+          ],
+        },
+      ];
+    } else {
+      return initialPresetCategories;
+    }
+  });
+
+  useEffect(() => {
+    if (urlCategory && urlSubcategory) {
+      setCategories([
+        {
+          name: urlCategory,
+          subCategories: [
+            {
+              name: urlSubcategory,
+              activities: [
+                { name: '', duration: '' },
+              ],
+            },
+          ],
+        },
+      ]);
+    } else {
+      setCategories(initialPresetCategories);
+    }
+  }, [urlCategory, urlSubcategory]);
+
+  // 处理分类、子分类、活动名称和时长的改变
+  const handleCategoryChange = (catIndex: number, newName: string) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].name = newName;
+    setCategories(newCategories);
+  };
+
+  const handleSubCategoryChange = (catIndex: number, subCatIndex: number, newName: string) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories[subCatIndex].name = newName;
+    setCategories(newCategories);
+  };
+
+  const handleActivityChange = (catIndex: number, subCatIndex: number, activityIndex: number, field: string, value: string) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories[subCatIndex].activities[activityIndex][field] = value;
+    setCategories(newCategories);
+  };
+
+  // 添加新的分类
+  const addCategory = () => {
+    setCategories([...categories, { name: '', subCategories: [] }]);
+  };
+
+  // 添加新的子分类
+  const addSubCategory = (catIndex: number) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories.push({ name: '', activities: [] });
+    setCategories(newCategories);
+  };
+
+  // 添加新的活动
+  const addActivity = (catIndex: number, subCatIndex: number) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories[subCatIndex].activities.push({ name: '', duration: '' });
+    setCategories(newCategories);
+  };
+
+  // 移除分类
+  const removeCategory = (catIndex: number) => {
+    setCategories(categories.filter((_, i) => i !== catIndex));
+  };
+
+  // 移除子分类
+  const removeSubCategory = (catIndex: number, subCatIndex: number) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories = newCategories[catIndex].subCategories.filter((_, i) => i !== subCatIndex);
+    setCategories(newCategories);
+  };
+
+  // 移除活动
+  const removeActivity = (catIndex: number, subCatIndex: number, activityIndex: number) => {
+    const newCategories = [...categories];
+    newCategories[catIndex].subCategories[subCatIndex].activities = newCategories[catIndex].subCategories[subCatIndex].activities.filter((_, i) => i !== activityIndex);
+    setCategories(newCategories);
   };
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
     try {
-      formData.append('dailySummary', JSON.stringify(dailySummaryData));
+      formData.append('categories', JSON.stringify(categories));
+      formData.append('timestamp', new Date().toISOString());
       await createLog(formData)
       const form = document.getElementById('log-form') as HTMLFormElement
       form?.reset()
-      setDailySummaryData(initialDailySummary); // Reset daily summary state
+      setCategories(initialPresetCategories); // Reset categories state to initial simplified preset
     } catch (error) {
       console.error('创建日志失败:', error)
     } finally {
@@ -119,293 +162,58 @@ export default function CreateLogForm({ activeQuests }: CreateLogFormProps) {
         />
       </div>
 
-      {/* Daily Summary Section */}
+      {/* 简化的动态分类输入区域 */}
       <div className="space-y-6 pt-4 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">每日总结</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">记录活动</h3>
+        {categories.map((category, catIndex) => (
+          <div key={catIndex} className="space-y-3 pl-4 border-l-2 border-purple-300 relative group">
+            <button type="button" onClick={() => removeCategory(catIndex)} className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+            <input
+              type="text"
+              value={category.name}
+              onChange={(e) => handleCategoryChange(catIndex, e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md font-medium"
+              placeholder="分类名称 (例如：价值产出)"
+            />
 
-        {/* 价值投资 (Investment) */}
-        <div className="space-y-3 pl-4 border-l-2 border-purple-300">
-          <h4 className="text-md font-medium text-purple-700">价值投资 (Investment)</h4>
-          {/* 核心工作 (Core Work) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">核心工作 (Core Work)</p>
-            <input
-              type="text"
-              name="investment.coreWork.projectA"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="项目A"
-              value={dailySummaryData.investment.coreWork.projectA}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.coreWork.projectB"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="项目B"
-              value={dailySummaryData.investment.coreWork.projectB}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.coreWork.managementCommunication"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="管理沟通"
-              value={dailySummaryData.investment.coreWork.managementCommunication}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 技能学习 (Skill Up) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">技能学习 (Skill Up)</p>
-            <input
-              type="text"
-              name="investment.skillUp.professionalReading"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="专业阅读"
-              value={dailySummaryData.investment.skillUp.professionalReading}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.skillUp.onlineCourses"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="线上课程"
-              value={dailySummaryData.investment.skillUp.onlineCourses}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.skillUp.deliberatePractice"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="刻意练习"
-              value={dailySummaryData.investment.skillUp.deliberatePractice}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 深度思考 (Deep Thinking) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">深度思考 (Deep Thinking)</p>
-            <input
-              type="text"
-              name="investment.deepThinking.reviewPlanning"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="复盘规划"
-              value={dailySummaryData.investment.deepThinking.reviewPlanning}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.deepThinking.creativeConception"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="创作构思"
-              value={dailySummaryData.investment.deepThinking.creativeConception}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 灵感源泉 (Inspiration) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">灵感源泉 (Inspiration)</p>
-            <input
-              type="text"
-              name="investment.inspiration.filmTv"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="影视"
-              value={dailySummaryData.investment.inspiration.filmTv}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.inspiration.reading"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="阅读"
-              value={dailySummaryData.investment.inspiration.reading}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="investment.inspiration.games"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="游戏"
-              value={dailySummaryData.investment.inspiration.games}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-        </div>
+            {category.subCategories.map((subCategory: any, subCatIndex: number) => (
+              <div key={subCatIndex} className="space-y-2 pl-4 border-l border-gray-300 relative group">
+                <button type="button" onClick={() => removeSubCategory(catIndex, subCatIndex)} className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                <input
+                  type="text"
+                  value={subCategory.name}
+                  onChange={(e) => handleSubCategoryChange(catIndex, subCatIndex, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="子分类名称 (例如：核心工作)"
+                />
 
-        {/* 精力补充 (Replenishment) */}
-        <div className="space-y-3 pl-4 border-l-2 border-green-300">
-          <h4 className="text-md font-medium text-green-700">精力补充 (Replenishment)</h4>
-          {/* 纯粹娱乐 (Pure Fun) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">纯粹娱乐 (Pure Fun)</p>
-            <input
-              type="text"
-              name="replenishment.pureFun.filmTv"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="影视"
-              value={dailySummaryData.replenishment.pureFun.filmTv}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="replenishment.pureFun.reading"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="阅读"
-              value={dailySummaryData.replenishment.pureFun.reading}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="replenishment.pureFun.games"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="游戏"
-              value={dailySummaryData.replenishment.pureFun.games}
-              onChange={handleDailySummaryChange}
-            />
+                {subCategory.activities.map((activity: any, activityIndex: number) => (
+                  <div key={activityIndex} className="flex gap-2 items-center pl-4 relative group">
+                    <button type="button" onClick={() => removeActivity(catIndex, subCatIndex, activityIndex)} className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                    <input
+                      type="text"
+                      value={activity.name}
+                      onChange={(e) => handleActivityChange(catIndex, subCatIndex, activityIndex, 'name', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="具体事务 (例如：项目A)"
+                      autoFocus={true} // 自动聚焦
+                    />
+                    <input
+                      type="text"
+                      value={activity.duration}
+                      onChange={(e) => handleActivityChange(catIndex, subCatIndex, activityIndex, 'duration', e.target.value)}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="耗时 (1h10m)"
+                    />
+                  </div>
+                ))}
+                <button type="button" onClick={() => addActivity(catIndex, subCatIndex)} className="mt-2 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded-md text-sm">+ 添加事务</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => addSubCategory(catIndex)} className="mt-2 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded-md text-sm">+ 添加子分类</button>
           </div>
-          {/* 身体锻炼 (Exercise) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">身体锻炼 (Exercise)</p>
-            <input
-              type="text"
-              name="replenishment.exercise.aerobic"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="有氧"
-              value={dailySummaryData.replenishment.exercise.aerobic}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="replenishment.exercise.anaerobic"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="无氧"
-              value={dailySummaryData.replenishment.exercise.anaerobic}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="replenishment.exercise.gamifiedSports"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="游戏化运动（节奏光剑）"
-              value={dailySummaryData.replenishment.exercise.gamifiedSports}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 社交连接 (Social) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">社交连接 (Social)</p>
-            <input
-              type="text"
-              name="replenishment.social.friends"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="朋友"
-              value={dailySummaryData.replenishment.social.friends}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="replenishment.social.family"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="家人"
-              value={dailySummaryData.replenishment.social.family}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-        </div>
-
-        {/* 系统维持 (Maintenance) */}
-        <div className="space-y-3 pl-4 border-l-2 border-blue-300">
-          <h4 className="text-md font-medium text-blue-700">系统维持 (Maintenance)</h4>
-          {/* 日常琐事 (Daily Chores) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">日常琐事 (Daily Chores)</p>
-            <input
-              type="text"
-              name="maintenance.dailyChores.commute"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="通勤"
-              value={dailySummaryData.maintenance.dailyChores.commute}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="maintenance.dailyChores.housework"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="家务"
-              value={dailySummaryData.maintenance.dailyChores.housework}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 事务性工作 (Admin Work) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">事务性工作 (Admin Work)</p>
-            <input
-              type="text"
-              name="maintenance.adminWork.emailProcessing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="邮件处理"
-              value={dailySummaryData.maintenance.adminWork.emailProcessing}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="maintenance.adminWork.proceduralTasks"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="流程性任务"
-              value={dailySummaryData.maintenance.adminWork.proceduralTasks}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 信息处理 (Info Processing) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">信息处理 (Info Processing)</p>
-            <input
-              type="text"
-              name="maintenance.infoProcessing.newsBrowsing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="新闻浏览"
-              value={dailySummaryData.maintenance.infoProcessing.newsBrowsing}
-              onChange={handleDailySummaryChange}
-            />
-            <input
-              type="text"
-              name="maintenance.infoProcessing.communitySurfing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="社区冲浪"
-              value={dailySummaryData.maintenance.infoProcessing.communitySurfing}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-        </div>
-
-        {/* 时间黑洞 (Time Sink) */}
-        <div className="space-y-3 pl-4 border-l-2 border-red-300">
-          <h4 className="text-md font-medium text-red-700">时间黑洞 (Time Sink)</h4>
-          {/* 无效冲浪 (Mindless Browsing) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">无效冲浪 (Mindless Browsing)</p>
-            <input
-              type="text"
-              name="timeSink.mindlessBrowsing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder=""
-              value={dailySummaryData.timeSink.mindlessBrowsing}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-          {/* 拖延等待 (Procrastination) */}
-          <div className="space-y-2 pl-4 border-l border-gray-300">
-            <p className="text-sm font-medium text-gray-700">拖延等待 (Procrastination)</p>
-            <input
-              type="text"
-              name="timeSink.procrastination"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder=""
-              value={dailySummaryData.timeSink.procrastination}
-              onChange={handleDailySummaryChange}
-            />
-          </div>
-        </div>
+        ))}
+        <button type="button" onClick={addCategory} className="w-full bg-blue-500/10 text-blue-400 py-2 px-4 rounded-md font-medium hover:bg-blue-500/20 transition-colors">+ 添加分类</button>
       </div>
 
       <div>
@@ -418,11 +226,11 @@ export default function CreateLogForm({ activeQuests }: CreateLogFormProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">无关联任务</option>
-          {activeQuests.map((quest) => (
-            <option key={quest.id} value={quest.id}>
-              {quest.title}
-            </option>
-          ))}
+          {/* activeQuests.map((quest) => ( */}
+            {/* <option key={quest.id} value={quest.id}> */}
+              {/* {quest.title} */}
+            {/* </option> */}
+          {/* ))} */}
         </select>
       </div>
 

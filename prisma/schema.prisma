@@ -68,9 +68,40 @@ model Log {
   quest        Quest?   @relation(fields: [questId], references: [id])
   userId       String
   user         User     @relation(fields: [userId], references: [id])
-  dailySummary Json?
+  timestamp    DateTime @default(now())
+  categories   LogCategoryInstance[]
 
   @@map("logs")
+}
+
+model LogCategoryInstance {
+  id        String   @id @default(cuid())
+  name      String
+  logId     String
+  log       Log      @relation(fields: [logId], references: [id], onDelete: Cascade)
+  subCategories LogSubCategoryInstance[]
+
+  @@map("log_category_instances")
+}
+
+model LogSubCategoryInstance {
+  id        String   @id @default(cuid())
+  name      String
+  categoryId String
+  category  LogCategoryInstance @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  activities LogActivityInstance[]
+
+  @@map("log_subcategory_instances")
+}
+
+model LogActivityInstance {
+  id        String   @id @default(cuid())
+  name      String
+  duration  String   // 格式如 "1h10m"
+  subCategoryId String
+  subCategory LogSubCategoryInstance @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@map("log_activity_instances")
 }
 
 model UserLayout {

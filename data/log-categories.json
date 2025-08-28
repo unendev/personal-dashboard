@@ -1,0 +1,14 @@
+[
+  {
+    "category": "工作",
+    "subcategories": ["项目A", "任务B", "会议C"]
+  },
+  {
+    "category": "学习",
+    "subcategories": ["前端技术", "后端技术", "算法"]
+  },
+  {
+    "category": "生活",
+    "subcategories": ["购物", "健身", "娱乐"]
+  }
+]

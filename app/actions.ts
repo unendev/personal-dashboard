@@ -102,24 +102,27 @@ export async function updateQuestStatus(questId: string, status: string) {
 }
 
 export async function createLog(formData: FormData) {
-  const content = formData.get('content') as string | null
-  const questId = formData.get('questId') as string
-  const dailySummaryString = formData.get('dailySummary') as string
+  const content = formData.get('content') as string | null;
+  const questId = formData.get('questId') as string;
+  const categoriesString = formData.get('categories') as string;
+  const timestampString = formData.get('timestamp') as string;
 
-  let dailySummaryJson = null;
-  if (dailySummaryString) {
+  let categoriesData: any[] = [];
+  if (categoriesString) {
     try {
-      dailySummaryJson = JSON.parse(dailySummaryString);
+      categoriesData = JSON.parse(categoriesString);
     } catch (error) {
-      console.error('解析 dailySummary 失败:', error);
-      throw new Error('每日总结数据格式不正确');
+      console.error('解析 categories 失败:', error);
+      throw new Error('日志分类数据格式不正确');
     }
   }
 
-  // content 字段现在是可选的，不再强制校验
-  // if (!content || content.trim().length === 0) {
-  //   throw new Error('日志内容不能为空')
-  // }
+  let timestamp: Date | undefined;
+  if (timestampString) {
+    timestamp = new Date(timestampString);
+  } else {
+    timestamp = new Date();
+  }
 
   try {
     await prisma.log.create({
@@ -127,13 +130,29 @@ export async function createLog(formData: FormData) {
         content: content?.trim() || null,
         questId: questId || null,
         userId: MOCK_USER_ID,
-        dailySummary: dailySummaryJson,
+        timestamp: timestamp,
+        categories: {
+          create: categoriesData.map(category => ({
+            name: category.name,
+            subCategories: {
+              create: category.subCategories.map((subCategory: any) => ({
+                name: subCategory.name,
+                activities: {
+                  create: subCategory.activities.map((activity: any) => ({
+                    name: activity.name,
+                    duration: activity.duration,
+                  })),
+                },
+              })),
+            },
+          })),
+        },
       },
-    })
+    });
 
-    revalidatePath('/log')
+    revalidatePath('/log');
   } catch (error) {
-    console.error('创建日志失败:', error)
-    throw new Error('创建日志失败，请重试')
+    console.error('创建日志失败:', error);
+    throw new Error('创建日志失败，请重试');
   }
 }
