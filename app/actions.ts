@@ -3,6 +3,22 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
+// 日志分类相关类型定义
+interface LogActivity {
+  name: string;
+  duration: string;
+}
+
+interface LogSubCategory {
+  name: string;
+  activities: LogActivity[];
+}
+
+interface LogCategory {
+  name: string;
+  subCategories: LogSubCategory[];
+}
+
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
 
@@ -107,7 +123,7 @@ export async function createLog(formData: FormData) {
   const categoriesString = formData.get('categories') as string;
   const timestampString = formData.get('timestamp') as string;
 
-  let categoriesData: any[] = [];
+  let categoriesData: LogCategory[] = [];
   if (categoriesString) {
     try {
       categoriesData = JSON.parse(categoriesString);
@@ -135,10 +151,10 @@ export async function createLog(formData: FormData) {
           create: categoriesData.map(category => ({
             name: category.name,
             subCategories: {
-              create: category.subCategories.map((subCategory: any) => ({
+              create: category.subCategories.map((subCategory: LogSubCategory) => ({
                 name: subCategory.name,
                 activities: {
-                  create: subCategory.activities.map((activity: any) => ({
+                  create: subCategory.activities.map((activity: LogActivity) => ({
                     name: activity.name,
                     duration: activity.duration,
                   })),

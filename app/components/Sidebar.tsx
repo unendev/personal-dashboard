@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -66,10 +67,10 @@ const Sidebar = () => {
         <nav className="flex-grow p-6">
           <ul className="space-y-2">
             <li>
-              <a href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">仪表盘</span>
-              </a>
+              </Link>
             </li>
             {/* 移除信息流、音乐、健康按钮 */}
             {/*

@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import SkillCard from '@/app/components/SkillCard'
 import CreateSkillForm from '@/app/components/CreateSkillForm'
 import { levelUpSkill } from '@/app/actions'
+import type { Skill } from '@prisma/client'
+import Link from 'next/link'
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
@@ -27,12 +29,12 @@ export default async function DashboardPage() {
     <>
       {/* 返回主页按钮 */}
       <div className="fixed top-4 left-4 z-40">
-        <a
+        <Link
           href="/"
           className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
         >
           <span className="text-white font-bold text-xl">←</span>
-        </a>
+        </Link>
       </div>
 
       {/* 页面导航 */}
@@ -56,7 +58,7 @@ export default async function DashboardPage() {
             <p className="text-gray-500 text-lg">还没有技能，开始创建你的第一个技能吧！</p>
           </div>
         ) : (
-          skills.map((skill: any) => (
+          skills.map((skill: Skill) => (
             <SkillCard
               key={skill.id}
               skill={skill}

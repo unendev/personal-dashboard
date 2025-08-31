@@ -11,7 +11,10 @@ const fetcher = async (url: string) => {
 
   // 如果服务器返回非 2xx 的状态码，则抛出错误
   if (!res.ok) {
-    const error: any = new Error('An error occurred while fetching the data.');
+    const error = new Error('An error occurred while fetching the data.') as Error & {
+      info?: unknown;
+      status?: number;
+    };
     // 将状态码和响应体附加到错误对象上
     error.info = await res.json();
     error.status = res.status;

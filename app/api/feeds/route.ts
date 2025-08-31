@@ -5,6 +5,27 @@ import fs from 'fs';
 import path from 'path';
 import { BiliUser } from '@/types/bili-user';
 
+// B站视频数据类型
+interface BiliVideo {
+  pic: string;
+  author: string;
+  title: string;
+  description?: string;
+  created: number;
+  bvid: string;
+}
+
+// Feed项目类型
+interface FeedItem {
+  source: string;
+  avatar: string;
+  author: string;
+  title: string;
+  summary: string;
+  timestamp: string;
+  bvid?: string;
+}
+
 // Configure rss-parser, but we will handle fetching manually
 const parser = new Parser({
   customFields: {
@@ -110,7 +131,7 @@ export async function GET() {
         }
 
         console.log(`Successfully fetched ${videos.length} videos for user ${user.name}`);
-        return videos.map((video: any) => ({
+        return videos.map((video: BiliVideo) => ({
           source: `Bilibili - ${user.name}`,
           avatar: video.pic.startsWith('http') ? video.pic : `https:${video.pic}`,
           author: video.author,
@@ -148,7 +169,7 @@ export async function GET() {
 
     const allItems = results
       .filter(result => result.status === 'fulfilled')
-      .flatMap(result => (result as PromiseFulfilledResult<any[]>).value);
+      .flatMap(result => (result as PromiseFulfilledResult<FeedItem[]>).value);
 
     allItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

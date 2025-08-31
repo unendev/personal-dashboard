@@ -143,7 +143,7 @@ const LinuxDoWidget = () => {
       {/* 紧凑的结论 */}
       <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
         <h3 className="text-xs font-semibold text-purple-400 mb-1">💭 社区感悟</h3>
-        <p className="text-white/70 text-xs italic line-clamp-2">"{report.summary.conclusion}"</p>
+        <p className="text-white/70 text-xs italic line-clamp-2">&quot;{report.summary.conclusion}&quot;</p>
       </div>
 
       {/* 紧凑的热门帖子 */}

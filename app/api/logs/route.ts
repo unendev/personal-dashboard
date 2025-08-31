@@ -2,18 +2,23 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import { promises as fs } from 'fs';
 
+// 日志数据类型
+interface LogData {
+  [key: string]: unknown;
+}
+
 export async function POST(request: Request) {
   try {
     const log = await request.json();
     const jsonDirectory = path.join(process.cwd(), 'data');
     const filePath = jsonDirectory + '/logs.json';
 
-    let existingLogs: any[] = [];
+    let existingLogs: LogData[] = [];
     try {
       const fileContents = await fs.readFile(filePath, 'utf8');
       existingLogs = JSON.parse(fileContents);
-    } catch (readError: any) {
-      if (readError.code === 'ENOENT') {
+    } catch (readError: unknown) {
+      if (readError instanceof Error && 'code' in readError && readError.code === 'ENOENT') {
         // 文件不存在，初始化为空数组
         existingLogs = [];
       } else {
@@ -39,12 +44,12 @@ export async function GET() {
     const jsonDirectory = path.join(process.cwd(), 'data');
     const filePath = jsonDirectory + '/logs.json';
 
-    let existingLogs: any[] = [];
+    let existingLogs: LogData[] = [];
     try {
       const fileContents = await fs.readFile(filePath, 'utf8');
       existingLogs = JSON.parse(fileContents);
-    } catch (readError: any) {
-      if (readError.code === 'ENOENT') {
+    } catch (readError: unknown) {
+      if (readError instanceof Error && 'code' in readError && readError.code === 'ENOENT') {
         // 文件不存在，返回空数组
         existingLogs = [];
       } else {

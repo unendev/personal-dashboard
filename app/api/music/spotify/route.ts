@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Spotify API 数据类型
+interface SpotifyArtist {
+  name: string;
+}
+
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const BASIC_AUTH = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
@@ -74,7 +79,7 @@ export async function GET(request: NextRequest) {
       const formattedData = {
         isPlaying: false,
         trackName: track.name,
-        artist: track.artists.map((_artist: any) => _artist.name).join(', '),
+        artist: track.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
         album: track.album.name,
         albumArtUrl: track.album.images[0]?.url,
         source: 'Spotify',
@@ -94,7 +99,7 @@ export async function GET(request: NextRequest) {
     const formattedData = {
       isPlaying: song.is_playing,
       trackName: song.item.name,
-      artist: song.item.artists.map((_artist: any) => _artist.name).join(', '),
+      artist: song.item.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
       album: song.item.album.name,
       albumArtUrl: song.item.album.images[0]?.url,
       source: 'Spotify',
@@ -102,8 +107,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedData);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // 统一处理所有可能的错误
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

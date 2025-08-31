@@ -4,14 +4,25 @@ import { useState, useEffect } from 'react'
 import { createLog } from '@/app/actions'
 import { useSearchParams } from 'next/navigation'
 
-interface Quest {
-  id: string
-  title: string
+// 移除未使用的 Quest 接口
+
+// 日志分类相关类型定义
+interface LogActivity {
+  name: string;
+  duration: string;
 }
 
-interface CreateLogFormProps {
-  // activeQuests: Quest[] // 不再需要activeQuests，通过searchParams获取
+interface LogSubCategory {
+  name: string;
+  activities: LogActivity[];
 }
+
+interface LogCategory {
+  name: string;
+  subCategories: LogSubCategory[];
+}
+
+// 移除空接口，不需要 props 类型定义
 
 // 初始预设一个分类、一个子分类、一个活动，方便快速记录
 const initialPresetCategories = [
@@ -34,7 +45,7 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
   const urlCategory = searchParams.get('category')
   const urlSubcategory = searchParams.get('subcategory')
 
-  const [categories, setCategories] = useState<any[]>(() => {
+  const [categories, setCategories] = useState<LogCategory[]>(() => {
     if (urlCategory && urlSubcategory) {
       return [
         {
@@ -87,7 +98,7 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
     setCategories(newCategories);
   };
 
-  const handleActivityChange = (catIndex: number, subCatIndex: number, activityIndex: number, field: string, value: string) => {
+  const handleActivityChange = (catIndex: number, subCatIndex: number, activityIndex: number, field: keyof LogActivity, value: string) => {
     const newCategories = [...categories];
     newCategories[catIndex].subCategories[subCatIndex].activities[activityIndex][field] = value;
     setCategories(newCategories);
@@ -176,7 +187,7 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
               placeholder="分类名称 (例如：价值产出)"
             />
 
-            {category.subCategories.map((subCategory: any, subCatIndex: number) => (
+            {category.subCategories.map((subCategory: LogSubCategory, subCatIndex: number) => (
               <div key={subCatIndex} className="space-y-2 pl-4 border-l border-gray-300 relative group">
                 <button type="button" onClick={() => removeSubCategory(catIndex, subCatIndex)} className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                 <input
@@ -187,7 +198,7 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
                   placeholder="子分类名称 (例如：核心工作)"
                 />
 
-                {subCategory.activities.map((activity: any, activityIndex: number) => (
+                {subCategory.activities.map((activity: LogActivity, activityIndex: number) => (
                   <div key={activityIndex} className="flex gap-2 items-center pl-4 relative group">
                     <button type="button" onClick={() => removeActivity(catIndex, subCatIndex, activityIndex)} className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                     <input

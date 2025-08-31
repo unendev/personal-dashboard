@@ -1,5 +1,6 @@
 import LogCategorySelector from '../components/LogCategorySelector';
 import LogDisplayTable from '../components/LogDisplayTable'; // 引入 LogDisplayTable
+import Link from 'next/link';
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
@@ -15,12 +16,12 @@ export default async function LogPage() {
     <>
       {/* 返回主页按钮 */}
       <div className="fixed top-4 left-4 z-40">
-        <a
+        <Link
           href="/"
           className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
         >
           <span className="text-white font-bold text-xl">←</span>
-        </a>
+        </Link>
       </div>
 
       {/* 页面导航 */}

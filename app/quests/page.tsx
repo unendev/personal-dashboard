@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import CreateQuestForm from '@/app/components/CreateQuestForm'
 import QuestCard from '@/app/components/QuestCard'
+import type { Quest } from '@prisma/client'
+import Link from 'next/link'
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
@@ -26,12 +28,12 @@ export default async function QuestsPage() {
     <>
       {/* 返回主页按钮 */}
       <div className="fixed top-4 left-4 z-40">
-        <a
+        <Link
           href="/"
           className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
         >
           <span className="text-white font-bold text-xl">←</span>
-        </a>
+        </Link>
       </div>
 
       {/* 页面导航 */}
@@ -60,7 +62,7 @@ export default async function QuestsPage() {
             {groupedQuests.planning.length === 0 ? (
               <p className="text-gray-500 text-sm">暂无计划中的任务</p>
             ) : (
-              groupedQuests.planning.map((quest: any) => (
+              groupedQuests.planning.map((quest: Quest) => (
                 <QuestCard key={quest.id} quest={quest} />
               ))
             )}
@@ -77,7 +79,7 @@ export default async function QuestsPage() {
             {groupedQuests.inProgress.length === 0 ? (
               <p className="text-gray-500 text-sm">暂无进行中的任务</p>
             ) : (
-              groupedQuests.inProgress.map((quest: any) => (
+              groupedQuests.inProgress.map((quest: Quest) => (
                 <QuestCard key={quest.id} quest={quest} />
               ))
             )}
@@ -94,7 +96,7 @@ export default async function QuestsPage() {
             {groupedQuests.completed.length === 0 ? (
               <p className="text-gray-500 text-sm">暂无已完成的任务</p>
             ) : (
-              groupedQuests.completed.map((quest: any) => (
+              groupedQuests.completed.map((quest: Quest) => (
                 <QuestCard key={quest.id} quest={quest} />
               ))
             )}

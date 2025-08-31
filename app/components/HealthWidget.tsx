@@ -6,7 +6,17 @@ interface HealthWidgetProps {
   healthData: DailyHealthData[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Recharts Tooltip 参数类型
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    payload: DailyHealthData;
+  }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-effect p-2 rounded-lg text-xs">

@@ -3,8 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import { BiliUser } from '@/types/bili-user';
 
+// Bilibili API 响应数据类型
+interface BiliUserInfo {
+  name: string;
+  sign?: string;
+  face: string;
+}
+
 // 获取bilibili用户信息
-async function getBiliUserInfo(uid: number): Promise<any> {
+async function getBiliUserInfo(uid: number): Promise<BiliUserInfo | null> {
   try {
     const response = await fetch(`https://api.bilibili.com/x/space/acc/info?mid=${uid}`, {
       headers: {

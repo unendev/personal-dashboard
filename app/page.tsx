@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import HealthWidget from './components/HealthWidget';
 import InfoStreamWidget from './components/InfoStreamWidget';
 import MusicWidget from './components/MusicWidget';
@@ -104,7 +105,11 @@ export default function Home() {
           <InfoStreamWidget key="info-stream" />
 
           {/* 音乐组件 */}
-          <MusicWidget key="music" />
+          <Suspense key="music" fallback={<div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center">
+            <div className="text-white/60">加载音乐组件中...</div>
+          </div>}>
+            <MusicWidget />
+          </Suspense>
 
           {/* 健康数据组件 */}
           <div key="health" className="glass-effect rounded-2xl p-6 hover-lift h-full">
