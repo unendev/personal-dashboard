@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI;
 
   if (!clientId || !redirectUri) {
     return new Response('Missing Spotify environment variables', { status: 500 });
   }
+
+  // 检测是否为移动设备
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   
   // 定义我们需要的权限范围
   const scope = [
@@ -16,15 +20,19 @@ export async function GET() {
     'user-read-currently-playing', // 读取用户当前播放的曲目
   ].join(' ');
 
-  // 使用 URLSearchParams 自动处理编码
+  // 为移动端添加额外的参数
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId!,
     scope: scope,
     redirect_uri: redirectUri,
+    // 移动端优化：显示对话框模式而不是页面模式
+    show_dialog: isMobile ? 'true' : 'false',
   });
 
   const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
+
+  console.log(`Spotify auth initiated for ${isMobile ? 'mobile' : 'desktop'} device`);
 
   // 将用户重定向到构建好的 URL
   return NextResponse.redirect(authUrl);

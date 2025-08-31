@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import MusicCard from './MusicCard';
+import { isMobileDevice, isSmallScreen } from '@/lib/device-utils';
 
 // 定义 fetcher 函数，SWR 会用它来请求数据
 const fetcher = async (url: string) => {
@@ -27,7 +28,39 @@ const fetcher = async (url: string) => {
 const MusicWidget = () => {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
+  const spotifySuccess = searchParams.get('spotify_success');
   const effectRan = useRef(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSmallViewport, setIsSmallViewport] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // 检测设备类型和处理成功消息
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    setIsSmallViewport(isSmallScreen());
+    
+    // 处理移动端认证成功消息
+    if (spotifySuccess && isMobileDevice()) {
+      setShowSuccessMessage(true);
+      // 3秒后隐藏成功消息
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+        // 清理URL参数
+        const url = new URL(window.location.href);
+        url.searchParams.delete('spotify_success');
+        window.history.replaceState({}, '', url.toString());
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    const handleResize = () => {
+      setIsSmallViewport(isSmallScreen());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [spotifySuccess]);
 
   useEffect(() => {
     // 定义一个异步函数来处理回调逻辑
@@ -66,6 +99,18 @@ const MusicWidget = () => {
   });
 
   const renderContent = () => {
+    // 显示移动端认证成功消息
+    if (showSuccessMessage) {
+      return (
+        <div className="text-center">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            🎉 Spotify连接成功！
+          </div>
+          <div className="text-gray-400">正在加载你的音乐...</div>
+        </div>
+      );
+    }
+
     if (isLoading) {
       return <div className="text-center text-gray-400">Loading music...</div>;
     }
@@ -75,13 +120,29 @@ const MusicWidget = () => {
       if (error.status === 401) {
         return (
           <div className="text-center">
-            <p className="mb-4">Connect your Spotify account to see your music.</p>
+            <p className={`mb-4 ${isSmallViewport ? 'text-sm' : ''}`}>
+              {isMobile ? '连接你的Spotify账户来查看音乐' : 'Connect your Spotify account to see your music.'}
+            </p>
+            {isMobile && (
+              <p className="text-xs text-gray-400 mb-3">
+                📱 移动端提示：点击下方按钮将在新窗口中打开Spotify登录页面
+              </p>
+            )}
             <a
               href="/api/spotify/login"
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors"
+              className={`bg-green-500 hover:bg-green-600 text-white font-bold transition-colors rounded ${
+                isSmallViewport ? 'py-3 px-6 text-sm' : 'py-2 px-4'
+              }`}
+              target={isMobile ? '_blank' : '_self'}
+              rel={isMobile ? 'noopener noreferrer' : undefined}
             >
-              Connect Spotify
+              {isMobile ? '🎵 连接Spotify' : 'Connect Spotify'}
             </a>
+            {isMobile && (
+              <p className="text-xs text-gray-500 mt-2">
+                完成登录后请返回此页面
+              </p>
+            )}
           </div>
         );
       }

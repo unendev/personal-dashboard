@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-const MOCK_USER_ID = 'user-1'; // 替换为实际的用户认证
+// TODO: 替换为实际的用户认证，从会话或上下文中获取用户ID
+function getUserId() {
+  // 假设从某个会话或上下文中获取用户ID
+  // 目前仍然使用硬编码的ID进行开发和测试
+  return 'user-1';
+}
 
 export async function GET() {
   try {
+    const userId = getUserId(); // 获取用户ID
     const userLayout = await prisma.userLayout.findUnique({
-      where: { userId: MOCK_USER_ID },
+      where: { userId: userId },
     });
     return NextResponse.json(userLayout ? userLayout.layoutConfig : {}); // 返回一个空对象而不是 null
   } catch (error) {
@@ -18,12 +24,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const layoutConfig = await request.json();
+    const userId = getUserId(); // 获取用户ID
 
     const userLayout = await prisma.userLayout.upsert({
-      where: { userId: MOCK_USER_ID },
+      where: { userId: userId },
       update: { layoutConfig: layoutConfig },
       create: {
-        userId: MOCK_USER_ID,
+        userId: userId,
         layoutConfig: layoutConfig,
       },
     });

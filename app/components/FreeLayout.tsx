@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FreeLayoutProps, LayoutConfig, Position, Size } from '@/types/layout';
 import DraggableWidget from './DraggableWidget';
 import AdaptiveGrid from './AdaptiveGrid';
@@ -47,15 +47,17 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
 
   useEffect(() => {
     const childCount = React.Children.count(children);
-    if (childCount > 0 && (!initialLayoutConfig || Object.keys(initialLayoutConfig).length === 0)) {
+    // 只有在编辑模式下且没有保存的布局时才生成默认配置
+    if (childCount > 0 && isEditing && !hasSavedLayout) {
       const defaultConfig = getDefaultConfig(childCount);
-      if (isEditing) {
-        setTimeout(() => {
-          onLayoutChangeRef.current?.(defaultConfig);
-        }, 0);
-      }
+      // 延迟执行以避免状态竞争
+      const timer = setTimeout(() => {
+        onLayoutChangeRef.current?.(defaultConfig);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [children, initialLayoutConfig, getDefaultConfig, isEditing]);
+  }, [children, hasSavedLayout, getDefaultConfig, isEditing]);
 
   const handleWidgetMove = useCallback((id: string, position: Position) => {
     if (currentLayoutConfig) {
@@ -88,13 +90,25 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
   }, [currentLayoutConfig]);
 
   // 根据是否有保存的布局配置来决定显示方式
-  const hasSavedLayout = Object.keys(currentLayoutConfig).length > 0 && Object.keys(currentLayoutConfig).some(id => {
-    const config = currentLayoutConfig[id];
-    return config && (config.position.x > 0 || config.position.y > 0);
-  });
+  const hasSavedLayout = useMemo(() => {
+    // 检查是否有有效的布局配置
+    if (!currentLayoutConfig || Object.keys(currentLayoutConfig).length === 0) {
+      return false;
+    }
+    
+    // 检查至少有一个组件有明确的布局信息
+    return Object.values(currentLayoutConfig).some(config => {
+      return config && 
+             config.position && 
+             config.size && 
+             (config.position.x !== undefined && config.position.y !== undefined) &&
+             (config.size.width !== undefined && config.size.height !== undefined);
+    });
+  }, [currentLayoutConfig]);
 
   if (!isEditing && hasSavedLayout) {
     // 有保存的布局时，使用自由布局显示
+    console.log('Rendering with saved layout:', currentLayoutConfig); // 调试日志
     return (
       <div className="free-layout-canvas">
         {React.Children.map(children, (child, index) => {
@@ -102,7 +116,8 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
             const id = child.key?.toString() || `widget-${index}`;
             const config = currentLayoutConfig[id];
 
-            if (!config) {
+            if (!config || !config.position || !config.size) {
+              console.warn(`No valid config found for widget ${id}`); // 调试日志
               return null;
             }
 
@@ -115,7 +130,7 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
                 onMove={handleWidgetMove}
                 onResize={handleWidgetResize}
                 isEditing={false}
-                zIndex={config.zIndex}
+                zIndex={config.zIndex || 1}
               >
                 {child}
               </DraggableWidget>
@@ -129,6 +144,7 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
 
   if (!isEditing) {
     // 没有保存的布局时，使用网格布局
+    console.log('Rendering with grid layout (no saved layout)'); // 调试日志
     return (
       <div className="layout-container">
         <AdaptiveGrid

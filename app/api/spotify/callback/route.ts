@@ -5,6 +5,10 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
+  // 检测是否为移动设备
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
   const homeUrl = new URL('/', request.url);
 
   if (error) {
@@ -62,6 +66,13 @@ export async function GET(request: NextRequest) {
     
     console.log('Received Refresh Token:', refresh_token);
 
+    // 为移动端添加成功提示参数
+    if (isMobile) {
+      homeUrl.searchParams.set('spotify_success', 'true');
+    }
+
+    console.log(`Spotify auth completed for ${isMobile ? 'mobile' : 'desktop'} device`);
+
     // 重定向回首页，并设置一个 cookie
     const responseRedirect = NextResponse.redirect(homeUrl);
     responseRedirect.cookies.set('spotify_refresh_token', refresh_token, {
@@ -69,6 +80,7 @@ export async function GET(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production', // 仅在生产环境中使用 secure cookie
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 天
+      sameSite: isMobile ? 'none' : 'lax', // 移动端需要更宽松的SameSite设置
     });
 
     return responseRedirect;
