@@ -18,7 +18,11 @@ interface Category {
   subcategories: string[];
 }
 
-const LogCategorySelector: React.FC = () => {
+interface LogCategorySelectorProps {
+  onLogSaved?: () => void; // 添加一个新的 prop
+}
+
+const LogCategorySelector: React.FC<LogCategorySelectorProps> = ({ onLogSaved }) => { // 接收 prop
   const [categories, setCategories] = useState<Category[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedLog, setSelectedLog] = useState<{ category: string; subcategory: string; content: string }> ({
@@ -66,6 +70,9 @@ const LogCategorySelector: React.FC = () => {
 
       setShowDialog(false);
       setSelectedLog({ category: '', subcategory: '', content: '' }); // 重置
+      if (onLogSaved) {
+        onLogSaved();
+      }
     } catch (error) {
       console.error('保存日志失败:', error);
       // TODO: 可以显示一个错误提示给用户

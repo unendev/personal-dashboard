@@ -33,3 +33,28 @@ export async function POST(request: Request) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    const jsonDirectory = path.join(process.cwd(), 'data');
+    const filePath = jsonDirectory + '/logs.json';
+
+    let existingLogs: any[] = [];
+    try {
+      const fileContents = await fs.readFile(filePath, 'utf8');
+      existingLogs = JSON.parse(fileContents);
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        // 文件不存在，返回空数组
+        existingLogs = [];
+      } else {
+        console.error('Failed to read logs:', readError);
+        return new NextResponse('Internal Server Error', { status: 500 });
+      }
+    }
+    return NextResponse.json(existingLogs);
+  } catch (error) {
+    console.error('Failed to get logs:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}

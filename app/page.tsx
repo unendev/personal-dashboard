@@ -6,6 +6,7 @@ import MusicWidget from './components/MusicWidget';
 import BiliUserManager from './components/BiliUserManager';
 import LinuxDoWidget from './components/LinuxDoWidget';
 import FreeLayout from './components/FreeLayout';
+import LogDisplayTable from './components/LogDisplayTable'; // 引入 LogDisplayTable
 import { DailyHealthData } from '@/types/health-data';
 import { LayoutConfig } from '@/types/layout';
 import React, { useState, useEffect } from 'react';
@@ -152,6 +153,11 @@ export default function Home() {
           {showBiliManager && (
             <BiliUserManager key="bili-manager" />
           )}
+
+          {/* 日志显示表格 */}
+          <div key="log-table" className="glass-effect rounded-2xl p-6 hover-lift">
+            <LogDisplayTable />
+          </div>
         </FreeLayout>
       </div>
     </main>

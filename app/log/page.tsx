@@ -1,35 +1,15 @@
-import { prisma } from '@/lib/prisma'
-import CreateLogForm from '@/app/components/CreateLogForm'
-import LogCard from '@/app/components/LogCard'
-import fs from 'fs/promises';
-import path from 'path';
 import LogCategorySelector from '../components/LogCategorySelector';
+import LogDisplayTable from '../components/LogDisplayTable'; // 引入 LogDisplayTable
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
 
 export default async function LogPage() {
-  // 查询当前用户的所有日志，按创建时间倒序排列
-  const logs = await prisma.log.findMany({
-    where: { userId: MOCK_USER_ID },
-    include: {
-      quest: true, // 包含关联的任务信息
-    },
-    orderBy: { createdAt: 'desc' }
-  })
+  // 移除日志查询，因为 LogDisplayTable 会自己处理
+  // const logs = await prisma.log.findMany({ /* ... */ });
 
-  // 查询正在进行中的任务，用于日志表单的下拉菜单
-  const activeQuests = await prisma.quest.findMany({
-    where: {
-      userId: MOCK_USER_ID,
-      status: 'IN_PROGRESS'
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: { title: 'asc' }
-  })
+  // 移除任务查询，因为这里不需要了
+  // const activeQuests = await prisma.quest.findMany({ /* ... */ });
 
   return (
     <>
@@ -72,17 +52,7 @@ export default async function LogPage() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-lg font-semibold mb-4">日志历史</h2>
 
-            {logs.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">还没有日志记录，开始记录你的第一条日志吧！</p>
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {logs.map((log: any) => (
-                  <LogCard key={log.id} log={log} />
-                ))}
-              </div>
-            )}
+            <LogDisplayTable /> {/* 替换为 LogDisplayTable */}
           </div>
         </div>
       </div>

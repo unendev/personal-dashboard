@@ -36,10 +36,16 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Prisma local database
+prisma/dev.db
+
+# Local data not for VCS
+data/logs.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-个人门户网站imp.md
+*.md
 
 .vercel
