@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import { FreeLayoutProps, LayoutConfig, Position, Size } from '@/types/layout';
 import DraggableWidget from './DraggableWidget';
 import AdaptiveGrid from './AdaptiveGrid';
@@ -13,8 +13,8 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
 }) => {
   const onLayoutChangeRef = useRef(onLayoutChange);
 
-  // 确保 layoutConfig 始终是一个对象
-  const currentLayoutConfig = initialLayoutConfig || {};
+  // 确保 layoutConfig 始终是一个对象 - 使用 useMemo 来避免依赖问题
+  const currentLayoutConfig = useMemo(() => initialLayoutConfig || {}, [initialLayoutConfig]);
 
   // 更新ref以避免依赖问题
   useEffect(() => {
@@ -45,6 +45,23 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
     return config;
   }, [children]);
 
+  // 根据是否有保存的布局配置来决定显示方式
+  const hasSavedLayout = useMemo(() => {
+    // 检查是否有有效的布局配置
+    if (!currentLayoutConfig || Object.keys(currentLayoutConfig).length === 0) {
+      return false;
+    }
+    
+    // 检查至少有一个组件有明确的布局信息
+    return Object.values(currentLayoutConfig).some(config => {
+      return config && 
+             config.position && 
+             config.size && 
+             (config.position.x !== undefined && config.position.y !== undefined) &&
+             (config.size.width !== undefined && config.size.height !== undefined);
+    });
+  }, [currentLayoutConfig]);
+
   useEffect(() => {
     const childCount = React.Children.count(children);
     // 只有在编辑模式下且没有保存的布局时才生成默认配置
@@ -57,7 +74,7 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
       
       return () => clearTimeout(timer);
     }
-  }, [children, hasSavedLayout, getDefaultConfig, isEditing]);
+  }, [children, getDefaultConfig, isEditing, hasSavedLayout]);
 
   const handleWidgetMove = useCallback((id: string, position: Position) => {
     if (currentLayoutConfig) {
@@ -89,22 +106,7 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
     }
   }, [currentLayoutConfig]);
 
-  // 根据是否有保存的布局配置来决定显示方式
-  const hasSavedLayout = useMemo(() => {
-    // 检查是否有有效的布局配置
-    if (!currentLayoutConfig || Object.keys(currentLayoutConfig).length === 0) {
-      return false;
-    }
-    
-    // 检查至少有一个组件有明确的布局信息
-    return Object.values(currentLayoutConfig).some(config => {
-      return config && 
-             config.position && 
-             config.size && 
-             (config.position.x !== undefined && config.position.y !== undefined) &&
-             (config.size.width !== undefined && config.size.height !== undefined);
-    });
-  }, [currentLayoutConfig]);
+
 
   if (!isEditing && hasSavedLayout) {
     // 有保存的布局时，使用自由布局显示

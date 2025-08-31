@@ -9,7 +9,7 @@ type MusicCardProps = {
   source: string;
 };
 
-const MusicCard: React.FC<MusicCardProps> = ({ isPlaying, trackName, artist, album, albumArtUrl, source }) => {
+const MusicCard: React.FC<MusicCardProps> = ({ trackName, artist, album, albumArtUrl, source }) => {
 
   return (
     <div className="w-full max-w-sm p-4 rounded-lg shadow-lg bg-gray-800 text-white">

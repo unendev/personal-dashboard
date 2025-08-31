@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(homeUrl);
     }
 
-    const { access_token, refresh_token, expires_in } = data;
+    const { refresh_token } = data;
 
     // TODO: 任务 2.3 - 安全地存储 refresh_token
     // 这是一个非常重要的步骤，我们将在下一步实现它。

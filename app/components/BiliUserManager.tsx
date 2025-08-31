@@ -44,10 +44,10 @@ const BiliUserManager = () => {
         setNewUid('');
         setMessage('UP主添加成功！');
       } else {
-        const error = await response.json();
-        setMessage(`添加失败: ${error.error}`);
+        const errorData = await response.json();
+        setMessage(`添加失败: ${errorData.error}`);
       }
-    } catch (error) {
+    } catch {
       setMessage('添加失败，请检查网络连接');
     } finally {
       setLoading(false);

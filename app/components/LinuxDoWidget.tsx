@@ -7,7 +7,7 @@ const LinuxDoWidget = () => {
   const [report, setReport] = useState<LinuxDoReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedPosts, setExpandedPosts] = useState(false);
+  const [expandedPosts] = useState(false);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -156,7 +156,7 @@ const LinuxDoWidget = () => {
         </div>
 
         <div className="space-y-2">
-          {displayPosts.slice(0, 3).map((post, index) => (
+          {displayPosts.slice(0, 3).map((post) => (
             <a
               key={post.id}
               href={post.url}

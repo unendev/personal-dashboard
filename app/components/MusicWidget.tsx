@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import MusicCard from './MusicCard';
-import { isMobileDevice, isSmallScreen } from '@/lib/device-utils';
 
 // 定义 fetcher 函数，SWR 会用它来请求数据
 const fetcher = async (url: string) => {
@@ -29,23 +28,9 @@ const MusicWidget = () => {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
   const spotifySuccess = searchParams.get('spotify_success');
-  const effectRan = useRef(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isSmallViewport, setIsSmallViewport] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // 检测设备类型
-  useEffect(() => {
-    setIsMobile(isMobileDevice());
-    setIsSmallViewport(isSmallScreen());
-    
-    const handleResize = () => {
-      setIsSmallViewport(isSmallScreen());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+
+
 
   // 清理URL中的Spotify相关参数（如果有的话）
   useEffect(() => {

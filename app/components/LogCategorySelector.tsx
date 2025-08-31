@@ -1,17 +1,14 @@
 'use client'
 // components/LogCategorySelector.tsx
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'; // 假设你有一个Card组件库
-import { Button, ButtonProps } from '../components/ui/button'; // 假设你有一个Button组件库
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'; // 假设你有一个Dialog组件库
+import { Button } from '../components/ui/button'; // 假设你有一个Button组件库
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'; // 假设你有一个Dialog组件库
 import { Input } from '../components/ui/input'; // 假设你有一个Input组件库
 import { Textarea } from '../components/ui/textarea'; // 假设你有一个Textarea组件库
 // TODO: 确认Button组件的variant属性是否正确识别
 
-interface Subcategory {
-  name: string;
-}
+
 
 interface Category {
   category: string;
@@ -30,7 +27,7 @@ const LogCategorySelector: React.FC<LogCategorySelectorProps> = ({ onLogSaved })
     subcategory: '',
     content: '',
   });
-  const router = useRouter();
+
 
   useEffect(() => {
     // 异步加载分类数据

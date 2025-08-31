@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createLog } from '@/app/actions'
-import { useSearchParams } from 'next/navigation'
 
 // 移除未使用的 Quest 接口
 
@@ -41,49 +40,14 @@ const initialPresetCategories = [
 
 export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */) {
   const [isLoading, setIsLoading] = useState(false)
-  const searchParams = useSearchParams()
-  const urlCategory = searchParams.get('category')
-  const urlSubcategory = searchParams.get('subcategory')
+  // 移除 useSearchParams 以避免 Suspense 边界问题
+  // const searchParams = useSearchParams()
+  // const urlCategory = searchParams.get('category')
+  // const urlSubcategory = searchParams.get('subcategory')
 
-  const [categories, setCategories] = useState<LogCategory[]>(() => {
-    if (urlCategory && urlSubcategory) {
-      return [
-        {
-          name: urlCategory,
-          subCategories: [
-            {
-              name: urlSubcategory,
-              activities: [
-                { name: '', duration: '' },
-              ],
-            },
-          ],
-        },
-      ];
-    } else {
-      return initialPresetCategories;
-    }
-  });
+  const [categories, setCategories] = useState<LogCategory[]>(initialPresetCategories);
 
-  useEffect(() => {
-    if (urlCategory && urlSubcategory) {
-      setCategories([
-        {
-          name: urlCategory,
-          subCategories: [
-            {
-              name: urlSubcategory,
-              activities: [
-                { name: '', duration: '' },
-              ],
-            },
-          ],
-        },
-      ]);
-    } else {
-      setCategories(initialPresetCategories);
-    }
-  }, [urlCategory, urlSubcategory]);
+  // 移除了 URL 参数依赖的 useEffect 以避免 Suspense 问题
 
   // 处理分类、子分类、活动名称和时长的改变
   const handleCategoryChange = (catIndex: number, newName: string) => {

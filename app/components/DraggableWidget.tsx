@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { DraggableWidgetProps, Position, Size } from '@/types/layout';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { DraggableWidgetProps } from '@/types/layout';
 
 const DraggableWidget: React.FC<DraggableWidgetProps> = ({
   id,
@@ -45,7 +45,7 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     e.preventDefault();
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging) {
       const newPosition = {
         x: e.clientX - dragStart.x,
@@ -57,9 +57,9 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({
       const newHeight = Math.max(150, resizeStart.height + (e.clientY - resizeStart.y));
       setCurrentSize({ width: newWidth, height: newHeight });
     }
-  };
+  }, [isDragging, isResizing, dragStart.x, dragStart.y, resizeStart.width, resizeStart.height, resizeStart.x, resizeStart.y]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
       onMove?.(id, currentPosition);
@@ -67,7 +67,7 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({
       setIsResizing(false);
       onResize?.(id, currentSize);
     }
-  };
+  }, [isDragging, isResizing, id, currentPosition, currentSize, onMove, onResize]);
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     if (!isEditing) return;
@@ -98,7 +98,7 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         document.body.style.userSelect = '';
       };
     }
-  }, [isDragging, isResizing]);
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
 
   const widgetStyle: React.CSSProperties = {
     position: 'absolute',

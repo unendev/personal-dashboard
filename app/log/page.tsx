@@ -2,17 +2,18 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma'
 import CreateLogForm from '@/app/components/CreateLogForm'
 import LogCard from '@/app/components/LogCard'
+import type { Log } from '@prisma/client'
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
 
 export default async function LogPage() {
   // 查询进行中的任务用于下拉选择
-  const activeQuests = await prisma.quest.findMany({
-    where: { userId: MOCK_USER_ID, status: 'IN_PROGRESS' },
-    select: { id: true, title: true },
-    orderBy: { createdAt: 'desc' }
-  })
+  // const activeQuests = await prisma.quest.findMany({
+  //   where: { userId: MOCK_USER_ID, status: 'IN_PROGRESS' },
+  //   select: { id: true, title: true },
+  //   orderBy: { createdAt: 'desc' }
+  // })
 
   // 查询日志，按时间倒序，并包含嵌套分类与任务信息
   const logs = await prisma.log.findMany({
@@ -64,7 +65,7 @@ export default async function LogPage() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-              <CreateLogForm activeQuests={activeQuests} />
+              <CreateLogForm />
             </div>
           </div>
 
@@ -77,7 +78,7 @@ export default async function LogPage() {
               ) : (
                 <div className="space-y-4">
                   {logs.map((log) => (
-                    <LogCard key={log.id} log={log as any} />
+                    <LogCard key={log.id} log={log} />
                   ))}
                 </div>
               )}
