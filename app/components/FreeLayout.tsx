@@ -45,18 +45,17 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
     return config;
   }, [children]);
 
-  // 移除这个 useEffect，FreeLayout 应该完全受控于 initialLayoutConfig prop
-  // useEffect(() => {
-  //   const childCount = React.Children.count(children);
-  //   if (childCount > 0 && (!initialLayoutConfig || Object.keys(currentLayoutConfig).length === 0)) {
-  //     const defaultConfig = getDefaultConfig(childCount);
-  //     if (isEditing) {
-  //       setTimeout(() => {
-  //         onLayoutChangeRef.current?.(defaultConfig);
-  //       }, 0);
-  //     }
-  //   }
-  // }, [children, initialLayoutConfig, getDefaultConfig, isEditing, currentLayoutConfig]);
+  useEffect(() => {
+    const childCount = React.Children.count(children);
+    if (childCount > 0 && (!initialLayoutConfig || Object.keys(initialLayoutConfig).length === 0)) {
+      const defaultConfig = getDefaultConfig(childCount);
+      if (isEditing) {
+        setTimeout(() => {
+          onLayoutChangeRef.current?.(defaultConfig);
+        }, 0);
+      }
+    }
+  }, [children, initialLayoutConfig, getDefaultConfig, isEditing]);
 
   const handleWidgetMove = useCallback((id: string, position: Position) => {
     if (currentLayoutConfig) {
@@ -89,7 +88,10 @@ const FreeLayout: React.FC<FreeLayoutProps> = ({
   }, [currentLayoutConfig]);
 
   // 根据是否有保存的布局配置来决定显示方式
-  const hasSavedLayout = Object.keys(currentLayoutConfig).length > 0 && Object.keys(currentLayoutConfig).some(id => currentLayoutConfig[id].position.x > 0 || currentLayoutConfig[id].position.y > 0);
+  const hasSavedLayout = Object.keys(currentLayoutConfig).length > 0 && Object.keys(currentLayoutConfig).some(id => {
+    const config = currentLayoutConfig[id];
+    return config && (config.position.x > 0 || config.position.y > 0);
+  });
 
   if (!isEditing && hasSavedLayout) {
     // 有保存的布局时，使用自由布局显示

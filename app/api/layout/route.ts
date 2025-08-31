@@ -8,7 +8,7 @@ export async function GET() {
     const userLayout = await prisma.userLayout.findUnique({
       where: { userId: MOCK_USER_ID },
     });
-    return NextResponse.json(userLayout ? userLayout.layoutConfig : null);
+    return NextResponse.json(userLayout ? userLayout.layoutConfig : {}); // 返回一个空对象而不是 null
   } catch (error) {
     console.error('Error fetching layout:', error);
     return NextResponse.json({ message: 'Failed to fetch layout' }, { status: 500 });
