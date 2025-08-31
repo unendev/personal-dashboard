@@ -1,16 +1,36 @@
-import LogCategorySelector from '../components/LogCategorySelector';
-import LogDisplayTable from '../components/LogDisplayTable'; // 引入 LogDisplayTable
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma'
+import CreateLogForm from '@/app/components/CreateLogForm'
+import LogCard from '@/app/components/LogCard'
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
 
 export default async function LogPage() {
-  // 移除日志查询，因为 LogDisplayTable 会自己处理
-  // const logs = await prisma.log.findMany({ /* ... */ });
+  // 查询进行中的任务用于下拉选择
+  const activeQuests = await prisma.quest.findMany({
+    where: { userId: MOCK_USER_ID, status: 'IN_PROGRESS' },
+    select: { id: true, title: true },
+    orderBy: { createdAt: 'desc' }
+  })
 
-  // 移除任务查询，因为这里不需要了
-  // const activeQuests = await prisma.quest.findMany({ /* ... */ });
+  // 查询日志，按时间倒序，并包含嵌套分类与任务信息
+  const logs = await prisma.log.findMany({
+    where: { userId: MOCK_USER_ID },
+    include: {
+      quest: { select: { id: true, title: true } },
+      categories: {
+        include: {
+          subCategories: {
+            include: {
+              activities: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { timestamp: 'desc' },
+  })
 
   return (
     <>
@@ -39,25 +59,32 @@ export default async function LogPage() {
           <p className="text-gray-600">记录你的日常活动和进步</p>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 日志输入区域 */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-            <LogCategorySelector />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 日志输入区域 */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
+              <CreateLogForm activeQuests={activeQuests} />
+            </div>
           </div>
-        </div>
 
-        {/* 日志列表区域 */}
-        <div className="lg:col-span-3 mt-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">日志历史</h2>
-
-            <LogDisplayTable /> {/* 替换为 LogDisplayTable */}
+          {/* 日志列表区域 */}
+          <div className="lg:col-span-3 mt-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold mb-4">日志历史</h2>
+              {logs.length === 0 ? (
+                <p className="text-gray-500 text-sm">暂无日志记录</p>
+              ) : (
+                <div className="space-y-4">
+                  {logs.map((log) => (
+                    <LogCard key={log.id} log={log as any} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   )
 }

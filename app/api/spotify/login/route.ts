@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Spotify 登录路由
+ * 注意：现在主要用于一次性获取 refresh token
+ * 个人网站建议直接在环境变量中配置 SPOTIFY_REFRESH_TOKEN
+ */
 export async function GET(request: NextRequest) {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI;

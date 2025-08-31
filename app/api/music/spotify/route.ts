@@ -39,12 +39,12 @@ async function getAccessToken(refreshToken: string) {
 
 // API 路由的主处理函数
 export async function GET(request: NextRequest) {
-  // 1. 从 cookie 中读取 refresh_token
-  const refreshToken = request.cookies.get('spotify_refresh_token')?.value;
+  // 1. 从环境变量或cookie中读取 refresh_token（优先使用环境变量）
+  //const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN || request.cookies.get('spotify_refresh_token')?.value;
 
   if (!refreshToken) {
     return NextResponse.json(
-      { error: 'Spotify refresh token not found. Please authorize.' },
+      { error: 'Spotify refresh token not configured. Please set SPOTIFY_REFRESH_TOKEN environment variable.' },
       { status: 401 }
     );
   }

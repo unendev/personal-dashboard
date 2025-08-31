@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Spotify OAuth 回调处理
+ * 注意：现在主要用于一次性获取 refresh token
+ * 获取到的 refresh token 可以复制到环境变量 SPOTIFY_REFRESH_TOKEN 中
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
@@ -65,6 +70,7 @@ export async function GET(request: NextRequest) {
     // 注意：在生产环境中，cookie 可能不是最安全的选择。
     
     console.log('Received Refresh Token:', refresh_token);
+    console.log('💡 提示：请将这个 refresh token 设置到 Vercel 环境变量 SPOTIFY_REFRESH_TOKEN 中');
 
     // 为移动端添加成功提示参数
     if (isMobile) {

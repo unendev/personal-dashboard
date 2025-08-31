@@ -34,25 +34,10 @@ const MusicWidget = () => {
   const [isSmallViewport, setIsSmallViewport] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // 检测设备类型和处理成功消息
+  // 检测设备类型
   useEffect(() => {
     setIsMobile(isMobileDevice());
     setIsSmallViewport(isSmallScreen());
-    
-    // 处理移动端认证成功消息
-    if (spotifySuccess && isMobileDevice()) {
-      setShowSuccessMessage(true);
-      // 3秒后隐藏成功消息
-      const timer = setTimeout(() => {
-        setShowSuccessMessage(false);
-        // 清理URL参数
-        const url = new URL(window.location.href);
-        url.searchParams.delete('spotify_success');
-        window.history.replaceState({}, '', url.toString());
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
     
     const handleResize = () => {
       setIsSmallViewport(isSmallScreen());
@@ -60,34 +45,18 @@ const MusicWidget = () => {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [spotifySuccess]);
+  }, []);
 
+  // 清理URL中的Spotify相关参数（如果有的话）
   useEffect(() => {
-    // 定义一个异步函数来处理回调逻辑
-    const handleCallback = async () => {
-      if (code && !effectRan.current) {
-        effectRan.current = true; // 立即将 ref 设置为 true，防止重复执行
-        try {
-          const res = await fetch(`/api/spotify/callback?code=${code}`);
-          if (res.ok) {
-            // 成功后，重定向到干净的 URL 并刷新数据
-            // 使用 replaceState 来避免在历史记录中留下带 code 的 URL
-            window.history.replaceState({}, '', '/');
-            // 可以在这里触发 SWR 的重新验证，而不是完全重载页面
-            // mutate('/api/music/spotify');
-            window.location.reload(); // 或者简单地重载页面来刷新所有状态
-          } else {
-            console.error('Spotify callback failed', await res.text());
-          }
-        } catch (error) {
-          console.error('Error during Spotify callback fetch:', error);
-        }
-      }
-    };
-
-    handleCallback();
-    // 依赖项数组保持不变
-  }, [code]);
+    if (code || spotifySuccess) {
+      // 清理URL参数
+      const url = new URL(window.location.href);
+      url.searchParams.delete('code');
+      url.searchParams.delete('spotify_success');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [code, spotifySuccess]);
 
   // 使用 useSWR hook 来获取数据
   const { data, error, isLoading } = useSWR('/api/music/spotify', fetcher, {
@@ -99,50 +68,22 @@ const MusicWidget = () => {
   });
 
   const renderContent = () => {
-    // 显示移动端认证成功消息
-    if (showSuccessMessage) {
-      return (
-        <div className="text-center">
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            🎉 Spotify连接成功！
-          </div>
-          <div className="text-gray-400">正在加载你的音乐...</div>
-        </div>
-      );
-    }
-
     if (isLoading) {
       return <div className="text-center text-gray-400">Loading music...</div>;
     }
 
     if (error) {
-      // 如果是我们定义的 401 未授权错误，则显示连接按钮
+      // 如果是我们定义的 401 未授权错误，显示配置提示
       if (error.status === 401) {
         return (
           <div className="text-center">
-            <p className={`mb-4 ${isSmallViewport ? 'text-sm' : ''}`}>
-              {isMobile ? '连接你的Spotify账户来查看音乐' : 'Connect your Spotify account to see your music.'}
+            <div className="text-yellow-600 mb-2">⚠️</div>
+            <p className="text-sm text-gray-600 mb-2">
+              Spotify配置未完成
             </p>
-            {isMobile && (
-              <p className="text-xs text-gray-400 mb-3">
-                📱 移动端提示：点击下方按钮将在新窗口中打开Spotify登录页面
-              </p>
-            )}
-            <a
-              href="/api/spotify/login"
-              className={`bg-green-500 hover:bg-green-600 text-white font-bold transition-colors rounded ${
-                isSmallViewport ? 'py-3 px-6 text-sm' : 'py-2 px-4'
-              }`}
-              target={isMobile ? '_blank' : '_self'}
-              rel={isMobile ? 'noopener noreferrer' : undefined}
-            >
-              {isMobile ? '🎵 连接Spotify' : 'Connect Spotify'}
-            </a>
-            {isMobile && (
-              <p className="text-xs text-gray-500 mt-2">
-                完成登录后请返回此页面
-              </p>
-            )}
+            <p className="text-xs text-gray-500">
+              请在环境变量中设置 SPOTIFY_REFRESH_TOKEN
+            </p>
           </div>
         );
       }
