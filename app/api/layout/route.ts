@@ -26,6 +26,17 @@ export async function POST(request: Request) {
     const layoutConfig = await request.json();
     const userId = getUserId(); // 获取用户ID
 
+    // 确保用户存在，如果不存在则创建
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {}, // 如果存在，不更新任何字段
+      create: {
+        id: userId,
+        email: `${userId}@localhost.local`, // 为硬编码用户提供默认邮箱
+        name: `User ${userId}`,
+      },
+    });
+
     const userLayout = await prisma.userLayout.upsert({
       where: { userId: userId },
       update: { layoutConfig: layoutConfig },
