@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma'
-import CreateLogForm from '@/app/components/CreateLogForm'
+import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
 import type { Log } from '@prisma/client'
 
@@ -65,7 +65,7 @@ export default async function LogPage() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-              <CreateLogForm />
+              <CreateLogFormWithCards />
             </div>
           </div>
 
