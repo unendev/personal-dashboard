@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Input } from './ui/input';
 
 type CategoryNode = {
   name: string;
@@ -10,18 +12,15 @@ type CategoryNode = {
 };
 
 interface CategorySelectorProps {
-  onSelected: (classificationPath: string) => void;
+  onSelected: (classificationPath: string, taskName: string) => void;
   className?: string;
-}
-
-function buildPath(parent: string | null, current: string): string {
-  return parent ? `${parent}/${current}` : current;
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, className }) => {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
-  const [selectedTop, setSelectedTop] = useState<string | null>(null);
-  const [selectedMid, setSelectedMid] = useState<string | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedPath, setSelectedPath] = useState<string>('');
+  const [taskName, setTaskName] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -36,114 +35,112 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, classNa
     load();
   }, []);
 
-  const topList = categories;
-  const midList = useMemo(() => {
-    if (!selectedTop) return [] as CategoryNode[];
-    const top = categories.find(c => c.name === selectedTop);
-    return top?.children ?? [];
-  }, [categories, selectedTop]);
-
-  const leafList = useMemo(() => {
-    if (!selectedTop) return [] as CategoryNode[];
-    if (!selectedMid) return [] as CategoryNode[];
-    const top = categories.find(c => c.name === selectedTop);
-    const mid = top?.children?.find(c => c.name === selectedMid);
-    return mid?.children ?? [];
-  }, [categories, selectedTop, selectedMid]);
-
-  const handleSelectTop = (name: string) => {
-    setSelectedTop(name);
-    setSelectedMid(null);
+  const handleSubCategoryClick = (topName: string, midName: string, subName: string) => {
+    const path = `${topName}/${midName}/${subName}`;
+    setSelectedPath(path);
+    setShowDialog(true);
   };
 
-  const handleSelectMid = (name: string) => {
-    setSelectedMid(name);
-    const topPath = buildPath(null, selectedTop as string);
-    const midPath = buildPath(topPath, name);
-
-    // 使用当前点击的中类名称直接计算是否有子类，避免使用可能滞后的 leafList
-    const top = categories.find(c => c.name === selectedTop);
-    const mid = top?.children?.find(c => c.name === name);
-    const hasLeaf = (mid?.children?.length ?? 0) > 0;
-    if (!hasLeaf) onSelected(midPath);
+  const handleSubmit = () => {
+    if (taskName.trim()) {
+      onSelected(selectedPath, taskName.trim());
+      setShowDialog(false);
+      setTaskName('');
+      setSelectedPath('');
+    }
   };
 
-  const handleSelectLeaf = (name: string) => {
-    const topPath = buildPath(null, selectedTop as string);
-    const midPath = buildPath(topPath, selectedMid as string);
-    const leafPath = buildPath(midPath, name);
-    onSelected(leafPath);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
   };
 
   return (
     <div className={className}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>选择大类</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {topList.map(item => (
-                <Button
-                  key={item.name}
-                  variant={selectedTop === item.name ? 'default' : 'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => handleSelectTop(item.name)}
-                >
-                  {item.name}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>选择中类</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {midList.length === 0 && (
-                <div className="text-sm text-muted-foreground">请选择大类</div>
-              )}
-              {midList.map(item => (
-                <Button
-                  key={item.name}
-                  variant={selectedMid === item.name ? 'default' : 'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => handleSelectMid(item.name)}
-                >
-                  {item.name}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>选择子类</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {selectedMid && leafList.length === 0 && (
-                <div className="text-sm text-muted-foreground">此中类无子类，已可直接创建任务</div>
-              )}
-              {leafList.map(item => (
-                <Button
-                  key={item.name}
-                  variant={'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => handleSelectLeaf(item.name)}
-                >
-                  {item.name}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* 4个大类卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {categories.map((topCategory) => (
+          <Card key={topCategory.name} className="shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+              <CardTitle className="text-lg font-bold text-gray-800">
+                {topCategory.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {/* 中类卡片 */}
+              <div className="grid grid-cols-1 gap-3">
+                {topCategory.children?.map((midCategory) => (
+                  <Card key={midCategory.name} className="border border-gray-200 hover:border-blue-300 transition-colors">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold text-gray-700">
+                        {midCategory.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {/* 子类按钮 */}
+                      <div className="flex flex-wrap gap-2">
+                        {midCategory.children?.map((subCategory) => (
+                          <Button
+                            key={subCategory.name}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs hover:bg-blue-50 hover:border-blue-300"
+                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
+                          >
+                            {subCategory.name}
+                          </Button>
+                        ))}
+                        {/* 如果中类没有子类，显示一个通用按钮 */}
+                        {(!midCategory.children || midCategory.children.length === 0) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs hover:bg-blue-50 hover:border-blue-300"
+                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
+                          >
+                            直接创建任务
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* 输入任务名称的弹框 */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建任务</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600 mb-3">
+              在 <span className="font-medium text-blue-600">{selectedPath}</span> 下创建任务
+            </p>
+            <Input
+              value={taskName}
+              onChange={(e) => setTaskName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入具体事物名称..."
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSubmit} disabled={!taskName.trim()}>
+              创建并开始
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

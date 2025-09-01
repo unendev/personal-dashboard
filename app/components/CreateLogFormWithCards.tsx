@@ -19,6 +19,11 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState('');
 
+  const handleCategorySelected = (path: string, name: string) => {
+    setSelectedPath(path);
+    setTaskName(name);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPath || !taskName) {
@@ -73,10 +78,10 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
           <CardTitle>选择分类</CardTitle>
         </CardHeader>
         <CardContent>
-          <CategorySelector 
-            onSelected={setSelectedPath}
-            className="mb-4"
-          />
+                     <CategorySelector 
+             onSelected={handleCategorySelected}
+             className="mb-4"
+           />
           {selectedPath && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
               <p className="text-green-800 text-sm">
