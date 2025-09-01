@@ -1,15 +1,106 @@
 [
   {
-    "category": "工作",
-    "subcategories": ["项目A", "任务B", "会议C"]
+    "name": "价值投资 (Investment)",
+    "children": [
+      {
+        "name": "核心工作 (Core Work)",
+        "children": [
+          { "name": "项目A" },
+          { "name": "项目B" },
+          { "name": "管理沟通" }
+        ]
+      },
+      {
+        "name": "技能学习 (Skill Up)",
+        "children": [
+          { "name": "专业阅读" },
+          { "name": "线上课程" },
+          { "name": "刻意练习" }
+        ]
+      },
+      {
+        "name": "深度思考 (Deep Thinking)",
+        "children": [
+          { "name": "复盘规划" },
+          { "name": "创作构思" }
+        ]
+      },
+      {
+        "name": "灵感源泉 (Inspiration)",
+        "children": [
+          { "name": "影视" },
+          { "name": "阅读" },
+          { "name": "游戏" }
+        ]
+      }
+    ]
   },
   {
-    "category": "学习",
-    "subcategories": ["前端技术", "后端技术", "算法"]
+    "name": "精力补充 (Replenishment)",
+    "children": [
+      {
+        "name": "纯粹娱乐 (Pure Fun)",
+        "children": [
+          { "name": "影视" },
+          { "name": "阅读" },
+          { "name": "游戏" }
+        ]
+      },
+      {
+        "name": "身体锻炼 (Exercise)",
+        "children": [
+          { "name": "有氧" },
+          { "name": "无氧" },
+          { "name": "游戏化运动（节奏光剑）" }
+        ]
+      },
+      {
+        "name": "社交连接 (Social)",
+        "children": [
+          { "name": "朋友" },
+          { "name": "家人" }
+        ]
+      }
+    ]
   },
   {
-    "category": "生活",
-    "subcategories": ["购物", "健身", "娱乐"]
+    "name": "系统维持 (Maintenance)",
+    "children": [
+      {
+        "name": "日常琐事 (Daily Chores)",
+        "children": [
+          { "name": "通勤" },
+          { "name": "家务" }
+        ]
+      },
+      {
+        "name": "事务性工作 (Admin Work)",
+        "children": [
+          { "name": "邮件处理" },
+          { "name": "流程性任务" }
+        ]
+      },
+      {
+        "name": "信息处理 (Info Processing)",
+        "children": [
+          { "name": "新闻浏览" },
+          { "name": "社区冲浪" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "时间黑洞 (Time Sink)",
+    "children": [
+      {
+        "name": "无效冲浪 (Mindless Browsing)",
+        "children": []
+      },
+      {
+        "name": "拖延等待 (Procrastination)",
+        "children": []
+      }
+    ]
   }
 ]
 
