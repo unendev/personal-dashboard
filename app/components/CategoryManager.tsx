@@ -103,6 +103,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
     if (!deleteTarget) return;
     
     try {
+      console.log('Sending delete request:', deleteTarget);
+      
       const response = await fetch('/api/log-categories', {
         method: 'DELETE',
         headers: {
@@ -111,17 +113,23 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
         body: JSON.stringify(deleteTarget),
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log('Delete result:', result);
         setCategories(result.categories);
         setShowDeleteConfirm(false);
         setDeleteTarget(null);
       } else {
-        throw new Error('删除失败');
+        const errorText = await response.text();
+        console.error('Delete failed with status:', response.status, 'Error:', errorText);
+        throw new Error(`删除失败: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('删除分类失败:', error);
-      alert('删除失败，请重试');
+      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 

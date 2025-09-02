@@ -96,20 +96,56 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { type, path: categoryPath, name } = await request.json() as DeleteRequest;
+    const body = await request.json();
+    console.log('DELETE request body:', body);
+    
+    const { type, path: categoryPath, name } = body as DeleteRequest;
+    
+    if (!type || !name) {
+      console.error('Missing required fields:', { type, name });
+      return new NextResponse('Missing required fields', { status: 400 });
+    }
     
     const jsonDirectory = path.join(process.cwd(), 'data');
     const filePath = jsonDirectory + '/log-categories.json';
-    const fileContents = await fs.readFile(filePath, 'utf8');
-    const categories = JSON.parse(fileContents) as CategoryNode[];
+    
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      console.error('File does not exist:', filePath);
+      return new NextResponse('Categories file not found', { status: 404 });
+    }
+    
+    // Read file with error handling
+    let fileContents: string;
+    try {
+      fileContents = await fs.readFile(filePath, 'utf8');
+    } catch (error) {
+      console.error('Failed to read file:', error);
+      return new NextResponse('Failed to read categories file', { status: 500 });
+    }
+    
+    let categories: CategoryNode[];
+    try {
+      categories = JSON.parse(fileContents) as CategoryNode[];
+    } catch (error) {
+      console.error('Failed to parse JSON:', error);
+      return new NextResponse('Invalid JSON in categories file', { status: 500 });
+    }
+    
+    console.log('Current categories:', JSON.stringify(categories, null, 2));
+    console.log('Delete request:', { type, categoryPath, name });
     
     let updatedCategories: CategoryNode[] = [...categories];
     
     if (type === 'top') {
       // Delete top-level category
+      console.log('Deleting top-level category:', name);
       updatedCategories = categories.filter((cat: CategoryNode) => cat.name !== name);
     } else if (type === 'mid') {
       // Delete mid-level category - categoryPath is the top category name
+      console.log('Deleting mid-level category:', { categoryPath, name });
       updatedCategories = categories.map((cat: CategoryNode) => {
         if (cat.name === categoryPath) {
           return {
@@ -122,6 +158,7 @@ export async function DELETE(request: Request) {
     } else if (type === 'sub') {
       // Delete sub-level category - categoryPath is "topName/midName"
       const [topName, midName] = categoryPath.split('/');
+      console.log('Deleting sub-level category:', { topName, midName, name });
       updatedCategories = categories.map((cat: CategoryNode) => {
         if (cat.name === topName) {
           return {
@@ -139,14 +176,24 @@ export async function DELETE(request: Request) {
         }
         return cat;
       });
+    } else {
+      console.error('Invalid delete type:', type);
+      return new NextResponse('Invalid delete type', { status: 400 });
     }
     
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(updatedCategories, null, 2), 'utf8');
+    console.log('Updated categories:', JSON.stringify(updatedCategories, null, 2));
+    
+    // Write back to file with error handling
+    try {
+      await fs.writeFile(filePath, JSON.stringify(updatedCategories, null, 2), 'utf8');
+    } catch (error) {
+      console.error('Failed to write file:', error);
+      return new NextResponse('Failed to save categories', { status: 500 });
+    }
     
     return NextResponse.json({ success: true, categories: updatedCategories });
   } catch (error) {
     console.error('Failed to delete category:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse(`Internal Server Error: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
   }
 }
