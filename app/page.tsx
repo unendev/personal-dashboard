@@ -131,7 +131,7 @@ export default function Home() {
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🏆</div>
                 <div className="text-white font-medium text-xs">技能树</div>
               </a>
-              <a href="/quests" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
+              <a href="/tools" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">📋</div>
                 <div className="text-white font-medium text-xs">任务</div>
               </a>

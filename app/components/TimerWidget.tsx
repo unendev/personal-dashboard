@@ -76,7 +76,9 @@ const TimerWidget: React.FC = () => {
         completedAt: Math.floor(Date.now() / 1000)
       });
 
-      setCurrentTask(null);
+      // 重新加载运行中的任务
+      const runningTask = await TimerDB.getRunningTask(userId);
+      setCurrentTask(runningTask);
       setElapsedTime(0);
     } catch (error) {
       console.error('Failed to stop task:', error);
