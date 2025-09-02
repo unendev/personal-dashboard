@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma'
+import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
 import type { Log } from '@prisma/client'
@@ -7,31 +9,30 @@ import type { Log } from '@prisma/client'
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'
 
-export default async function LogPage() {
-  // 查询进行中的任务用于下拉选择
-  // const activeQuests = await prisma.quest.findMany({
-  //   where: { userId: MOCK_USER_ID, status: 'IN_PROGRESS' },
-  //   select: { id: true, title: true },
-  //   orderBy: { createdAt: 'desc' }
-  // })
+export default function LogPage() {
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 查询日志，按时间倒序，并包含嵌套分类与任务信息
-  const logs = await prisma.log.findMany({
-    where: { userId: MOCK_USER_ID },
-    include: {
-      quest: { select: { id: true, title: true } },
-      categories: {
-        include: {
-          subCategories: {
-            include: {
-              activities: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { timestamp: 'desc' },
-  })
+  const fetchLogs = async () => {
+    try {
+      const response = await fetch('/api/logs');
+      const data = await response.json();
+      setLogs(data);
+    } catch (error) {
+      console.error('获取日志失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const handleLogSaved = () => {
+    // 重新获取日志数据
+    fetchLogs();
+  };
 
   return (
     <>
@@ -65,7 +66,7 @@ export default async function LogPage() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-              <CreateLogFormWithCards />
+              <CreateLogFormWithCards onLogSaved={handleLogSaved} />
             </div>
           </div>
 
@@ -73,7 +74,9 @@ export default async function LogPage() {
           <div className="lg:col-span-3 mt-8">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">日志历史</h2>
-              {logs.length === 0 ? (
+              {isLoading ? (
+                <p className="text-gray-500 text-sm">加载中...</p>
+              ) : logs.length === 0 ? (
                 <p className="text-gray-500 text-sm">暂无日志记录</p>
               ) : (
                 <div className="space-y-4">

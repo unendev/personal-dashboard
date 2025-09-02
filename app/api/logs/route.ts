@@ -1,65 +1,34 @@
 import { NextResponse } from 'next/server';
-import path from 'path';
-import { promises as fs } from 'fs';
+import { prisma } from '@/lib/prisma';
 
-// 日志数据类型
-interface LogData {
-  [key: string]: unknown;
-}
-
-export async function POST(request: Request) {
-  try {
-    const log = await request.json();
-    const jsonDirectory = path.join(process.cwd(), 'data');
-    const filePath = jsonDirectory + '/logs.json';
-
-    let existingLogs: LogData[] = [];
-    try {
-      const fileContents = await fs.readFile(filePath, 'utf8');
-      existingLogs = JSON.parse(fileContents);
-    } catch (readError: unknown) {
-      if (readError instanceof Error && 'code' in readError && readError.code === 'ENOENT') {
-        // 文件不存在，初始化为空数组
-        existingLogs = [];
-      } else {
-        console.error('Failed to read existing logs:', readError);
-        return new NextResponse('Internal Server Error', { status: 500 });
-      }
-    }
-
-    const newLog = { ...log, timestamp: new Date().toISOString() };
-    existingLogs.push(newLog);
-
-    await fs.writeFile(filePath, JSON.stringify(existingLogs, null, 2), 'utf8');
-
-    return NextResponse.json({ message: 'Log saved successfully', log: newLog });
-  } catch (error) {
-    console.error('Failed to save log:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
+// MVP版本：硬编码用户ID
+const MOCK_USER_ID = 'user-1';
 
 export async function GET() {
   try {
-    const jsonDirectory = path.join(process.cwd(), 'data');
-    const filePath = jsonDirectory + '/logs.json';
+    const logs = await prisma.log.findMany({
+      where: { userId: MOCK_USER_ID },
+      include: {
+        quest: { select: { id: true, title: true } },
+        categories: {
+          include: {
+            subCategories: {
+              include: {
+                activities: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { timestamp: 'desc' },
+    });
 
-    let existingLogs: LogData[] = [];
-    try {
-      const fileContents = await fs.readFile(filePath, 'utf8');
-      existingLogs = JSON.parse(fileContents);
-    } catch (readError: unknown) {
-      if (readError instanceof Error && 'code' in readError && readError.code === 'ENOENT') {
-        // 文件不存在，返回空数组
-        existingLogs = [];
-      } else {
-        console.error('Failed to read logs:', readError);
-        return new NextResponse('Internal Server Error', { status: 500 });
-      }
-    }
-    return NextResponse.json(existingLogs);
+    return NextResponse.json(logs);
   } catch (error) {
-    console.error('Failed to get logs:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('获取日志失败:', error);
+    return NextResponse.json(
+      { error: '获取日志失败' },
+      { status: 500 }
+    );
   }
 }

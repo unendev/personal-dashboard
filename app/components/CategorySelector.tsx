@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
+import { createLog } from '@/app/actions';
 
 type CategoryNode = {
   name: string;
@@ -12,15 +13,18 @@ type CategoryNode = {
 };
 
 interface CategorySelectorProps {
-  onSelected: (classificationPath: string, taskName: string) => void;
+  onSelected?: (classificationPath: string, taskName: string) => void;
   className?: string;
+  onLogSaved?: () => void;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, className }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, className, onLogSaved }) => {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [taskName, setTaskName] = useState('');
+  const [duration, setDuration] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -43,12 +47,50 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, classNa
     setShowDialog(true);
   };
 
-  const handleSubmit = () => {
-    if (taskName.trim()) {
-      onSelected(selectedPath, taskName.trim());
-      setShowDialog(false);
+  const handleSubmit = async () => {
+    if (!taskName.trim()) {
+      alert('请输入任务名称');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 构建分类数据
+      const pathParts = selectedPath.split('/');
+      const categories = [{
+        name: pathParts[0] || '',
+        subCategories: [{
+          name: pathParts[1] || '',
+          activities: [{
+            name: pathParts[2] || taskName,
+            duration: duration || '0h'
+          }]
+        }]
+      }];
+
+      const formData = new FormData();
+      formData.append('categories', JSON.stringify(categories));
+      formData.append('content', ''); // 空内容
+      // 使用北京时间 (UTC+8)
+      const now = new Date();
+      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      formData.append('timestamp', beijingTime.toISOString());
+
+      await createLog(formData);
+      
+      // 重置表单
       setTaskName('');
-      setSelectedPath('');
+      setDuration('');
+      setShowDialog(false);
+      
+      if (onLogSaved) {
+        onLogSaved();
+      }
+    } catch (error) {
+      console.error('创建日志失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,30 +157,48 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, classNa
         ))}
       </div>
 
-      {/* 输入任务名称的弹框 */}
+      {/* 输入任务名称和时间的弹框 */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>创建任务</DialogTitle>
+            <DialogTitle>快速记录</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-600 mb-3">
-              在 <span className="font-medium text-blue-600">{selectedPath}</span> 下创建任务
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-gray-600">
+              在 <span className="font-medium text-blue-600">{selectedPath}</span> 下记录活动
             </p>
-            <Input
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="输入具体事物名称..."
-              autoFocus
-            />
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                任务名称
+              </label>
+              <Input
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="输入具体事物名称..."
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                时间消耗 (可选)
+              </label>
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="例如: 2h30m, 45m"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmit} disabled={!taskName.trim()}>
-              创建并开始
+            <Button onClick={handleSubmit} disabled={!taskName.trim() || isLoading}>
+              {isLoading ? '保存中...' : '保存记录'}
             </Button>
           </DialogFooter>
         </DialogContent>

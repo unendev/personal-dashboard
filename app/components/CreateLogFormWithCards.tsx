@@ -5,7 +5,6 @@ import { createLog } from '@/app/actions';
 import CategorySelector from './CategorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 
 interface CreateLogFormWithCardsProps {
@@ -14,42 +13,18 @@ interface CreateLogFormWithCardsProps {
 
 export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWithCardsProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [logContent, setLogContent] = useState('');
-  const [taskName, setTaskName] = useState('');
-  const [duration, setDuration] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-
-  const handleCategorySelected = (path: string, name: string) => {
-    setSelectedPath(path);
-    setTaskName(name);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPath || !taskName) {
-      alert('请选择分类并输入任务名称');
+    if (!logContent.trim()) {
+      alert('请输入日志内容');
       return;
     }
 
     setIsLoading(true);
     try {
-      // 构建分类数据
-      const pathParts = selectedPath.split('/');
-      const categories = [{
-        name: pathParts[0] || '',
-        subCategories: [{
-          name: pathParts[1] || '',
-          activities: [{
-            name: pathParts[2] || taskName,
-            duration: duration || '0h'
-          }]
-        }]
-      }];
-
       const formData = new FormData();
-      formData.append('categories', JSON.stringify(categories));
       formData.append('content', logContent);
       // 使用北京时间 (UTC+8)
       const now = new Date();
@@ -59,12 +34,7 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
       await createLog(formData);
       
       // 重置表单
-      setSelectedPath(null);
       setLogContent('');
-      setTaskName('');
-      setDuration('');
-      setStartTime('');
-      setEndTime('');
       
       if (onLogSaved) {
         onLogSaved();
@@ -79,83 +49,21 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
 
   return (
     <div className="space-y-6">
-      {/* 分类选择区域 */}
+      {/* 分类选择区域 - 现在可以直接创建日志 */}
       <Card>
         <CardHeader>
-          <CardTitle>选择分类</CardTitle>
+          <CardTitle>快速记录活动</CardTitle>
         </CardHeader>
         <CardContent>
-                     <CategorySelector 
-             onSelected={handleCategorySelected}
-             className="mb-4"
-           />
-          {selectedPath && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-green-800 text-sm">
-                已选择: <span className="font-medium">{selectedPath}</span>
-              </p>
-            </div>
-          )}
+          <CategorySelector 
+            onLogSaved={onLogSaved}
+            className="mb-4"
+          />
+          <p className="text-sm text-gray-600 mt-4">
+            点击上面的卡片按钮，可以直接记录你的活动和时间消耗
+          </p>
         </CardContent>
       </Card>
-
-      {/* 任务输入区域 */}
-      {selectedPath && (
-        <Card>
-          <CardHeader>
-            <CardTitle>记录任务</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label htmlFor="taskName" className="block text-sm font-medium text-gray-700 mb-1">
-                任务名称
-              </label>
-              <Input
-                id="taskName"
-                value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-                placeholder={`在 ${selectedPath} 下输入具体任务名称`}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                耗时 (可选)
-              </label>
-              <Input
-                type="text"
-                placeholder="例如: 2h30m"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  开始时间
-                </label>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  结束时间
-                </label>
-                <Input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* 日志内容区域 */}
       <Card>
@@ -176,7 +84,7 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
       {/* 提交按钮 */}
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || !selectedPath || !taskName}
+        disabled={isLoading || !logContent.trim()}
         className="w-full"
         size="lg"
       >
