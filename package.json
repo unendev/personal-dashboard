@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "cron": "node scripts/daily-summary-cron.js",
-    "cron:test": "node scripts/daily-summary-cron.js --test"
+    "cron:test": "node scripts/daily-summary-cron.js --test",
+    "ai-summary": "node scripts/daily-ai-summary.js",
+    "ai-summary:test": "node scripts/daily-ai-summary.js --test",
+    "test:ai": "node scripts/test-ai-summary.js"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
