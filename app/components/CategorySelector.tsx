@@ -255,30 +255,17 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       return;
     }
 
-    // 如果时间消耗为空，添加到计时器区域
-    if (!duration.trim()) {
-      if (onAddToTimer) {
-        onAddToTimer(taskName.trim(), selectedPath);
-        setShowDialog(false);
-        setTaskName('');
-        setSelectedPath('');
-        setDuration('');
-        return;
-      }
-      // 如果没有onAddToTimer回调，继续执行下面的逻辑（使用0h作为默认时间）
+    // 无论是否输入时间，都添加到计时器区域
+    if (onAddToTimer) {
+      onAddToTimer(taskName.trim(), selectedPath);
+      setShowDialog(false);
+      setTaskName('');
+      setSelectedPath('');
+      setDuration('');
+      return;
     }
 
-    // 转换时间格式（如果输入了时间）
-    let formattedDuration = '0h'; // 默认值
-    if (duration.trim()) {
-      formattedDuration = parseDuration(duration);
-      if (!formattedDuration) {
-        alert('请输入有效的时间格式，如：45m, 1h20m, 2h');
-        return;
-      }
-    }
-
-    // 如果有onSelected回调，调用它（用于progress页面）
+    // 如果没有onAddToTimer回调，继续执行下面的逻辑（用于progress页面）
     if (onSelected) {
       onSelected(selectedPath, taskName.trim());
       setShowDialog(false);
@@ -287,9 +274,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       return;
     }
 
-    // 否则直接创建日志（用于log页面）
+    // 如果既没有onAddToTimer也没有onSelected回调，则创建日志（兼容性处理）
     setIsLoading(true);
     try {
+      // 转换时间格式（如果输入了时间）
+      let formattedDuration = '0h'; // 默认值
+      if (duration.trim()) {
+        formattedDuration = parseDuration(duration);
+        if (!formattedDuration) {
+          alert('请输入有效的时间格式，如：45m, 1h20m, 2h');
+          return;
+        }
+      }
+
       // 构建分类数据
       const pathParts = selectedPath.split('/');
       const categories = [{

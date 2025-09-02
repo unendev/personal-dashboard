@@ -112,10 +112,18 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const duration = formatTime(task.elapsedTime);
-    onTaskComplete(taskId, duration);
-
-    const updatedTasks = tasks.filter(t => t.id !== taskId);
+    // 停止计时器，但不保存到日志，只是停止计时
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          isRunning: false,
+          isPaused: false,
+          startTime: null
+        };
+      }
+      return t;
+    });
     onTasksChange(updatedTasks);
   };
 
@@ -243,7 +251,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                   size="sm"
                   className="text-red-600 hover:text-red-700"
                 >
-                  完成
+                  停止
                 </Button>
               </div>
             </div>

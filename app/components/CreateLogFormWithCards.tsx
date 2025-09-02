@@ -19,29 +19,19 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 允许空内容提交，因为可以通过分类选择器创建日志
+    // 日志区域不再保存，只记录事物到计时器区域
+    if (!logContent.trim()) {
+      alert('请输入日志内容');
+      return;
+    }
 
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('content', logContent);
-      // 使用北京时间
-      const beijingTime = getBeijingTime();
-      formData.append('timestamp', beijingTime.toISOString());
-
-      await createLog(formData);
-      
-      // 重置表单
+    // 将日志内容作为事物添加到计时器区域
+    if (onAddToTimer) {
+      onAddToTimer(logContent.trim(), '日志记录');
       setLogContent('');
-      
-      if (onLogSaved) {
-        onLogSaved();
-      }
-    } catch (error) {
-      console.error('创建日志失败:', error);
-      alert('保存失败，请重试');
-    } finally {
-      setIsLoading(false);
+      alert('已添加到计时器区域');
+    } else {
+      alert('无法添加到计时器区域');
     }
   };
 
@@ -50,7 +40,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       {/* 分类选择区域 - 现在可以直接创建日志 */}
       <Card>
         <CardHeader>
-          <CardTitle>快速记录活动</CardTitle>
+          <CardTitle>快速添加事物</CardTitle>
         </CardHeader>
         <CardContent>
           <CategorySelector 
@@ -59,7 +49,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
             className="mb-4"
           />
           <p className="text-sm text-gray-600 mt-4">
-            点击上面的卡片按钮，可以直接记录你的活动和时间消耗
+            点击上面的卡片按钮，可以将事物添加到计时器区域进行时间管理
           </p>
         </CardContent>
       </Card>
@@ -67,14 +57,14 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       {/* 日志内容区域 */}
       <Card>
         <CardHeader>
-          <CardTitle>日志内容 (可选)</CardTitle>
+          <CardTitle>记录事物</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={logContent}
             onChange={(e) => setLogContent(e.target.value)}
             rows={4}
-            placeholder="记录今天做了什么，有什么收获或感受..."
+            placeholder="记录你想做的事情，将自动添加到计时器区域..."
             className="w-full"
           />
         </CardContent>
@@ -87,7 +77,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         className="w-full"
         size="lg"
       >
-        {isLoading ? '保存中...' : '保存日志'}
+        {isLoading ? '添加中...' : '添加到计时器'}
       </Button>
     </div>
   );

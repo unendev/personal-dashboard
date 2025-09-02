@@ -115,11 +115,10 @@ export default function LogPage() {
   };
 
   const handleTimerTaskComplete = (taskId: string, duration: string) => {
-    // 将完成的计时任务保存为日志
+    // 计时器区域不再保存日志，只是记录事物
     const task = timerTasks.find(t => t.id === taskId);
     if (task) {
-      // 这里可以调用API保存日志
-      console.log('完成计时任务:', task.name, duration);
+      console.log('记录事物:', task.name, duration);
     }
   };
 
@@ -159,7 +158,7 @@ export default function LogPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">每日日志</h1>
-          <p className="text-gray-600">记录你的日常活动和进步</p>
+          <p className="text-gray-600">记录你的日常事物和时间管理</p>
         </div>
 
         <div className="log-content-grid">
@@ -178,7 +177,7 @@ export default function LogPage() {
           {/* 日志输入区域 */}
           <div className="log-input-section">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
+              <h2 className="text-lg font-semibold mb-4">记录事物</h2>
               <CreateLogFormWithCards 
                 onLogSaved={handleLogSaved}
                 onAddToTimer={handleAddToTimer}
