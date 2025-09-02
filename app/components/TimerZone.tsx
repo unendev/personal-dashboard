@@ -67,72 +67,152 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     };
   }, [tasks, updateTaskTime]);
 
-  const startTimer = (taskId: string) => {
+  const startTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        return {
-          ...task,
+    if (!task) return;
+
+    try {
+      // 更新数据库中的任务
+      const response = await fetch('/api/timer-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: taskId,
           isRunning: true,
           isPaused: false,
           startTime: Date.now(),
           pausedTime: 0
-        };
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start timer');
       }
-      return task;
-    });
-    onTasksChange(updatedTasks);
-    
-    // 记录操作
-    if (task && onOperationRecord) {
-      const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
-      onOperationRecord('开始计时', task.name, timeText);
+
+      // 更新本地状态
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            isRunning: true,
+            isPaused: false,
+            startTime: Date.now(),
+            pausedTime: 0
+          };
+        }
+        return task;
+      });
+      onTasksChange(updatedTasks);
+      
+      // 记录操作
+      if (task && onOperationRecord) {
+        const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
+        onOperationRecord('开始计时', task.name, timeText);
+      }
+    } catch (error) {
+      console.error('Failed to start timer:', error);
+      alert('启动失败，请重试');
     }
   };
 
-  const pauseTimer = (taskId: string) => {
+  const pauseTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId && task.isRunning) {
-        return {
-          ...task,
+    if (!task) return;
+
+    try {
+      // 更新数据库中的任务
+      const response = await fetch('/api/timer-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: taskId,
           isPaused: true,
           pausedTime: Date.now()
-        };
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to pause timer');
       }
-      return task;
-    });
-    onTasksChange(updatedTasks);
-    
-    // 记录操作
-    if (task && onOperationRecord) {
-      onOperationRecord('暂停计时', task.name);
+
+      // 更新本地状态
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId && task.isRunning) {
+          return {
+            ...task,
+            isPaused: true,
+            pausedTime: Date.now()
+          };
+        }
+        return task;
+      });
+      onTasksChange(updatedTasks);
+      
+      // 记录操作
+      if (task && onOperationRecord) {
+        onOperationRecord('暂停计时', task.name);
+      }
+    } catch (error) {
+      console.error('Failed to pause timer:', error);
+      alert('暂停失败，请重试');
     }
   };
 
-  const resumeTimer = (taskId: string) => {
+  const resumeTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId && task.isPaused) {
-        const pauseDuration = Date.now() - task.pausedTime;
-        return {
-          ...task,
+    if (!task) return;
+
+    try {
+      const pauseDuration = Date.now() - task.pausedTime;
+      const newStartTime = task.startTime! + pauseDuration;
+
+      // 更新数据库中的任务
+      const response = await fetch('/api/timer-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: taskId,
           isPaused: false,
-          startTime: task.startTime! + pauseDuration,
+          startTime: newStartTime,
           pausedTime: 0
-        };
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to resume timer');
       }
-      return task;
-    });
-    onTasksChange(updatedTasks);
-    
-    // 记录操作
-    if (task && onOperationRecord) {
-      onOperationRecord('继续计时', task.name);
+
+      // 更新本地状态
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId && task.isPaused) {
+          return {
+            ...task,
+            isPaused: false,
+            startTime: newStartTime,
+            pausedTime: 0
+          };
+        }
+        return task;
+      });
+      onTasksChange(updatedTasks);
+      
+      // 记录操作
+      if (task && onOperationRecord) {
+        onOperationRecord('继续计时', task.name);
+      }
+    } catch (error) {
+      console.error('Failed to resume timer:', error);
+      alert('继续失败，请重试');
     }
   };
 
-  const stopTimer = (taskId: string) => {
+  const stopTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -143,24 +223,49 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       finalElapsedTime = task.initialTime + elapsed;
     }
 
-    // 停止计时器，保存最终时间
-    const updatedTasks = tasks.map(t => {
-      if (t.id === taskId) {
-        return {
-          ...t,
+    try {
+      // 更新数据库中的任务
+      const response = await fetch('/api/timer-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: taskId,
           isRunning: false,
           isPaused: false,
           startTime: null,
-          elapsedTime: finalElapsedTime // 保存最终时间
-        };
+          elapsedTime: finalElapsedTime,
+          completedAt: Date.now()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
       }
-      return t;
-    });
-    onTasksChange(updatedTasks);
-    
-    // 记录操作
-    if (task && onOperationRecord) {
-      onOperationRecord('停止计时', task.name, `总时间: ${formatTime(finalElapsedTime)}`);
+
+      // 更新本地状态
+      const updatedTasks = tasks.map(t => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            isRunning: false,
+            isPaused: false,
+            startTime: null,
+            elapsedTime: finalElapsedTime
+          };
+        }
+        return t;
+      });
+      onTasksChange(updatedTasks);
+      
+      // 记录操作
+      if (task && onOperationRecord) {
+        onOperationRecord('完成计时', task.name, `总时间: ${formatTime(finalElapsedTime)}`);
+      }
+    } catch (error) {
+      console.error('Failed to stop timer:', error);
+      alert('保存失败，请重试');
     }
   };
 
