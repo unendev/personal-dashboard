@@ -11,7 +11,7 @@ export type TaskNode = {
   children: TaskNode[];
   timeSpent: number; // seconds
   isRunning: boolean;
-  lastStartTime: number | null;
+  lastStartTime: bigint | null;
 };
 
 interface TaskItemProps {
@@ -32,7 +32,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onAddChild }) => {
   }, [task.isRunning]);
   
   const totalSeconds = task.isRunning && task.lastStartTime 
-    ? task.timeSpent + Math.floor((currentTime - task.lastStartTime) / 1000)
+    ? task.timeSpent + Math.floor((currentTime - Number(task.lastStartTime)) / 1000)
     : task.timeSpent;
     
   const hours = Math.floor(totalSeconds / 3600);

@@ -11,7 +11,7 @@ interface TimerTask {
   elapsedTime: number;
   initialTime: number; // 初始时间（秒）
   isRunning: boolean;
-  startTime: number | null;
+  startTime: bigint | null;
   isPaused: boolean;
   pausedTime: number;
 }
@@ -45,7 +45,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       if (task.isRunning && !task.isPaused && task.startTime) {
         if (!intervalRefs.current[task.id]) {
           intervalRefs.current[task.id] = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - task.startTime!) / 1000);
+            const elapsed = Math.floor((Date.now() - Number(task.startTime!)) / 1000);
             // 总时间 = 初始时间 + 运行时间
             const totalTime = task.initialTime + elapsed;
             updateTaskTime(task.id, totalTime);
@@ -98,7 +98,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
             ...task,
             isRunning: true,
             isPaused: false,
-            startTime: Date.now(),
+            startTime: BigInt(Date.now()),
             pausedTime: 0
           };
         }
@@ -168,7 +168,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
 
     try {
       const pauseDuration = Date.now() - task.pausedTime;
-      const newStartTime = task.startTime! + pauseDuration;
+              const newStartTime = Number(task.startTime!) + pauseDuration;
 
       // 更新数据库中的任务
       const response = await fetch('/api/timer-tasks', {
@@ -179,7 +179,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
         body: JSON.stringify({
           id: taskId,
           isPaused: false,
-          startTime: newStartTime,
+          startTime: BigInt(newStartTime),
           pausedTime: 0
         }),
       });
@@ -191,12 +191,12 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       // 更新本地状态
       const updatedTasks = tasks.map(task => {
         if (task.id === taskId && task.isPaused) {
-          return {
-            ...task,
-            isPaused: false,
-            startTime: newStartTime,
-            pausedTime: 0
-          };
+                      return {
+              ...task,
+              isPaused: false,
+              startTime: BigInt(newStartTime),
+              pausedTime: 0
+            };
         }
         return task;
       });
@@ -219,7 +219,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     // 计算最终时间（如果正在运行）
     let finalElapsedTime = task.elapsedTime;
     if (task.isRunning && task.startTime) {
-      const elapsed = Math.floor((Date.now() - task.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - Number(task.startTime)) / 1000);
       finalElapsedTime = task.initialTime + elapsed;
     }
 
@@ -236,7 +236,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
           isPaused: false,
           startTime: null,
           elapsedTime: finalElapsedTime,
-          completedAt: Date.now()
+          completedAt: BigInt(Date.now())
         }),
       });
 

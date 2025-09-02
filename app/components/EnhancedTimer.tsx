@@ -10,7 +10,7 @@ interface TimerTask {
   id: string;
   name: string;
   category: string;
-  startTime: number | null;
+  startTime: bigint | null;
   totalTime: number; // 累计时间（秒）
   isRunning: boolean;
   isPaused: boolean;
@@ -49,7 +49,7 @@ const EnhancedTimer: React.FC = () => {
       if (runningTask) {
         setCurrentTask(runningTask);
         if (runningTask.startTime && !runningTask.isPaused) {
-          setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+          setElapsedTime(Math.floor((Date.now() - Number(runningTask.startTime)) / 1000));
         }
       }
     }
@@ -62,9 +62,9 @@ const EnhancedTimer: React.FC = () => {
 
   // 更新计时器显示
   useEffect(() => {
-    if (currentTask && currentTask.isRunning && !currentTask.isPaused && currentTask.startTime) {
-      intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - currentTask.startTime!) / 1000));
+          if (currentTask && currentTask.isRunning && !currentTask.isPaused && currentTask.startTime) {
+        intervalRef.current = setInterval(() => {
+          setElapsedTime(Math.floor((Date.now() - Number(currentTask.startTime!)) / 1000));
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -84,7 +84,7 @@ const EnhancedTimer: React.FC = () => {
   useEffect(() => {
     const today = new Date().toDateString();
     const todayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.startTime || 0).toDateString();
+              const taskDate = new Date(Number(task.startTime) || 0).toDateString();
       return taskDate === today;
     });
 
@@ -135,7 +135,7 @@ const EnhancedTimer: React.FC = () => {
     // 开始新任务
     const updatedTask = {
       ...task,
-      startTime: Date.now(),
+              startTime: BigInt(Date.now()),
       isRunning: true,
       isPaused: false,
       pausedTime: 0
@@ -165,7 +165,7 @@ const EnhancedTimer: React.FC = () => {
     const pauseDuration = Date.now() - currentTask.pausedTime;
     const updatedTask = {
       ...currentTask,
-      startTime: currentTask.startTime! + pauseDuration,
+              startTime: BigInt(Number(currentTask.startTime!) + pauseDuration),
       isPaused: false,
       pausedTime: 0
     };
@@ -175,9 +175,9 @@ const EnhancedTimer: React.FC = () => {
   };
 
   const stopCurrentTask = () => {
-    if (!currentTask || !currentTask.startTime) return;
+          if (!currentTask || !currentTask.startTime) return;
 
-    const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - Number(currentTask.startTime)) / 1000);
     const updatedTask = {
       ...currentTask,
       startTime: null,

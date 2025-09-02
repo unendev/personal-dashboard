@@ -10,7 +10,7 @@ interface QuickTask {
   id: string;
   name: string;
   category: string;
-  startTime: number | null;
+  startTime: bigint | null;
   totalTime: number;
   isRunning: boolean;
   isPaused: boolean;
@@ -38,7 +38,7 @@ const QuickTimer: React.FC = () => {
       if (runningTask) {
         setCurrentTask(runningTask);
         if (runningTask.startTime && !runningTask.isPaused) {
-          setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+          setElapsedTime(Math.floor((Date.now() - Number(runningTask.startTime)) / 1000));
         }
       }
     }
@@ -53,7 +53,7 @@ const QuickTimer: React.FC = () => {
   useEffect(() => {
     if (currentTask && currentTask.isRunning && !currentTask.isPaused && currentTask.startTime) {
       intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - currentTask.startTime!) / 1000));
+        setElapsedTime(Math.floor((Date.now() - Number(currentTask.startTime!)) / 1000));
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -101,7 +101,7 @@ const QuickTimer: React.FC = () => {
     // 开始新任务
     const updatedTask = {
       ...task,
-      startTime: Date.now(),
+              startTime: BigInt(Date.now()),
       isRunning: true,
       isPaused: false,
       pausedTime: 0
@@ -131,7 +131,7 @@ const QuickTimer: React.FC = () => {
     const pauseDuration = Date.now() - currentTask.pausedTime;
     const updatedTask = {
       ...currentTask,
-      startTime: currentTask.startTime! + pauseDuration,
+              startTime: BigInt(Number(currentTask.startTime!) + pauseDuration),
       isPaused: false,
       pausedTime: 0
     };
@@ -143,7 +143,7 @@ const QuickTimer: React.FC = () => {
   const stopCurrentTask = () => {
     if (!currentTask || !currentTask.startTime) return;
 
-    const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
+          const elapsed = Math.floor((Date.now() - Number(currentTask.startTime)) / 1000);
     const updatedTask = {
       ...currentTask,
       startTime: null,

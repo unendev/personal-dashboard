@@ -18,14 +18,14 @@ const InlineTimer: React.FC<InlineTimerProps> = ({
 }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<bigint | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 开始计时
   const startTimer = () => {
     if (!isRunning) {
       setIsRunning(true);
-      setStartTime(Date.now());
+      setStartTime(BigInt(Date.now()));
     }
   };
 
@@ -58,7 +58,7 @@ const InlineTimer: React.FC<InlineTimerProps> = ({
   useEffect(() => {
     if (isRunning && startTime) {
       intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+        setElapsedTime(Math.floor((Date.now() - Number(startTime)) / 1000));
       }, 1000);
     } else {
       if (intervalRef.current) {

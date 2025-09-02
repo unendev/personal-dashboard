@@ -9,10 +9,10 @@ export interface TimerTask {
   elapsedTime: number;
   initialTime: number;
   isRunning: boolean;
-  startTime: number | null;
+  startTime: bigint | null;
   isPaused: boolean;
   pausedTime: number;
-  completedAt: number | null;
+  completedAt: bigint | null;
   date: string; // ISO date string
   userId: string;
   createdAt: Date;

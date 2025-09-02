@@ -51,7 +51,7 @@ export default function LogPage() {
     elapsedTime: number;
     initialTime: number; // 初始时间（秒）
     isRunning: boolean;
-    startTime: number | null;
+    startTime: bigint | null;
     isPaused: boolean;
     pausedTime: number;
   }[]>([]);

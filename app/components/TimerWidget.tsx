@@ -18,7 +18,7 @@ const TimerWidget: React.FC = () => {
         if (runningTask) {
           setCurrentTask(runningTask);
           if (runningTask.startTime) {
-            setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+            setElapsedTime(Math.floor((Date.now() - Number(runningTask.startTime)) / 1000));
           }
         }
       } catch (error) {
@@ -33,7 +33,7 @@ const TimerWidget: React.FC = () => {
   useEffect(() => {
     if (currentTask && currentTask.isRunning && currentTask.startTime) {
       intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - currentTask.startTime!) / 1000));
+        setElapsedTime(Math.floor((Date.now() - Number(currentTask.startTime!)) / 1000));
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -65,7 +65,7 @@ const TimerWidget: React.FC = () => {
     if (!currentTask || !currentTask.startTime) return;
 
     try {
-      const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - Number(currentTask.startTime)) / 1000);
       const finalElapsedTime = currentTask.elapsedTime + elapsed;
       
       // 更新数据库中的任务
@@ -73,7 +73,7 @@ const TimerWidget: React.FC = () => {
         elapsedTime: finalElapsedTime,
         isRunning: false,
         isPaused: false,
-        completedAt: Date.now()
+        completedAt: BigInt(Date.now())
       });
 
       setCurrentTask(null);
