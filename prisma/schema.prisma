@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,25 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 人生进度系统数据模型
-
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Spotify 相关字段
-  spotifyId              String?   @unique // Spotify 用户的唯一ID
-  spotifyRefreshToken    String?   @map("spotify_refresh_token") // 存储 refresh token
-  spotifyAccessToken     String?   @map("spotify_access_token") // 存储 access token
-  spotifyAccessTokenExpiresAt DateTime? @map("spotify_access_token_expires_at") // access token 过期时间
-
-  skills Skill[]
-  quests Quest[]
-  logs   Log[]
-  layout UserLayout?
+  id                          String      @id @default(cuid())
+  email                       String      @unique
+  name                        String?
+  createdAt                   DateTime    @default(now())
+  updatedAt                   DateTime    @updatedAt
+  spotifyId                   String?     @unique
+  spotifyAccessToken          String?     @map("spotify_access_token")
+  spotifyAccessTokenExpiresAt DateTime?   @map("spotify_access_token_expires_at")
+  spotifyRefreshToken         String?     @map("spotify_refresh_token")
+  logs                        Log[]
+  quests                      Quest[]
+  skills                      Skill[]
+  layout                      UserLayout?
+  timerTasks                  TimerTask[]
 
   @@map("users")
 }
@@ -40,95 +33,115 @@ model Skill {
   level       Int      @default(1)
   experience  Int      @default(0)
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quests      Quest[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  quests      Quest[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("skills")
 }
 
 model Quest {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String?
   status      QuestStatus @default(PLANNING)
-  priority    Priority   @default(MEDIUM)
+  priority    Priority    @default(MEDIUM)
   skillId     String?
-  skill       Skill?     @relation(fields: [skillId], references: [id], onDelete: SetNull)
   userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   logs        Log[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  skill       Skill?      @relation(fields: [skillId], references: [id])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("quests")
 }
 
 model Log {
-  id           String   @id @default(cuid())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  content      String?
-  questId      String?
-  quest        Quest?   @relation(fields: [questId], references: [id])
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  timestamp    DateTime @default(now())
-  categories   LogCategoryInstance[]
+  id         String                @id @default(cuid())
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  content    String?
+  questId    String?
+  userId     String
+  timestamp  DateTime              @default(now())
+  categories LogCategoryInstance[]
+  quest      Quest?                @relation(fields: [questId], references: [id])
+  user       User                  @relation(fields: [userId], references: [id])
 
   @@map("logs")
 }
 
 model LogCategoryInstance {
-  id        String   @id @default(cuid())
-  name      String
-  logId     String
-  log       Log      @relation(fields: [logId], references: [id], onDelete: Cascade)
+  id            String                   @id @default(cuid())
+  name          String
+  logId         String
+  log           Log                      @relation(fields: [logId], references: [id], onDelete: Cascade)
   subCategories LogSubCategoryInstance[]
 
   @@map("log_category_instances")
 }
 
 model LogSubCategoryInstance {
-  id        String   @id @default(cuid())
-  name      String
+  id         String                @id @default(cuid())
+  name       String
   categoryId String
-  category  LogCategoryInstance @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   activities LogActivityInstance[]
+  category   LogCategoryInstance   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("log_subcategory_instances")
 }
 
 model LogActivityInstance {
-  id        String   @id @default(cuid())
-  name      String
-  duration  String   // 格式如 "1h10m"
+  id            String                 @id @default(cuid())
+  name          String
+  duration      String
   subCategoryId String
-  subCategory LogSubCategoryInstance @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategory   LogSubCategoryInstance @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
 
   @@map("log_activity_instances")
 }
 
 model LogCategory {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   name      String
-  parentId  String?  // 父分类ID，null表示顶级分类
-  parent    LogCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  parent    LogCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children  LogCategory[] @relation("CategoryHierarchy")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("log_categories")
 }
 
 model UserLayout {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
+  id           String @id @default(cuid())
+  userId       String @unique
   layoutConfig Json
+  user         User   @relation(fields: [userId], references: [id])
 
   @@map("user_layouts")
+}
+
+model TimerTask {
+  id           String   @id @default(cuid())
+  name         String
+  categoryPath String
+  elapsedTime  Int      @default(0)
+  initialTime  Int      @default(0)
+  isRunning    Boolean  @default(false)
+  startTime    Int?     // Unix timestamp
+  isPaused     Boolean  @default(false)
+  pausedTime   Int      @default(0)
+  completedAt  Int?     // Unix timestamp
+  date         String   // ISO date string
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("timer_tasks")
 }
 
 enum QuestStatus {

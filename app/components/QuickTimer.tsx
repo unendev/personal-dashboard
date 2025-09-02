@@ -229,7 +229,7 @@ const QuickTimer: React.FC = () => {
                 className="flex-1"
                 size="sm"
               >
-                停止
+                完成
               </Button>
             </div>
           </CardContent>

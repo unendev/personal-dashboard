@@ -126,7 +126,7 @@ export default function Home() {
               <h2 className="text-lg font-bold gradient-text mb-1">快捷操作</h2>
               <p className="text-white/60 text-xs">常用功能入口</p>
             </div>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-6 gap-3">
               <a href="/dashboard" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🏆</div>
                 <div className="text-white font-medium text-xs">技能树</div>
@@ -142,6 +142,10 @@ export default function Home() {
               <a href="/timer" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
                 <div className="text-xl mb-1 group-hover:scale-110 transition-transform">⏱️</div>
                 <div className="text-white font-medium text-xs">计时器</div>
+              </a>
+              <a href="/summary" className="glass-effect rounded-lg p-3 text-center hover-lift transition-all duration-300 group aspect-square">
+                <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🤖</div>
+                <div className="text-white font-medium text-xs">AI总结</div>
               </a>
               <button
                 onClick={() => setShowBiliManager(!showBiliManager)}

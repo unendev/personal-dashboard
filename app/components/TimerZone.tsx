@@ -291,7 +291,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                   size="sm"
                   className="text-red-600 hover:text-red-700"
                 >
-                  停止
+                  完成
                 </Button>
               </div>
             </div>

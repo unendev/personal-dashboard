@@ -263,7 +263,7 @@ const EnhancedTimer: React.FC = () => {
                 onClick={stopCurrentTask}
                 className="flex-1"
               >
-                停止
+                完成
               </Button>
             </div>
           </CardContent>

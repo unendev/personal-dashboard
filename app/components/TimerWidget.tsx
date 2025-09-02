@@ -2,34 +2,32 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
-
-interface TimerTask {
-  id: string;
-  name: string;
-  startTime: number | null;
-  totalTime: number;
-  isRunning: boolean;
-}
+import { TimerDB, TimerTask } from '../lib/timer-db';
 
 const TimerWidget: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<TimerTask | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [userId] = useState('default-user-id'); // 临时用户ID，后续需要集成认证
 
-  // 从localStorage加载当前任务
+  // 从数据库加载当前运行的任务
   useEffect(() => {
-    const savedTasks = localStorage.getItem('enhanced-timer-tasks');
-    if (savedTasks) {
-      const parsedTasks = JSON.parse(savedTasks);
-      const runningTask = parsedTasks.find((task: TimerTask) => task.isRunning);
-      if (runningTask) {
-        setCurrentTask(runningTask);
-        if (runningTask.startTime) {
-          setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+    const loadRunningTask = async () => {
+      try {
+        const runningTask = await TimerDB.getRunningTask(userId);
+        if (runningTask) {
+          setCurrentTask(runningTask);
+          if (runningTask.startTime) {
+            setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+          }
         }
+      } catch (error) {
+        console.error('Failed to load running task:', error);
       }
-    }
-  }, []);
+    };
+
+    loadRunningTask();
+  }, [userId]);
 
   // 更新计时器显示
   useEffect(() => {
@@ -63,29 +61,26 @@ const TimerWidget: React.FC = () => {
     }
   };
 
-  const stopCurrentTask = () => {
+  const stopCurrentTask = async () => {
     if (!currentTask || !currentTask.startTime) return;
 
-    const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
-    const updatedTask = {
-      ...currentTask,
-      startTime: null,
-      totalTime: currentTask.totalTime + elapsed,
-      isRunning: false
-    };
+    try {
+      const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
+      const finalElapsedTime = currentTask.elapsedTime + elapsed;
+      
+      // 更新数据库中的任务
+      await TimerDB.updateTask(currentTask.id, {
+        elapsedTime: finalElapsedTime,
+        isRunning: false,
+        isPaused: false,
+        completedAt: Date.now()
+      });
 
-    // 更新localStorage中的任务
-    const savedTasks = localStorage.getItem('enhanced-timer-tasks');
-    if (savedTasks) {
-      const parsedTasks = JSON.parse(savedTasks);
-      const updatedTasks = parsedTasks.map((t: TimerTask) => 
-        t.id === currentTask.id ? updatedTask : t
-      );
-      localStorage.setItem('enhanced-timer-tasks', JSON.stringify(updatedTasks));
+      setCurrentTask(null);
+      setElapsedTime(0);
+    } catch (error) {
+      console.error('Failed to stop task:', error);
     }
-
-    setCurrentTask(null);
-    setElapsedTime(0);
   };
 
   return (
@@ -100,32 +95,25 @@ const TimerWidget: React.FC = () => {
           <div className="text-2xl font-mono text-white mb-3">
             {formatTime(elapsedTime)}
           </div>
-          <div className="text-white/80 text-sm mb-4">
-            {currentTask.name}
+          <div className="text-white/80 mb-4">
+            <div className="font-medium">{currentTask.name}</div>
+            <div className="text-sm text-white/60">{currentTask.categoryPath}</div>
           </div>
           <Button 
             onClick={stopCurrentTask}
-            variant="outline"
-            size="sm"
             className="bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30"
           >
-            停止
+            完成
           </Button>
         </div>
       ) : (
         <div className="text-center">
-          <div className="text-2xl font-mono text-white/40 mb-3">
+          <div className="text-2xl font-mono text-white/60 mb-3">
             00:00
           </div>
-          <div className="text-white/60 text-sm mb-4">
-            暂无活动任务
+          <div className="text-white/60 text-sm">
+            暂无运行中的任务
           </div>
-          <a 
-            href="/timer"
-            className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
-          >
-            开始计时
-          </a>
         </div>
       )}
     </div>

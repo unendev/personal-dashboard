@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { TimerDB } from '@/app/lib/timer-db';
+
+// GET /api/timer-tasks - 获取用户的所有任务
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const date = searchParams.get('date');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+    }
+
+    let tasks;
+    if (date) {
+      tasks = await TimerDB.getTasksByDate(userId, date);
+    } else if (startDate && endDate) {
+      tasks = await TimerDB.getTasksByDateRange(userId, startDate, endDate);
+    } else {
+      tasks = await TimerDB.getAllTasks(userId);
+    }
+
+    return NextResponse.json(tasks);
+  } catch (error) {
+    console.error('Error fetching timer tasks:', error);
+    return NextResponse.json({ error: 'Failed to fetch timer tasks' }, { status: 500 });
+  }
+}
+
+// POST /api/timer-tasks - 创建新任务
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, name, categoryPath, elapsedTime, initialTime, isRunning, startTime, isPaused, pausedTime, completedAt, date } = body;
+
+    if (!userId || !name || !categoryPath || !date) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const newTask = await TimerDB.addTask({
+      userId,
+      name,
+      categoryPath,
+      elapsedTime: elapsedTime || 0,
+      initialTime: initialTime || 0,
+      isRunning: isRunning || false,
+      startTime: startTime || null,
+      isPaused: isPaused || false,
+      pausedTime: pausedTime || 0,
+      completedAt: completedAt || null,
+      date
+    });
+
+    return NextResponse.json(newTask, { status: 201 });
+  } catch (error) {
+    console.error('Error creating timer task:', error);
+    return NextResponse.json({ error: 'Failed to create timer task' }, { status: 500 });
+  }
+}
+
+// PUT /api/timer-tasks - 更新任务
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+    }
+
+    const updatedTask = await TimerDB.updateTask(id, updates);
+    return NextResponse.json(updatedTask);
+  } catch (error) {
+    console.error('Error updating timer task:', error);
+    return NextResponse.json({ error: 'Failed to update timer task' }, { status: 500 });
+  }
+}
+
+// DELETE /api/timer-tasks - 删除任务
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+    }
+
+    await TimerDB.deleteTask(id);
+    return NextResponse.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting timer task:', error);
+    return NextResponse.json({ error: 'Failed to delete timer task' }, { status: 500 });
+  }
+}
+
