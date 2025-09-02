@@ -12,7 +12,7 @@ export interface TimerTask {
   startTime: number | null;
   isPaused: boolean;
   pausedTime: number;
-  completedAt?: number;
+  completedAt: number | null;
   date: string; // ISO date string
   userId: string;
   createdAt: Date;

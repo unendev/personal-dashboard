@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 
@@ -32,7 +32,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -48,11 +48,11 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, date]);
 
   useEffect(() => {
     fetchSummary();
-  }, [userId, date]);
+  }, [userId, date, fetchSummary]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);

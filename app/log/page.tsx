@@ -8,17 +8,17 @@ import TimerZone from '@/app/components/TimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 
 // 定义与API返回数据匹配的Log类型
-interface LogActivityInstance {
-  id: string;
-  name: string;
-  duration: string;
-}
+// interface LogActivityInstance {
+//   id: string;
+//   name: string;
+//   duration: string;
+// }
 
-interface LogSubCategoryInstance {
-  id: string;
-  name: string;
-  activities: LogActivityInstance[];
-}
+// interface LogSubCategoryInstance {
+//   id: string;
+//   name: string;
+//   activities: LogActivityInstance[];
+// }
 
 // interface LogCategoryInstance {
 //   id: string;
