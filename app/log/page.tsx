@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
-import QuickTimer from '@/app/components/QuickTimer'
+import TimerZone from '@/app/components/TimerZone'
 
 // 定义与API返回数据匹配的Log类型
 interface LogActivityInstance {
@@ -41,6 +41,16 @@ export default function LogPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPageReady, setIsPageReady] = useState(false);
+  const [timerTasks, setTimerTasks] = useState<{
+    id: string;
+    name: string;
+    categoryPath: string;
+    elapsedTime: number;
+    isRunning: boolean;
+    startTime: number | null;
+    isPaused: boolean;
+    pausedTime: number;
+  }[]>([]);
 
   const fetchLogs = async () => {
     try {
@@ -90,6 +100,29 @@ export default function LogPage() {
     fetchLogs();
   };
 
+  const handleAddToTimer = (taskName: string, categoryPath: string) => {
+    const newTask = {
+      id: Date.now().toString(),
+      name: taskName,
+      categoryPath: categoryPath,
+      elapsedTime: 0,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0
+    };
+    setTimerTasks([...timerTasks, newTask]);
+  };
+
+  const handleTimerTaskComplete = (taskId: string, duration: string) => {
+    // 将完成的计时任务保存为日志
+    const task = timerTasks.find(t => t.id === taskId);
+    if (task) {
+      // 这里可以调用API保存日志
+      console.log('完成计时任务:', task.name, duration);
+    }
+  };
+
   // 如果页面还没准备好，显示加载状态
   if (!isPageReady) {
     return (
@@ -133,8 +166,12 @@ export default function LogPage() {
           {/* 计时器区域 */}
           <div className="timer-section">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">⏱️ 计时器</h2>
-              <QuickTimer />
+              <h2 className="text-lg font-semibold mb-4">⏱️ 计时器区域</h2>
+              <TimerZone 
+                tasks={timerTasks}
+                onTasksChange={setTimerTasks}
+                onTaskComplete={handleTimerTaskComplete}
+              />
             </div>
           </div>
 
@@ -142,7 +179,10 @@ export default function LogPage() {
           <div className="log-input-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
-              <CreateLogFormWithCards onLogSaved={handleLogSaved} />
+              <CreateLogFormWithCards 
+                onLogSaved={handleLogSaved}
+                onAddToTimer={handleAddToTimer}
+              />
             </div>
           </div>
 

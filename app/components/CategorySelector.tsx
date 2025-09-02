@@ -18,9 +18,10 @@ interface CategorySelectorProps {
   className?: string;
   onLogSaved?: () => void;
   onSelected?: (path: string, taskName: string) => void; // 新增的回调
+  onAddToTimer?: (taskName: string, categoryPath: string) => void; // 新增：添加到计时器的回调
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved, onSelected }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved, onSelected, onAddToTimer }) => {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string>('');
@@ -252,6 +253,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     if (!taskName.trim()) {
       alert('请输入任务名称');
       return;
+    }
+
+    // 如果时间消耗为空，添加到计时器区域
+    if (!duration.trim()) {
+      if (onAddToTimer) {
+        onAddToTimer(taskName.trim(), selectedPath);
+        setShowDialog(false);
+        setTaskName('');
+        setSelectedPath('');
+        setDuration('');
+        return;
+      }
+      // 如果没有onAddToTimer回调，继续执行下面的逻辑（使用0h作为默认时间）
     }
 
     // 转换时间格式（如果输入了时间）

@@ -10,9 +10,10 @@ import { Textarea } from './ui/textarea';
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void;
+  onAddToTimer?: (taskName: string, categoryPath: string) => void;
 }
 
-export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWithCardsProps) {
+export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [logContent, setLogContent] = useState('');
 
@@ -54,6 +55,7 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
         <CardContent>
           <CategorySelector 
             onLogSaved={onLogSaved}
+            onAddToTimer={onAddToTimer}
             className="mb-4"
           />
           <p className="text-sm text-gray-600 mt-4">
