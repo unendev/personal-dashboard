@@ -30,6 +30,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     tasks.forEach(task => {
       const category = task.categoryPath || '未分类';
       const currentTime = categoryMap.get(category) || 0;
+      // 使用elapsedTime，它包含了初始时间和计时器运行的时间
       categoryMap.set(category, currentTime + task.elapsedTime);
     });
     
@@ -43,10 +44,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
   // 按任务统计时间
   const getTaskStats = () => {
     return tasks
-      .filter(task => task.elapsedTime > 0)
+      .filter(task => task.elapsedTime > 0) // 只显示有实际时间的任务
       .map(task => ({
         name: task.name.length > 15 ? task.name.substring(0, 15) + '...' : task.name,
-        time: Math.round(task.elapsedTime / 60), // 转换为分钟
+        time: Math.round(task.elapsedTime / 60), // 使用elapsedTime，包含所有时间
         fullName: task.name,
         category: task.categoryPath
       }))
@@ -81,6 +82,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     tasks.forEach(task => {
       const category = task.categoryPath || '未分类';
       const currentTime = categoryMap.get(category) || 0;
+      // 使用elapsedTime，它包含了初始时间和计时器运行的时间
       categoryMap.set(category, currentTime + task.elapsedTime);
     });
     

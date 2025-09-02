@@ -136,14 +136,22 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // 停止计时器，但不保存到日志，只是停止计时
+    // 计算最终时间（如果正在运行）
+    let finalElapsedTime = task.elapsedTime;
+    if (task.isRunning && task.startTime) {
+      const elapsed = Math.floor((Date.now() - task.startTime) / 1000);
+      finalElapsedTime = task.initialTime + elapsed;
+    }
+
+    // 停止计时器，保存最终时间
     const updatedTasks = tasks.map(t => {
       if (t.id === taskId) {
         return {
           ...t,
           isRunning: false,
           isPaused: false,
-          startTime: null
+          startTime: null,
+          elapsedTime: finalElapsedTime // 保存最终时间
         };
       }
       return t;
@@ -152,8 +160,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     
     // 记录操作
     if (task && onOperationRecord) {
-      const totalTime = task.elapsedTime;
-      onOperationRecord('停止计时', task.name, `总时间: ${formatTime(totalTime)}`);
+      onOperationRecord('停止计时', task.name, `总时间: ${formatTime(finalElapsedTime)}`);
     }
   };
 
