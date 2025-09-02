@@ -8,7 +8,7 @@ const TimerWidget: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<TimerTask | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [userId] = useState('default-user-id'); // 临时用户ID，后续需要集成认证
+  const [userId] = useState('user-1'); // 临时用户ID，后续需要集成认证
 
   // 从数据库加载当前运行的任务
   useEffect(() => {

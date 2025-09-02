@@ -40,7 +40,7 @@ async function migrateTimerTasks() {
     const localTasks = mockLocalStorageData;
     
     // 假设有一个默认用户ID
-    const defaultUserId = 'default-user-id';
+    const defaultUserId = 'user-1';
     
     console.log(`找到 ${localTasks.length} 个任务需要迁移`);
     

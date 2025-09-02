@@ -25,7 +25,7 @@ interface AISummaryWidgetProps {
 }
 
 const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({ 
-  userId = 'default-user-id', 
+          userId = 'user-1', 
   date = new Date().toISOString().split('T')[0] 
 }) => {
   const [summary, setSummary] = useState<AISummary | null>(null);

@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 
 export default function SummaryPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [userId] = useState('default-user-id');
+  const [userId] = useState('user-1');
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(event.target.value);

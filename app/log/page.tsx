@@ -55,7 +55,7 @@ export default function LogPage() {
     isPaused: boolean;
     pausedTime: number;
   }[]>([]);
-  const [userId] = useState('default-user-id'); // 临时用户ID
+  const [userId] = useState('user-1'); // 临时用户ID
   
   // 操作历史记录
   const [operationHistory, setOperationHistory] = useState<{
