@@ -1,10 +1,5 @@
 import { TimerDB, TimerTask } from './timer-db';
 
-interface AISummaryRequest {
-  userId: string;
-  date: string;
-}
-
 interface AISummaryResponse {
   summary: string;
   totalTime: number;
@@ -17,6 +12,24 @@ interface AISummaryResponse {
     categoryPath: string;
     elapsedTime: number;
     completedAt: number | null;
+  }>;
+}
+
+interface AnalysisData {
+  totalTime: number;
+  taskCount: number;
+  categories: Record<string, number>;
+  completedTasks: number;
+  runningTasks: number;
+  pausedTasks: number;
+  tasks: Array<{
+    id: string;
+    name: string;
+    categoryPath: string;
+    elapsedTime: number;
+    completedAt: number | null;
+    isRunning: boolean;
+    isPaused: boolean;
   }>;
 }
 
@@ -67,7 +80,7 @@ export class AIService {
   /**
    * 准备用于 AI 分析的数据
    */
-  private static prepareAnalysisData(tasks: TimerTask[]) {
+  private static prepareAnalysisData(tasks: TimerTask[]): AnalysisData {
     const totalTime = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
     const taskCount = tasks.length;
     const categories: Record<string, number> = {};
@@ -105,7 +118,7 @@ export class AIService {
   /**
    * 调用 DeepSeek API
    */
-  private static async callDeepSeekAPI(data: any, date: string) {
+  private static async callDeepSeekAPI(data: AnalysisData, date: string) {
     const apiKey = process.env.DEEPSEEK_API_KEY;
     
     if (!apiKey) {
