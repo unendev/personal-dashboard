@@ -23,6 +23,7 @@ export async function GET() {
       orderBy: { timestamp: 'desc' },
     });
 
+    // 确保返回的是数组格式
     return NextResponse.json(logs);
   } catch (error) {
     console.error('获取日志失败:', error);

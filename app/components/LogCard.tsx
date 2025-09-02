@@ -55,10 +55,10 @@ export default function LogCard({ log }: LogCardProps) {
         {categories.map((category) => (
           <div key={category.id} className="space-y-2 pl-4 border-l-2 border-purple-300">
             <h4 className="text-md font-medium text-purple-700">{category.name}</h4>
-            {category.subCategories.map((subCategory) => (
+            {Array.isArray(category.subCategories) && category.subCategories.map((subCategory) => (
               <div key={subCategory.id} className="space-y-1 pl-4 border-l border-gray-300">
                 <p className="text-sm font-medium text-gray-700">{subCategory.name}</p>
-                {subCategory.activities.map((activity) => (
+                {Array.isArray(subCategory.activities) && subCategory.activities.map((activity) => (
                   <p key={activity.id} className="text-sm text-gray-700 ml-2">
                     - {activity.name} ({activity.duration})
                   </p>

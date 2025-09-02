@@ -43,10 +43,28 @@ export default function LogPage() {
   const fetchLogs = async () => {
     try {
       const response = await fetch('/api/logs');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setLogs(data);
+      
+      // 处理API返回的数据结构
+      let logsData = data;
+      if (data && typeof data === 'object' && 'value' in data) {
+        // 如果返回的是 {value: [...], Count: n} 格式
+        logsData = data.value;
+      }
+      
+      // 确保logsData是数组
+      if (Array.isArray(logsData)) {
+        setLogs(logsData);
+      } else {
+        console.error('API返回的数据不是数组:', logsData);
+        setLogs([]);
+      }
     } catch (error) {
       console.error('获取日志失败:', error);
+      setLogs([]); // 出错时设置为空数组
     } finally {
       setIsLoading(false);
     }
