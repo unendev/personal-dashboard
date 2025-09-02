@@ -1,0 +1,84 @@
+'use client'
+
+import React from 'react';
+import { Button } from './ui/button';
+
+interface DateFilterProps {
+  selectedDate: string;
+  onDateChange: (date: string) => void;
+}
+
+const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const goToPreviousDay = () => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() - 1);
+    onDateChange(date.toISOString().split('T')[0]);
+  };
+
+  const goToNextDay = () => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + 1);
+    onDateChange(date.toISOString().split('T')[0]);
+  };
+
+  const goToToday = () => {
+    onDateChange(today);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+
+  return (
+    <div className="flex items-center justify-center space-x-4 mb-6">
+      <Button 
+        onClick={goToPreviousDay}
+        variant="outline"
+        size="sm"
+        className="text-gray-600 hover:text-gray-800"
+      >
+        前一天
+      </Button>
+      
+      <div className="flex items-center space-x-2">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => onDateChange(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <span className="text-gray-600 text-sm">
+          {formatDate(selectedDate)}
+        </span>
+      </div>
+      
+      <Button 
+        onClick={goToNextDay}
+        variant="outline"
+        size="sm"
+        className="text-gray-600 hover:text-gray-800"
+      >
+        后一天
+      </Button>
+      
+      <Button 
+        onClick={goToToday}
+        variant="outline"
+        size="sm"
+        className="text-gray-600 hover:text-gray-800"
+      >
+        今天
+      </Button>
+    </div>
+  );
+};
+
+export default DateFilter;

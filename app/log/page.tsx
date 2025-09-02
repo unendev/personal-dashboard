@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 // import LogCard from '@/app/components/LogCard'
 import TimerZone from '@/app/components/TimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
+import DateFilter from '@/app/components/DateFilter'
 
 // 定义与API返回数据匹配的Log类型
 // interface LogActivityInstance {
@@ -42,6 +43,7 @@ export default function LogPage() {
   // const [logs] = useState<Log[]>([]);
   // const [isLoading] = useState(true);
   const [isPageReady, setIsPageReady] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
@@ -53,6 +55,7 @@ export default function LogPage() {
     isPaused: boolean;
     pausedTime: number;
   }[]>([]);
+  const [userId] = useState('default-user-id'); // 临时用户ID
   
   // 操作历史记录
   const [operationHistory, setOperationHistory] = useState<{
@@ -97,14 +100,28 @@ export default function LogPage() {
   //   fetchLogs();
   // }, []);
 
+  // 从数据库加载任务
+  const fetchTimerTasks = React.useCallback(async () => {
+    try {
+      const response = await fetch(`/api/timer-tasks?userId=${userId}&date=${selectedDate}`);
+      if (response.ok) {
+        const tasks = await response.json();
+        setTimerTasks(tasks);
+      }
+    } catch (error) {
+      console.error('Failed to fetch timer tasks:', error);
+    }
+  }, [userId, selectedDate]);
+
   // 确保页面完全加载后再显示内容
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsPageReady(true);
+      fetchTimerTasks(); // 加载任务数据
     }, 100); // 短暂延迟确保样式加载完成
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fetchTimerTasks]);
 
   const handleLogSaved = () => {
     // 重新获取日志数据
@@ -123,36 +140,50 @@ export default function LogPage() {
     setOperationHistory(prev => [newOperation, ...prev.slice(0, 9)]); // 只保留最近10条记录
   };
 
-  const handleAddToTimer = (taskName: string, categoryPath: string, initialTime: number = 0) => {
-    const newTask = {
-      id: Date.now().toString(),
-      name: taskName,
-      categoryPath: categoryPath,
-      elapsedTime: initialTime, // 使用初始时间
-      initialTime: initialTime, // 保存初始时间
-      isRunning: false,
-      startTime: null,
-      isPaused: false,
-      pausedTime: 0
-    };
-    setTimerTasks([...timerTasks, newTask]);
-    
-    // 记录操作历史
-    const timeText = initialTime > 0 ? ` (初始时间: ${formatTime(initialTime)})` : '';
-    recordOperation('添加事物', taskName, `${categoryPath}${timeText}`);
+  const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
+    try {
+      const newTask = {
+        name: taskName,
+        categoryPath: categoryPath,
+        elapsedTime: initialTime,
+        initialTime: initialTime,
+        isRunning: false,
+        startTime: null,
+        isPaused: false,
+        pausedTime: 0,
+        date: new Date().toISOString().split('T')[0],
+        userId: userId
+      };
+
+      const response = await fetch('/api/timer-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      if (response.ok) {
+        const createdTask = await response.json();
+        setTimerTasks([...timerTasks, createdTask]);
+        recordOperation('添加任务', taskName, `初始时间: ${initialTime}秒`);
+      }
+    } catch (error) {
+      console.error('Failed to add task:', error);
+    }
   };
 
   // 格式化时间显示
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+  // const formatTime = (seconds: number) => {
+  //   const hours = Math.floor(seconds / 3600);
+  //   const minutes = Math.floor((seconds % 3600) / 60);
     
-    if (hours > 0) {
-      return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
-    } else {
-      return `${minutes}m`;
-    }
-  };
+  //   if (hours > 0) {
+  //     return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
+  //   } else {
+  //     return `${minutes}m`;
+  //   }
+  // };
 
   // const handleTimerTaskComplete = (taskId: string, duration: string) => {
   //   // 计时器区域不再保存日志，只是记录事物
@@ -200,6 +231,12 @@ export default function LogPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">每日日志</h1>
           <p className="text-gray-600">记录你的日常事物和时间管理</p>
         </div>
+
+        {/* 日期过滤器 */}
+        <DateFilter 
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
 
         <div className="log-content-grid">
           {/* 计时器区域 */}
