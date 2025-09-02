@@ -13,12 +13,11 @@ type CategoryNode = {
 };
 
 interface CategorySelectorProps {
-  onSelected?: (classificationPath: string, taskName: string) => void;
   className?: string;
   onLogSaved?: () => void;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelected, className, onLogSaved }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved }) => {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string>('');

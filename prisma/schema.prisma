@@ -21,8 +21,8 @@ model User {
 
   // Spotify 相关字段
   spotifyId              String?   @unique // Spotify 用户的唯一ID
-  spotifyRefreshToken    String?   @map("spotify_refresh_token") @db.Text // 存储 refresh token
-  spotifyAccessToken     String?   @map("spotify_access_token") @db.Text // 存储 access token
+  spotifyRefreshToken    String?   @map("spotify_refresh_token") // 存储 refresh token
+  spotifyAccessToken     String?   @map("spotify_access_token") // 存储 access token
   spotifyAccessTokenExpiresAt DateTime? @map("spotify_access_token_expires_at") // access token 过期时间
 
   skills Skill[]

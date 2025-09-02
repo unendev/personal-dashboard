@@ -4,10 +4,37 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
-import type { Log } from '@prisma/client'
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1'
+// 定义与API返回数据匹配的Log类型
+interface LogActivityInstance {
+  id: string;
+  name: string;
+  duration: string;
+}
+
+interface LogSubCategoryInstance {
+  id: string;
+  name: string;
+  activities: LogActivityInstance[];
+}
+
+interface LogCategoryInstance {
+  id: string;
+  name: string;
+  subCategories: LogSubCategoryInstance[];
+}
+
+interface Log {
+  id: string;
+  content: string | null;
+  createdAt: Date;
+  timestamp: Date;
+  quest?: {
+    id: string;
+    title: string;
+  } | null;
+  categories: LogCategoryInstance[];
+}
 
 export default function LogPage() {
   const [logs, setLogs] = useState<Log[]>([]);
