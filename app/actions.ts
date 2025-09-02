@@ -137,7 +137,9 @@ export async function createLog(formData: FormData) {
   if (timestampString) {
     timestamp = new Date(timestampString);
   } else {
-    timestamp = new Date();
+    // 使用北京时间 (UTC+8)
+    const now = new Date();
+    timestamp = new Date(now.getTime() + (8 * 60 * 60 * 1000));
   }
 
   try {

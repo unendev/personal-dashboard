@@ -18,6 +18,8 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
   const [logContent, setLogContent] = useState('');
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   const handleCategorySelected = (path: string, name: string) => {
     setSelectedPath(path);
@@ -49,7 +51,10 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
       const formData = new FormData();
       formData.append('categories', JSON.stringify(categories));
       formData.append('content', logContent);
-      formData.append('timestamp', new Date().toISOString());
+      // 使用北京时间 (UTC+8)
+      const now = new Date();
+      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      formData.append('timestamp', beijingTime.toISOString());
 
       await createLog(formData);
       
@@ -58,6 +63,8 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
       setLogContent('');
       setTaskName('');
       setDuration('');
+      setStartTime('');
+      setEndTime('');
       
       if (onLogSaved) {
         onLogSaved();
@@ -113,16 +120,38 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
             </div>
 
             <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 耗时 (可选)
               </label>
               <Input
-                id="duration"
+                type="text"
+                placeholder="例如: 2h30m"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
-                placeholder="例如: 2h30m, 45m"
-                className="w-full"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  开始时间
+                </label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  结束时间
+                </label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
