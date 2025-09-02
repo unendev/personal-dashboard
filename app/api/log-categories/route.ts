@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import path from 'path';
-import { promises as fs } from 'fs';
+import { prisma } from '@/lib/prisma';
 
 // Type definitions for category structure
 interface CategoryNode {
+  id: string;
   name: string;
   children?: CategoryNode[];
 }
@@ -20,12 +20,35 @@ interface CreateRequest {
   name: string;
 }
 
+// Helper function to convert database structure to frontend structure
+function convertToFrontendStructure(categories: any[]): CategoryNode[] {
+  return categories.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    children: cat.children ? convertToFrontendStructure(cat.children) : undefined
+  }));
+}
+
 export async function GET() {
   try {
-    const jsonDirectory = path.join(process.cwd(), 'data');
-    const fileContents = await fs.readFile(jsonDirectory + '/log-categories.json', 'utf8');
-    const categories = JSON.parse(fileContents) as CategoryNode[];
-    return NextResponse.json(categories);
+    const categories = await prisma.logCategory.findMany({
+      include: {
+        children: {
+          include: {
+            children: true
+          }
+        }
+      },
+      where: {
+        parentId: null
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+    
+    const frontendCategories = convertToFrontendStructure(categories);
+    return NextResponse.json(frontendCategories);
   } catch (error) {
     console.error('Failed to read log categories:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
@@ -40,54 +63,82 @@ export async function POST(request: Request) {
       return new NextResponse('分类名称不能为空', { status: 400 });
     }
     
-    const jsonDirectory = path.join(process.cwd(), 'data');
-    const filePath = jsonDirectory + '/log-categories.json';
-    const fileContents = await fs.readFile(filePath, 'utf8');
-    const categories = JSON.parse(fileContents) as CategoryNode[];
-    
-    let updatedCategories: CategoryNode[] = [...categories];
+    let parentId: string | null = null;
     
     if (type === 'top') {
       // Create top-level category
-      const newCategory: CategoryNode = { name: name.trim() };
-      updatedCategories.push(newCategory);
+      parentId = null;
     } else if (type === 'mid') {
-      // Create mid-level category under parentPath (top category name)
-      updatedCategories = categories.map((cat: CategoryNode) => {
-        if (cat.name === parentPath) {
-          return {
-            ...cat,
-            children: [...(cat.children || []), { name: name.trim() }]
-          };
+      // Find parent top-level category
+      const parentCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: parentPath,
+          parentId: null
         }
-        return cat;
       });
+      
+      if (!parentCategory) {
+        return new NextResponse('父级分类不存在', { status: 400 });
+      }
+      
+      parentId = parentCategory.id;
     } else if (type === 'sub') {
-      // Create sub-level category under parentPath (topName/midName)
+      // Find parent mid-level category
       const [topName, midName] = (parentPath || '').split('/');
-      updatedCategories = categories.map((cat: CategoryNode) => {
-        if (cat.name === topName) {
-          return {
-            ...cat,
-            children: cat.children?.map((midCat: CategoryNode) => {
-              if (midCat.name === midName) {
-                return {
-                  ...midCat,
-                  children: [...(midCat.children || []), { name: name.trim() }]
-                };
-              }
-              return midCat;
-            }) || []
-          };
+      
+      const topCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: topName,
+          parentId: null
         }
-        return cat;
       });
+      
+      if (!topCategory) {
+        return new NextResponse('顶级分类不存在', { status: 400 });
+      }
+      
+      const midCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: midName,
+          parentId: topCategory.id
+        }
+      });
+      
+      if (!midCategory) {
+        return new NextResponse('中级分类不存在', { status: 400 });
+      }
+      
+      parentId = midCategory.id;
     }
     
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(updatedCategories, null, 2), 'utf8');
+    // Create the new category
+    const newCategory = await prisma.logCategory.create({
+      data: {
+        name: name.trim(),
+        parentId
+      }
+    });
     
-    return NextResponse.json({ success: true, categories: updatedCategories });
+    // Fetch updated categories
+    const updatedCategories = await prisma.logCategory.findMany({
+      include: {
+        children: {
+          include: {
+            children: true
+          }
+        }
+      },
+      where: {
+        parentId: null
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+    
+    const frontendCategories = convertToFrontendStructure(updatedCategories);
+    
+    return NextResponse.json({ success: true, categories: frontendCategories });
   } catch (error) {
     console.error('Failed to create category:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
@@ -106,92 +157,105 @@ export async function DELETE(request: Request) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
     
-    const jsonDirectory = path.join(process.cwd(), 'data');
-    const filePath = jsonDirectory + '/log-categories.json';
-    
-    // Check if file exists
-    try {
-      await fs.access(filePath);
-    } catch (error) {
-      console.error('File does not exist:', filePath);
-      return new NextResponse('Categories file not found', { status: 404 });
-    }
-    
-    // Read file with error handling
-    let fileContents: string;
-    try {
-      fileContents = await fs.readFile(filePath, 'utf8');
-    } catch (error) {
-      console.error('Failed to read file:', error);
-      return new NextResponse('Failed to read categories file', { status: 500 });
-    }
-    
-    let categories: CategoryNode[];
-    try {
-      categories = JSON.parse(fileContents) as CategoryNode[];
-    } catch (error) {
-      console.error('Failed to parse JSON:', error);
-      return new NextResponse('Invalid JSON in categories file', { status: 500 });
-    }
-    
-    console.log('Current categories:', JSON.stringify(categories, null, 2));
-    console.log('Delete request:', { type, categoryPath, name });
-    
-    let updatedCategories: CategoryNode[] = [...categories];
+    let categoryToDelete: any = null;
     
     if (type === 'top') {
       // Delete top-level category
-      console.log('Deleting top-level category:', name);
-      updatedCategories = categories.filter((cat: CategoryNode) => cat.name !== name);
+      categoryToDelete = await prisma.logCategory.findFirst({
+        where: {
+          name: name,
+          parentId: null
+        }
+      });
     } else if (type === 'mid') {
       // Delete mid-level category - categoryPath is the top category name
-      console.log('Deleting mid-level category:', { categoryPath, name });
-      updatedCategories = categories.map((cat: CategoryNode) => {
-        if (cat.name === categoryPath) {
-          return {
-            ...cat,
-            children: cat.children?.filter((child: CategoryNode) => child.name !== name) || []
-          };
+      const topCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: categoryPath,
+          parentId: null
         }
-        return cat;
+      });
+      
+      if (!topCategory) {
+        return new NextResponse('顶级分类不存在', { status: 400 });
+      }
+      
+      categoryToDelete = await prisma.logCategory.findFirst({
+        where: {
+          name: name,
+          parentId: topCategory.id
+        }
       });
     } else if (type === 'sub') {
       // Delete sub-level category - categoryPath is "topName/midName"
       const [topName, midName] = categoryPath.split('/');
-      console.log('Deleting sub-level category:', { topName, midName, name });
-      updatedCategories = categories.map((cat: CategoryNode) => {
-        if (cat.name === topName) {
-          return {
-            ...cat,
-            children: cat.children?.map((midCat: CategoryNode) => {
-              if (midCat.name === midName) {
-                return {
-                  ...midCat,
-                  children: midCat.children?.filter((subCat: CategoryNode) => subCat.name !== name) || []
-                };
-              }
-              return midCat;
-            }) || []
-          };
+      
+      const topCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: topName,
+          parentId: null
         }
-        return cat;
+      });
+      
+      if (!topCategory) {
+        return new NextResponse('顶级分类不存在', { status: 400 });
+      }
+      
+      const midCategory = await prisma.logCategory.findFirst({
+        where: {
+          name: midName,
+          parentId: topCategory.id
+        }
+      });
+      
+      if (!midCategory) {
+        return new NextResponse('中级分类不存在', { status: 400 });
+      }
+      
+      categoryToDelete = await prisma.logCategory.findFirst({
+        where: {
+          name: name,
+          parentId: midCategory.id
+        }
       });
     } else {
       console.error('Invalid delete type:', type);
       return new NextResponse('Invalid delete type', { status: 400 });
     }
     
-    console.log('Updated categories:', JSON.stringify(updatedCategories, null, 2));
-    
-    // Write back to file with error handling
-    try {
-      await fs.writeFile(filePath, JSON.stringify(updatedCategories, null, 2), 'utf8');
-    } catch (error) {
-      console.error('Failed to write file:', error);
-      return new NextResponse('Failed to save categories', { status: 500 });
+    if (!categoryToDelete) {
+      return new NextResponse('分类不存在', { status: 404 });
     }
     
-    return NextResponse.json({ success: true, categories: updatedCategories });
+    // Delete the category (cascade will handle children)
+    await prisma.logCategory.delete({
+      where: {
+        id: categoryToDelete.id
+      }
+    });
+    
+    console.log('Deleted category:', categoryToDelete.name);
+    
+    // Fetch updated categories
+    const updatedCategories = await prisma.logCategory.findMany({
+      include: {
+        children: {
+          include: {
+            children: true
+          }
+        }
+      },
+      where: {
+        parentId: null
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+    
+    const frontendCategories = convertToFrontendStructure(updatedCategories);
+    
+    return NextResponse.json({ success: true, categories: frontendCategories });
   } catch (error) {
     console.error('Failed to delete category:', error);
     return new NextResponse(`Internal Server Error: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });

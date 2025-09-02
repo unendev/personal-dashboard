@@ -9,6 +9,7 @@ import { createLog } from '@/app/actions';
 import { getBeijingTime } from '@/lib/utils';
 
 type CategoryNode = {
+  id: string;
   name: string;
   children?: CategoryNode[];
 };

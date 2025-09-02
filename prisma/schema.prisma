@@ -110,6 +110,18 @@ model LogActivityInstance {
   @@map("log_activity_instances")
 }
 
+model LogCategory {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?  // 父分类ID，null表示顶级分类
+  parent    LogCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  LogCategory[] @relation("CategoryHierarchy")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("log_categories")
+}
+
 model UserLayout {
   id           String   @id @default(cuid())
   userId       String   @unique
