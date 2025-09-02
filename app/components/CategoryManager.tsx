@@ -140,6 +140,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
       return;
     }
 
+    if (!duration.trim()) {
+      alert('请输入时间消耗');
+      return;
+    }
+
     if (onSelected) {
       onSelected(selectedPath, taskName.trim());
       setShowDialog(false);
@@ -186,10 +191,99 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
     }
   };
 
+  // 将数字转换为时间格式
+  const formatDuration = (value: string): string => {
+    const num = parseInt(value);
+    if (isNaN(num) || num <= 0) return '';
+    
+    if (num < 60) {
+      return `${num}m`;
+    } else {
+      const hours = Math.floor(num / 60);
+      const minutes = num % 60;
+      if (minutes === 0) {
+        return `${hours}h`;
+      } else {
+        return `${hours}h${minutes}m`;
+      }
+    }
+  };
+
+  // 处理时间输入
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, ''); // 只允许数字
+    setDuration(value);
+  };
+
+  // 在提交时转换时间格式
+  const handleSubmitWithFormat = async () => {
+    if (!taskName.trim()) {
+      alert('请输入任务名称');
+      return;
+    }
+
+    if (!duration.trim()) {
+      alert('请输入时间消耗');
+      return;
+    }
+
+    // 转换时间格式
+    const formattedDuration = formatDuration(duration);
+    if (!formattedDuration) {
+      alert('请输入有效的时间');
+      return;
+    }
+
+    if (onSelected) {
+      onSelected(selectedPath, taskName.trim());
+      setShowDialog(false);
+      setTaskName('');
+      setSelectedPath('');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const pathParts = selectedPath.split('/');
+      const categories = [{
+        name: pathParts[0] || '',
+        subCategories: [{
+          name: pathParts[1] || '',
+          activities: [{
+            name: pathParts[2] || taskName,
+            duration: formattedDuration
+          }]
+        }]
+      }];
+
+      const formData = new FormData();
+      formData.append('categories', JSON.stringify(categories));
+      formData.append('content', '');
+      // 使用北京时间
+      const beijingTime = getBeijingTime();
+      formData.append('timestamp', beijingTime.toISOString());
+
+      await createLog(formData);
+      
+      setTaskName('');
+      setDuration('');
+      setShowDialog(false);
+      
+      if (onLogSaved) {
+        onLogSaved();
+      }
+    } catch (error) {
+      console.error('创建日志失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSubmit();
+      handleSubmitWithFormat();
     }
   };
 
@@ -327,13 +421,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                时间消耗 (可选)
+                时间消耗 (分钟)
               </label>
               <Input
                 value={duration}
-                onChange={(e) => setDuration(e.target.value)}
+                onChange={handleDurationChange}
                 onKeyDown={handleKeyDown}
-                placeholder="例如: 2h30m, 45m"
+                placeholder="输入分钟数，如: 45, 120"
               />
             </div>
           </div>
@@ -341,7 +435,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmit} disabled={!taskName.trim() || isLoading}>
+            <Button onClick={handleSubmitWithFormat} disabled={!taskName.trim() || isLoading}>
               {isLoading ? '保存中...' : '保存记录'}
             </Button>
           </DialogFooter>

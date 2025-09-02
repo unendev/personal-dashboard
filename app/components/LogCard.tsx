@@ -93,7 +93,6 @@ export default function LogCard({ log }: LogCardProps) {
 
       {hasCategoriesContent && (
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-2">每日总结</h3>
           {renderCategories(log.categories)}
         </div>
       )}
