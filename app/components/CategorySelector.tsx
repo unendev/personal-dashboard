@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { createLog } from '@/app/actions';
+import { getBeijingTime } from '@/lib/utils';
 
 type CategoryNode = {
   name: string;
@@ -25,6 +26,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{type: string, path: string, name: string} | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -45,6 +48,37 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     // 自动填入任务名，提升用户体验
     setTaskName(subName);
     setShowDialog(true);
+  };
+
+  const handleDeleteCategory = (type: string, path: string, name: string) => {
+    setDeleteTarget({ type, path, name });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deleteTarget),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setCategories(result.categories);
+        setShowDeleteConfirm(false);
+        setDeleteTarget(null);
+      } else {
+        throw new Error('删除失败');
+      }
+    } catch (error) {
+      console.error('删除分类失败:', error);
+      alert('删除失败，请重试');
+    }
   };
 
   const handleSubmit = async () => {
@@ -81,9 +115,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       const formData = new FormData();
       formData.append('categories', JSON.stringify(categories));
       formData.append('content', ''); // 空内容
-      // 使用北京时间 (UTC+8)
-      const now = new Date();
-      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      // 使用北京时间
+      const beijingTime = getBeijingTime();
       formData.append('timestamp', beijingTime.toISOString());
 
       await createLog(formData);
@@ -118,8 +151,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
         {categories.map((topCategory) => (
           <Card key={topCategory.name} className="shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-              <CardTitle className="text-lg font-bold text-gray-800">
+              <CardTitle className="text-lg font-bold text-gray-800 flex justify-between items-center">
                 {topCategory.name}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleDeleteCategory('top', '', topCategory.name)}
+                >
+                  删除
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -128,23 +169,40 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 {topCategory.children?.map((midCategory) => (
                   <Card key={midCategory.name} className="border border-gray-200 hover:border-blue-300 transition-colors">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold text-gray-700">
+                      <CardTitle className="text-sm font-semibold text-gray-700 flex justify-between items-center">
                         {midCategory.name}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+                          onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
+                        >
+                          删除
+                        </Button>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                       {/* 子类按钮 */}
                       <div className="flex flex-wrap gap-2">
                         {midCategory.children?.map((subCategory) => (
-                          <Button
-                            key={subCategory.name}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs hover:bg-blue-50 hover:border-blue-300"
-                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
-                          >
-                            {subCategory.name}
-                          </Button>
+                          <div key={subCategory.name} className="relative group">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs hover:bg-blue-50 hover:border-blue-300 pr-8"
+                              onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
+                            >
+                              {subCategory.name}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleDeleteCategory('sub', `${topCategory.name}/${midCategory.name}`, subCategory.name)}
+                            >
+                              ×
+                            </Button>
+                          </div>
                         ))}
                         {/* 如果中类没有子类，显示一个通用按钮 */}
                         {(!midCategory.children || midCategory.children.length === 0) && (
@@ -209,6 +267,31 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             </Button>
             <Button onClick={handleSubmit} disabled={!taskName.trim() || isLoading}>
               {isLoading ? '保存中...' : '保存记录'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认对话框 */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              确定要删除分类 <span className="font-medium text-red-600">{deleteTarget?.name}</span> 吗？
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              删除后无法恢复，请谨慎操作。
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>

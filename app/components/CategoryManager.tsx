@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { createLog } from '@/app/actions';
+import { getBeijingTime } from '@/lib/utils';
 
 type CategoryNode = {
   name: string;
@@ -56,14 +57,27 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     
-    // 这里应该调用API来删除分类
-    // 暂时只是从本地状态中移除
-    console.log('删除分类:', deleteTarget);
-    setShowDeleteConfirm(false);
-    setDeleteTarget(null);
-    
-    // TODO: 实现实际的删除逻辑
-    alert('删除功能待实现');
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deleteTarget),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setCategories(result.categories);
+        setShowDeleteConfirm(false);
+        setDeleteTarget(null);
+      } else {
+        throw new Error('删除失败');
+      }
+    } catch (error) {
+      console.error('删除分类失败:', error);
+      alert('删除失败，请重试');
+    }
   };
 
   const handleSubmit = async () => {
@@ -97,9 +111,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
       const formData = new FormData();
       formData.append('categories', JSON.stringify(categories));
       formData.append('content', '');
-      // 使用北京时间 (UTC+8)
-      const now = new Date();
-      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      // 使用北京时间
+      const beijingTime = getBeijingTime();
       formData.append('timestamp', beijingTime.toISOString());
 
       await createLog(formData);

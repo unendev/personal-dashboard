@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getBeijingTime } from '@/lib/utils'
 
 // 日志分类相关类型定义
 interface LogActivity {
@@ -106,7 +107,7 @@ export async function updateQuestStatus(questId: string, status: string) {
       where: { id: questId },
       data: {
         status: status as 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
-        updatedAt: new Date(),
+        updatedAt: getBeijingTime(),
       },
     })
 
@@ -138,8 +139,7 @@ export async function createLog(formData: FormData) {
     timestamp = new Date(timestampString);
   } else {
     // 使用北京时间 (UTC+8)
-    const now = new Date();
-    timestamp = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+          timestamp = getBeijingTime();
   }
 
   try {

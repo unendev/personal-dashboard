@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { createLog } from '@/app/actions';
+import { getBeijingTime } from '@/lib/utils';
 import CategorySelector from './CategorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -26,9 +27,8 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
     try {
       const formData = new FormData();
       formData.append('content', logContent);
-      // 使用北京时间 (UTC+8)
-      const now = new Date();
-      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      // 使用北京时间
+      const beijingTime = getBeijingTime();
       formData.append('timestamp', beijingTime.toISOString());
 
       await createLog(formData);

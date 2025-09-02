@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createLog } from '@/app/actions'
+import { getBeijingTime } from '@/lib/utils'
 
 // 移除未使用的 Quest 接口
 
@@ -110,9 +111,8 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
     setIsLoading(true)
     try {
       formData.append('categories', JSON.stringify(categories));
-      // 使用北京时间 (UTC+8)
-      const now = new Date();
-      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      // 使用北京时间
+      const beijingTime = getBeijingTime();
       formData.append('timestamp', beijingTime.toISOString());
       await createLog(formData)
       const form = document.getElementById('log-form') as HTMLFormElement
