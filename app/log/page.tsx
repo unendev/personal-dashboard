@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
 import TimerZone from '@/app/components/TimerZone'
+import TimeStatsChart from '@/app/components/TimeStatsChart'
 
 // 定义与API返回数据匹配的Log类型
 interface LogActivityInstance {
@@ -214,6 +215,14 @@ export default function LogPage() {
             </div>
           </div>
 
+          {/* 图表统计区域 */}
+          <div className="stats-chart-section">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
+              <TimeStatsChart tasks={timerTasks} />
+            </div>
+          </div>
+
           {/* 日志输入区域 */}
           <div className="log-input-section">
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -255,8 +264,8 @@ export default function LogPage() {
             </div>
           </div>
 
-          {/* 日志列表区域 */}
-          <div className="log-list-section">
+          {/* 日志列表区域 - 暂时隐藏 */}
+          {/* <div className="log-list-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">日志历史</h2>
               {isLoading ? (
@@ -271,7 +280,7 @@ export default function LogPage() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

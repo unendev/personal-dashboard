@@ -222,7 +222,9 @@ body {
 
 .timer-section,
 .log-input-section,
-.log-list-section {
+.log-list-section,
+.stats-chart-section,
+.operation-history-section {
   width: 100%;
 }
 
