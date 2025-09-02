@@ -1,9 +1,9 @@
 [
   {
-    "name": "价值投资 (Investment)",
+    "name": "价值投资",
     "children": [
       {
-        "name": "核心工作 (Core Work)",
+        "name": "核心工作",
         "children": [
           { "name": "项目A" },
           { "name": "项目B" },
@@ -11,7 +11,7 @@
         ]
       },
       {
-        "name": "技能学习 (Skill Up)",
+        "name": "技能学习",
         "children": [
           { "name": "专业阅读" },
           { "name": "线上课程" },
@@ -19,14 +19,14 @@
         ]
       },
       {
-        "name": "深度思考 (Deep Thinking)",
+        "name": "深度思考",
         "children": [
           { "name": "复盘规划" },
           { "name": "创作构思" }
         ]
       },
       {
-        "name": "灵感源泉 (Inspiration)",
+        "name": "灵感源泉",
         "children": [
           { "name": "影视" },
           { "name": "阅读" },
@@ -36,10 +36,10 @@
     ]
   },
   {
-    "name": "精力补充 (Replenishment)",
+    "name": "精力补充",
     "children": [
       {
-        "name": "纯粹娱乐 (Pure Fun)",
+        "name": "纯粹娱乐",
         "children": [
           { "name": "影视" },
           { "name": "阅读" },
@@ -47,15 +47,15 @@
         ]
       },
       {
-        "name": "身体锻炼 (Exercise)",
+        "name": "身体锻炼",
         "children": [
           { "name": "有氧" },
           { "name": "无氧" },
-          { "name": "游戏化运动（节奏光剑）" }
+          { "name": "游戏化运动" }
         ]
       },
       {
-        "name": "社交连接 (Social)",
+        "name": "社交连接",
         "children": [
           { "name": "朋友" },
           { "name": "家人" }
@@ -64,24 +64,24 @@
     ]
   },
   {
-    "name": "系统维持 (Maintenance)",
+    "name": "系统维持",
     "children": [
       {
-        "name": "日常琐事 (Daily Chores)",
+        "name": "日常琐事",
         "children": [
           { "name": "通勤" },
           { "name": "家务" }
         ]
       },
       {
-        "name": "事务性工作 (Admin Work)",
+        "name": "事务性工作",
         "children": [
           { "name": "邮件处理" },
           { "name": "流程性任务" }
         ]
       },
       {
-        "name": "信息处理 (Info Processing)",
+        "name": "信息处理",
         "children": [
           { "name": "新闻浏览" },
           { "name": "社区冲浪" }
@@ -90,14 +90,14 @@
     ]
   },
   {
-    "name": "时间黑洞 (Time Sink)",
+    "name": "时间黑洞",
     "children": [
       {
-        "name": "无效冲浪 (Mindless Browsing)",
+        "name": "无效冲浪",
         "children": []
       },
       {
-        "name": "拖延等待 (Procrastination)",
+        "name": "拖延等待",
         "children": []
       }
     ]
