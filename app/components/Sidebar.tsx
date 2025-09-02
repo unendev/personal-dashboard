@@ -119,6 +119,19 @@ const Sidebar = () => {
               </a>
             </li>
 
+            {/* 工具系统 */}
+            <li className="mt-4">
+              <div className="px-4 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider">
+                工具系统
+              </div>
+            </li>
+            <li>
+              <a href="/tools" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+                <div className="w-2 h-2 bg-purple-400 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
+                <span className="font-medium">⚙️ 个人工具</span>
+              </a>
+            </li>
+
             <li>
               <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-white/20 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>

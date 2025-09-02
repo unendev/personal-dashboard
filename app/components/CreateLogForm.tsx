@@ -110,7 +110,10 @@ export default function CreateLogForm(/* { activeQuests }: CreateLogFormProps */
     setIsLoading(true)
     try {
       formData.append('categories', JSON.stringify(categories));
-      formData.append('timestamp', new Date().toISOString());
+      // 使用北京时间 (UTC+8)
+      const now = new Date();
+      const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      formData.append('timestamp', beijingTime.toISOString());
       await createLog(formData)
       const form = document.getElementById('log-form') as HTMLFormElement
       form?.reset()
