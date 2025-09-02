@@ -28,6 +28,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{type: string, path: string, name: string} | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createType, setCreateType] = useState<'top' | 'mid' | 'sub'>('top');
+  const [createParentPath, setCreateParentPath] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -45,13 +49,54 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
   const handleSubCategoryClick = (topName: string, midName: string, subName: string) => {
     const path = `${topName}/${midName}/${subName}`;
     setSelectedPath(path);
-    setTaskName(subName || '');
+    // 任务名称默认为空，让用户手动输入
+    setTaskName('');
     setShowDialog(true);
   };
 
   const handleDeleteCategory = (type: string, path: string, name: string) => {
     setDeleteTarget({ type, path, name });
     setShowDeleteConfirm(true);
+  };
+
+  const handleCreateCategory = (type: 'top' | 'mid' | 'sub', parentPath: string = '') => {
+    setCreateType(type);
+    setCreateParentPath(parentPath);
+    setShowCreateDialog(true);
+  };
+
+  const confirmCreate = async () => {
+    if (!newCategoryName.trim()) {
+      alert('请输入分类名称');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: createType,
+          parentPath: createParentPath,
+          name: newCategoryName.trim()
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setCategories(result.categories);
+        setShowCreateDialog(false);
+        setNewCategoryName('');
+        setCreateParentPath('');
+      } else {
+        throw new Error('创建失败');
+      }
+    } catch (error) {
+      console.error('创建分类失败:', error);
+      alert('创建失败，请重试');
+    }
   };
 
   const confirmDelete = async () => {
@@ -141,6 +186,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
 
   return (
     <div className={className}>
+      {/* 创建分类按钮 */}
+      <div className="mb-6">
+        <Button
+          onClick={() => handleCreateCategory('top')}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          + 创建顶级分类
+        </Button>
+      </div>
+      
       {/* 分类卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {categories.map((topCategory) => (
@@ -148,14 +203,24 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
               <CardTitle className="text-lg font-bold text-gray-800 flex justify-between items-center">
                 {topCategory.name}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDeleteCategory('top', '', topCategory.name)}
-                >
-                  删除
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => handleCreateCategory('mid', topCategory.name)}
+                  >
+                    +
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteCategory('top', '', topCategory.name)}
+                  >
+                    删除
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -165,14 +230,24 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-semibold text-gray-700 flex justify-between items-center">
                         {midCategory.name}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
-                          onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
-                        >
-                          删除
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs"
+                            onClick={() => handleCreateCategory('sub', `${topCategory.name}/${midCategory.name}`)}
+                          >
+                            +
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+                            onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
+                          >
+                            删除
+                          </Button>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -281,6 +356,41 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 创建分类对话框 */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建新分类</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                分类名称
+              </label>
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="输入分类名称..."
+                autoFocus
+              />
+            </div>
+            {createType !== 'top' && (
+              <p className="text-sm text-gray-600">
+                将在 <span className="font-medium text-blue-600">{createParentPath}</span> 下创建新分类
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={confirmCreate} disabled={!newCategoryName.trim()}>
+              创建分类
             </Button>
           </DialogFooter>
         </DialogContent>

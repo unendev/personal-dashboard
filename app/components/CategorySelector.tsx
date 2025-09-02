@@ -45,8 +45,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const handleSubCategoryClick = (topName: string, midName: string, subName: string) => {
     const path = `${topName}/${midName}/${subName}`;
     setSelectedPath(path);
-    // 自动填入任务名，提升用户体验
-    setTaskName(subName);
+    // 任务名称默认为空，让用户手动输入
+    setTaskName('');
     setShowDialog(true);
   };
 

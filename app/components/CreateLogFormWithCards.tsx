@@ -18,10 +18,7 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!logContent.trim()) {
-      alert('请输入日志内容');
-      return;
-    }
+    // 允许空内容提交，因为可以通过分类选择器创建日志
 
     setIsLoading(true);
     try {
@@ -84,7 +81,7 @@ export default function CreateLogFormWithCards({ onLogSaved }: CreateLogFormWith
       {/* 提交按钮 */}
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || !logContent.trim()}
+        disabled={isLoading}
         className="w-full"
         size="lg"
       >
