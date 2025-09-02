@@ -216,7 +216,7 @@ const TimerWidget: React.FC = () => {
             ))}
             {tasks.length === 0 && (
               <div className="text-center text-gray-500 py-8">
-                暂无任务，点击"添加任务"开始计时
+                暂无任务，点击{' '}{'"'}添加任务{'"'}开始计时
               </div>
             )}
           </div>

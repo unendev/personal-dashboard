@@ -259,7 +259,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              确定要删除 "{deleteTarget?.name}" 吗？此操作不可撤销。
+              确定要删除 {'"'}{deleteTarget?.name}{'"'} 吗？此操作不可撤销。
             </p>
           </div>
           <DialogFooter>
