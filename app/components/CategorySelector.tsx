@@ -15,9 +15,10 @@ type CategoryNode = {
 interface CategorySelectorProps {
   className?: string;
   onLogSaved?: () => void;
+  onSelected?: (path: string, taskName: string) => void; // 新增的回调
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved }) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved, onSelected }) => {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string>('');
@@ -52,6 +53,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       return;
     }
 
+    // 如果有onSelected回调，调用它（用于progress页面）
+    if (onSelected) {
+      onSelected(selectedPath, taskName.trim());
+      setShowDialog(false);
+      setTaskName('');
+      setSelectedPath('');
+      return;
+    }
+
+    // 否则直接创建日志（用于log页面）
     setIsLoading(true);
     try {
       // 构建分类数据
