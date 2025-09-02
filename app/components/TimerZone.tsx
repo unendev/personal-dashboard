@@ -11,7 +11,7 @@ interface TimerTask {
   elapsedTime: number;
   initialTime: number; // 初始时间（秒）
   isRunning: boolean;
-  startTime: bigint | null;
+  startTime: number | null;
   isPaused: boolean;
   pausedTime: number;
 }
@@ -45,7 +45,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       if (task.isRunning && !task.isPaused && task.startTime) {
         if (!intervalRefs.current[task.id]) {
           intervalRefs.current[task.id] = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - Number(task.startTime!)) / 1000);
+            const elapsed = Math.floor((Date.now() / 1000 - task.startTime!));
             // 总时间 = 初始时间 + 运行时间
             const totalTime = task.initialTime + elapsed;
             updateTaskTime(task.id, totalTime);
@@ -98,7 +98,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
             ...task,
             isRunning: true,
             isPaused: false,
-            startTime: BigInt(Date.now()),
+            startTime: Math.floor(Date.now() / 1000),
             pausedTime: 0
           };
         }
@@ -179,7 +179,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
         body: JSON.stringify({
           id: taskId,
           isPaused: false,
-          startTime: BigInt(newStartTime),
+          startTime: newStartTime,
           pausedTime: 0
         }),
       });
@@ -194,7 +194,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                       return {
               ...task,
               isPaused: false,
-              startTime: BigInt(newStartTime),
+              startTime: newStartTime,
               pausedTime: 0
             };
         }
@@ -236,7 +236,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
           isPaused: false,
           startTime: null,
           elapsedTime: finalElapsedTime,
-          completedAt: BigInt(Date.now())
+          completedAt: Math.floor(Date.now() / 1000)
         }),
       });
 

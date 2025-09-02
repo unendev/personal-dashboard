@@ -132,10 +132,10 @@ model TimerTask {
   elapsedTime  Int      @default(0)
   initialTime  Int      @default(0)
   isRunning    Boolean  @default(false)
-  startTime    BigInt?  // Unix timestamp in milliseconds
+  startTime    Int?     // Unix timestamp in seconds
   isPaused     Boolean  @default(false)
   pausedTime   Int      @default(0)
-  completedAt  BigInt?  // Unix timestamp in milliseconds
+  completedAt  Int?     // Unix timestamp in seconds
   date         String   // ISO date string
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)

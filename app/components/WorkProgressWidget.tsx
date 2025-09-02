@@ -94,7 +94,7 @@ const WorkProgressWidget: React.FC<WorkProgressWidgetProps> = ({ classificationP
       nodes.forEach(n => {
         if (n.isRunning) {
           if (n.lastStartTime) {
-            const delta = Math.floor((now - Number(n.lastStartTime)) / 1000);
+            const delta = Math.floor((now / 1000 - n.lastStartTime));
             n.timeSpent += Math.max(0, delta);
           }
           n.isRunning = false;
@@ -134,7 +134,7 @@ const WorkProgressWidget: React.FC<WorkProgressWidgetProps> = ({ classificationP
       if (node.isRunning) {
         // 暂停
         if (node.lastStartTime) {
-                      const delta = Math.floor((Date.now() - Number(node.lastStartTime)) / 1000);
+                      const delta = Math.floor((Date.now() / 1000 - node.lastStartTime));
           node.timeSpent += Math.max(0, delta);
         }
         node.isRunning = false;
@@ -144,7 +144,7 @@ const WorkProgressWidget: React.FC<WorkProgressWidgetProps> = ({ classificationP
         // 开始前先停止所有其他路径的任务
         stopAllOtherPaths();
         node.isRunning = true;
-                    node.lastStartTime = BigInt(Date.now());
+                    node.lastStartTime = Math.floor(Date.now() / 1000);
         runningTaskRef.current = { id: node.id };
       }
       return draft;

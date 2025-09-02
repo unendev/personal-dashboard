@@ -11,7 +11,7 @@ interface AISummaryResponse {
     name: string;
     categoryPath: string;
     elapsedTime: number;
-    completedAt: bigint | null;
+    completedAt: number | null;
   }>;
 }
 
@@ -27,7 +27,7 @@ interface AnalysisData {
     name: string;
     categoryPath: string;
     elapsedTime: number;
-    completedAt: bigint | null;
+    completedAt: number | null;
     isRunning: boolean;
     isPaused: boolean;
   }>;

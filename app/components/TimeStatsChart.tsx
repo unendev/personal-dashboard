@@ -11,7 +11,7 @@ interface TimerTask {
   elapsedTime: number;
   initialTime: number;
   isRunning: boolean;
-  startTime: bigint | null;
+  startTime: number | null;
   isPaused: boolean;
   pausedTime: number;
 }

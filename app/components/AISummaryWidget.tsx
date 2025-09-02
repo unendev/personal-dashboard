@@ -15,7 +15,7 @@ interface AISummary {
     name: string;
     categoryPath: string;
     elapsedTime: number;
-    completedAt?: bigint;
+    completedAt?: number;
   }>;
 }
 
