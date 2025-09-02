@@ -127,66 +127,66 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
   };
 
-  const handleSubmit = async () => {
-    if (!taskName.trim()) {
-      alert('请输入任务名称');
-      return;
-    }
+  // const handleSubmit = async () => {
+  //   if (!taskName.trim()) {
+  //     alert('请输入任务名称');
+  //     return;
+  //   }
 
-    if (!duration.trim()) {
-      alert('请输入时间消耗');
-      return;
-    }
+  //   if (!duration.trim()) {
+  //     alert('请输入时间消耗');
+  //     return;
+  //   }
 
-    // 如果有onSelected回调，调用它（用于progress页面）
-    if (onSelected) {
-      onSelected(selectedPath, taskName.trim());
-      setShowDialog(false);
-      setTaskName('');
-      setSelectedPath('');
-      return;
-    }
+  //   // 如果有onSelected回调，调用它（用于progress页面）
+  //   if (onSelected) {
+  //     onSelected(selectedPath, taskName.trim());
+  //     setShowDialog(false);
+  //     setTaskName('');
+  //     setSelectedPath('');
+  //     return;
+  //   }
 
-    // 否则直接创建日志（用于log页面）
-    setIsLoading(true);
-    try {
-      // 构建分类数据
-      const pathParts = selectedPath.split('/');
-      const categories = [{
-        name: pathParts[0] || '',
-        subCategories: [{
-          name: pathParts[1] || '',
-          activities: [{
-            name: pathParts[2] || taskName,
-            duration: duration || '0h'
-          }]
-        }]
-      }];
+  //   // 否则直接创建日志（用于log页面）
+  //   setIsLoading(true);
+  //   try {
+  //     // 构建分类数据
+  //     const pathParts = selectedPath.split('/');
+  //     const categories = [{
+  //       name: pathParts[0] || '',
+  //       subCategories: [{
+  //         name: pathParts[1] || '',
+  //         activities: [{
+  //           name: pathParts[2] || taskName,
+  //           duration: duration || '0h'
+  //         }]
+  //       }]
+  //     }];
 
-      const formData = new FormData();
-      formData.append('categories', JSON.stringify(categories));
-      formData.append('content', ''); // 空内容
-      // 使用北京时间
-      const beijingTime = getBeijingTime();
-      formData.append('timestamp', beijingTime.toISOString());
+  //     const formData = new FormData();
+  //     formData.append('categories', JSON.stringify(categories));
+  //     formData.append('content', ''); // 空内容
+  //     // 使用北京时间
+  //     const beijingTime = getBeijingTime();
+  //     formData.append('timestamp', beijingTime.toISOString());
 
-      await createLog(formData);
+  //     await createLog(formData);
       
-      // 重置表单
-      setTaskName('');
-      setDuration('');
-      setShowDialog(false);
+  //     // 重置表单
+  //     setTaskName('');
+  //     setDuration('');
+  //     setShowDialog(false);
       
-      if (onLogSaved) {
-        onLogSaved();
-      }
-    } catch (error) {
-      console.error('创建日志失败:', error);
-      alert('保存失败，请重试');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (onLogSaved) {
+  //       onLogSaved();
+  //     }
+  //   } catch (error) {
+  //     console.error('创建日志失败:', error);
+  //     alert('保存失败，请重试');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）并转换为秒数
   const parseDurationToSeconds = (value: string): number => {

@@ -19,14 +19,14 @@ interface TimerTask {
 interface TimerZoneProps {
   tasks: TimerTask[];
   onTasksChange: (tasks: TimerTask[]) => void;
-  onTaskComplete: (taskId: string, duration: string) => void;
+  // onTaskComplete?: (taskId: string, duration: string) => void;
   onOperationRecord?: (action: string, taskName: string, details?: string) => void;
 }
 
 const TimerZone: React.FC<TimerZoneProps> = ({ 
   tasks, 
   onTasksChange, 
-  onTaskComplete,
+  // onTaskComplete,
   onOperationRecord
 }) => {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);

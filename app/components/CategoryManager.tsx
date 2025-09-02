@@ -134,62 +134,62 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
     }
   };
 
-  const handleSubmit = async () => {
-    if (!taskName.trim()) {
-      alert('请输入任务名称');
-      return;
-    }
+  // const handleSubmit = async () => {
+  //   if (!taskName.trim()) {
+  //     alert('请输入任务名称');
+  //     return;
+  //   }
 
-    if (!duration.trim()) {
-      alert('请输入时间消耗');
-      return;
-    }
+  //   if (!duration.trim()) {
+  //     alert('请输入时间消耗');
+  //     return;
+  //   }
 
-    if (onSelected) {
-      onSelected(selectedPath, taskName.trim());
-      setShowDialog(false);
-      setTaskName('');
-      setSelectedPath('');
-      return;
-    }
+  //   if (onSelected) {
+  //     onSelected(selectedPath, taskName.trim());
+  //     setShowDialog(false);
+  //     setTaskName('');
+  //     setSelectedPath('');
+  //     return;
+  //   }
 
-    setIsLoading(true);
-    try {
-      const pathParts = selectedPath.split('/');
-      const categories = [{
-        name: pathParts[0] || '',
-        subCategories: [{
-          name: pathParts[1] || '',
-          activities: [{
-            name: pathParts[2] || taskName,
-            duration: duration || '0h'
-          }]
-        }]
-      }];
+  //   setIsLoading(true);
+  //   try {
+  //     const pathParts = selectedPath.split('/');
+  //     const categories = [{
+  //       name: pathParts[0] || '',
+  //       subCategories: [{
+  //         name: pathParts[1] || '',
+  //         activities: [{
+  //           name: pathParts[2] || taskName,
+  //           duration: duration || '0h'
+  //         }]
+  //       }]
+  //     }];
 
-      const formData = new FormData();
-      formData.append('categories', JSON.stringify(categories));
-      formData.append('content', '');
-      // 使用北京时间
-      const beijingTime = getBeijingTime();
-      formData.append('timestamp', beijingTime.toISOString());
+  //     const formData = new FormData();
+  //     formData.append('categories', JSON.stringify(categories));
+  //     formData.append('content', '');
+  //     // 使用北京时间
+  //     const beijingTime = getBeijingTime();
+  //     formData.append('timestamp', beijingTime.toISOString());
 
-      await createLog(formData);
+  //     await createLog(formData);
       
-      setTaskName('');
-      setDuration('');
-      setShowDialog(false);
+  //     setTaskName('');
+  //     setDuration('');
+  //     setShowDialog(false);
       
-      if (onLogSaved) {
-        onLogSaved();
-      }
-    } catch (error) {
-      console.error('创建日志失败:', error);
-      alert('保存失败，请重试');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (onLogSaved) {
+  //       onLogSaved();
+  //     }
+  //   } catch (error) {
+  //     console.error('创建日志失败:', error);
+  //     alert('保存失败，请重试');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）
   const parseDuration = (value: string): string => {

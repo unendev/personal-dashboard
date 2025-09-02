@@ -177,13 +177,13 @@ const QuickTimer: React.FC = () => {
     }
   };
 
-  const deleteTask = (taskId: string) => {
-    if (currentTask?.id === taskId) {
-      setCurrentTask(null);
-      setElapsedTime(0);
-    }
-    setTasks(tasks.filter(t => t.id !== taskId));
-  };
+  // const deleteTask = (taskId: string) => {
+  //   if (currentTask?.id === taskId) {
+  //     setCurrentTask(null);
+  //     setElapsedTime(0);
+  //   }
+  //   setTasks(tasks.filter(t => t.id !== taskId));
+  // };
 
   return (
     <div className="space-y-4">

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
-import LogCard from '@/app/components/LogCard'
+// import LogCard from '@/app/components/LogCard'
 import TimerZone from '@/app/components/TimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 
@@ -20,27 +20,27 @@ interface LogSubCategoryInstance {
   activities: LogActivityInstance[];
 }
 
-interface LogCategoryInstance {
-  id: string;
-  name: string;
-  subCategories: LogSubCategoryInstance[];
-}
+// interface LogCategoryInstance {
+//   id: string;
+//   name: string;
+//   subCategories: LogSubCategoryInstance[];
+// }
 
-interface Log {
-  id: string;
-  content: string | null;
-  createdAt: Date;
-  timestamp: Date;
-  quest?: {
-    id: string;
-    title: string;
-  } | null;
-  categories: LogCategoryInstance[];
-}
+// interface Log {
+//   id: string;
+//   content: string | null;
+//   createdAt: Date;
+//   timestamp: Date;
+//   quest?: {
+//     id: string;
+//     title: string;
+//   } | null;
+//   categories: LogCategoryInstance[];
+// }
 
 export default function LogPage() {
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [logs] = useState<Log[]>([]);
+  // const [isLoading] = useState(true);
   const [isPageReady, setIsPageReady] = useState(false);
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
@@ -63,39 +63,39 @@ export default function LogPage() {
     details?: string;
   }[]>([]);
 
-  const fetchLogs = async () => {
-    try {
-      const response = await fetch('/api/logs');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+  // const fetchLogs = async () => {
+  //   try {
+  //     const response = await fetch('/api/logs');
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+  //     const data = await response.json();
       
-      // 处理API返回的数据结构
-      let logsData = data;
-      if (data && typeof data === 'object' && 'value' in data) {
-        // 如果返回的是 {value: [...], Count: n} 格式
-        logsData = data.value;
-      }
+  //     // 处理API返回的数据结构
+  //     let logsData = data;
+  //     if (data && typeof data === 'object' && 'value' in data) {
+  //       // 如果返回的是 {value: [...], Count: n} 格式
+  //       logsData = data.value;
+  //     }
       
-      // 确保logsData是数组
-      if (Array.isArray(logsData)) {
-        setLogs(logsData);
-      } else {
-        console.error('API返回的数据不是数组:', logsData);
-        setLogs([]);
-      }
-    } catch (error) {
-      console.error('获取日志失败:', error);
-      setLogs([]); // 出错时设置为空数组
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     // 确保logsData是数组
+  //     if (Array.isArray(logsData)) {
+  //       setLogs(logsData);
+  //     } else {
+  //       console.error('API返回的数据不是数组:', logsData);
+  //       setLogs([]);
+  //     }
+  //   } catch (error) {
+  //     console.error('获取日志失败:', error);
+  //     setLogs([]); // 出错时设置为空数组
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
+  // useEffect(() => {
+  //   fetchLogs();
+  // }, []);
 
   // 确保页面完全加载后再显示内容
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function LogPage() {
 
   const handleLogSaved = () => {
     // 重新获取日志数据
-    fetchLogs();
+    // fetchLogs();
   };
 
   // 记录操作历史
@@ -154,13 +154,13 @@ export default function LogPage() {
     }
   };
 
-  const handleTimerTaskComplete = (taskId: string, duration: string) => {
-    // 计时器区域不再保存日志，只是记录事物
-    const task = timerTasks.find(t => t.id === taskId);
-    if (task) {
-      console.log('记录事物:', task.name, duration);
-    }
-  };
+  // const handleTimerTaskComplete = (taskId: string, duration: string) => {
+  //   // 计时器区域不再保存日志，只是记录事物
+  //   const task = timerTasks.find(t => t.id === taskId);
+  //   if (task) {
+  //     console.log('记录事物:', task.name, duration);
+  //   }
+  // };
 
   // 如果页面还没准备好，显示加载状态
   if (!isPageReady) {
@@ -206,10 +206,9 @@ export default function LogPage() {
           <div className="timer-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">⏱️ 计时器区域</h2>
-              <TimerZone 
+                            <TimerZone
                 tasks={timerTasks}
                 onTasksChange={setTimerTasks}
-                onTaskComplete={handleTimerTaskComplete}
                 onOperationRecord={recordOperation}
               />
             </div>

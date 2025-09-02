@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react';
-import { createLog } from '@/app/actions';
-import { getBeijingTime } from '@/lib/utils';
+// import { createLog } from '@/app/actions';
+// import { getBeijingTime } from '@/lib/utils';
 import CategorySelector from './CategorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -14,7 +14,7 @@ interface CreateLogFormWithCardsProps {
 }
 
 export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [logContent, setLogContent] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
