@@ -199,70 +199,53 @@ body {
   gap: 1rem;
 }
 
-.layout-toggle-btn {
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: white;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.layout-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.layout-toggle-btn.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.layout-instructions {
-  padding: 0.5rem 0.75rem;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* 自由布局画布 */
-.free-layout-canvas {
-  position: relative;
-  width: 100%;
+/* Log 页面专用布局样式 */
+.log-page-layout {
   min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  background-attachment: fixed;
 }
 
-/* 编辑模式样式 */
-.free-layout-canvas.editing {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
+.log-content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  width: 100%;
 }
 
-.free-layout-canvas.editing::before {
-  content: '拖拽组件调整位置，拖拽右下角调整大小';
-  position: fixed;
-  top: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  z-index: 1000;
-  pointer-events: none;
-  animation: fadeInOut 3s ease-in-out;
+.log-input-section,
+.log-list-section {
+  width: 100%;
 }
 
-@keyframes fadeInOut {
-  0%, 100% { opacity: 0; }
-  10%, 90% { opacity: 1; }
+/* 确保 log 页面不受自由布局样式影响 */
+.log-page-layout .free-layout-grid,
+.log-page-layout .free-layout-canvas,
+.log-page-layout .draggable-widget {
+  display: none !important;
+}
+
+/* 响应式设计 */
+@media (min-width: 1024px) {
+  .log-content-grid {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .log-content-grid {
+    gap: 1.5rem;
+  }
+}
+
+/* 确保页面加载时的平滑过渡 */
+.log-page-layout {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.log-page-layout.loading {
+  opacity: 0.8;
 }
 
 /* 网格项目样式 */

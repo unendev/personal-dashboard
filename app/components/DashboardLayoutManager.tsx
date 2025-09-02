@@ -12,14 +12,19 @@ interface DashboardLayoutManagerProps {
 
 export default function DashboardLayoutManager({ children, isEditing }: DashboardLayoutManagerProps) {
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // 默认为 true
+  const [hasLoaded, setHasLoaded] = useState(false); // 新增：标记是否已经加载过
   const pathname = usePathname();
   const isDashboard = pathname === '/dashboard';
 
   // 加载布局配置
   useEffect(() => {
     async function fetchLayout() {
-      if (!isDashboard) return;
+      if (!isDashboard) {
+        setIsLoading(false);
+        setHasLoaded(true);
+        return;
+      }
       
       setIsLoading(true);
       try {
@@ -42,6 +47,7 @@ export default function DashboardLayoutManager({ children, isEditing }: Dashboar
         setLayoutConfig({}); // 失败时设置为空对象
       } finally {
         setIsLoading(false);
+        setHasLoaded(true);
       }
     }
 
@@ -72,7 +78,8 @@ export default function DashboardLayoutManager({ children, isEditing }: Dashboar
     }
   }, []);
 
-  if (isDashboard && (layoutConfig === undefined || isLoading)) {
+  // 如果是 dashboard 页面且还在加载中，显示加载状态
+  if (isDashboard && isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -80,10 +87,22 @@ export default function DashboardLayoutManager({ children, isEditing }: Dashboar
           <div className="text-gray-400">加载布局中...</div>
         </div>
       </div>
-    ); // 改进的加载状态
+    );
   }
 
-  // 如果不是dashboard页面，或者layoutConfig已经加载，则直接渲染FreeLayout
+  // 如果还没有加载过，也显示加载状态（避免闪烁）
+  if (isDashboard && !hasLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <div className="text-gray-400">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 布局配置已经加载，渲染 FreeLayout
   return (
     <FreeLayout
       layoutConfig={layoutConfig}

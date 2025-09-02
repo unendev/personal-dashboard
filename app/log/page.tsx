@@ -39,6 +39,7 @@ interface Log {
 export default function LogPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPageReady, setIsPageReady] = useState(false);
 
   const fetchLogs = async () => {
     try {
@@ -74,13 +75,34 @@ export default function LogPage() {
     fetchLogs();
   }, []);
 
+  // 确保页面完全加载后再显示内容
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPageReady(true);
+    }, 100); // 短暂延迟确保样式加载完成
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLogSaved = () => {
     // 重新获取日志数据
     fetchLogs();
   };
 
+  // 如果页面还没准备好，显示加载状态
+  if (!isPageReady) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <div className="text-gray-400">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div className="log-page-layout">
       {/* 返回主页按钮 */}
       <div className="fixed top-4 left-4 z-40">
         <Link
@@ -106,9 +128,9 @@ export default function LogPage() {
           <p className="text-gray-600">记录你的日常活动和进步</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="log-content-grid">
           {/* 日志输入区域 */}
-          <div className="lg:col-span-3">
+          <div className="log-input-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">记录新日志</h2>
               <CreateLogFormWithCards onLogSaved={handleLogSaved} />
@@ -116,7 +138,7 @@ export default function LogPage() {
           </div>
 
           {/* 日志列表区域 */}
-          <div className="lg:col-span-3 mt-8">
+          <div className="log-list-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">日志历史</h2>
               {isLoading ? (
@@ -134,6 +156,6 @@ export default function LogPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
