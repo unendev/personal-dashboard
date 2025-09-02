@@ -44,6 +44,7 @@ export default async function DashboardPage() {
           <a href="/dashboard" className="text-green-600 font-medium border-b-2 border-green-600 pb-2">🏆 技能树</a>
           <a href="/quests" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
           <a href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</a>
+          <a href="/timer" className="text-gray-600 hover:text-gray-800 font-medium pb-2">⏱️ 计时器</a>
         </div>
       </div>
 

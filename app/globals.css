@@ -206,6 +206,13 @@ body {
   background-attachment: fixed;
 }
 
+/* Timer 页面专用布局样式 */
+.timer-page-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  background-attachment: fixed;
+}
+
 .log-content-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -213,6 +220,7 @@ body {
   width: 100%;
 }
 
+.timer-section,
 .log-input-section,
 .log-list-section {
   width: 100%;

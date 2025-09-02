@@ -1,136 +1,55 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Input } from './ui/input';
 
 interface TimerTask {
   id: string;
   name: string;
-  category: string;
   startTime: number | null;
-  totalTime: number; // 累计时间（秒）
+  totalTime: number;
   isRunning: boolean;
 }
 
-interface DailyStats {
-  totalTime: number;
-  taskCount: number;
-  categories: { [key: string]: number };
-}
-
 const TimerWidget: React.FC = () => {
-  const [tasks, setTasks] = useState<TimerTask[]>([]);
   const [currentTask, setCurrentTask] = useState<TimerTask | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('');
-  const [dailyStats, setDailyStats] = useState<DailyStats>({
-    totalTime: 0,
-    taskCount: 0,
-    categories: {}
-  });
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 从localStorage加载任务
+  // 从localStorage加载当前任务
   useEffect(() => {
-    const savedTasks = localStorage.getItem('timer-tasks');
+    const savedTasks = localStorage.getItem('enhanced-timer-tasks');
     if (savedTasks) {
       const parsedTasks = JSON.parse(savedTasks);
-      setTasks(parsedTasks);
-      
-      // 恢复正在运行的任务
       const runningTask = parsedTasks.find((task: TimerTask) => task.isRunning);
       if (runningTask) {
         setCurrentTask(runningTask);
+        if (runningTask.startTime) {
+          setElapsedTime(Math.floor((Date.now() - runningTask.startTime) / 1000));
+        }
       }
     }
   }, []);
 
-  // 保存任务到localStorage
+  // 更新计时器显示
   useEffect(() => {
-    localStorage.setItem('timer-tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  // 计算每日统计
-  useEffect(() => {
-    const today = new Date().toDateString();
-    const todayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.startTime || 0).toDateString();
-      return taskDate === today;
-    });
-
-    const stats: DailyStats = {
-      totalTime: todayTasks.reduce((sum, task) => sum + task.totalTime, 0),
-      taskCount: todayTasks.length,
-      categories: {}
-    };
-
-    todayTasks.forEach(task => {
-      if (task.category) {
-        stats.categories[task.category] = (stats.categories[task.category] || 0) + task.totalTime;
+    if (currentTask && currentTask.isRunning && currentTask.startTime) {
+      intervalRef.current = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - currentTask.startTime!) / 1000));
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    });
-
-    setDailyStats(stats);
-  }, [tasks]);
-
-  const addTask = () => {
-    if (!newTaskName.trim()) {
-      alert('请输入任务名称');
-      return;
     }
 
-    const newTask: TimerTask = {
-      id: Date.now().toString(),
-      name: newTaskName.trim(),
-      category: newTaskCategory.trim(),
-      startTime: null,
-      totalTime: 0,
-      isRunning: false
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
-
-    setTasks([...tasks, newTask]);
-    setNewTaskName('');
-    setNewTaskCategory('');
-    setShowAddDialog(false);
-  };
-
-  const startTask = (task: TimerTask) => {
-    // 停止当前任务
-    if (currentTask) {
-      stopTask(currentTask);
-    }
-
-    // 开始新任务
-    const updatedTask = {
-      ...task,
-      startTime: Date.now(),
-      isRunning: true
-    };
-
-    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
-    setCurrentTask(updatedTask);
-  };
-
-  const stopTask = (task: TimerTask) => {
-    if (!task.startTime) return;
-
-    const elapsed = Math.floor((Date.now() - task.startTime) / 1000);
-    const updatedTask = {
-      ...task,
-      startTime: null,
-      totalTime: task.totalTime + elapsed,
-      isRunning: false
-    };
-
-    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
-    
-    if (currentTask?.id === task.id) {
-      setCurrentTask(null);
-    }
-  };
+  }, [currentTask]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -138,167 +57,77 @@ const TimerWidget: React.FC = () => {
     const secs = seconds % 60;
     
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else {
-      return `${secs}s`;
+      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
   };
 
-  const formatElapsed = (startTime: number) => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    return formatTime(elapsed);
+  const stopCurrentTask = () => {
+    if (!currentTask || !currentTask.startTime) return;
+
+    const elapsed = Math.floor((Date.now() - currentTask.startTime) / 1000);
+    const updatedTask = {
+      ...currentTask,
+      startTime: null,
+      totalTime: currentTask.totalTime + elapsed,
+      isRunning: false
+    };
+
+    // 更新localStorage中的任务
+    const savedTasks = localStorage.getItem('enhanced-timer-tasks');
+    if (savedTasks) {
+      const parsedTasks = JSON.parse(savedTasks);
+      const updatedTasks = parsedTasks.map((t: TimerTask) => 
+        t.id === currentTask.id ? updatedTask : t
+      );
+      localStorage.setItem('enhanced-timer-tasks', JSON.stringify(updatedTasks));
+    }
+
+    setCurrentTask(null);
+    setElapsedTime(0);
   };
 
   return (
-    <div className="space-y-6">
-      {/* 当前任务显示 */}
-      {currentTask && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-lg text-blue-800">
-              正在计时: {currentTask.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-mono text-blue-600 mb-4">
-              {currentTask.startTime ? formatElapsed(currentTask.startTime) : '00:00'}
-            </div>
-            <Button 
-              variant="destructive" 
-              onClick={() => stopTask(currentTask)}
-              className="w-full"
-            >
-              停止计时
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 任务列表 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>任务列表</CardTitle>
-          <Button onClick={() => setShowAddDialog(true)}>
-            添加任务
+    <div className="glass-effect rounded-2xl p-6 hover-lift h-full">
+      <div className="text-center mb-4">
+        <h2 className="text-lg font-bold gradient-text mb-1">计时器</h2>
+        <p className="text-white/60 text-xs">时间追踪</p>
+      </div>
+      
+      {currentTask ? (
+        <div className="text-center">
+          <div className="text-2xl font-mono text-white mb-3">
+            {formatTime(elapsedTime)}
+          </div>
+          <div className="text-white/80 text-sm mb-4">
+            {currentTask.name}
+          </div>
+          <Button 
+            onClick={stopCurrentTask}
+            variant="outline"
+            size="sm"
+            className="bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30"
+          >
+            停止
           </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {tasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex-1">
-                  <div className="font-medium">{task.name}</div>
-                  {task.category && (
-                    <div className="text-sm text-gray-500">{task.category}</div>
-                  )}
-                  <div className="text-sm text-gray-400">
-                    累计: {formatTime(task.totalTime)}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {task.isRunning ? (
-                    <Button variant="outline" size="sm" disabled>
-                      计时中
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => startTask(task)}
-                    >
-                      开始
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-            {tasks.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
-                暂无任务，点击{' '}{'"'}添加任务{'"'}开始计时
-              </div>
-            )}
+        </div>
+      ) : (
+        <div className="text-center">
+          <div className="text-2xl font-mono text-white/40 mb-3">
+            00:00
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 今日统计 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>今日统计</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {formatTime(dailyStats.totalTime)}
-              </div>
-              <div className="text-sm text-gray-500">总时间</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {dailyStats.taskCount}
-              </div>
-              <div className="text-sm text-gray-500">任务数</div>
-            </div>
+          <div className="text-white/60 text-sm mb-4">
+            暂无活动任务
           </div>
-          
-          {Object.keys(dailyStats.categories).length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-medium mb-2">分类统计</h4>
-              <div className="space-y-2">
-                {Object.entries(dailyStats.categories).map(([category, time]) => (
-                  <div key={category} className="flex justify-between text-sm">
-                    <span>{category}</span>
-                    <span className="font-medium">{formatTime(time)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 添加任务弹框 */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>添加新任务</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                任务名称
-              </label>
-              <Input
-                value={newTaskName}
-                onChange={(e) => setNewTaskName(e.target.value)}
-                placeholder="输入任务名称..."
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                分类 (可选)
-              </label>
-              <Input
-                value={newTaskCategory}
-                onChange={(e) => setNewTaskCategory(e.target.value)}
-                placeholder="输入分类..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={addTask}>
-              添加任务
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <a 
+            href="/timer"
+            className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
+          >
+            开始计时
+          </a>
+        </div>
+      )}
     </div>
   );
 };

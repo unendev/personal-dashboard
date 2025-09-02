@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import LogCard from '@/app/components/LogCard'
+import QuickTimer from '@/app/components/QuickTimer'
 
 // 定义与API返回数据匹配的Log类型
 interface LogActivityInstance {
@@ -129,6 +130,14 @@ export default function LogPage() {
         </div>
 
         <div className="log-content-grid">
+          {/* 计时器区域 */}
+          <div className="timer-section">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold mb-4">⏱️ 计时器</h2>
+              <QuickTimer />
+            </div>
+          </div>
+
           {/* 日志输入区域 */}
           <div className="log-input-section">
             <div className="bg-white rounded-lg shadow-md p-6">

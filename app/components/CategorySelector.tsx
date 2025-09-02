@@ -187,27 +187,63 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
   };
 
-  // 将数字转换为时间格式
-  const formatDuration = (value: string): string => {
-    const num = parseInt(value);
-    if (isNaN(num) || num <= 0) return '';
+  // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）
+  const parseDuration = (value: string): string => {
+    if (!value.trim()) return '';
     
-    if (num < 60) {
-      return `${num}m`;
-    } else {
-      const hours = Math.floor(num / 60);
-      const minutes = num % 60;
-      if (minutes === 0) {
-        return `${hours}h`;
-      } else {
+    // 移除所有空格
+    const cleanValue = value.replace(/\s/g, '');
+    
+    // 匹配格式：数字+h+数字+m 或 数字+h 或 数字+m
+    const hourMinutePattern = /^(\d+)h(\d+)m$/;
+    const hourPattern = /^(\d+)h$/;
+    const minutePattern = /^(\d+)m$/;
+    const numberPattern = /^(\d+)$/;
+    
+    if (hourMinutePattern.test(cleanValue)) {
+      // 格式：1h20m
+      const match = cleanValue.match(hourMinutePattern);
+      if (match) {
+        const hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
         return `${hours}h${minutes}m`;
       }
+    } else if (hourPattern.test(cleanValue)) {
+      // 格式：2h
+      const match = cleanValue.match(hourPattern);
+      if (match) {
+        const hours = parseInt(match[1]);
+        return `${hours}h`;
+      }
+    } else if (minutePattern.test(cleanValue)) {
+      // 格式：45m
+      const match = cleanValue.match(minutePattern);
+      if (match) {
+        const minutes = parseInt(match[1]);
+        return `${minutes}m`;
+      }
+    } else if (numberPattern.test(cleanValue)) {
+      // 纯数字，按分钟处理
+      const minutes = parseInt(cleanValue);
+      if (minutes < 60) {
+        return `${minutes}m`;
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        if (remainingMinutes === 0) {
+          return `${hours}h`;
+        } else {
+          return `${hours}h${remainingMinutes}m`;
+        }
+      }
     }
+    
+    return '';
   };
 
   // 处理时间输入
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, ''); // 只允许数字
+    const value = e.target.value;
     setDuration(value);
   };
 
@@ -218,16 +254,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       return;
     }
 
-    if (!duration.trim()) {
-      alert('请输入时间消耗');
-      return;
-    }
-
-    // 转换时间格式
-    const formattedDuration = formatDuration(duration);
-    if (!formattedDuration) {
-      alert('请输入有效的时间');
-      return;
+    // 转换时间格式（如果输入了时间）
+    let formattedDuration = '0h'; // 默认值
+    if (duration.trim()) {
+      formattedDuration = parseDuration(duration);
+      if (!formattedDuration) {
+        alert('请输入有效的时间格式，如：45m, 1h20m, 2h');
+        return;
+      }
     }
 
     // 如果有onSelected回调，调用它（用于progress页面）
@@ -425,13 +459,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                时间消耗 (分钟)
+                时间消耗 (可选)
               </label>
               <Input
                 value={duration}
                 onChange={handleDurationChange}
                 onKeyDown={handleKeyDown}
-                placeholder="输入分钟数，如: 45, 120"
+                placeholder="如: 45m, 1h20m, 2h (为空则使用计时器)"
               />
             </div>
           </div>
