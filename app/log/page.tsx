@@ -46,10 +46,20 @@ export default function LogPage() {
     name: string;
     categoryPath: string;
     elapsedTime: number;
+    initialTime: number; // 初始时间（秒）
     isRunning: boolean;
     startTime: number | null;
     isPaused: boolean;
     pausedTime: number;
+  }[]>([]);
+  
+  // 操作历史记录
+  const [operationHistory, setOperationHistory] = useState<{
+    id: string;
+    action: string;
+    taskName: string;
+    timestamp: Date;
+    details?: string;
   }[]>([]);
 
   const fetchLogs = async () => {
@@ -100,18 +110,47 @@ export default function LogPage() {
     fetchLogs();
   };
 
-  const handleAddToTimer = (taskName: string, categoryPath: string) => {
+  // 记录操作历史
+  const recordOperation = (action: string, taskName: string, details?: string) => {
+    const newOperation = {
+      id: Date.now().toString(),
+      action,
+      taskName,
+      timestamp: new Date(),
+      details
+    };
+    setOperationHistory(prev => [newOperation, ...prev.slice(0, 9)]); // 只保留最近10条记录
+  };
+
+  const handleAddToTimer = (taskName: string, categoryPath: string, initialTime: number = 0) => {
     const newTask = {
       id: Date.now().toString(),
       name: taskName,
       categoryPath: categoryPath,
-      elapsedTime: 0,
+      elapsedTime: initialTime, // 使用初始时间
+      initialTime: initialTime, // 保存初始时间
       isRunning: false,
       startTime: null,
       isPaused: false,
       pausedTime: 0
     };
     setTimerTasks([...timerTasks, newTask]);
+    
+    // 记录操作历史
+    const timeText = initialTime > 0 ? ` (初始时间: ${formatTime(initialTime)})` : '';
+    recordOperation('添加事物', taskName, `${categoryPath}${timeText}`);
+  };
+
+  // 格式化时间显示
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
+    } else {
+      return `${minutes}m`;
+    }
   };
 
   const handleTimerTaskComplete = (taskId: string, duration: string) => {
@@ -170,6 +209,7 @@ export default function LogPage() {
                 tasks={timerTasks}
                 onTasksChange={setTimerTasks}
                 onTaskComplete={handleTimerTaskComplete}
+                onOperationRecord={recordOperation}
               />
             </div>
           </div>
@@ -182,6 +222,36 @@ export default function LogPage() {
                 onLogSaved={handleLogSaved}
                 onAddToTimer={handleAddToTimer}
               />
+            </div>
+          </div>
+
+          {/* 操作历史区域 */}
+          <div className="operation-history-section">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold mb-4">操作记录</h2>
+              {operationHistory.length === 0 ? (
+                <p className="text-gray-500 text-sm">暂无操作记录</p>
+              ) : (
+                <div className="space-y-3">
+                  {operationHistory.map((operation) => (
+                    <div key={operation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800">{operation.action}</span>
+                          <span className="text-sm text-gray-600">-</span>
+                          <span className="text-sm text-blue-600">{operation.taskName}</span>
+                        </div>
+                        {operation.details && (
+                          <p className="text-xs text-gray-500 mt-1">{operation.details}</p>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {operation.timestamp.toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

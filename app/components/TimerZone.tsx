@@ -9,6 +9,7 @@ interface TimerTask {
   name: string;
   categoryPath: string;
   elapsedTime: number;
+  initialTime: number; // 初始时间（秒）
   isRunning: boolean;
   startTime: number | null;
   isPaused: boolean;
@@ -19,12 +20,14 @@ interface TimerZoneProps {
   tasks: TimerTask[];
   onTasksChange: (tasks: TimerTask[]) => void;
   onTaskComplete: (taskId: string, duration: string) => void;
+  onOperationRecord?: (action: string, taskName: string, details?: string) => void;
 }
 
 const TimerZone: React.FC<TimerZoneProps> = ({ 
   tasks, 
   onTasksChange, 
-  onTaskComplete 
+  onTaskComplete,
+  onOperationRecord
 }) => {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const intervalRefs = useRef<{ [key: string]: NodeJS.Timeout }>({});
@@ -43,7 +46,9 @@ const TimerZone: React.FC<TimerZoneProps> = ({
         if (!intervalRefs.current[task.id]) {
           intervalRefs.current[task.id] = setInterval(() => {
             const elapsed = Math.floor((Date.now() - task.startTime!) / 1000);
-            updateTaskTime(task.id, elapsed);
+            // 总时间 = 初始时间 + 运行时间
+            const totalTime = task.initialTime + elapsed;
+            updateTaskTime(task.id, totalTime);
           }, 1000);
         }
       } else {
@@ -63,6 +68,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
   }, [tasks, updateTaskTime]);
 
   const startTimer = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
     const updatedTasks = tasks.map(task => {
       if (task.id === taskId) {
         return {
@@ -76,9 +82,16 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       return task;
     });
     onTasksChange(updatedTasks);
+    
+    // 记录操作
+    if (task && onOperationRecord) {
+      const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
+      onOperationRecord('开始计时', task.name, timeText);
+    }
   };
 
   const pauseTimer = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
     const updatedTasks = tasks.map(task => {
       if (task.id === taskId && task.isRunning) {
         return {
@@ -90,9 +103,15 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       return task;
     });
     onTasksChange(updatedTasks);
+    
+    // 记录操作
+    if (task && onOperationRecord) {
+      onOperationRecord('暂停计时', task.name);
+    }
   };
 
   const resumeTimer = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
     const updatedTasks = tasks.map(task => {
       if (task.id === taskId && task.isPaused) {
         const pauseDuration = Date.now() - task.pausedTime;
@@ -106,6 +125,11 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       return task;
     });
     onTasksChange(updatedTasks);
+    
+    // 记录操作
+    if (task && onOperationRecord) {
+      onOperationRecord('继续计时', task.name);
+    }
   };
 
   const stopTimer = (taskId: string) => {
@@ -125,6 +149,12 @@ const TimerZone: React.FC<TimerZoneProps> = ({
       return t;
     });
     onTasksChange(updatedTasks);
+    
+    // 记录操作
+    if (task && onOperationRecord) {
+      const totalTime = task.elapsedTime;
+      onOperationRecord('停止计时', task.name, `总时间: ${formatTime(totalTime)}`);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -213,6 +243,9 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                 </p>
                 <div className="text-lg font-mono text-blue-600 mt-2">
                   {formatDisplayTime(task.elapsedTime)}
+                  {task.initialTime > 0 && task.elapsedTime === task.initialTime && (
+                    <span className="text-xs text-gray-500 ml-2">(预设时间)</span>
+                  )}
                 </div>
               </div>
               

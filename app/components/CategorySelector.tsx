@@ -18,7 +18,7 @@ interface CategorySelectorProps {
   className?: string;
   onLogSaved?: () => void;
   onSelected?: (path: string, taskName: string) => void; // 新增的回调
-  onAddToTimer?: (taskName: string, categoryPath: string) => void; // 新增：添加到计时器的回调
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number) => void; // 新增：添加到计时器的回调
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved, onSelected, onAddToTimer }) => {
@@ -188,6 +188,50 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
   };
 
+  // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）并转换为秒数
+  const parseDurationToSeconds = (value: string): number => {
+    if (!value.trim()) return 0;
+    
+    // 移除所有空格
+    const cleanValue = value.replace(/\s/g, '');
+    
+    // 匹配格式：数字+h+数字+m 或 数字+h 或 数字+m
+    const hourMinutePattern = /^(\d+)h(\d+)m$/;
+    const hourPattern = /^(\d+)h$/;
+    const minutePattern = /^(\d+)m$/;
+    const numberPattern = /^(\d+)$/;
+    
+    if (hourMinutePattern.test(cleanValue)) {
+      // 格式：1h20m
+      const match = cleanValue.match(hourMinutePattern);
+      if (match) {
+        const hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        return hours * 3600 + minutes * 60;
+      }
+    } else if (hourPattern.test(cleanValue)) {
+      // 格式：2h
+      const match = cleanValue.match(hourPattern);
+      if (match) {
+        const hours = parseInt(match[1]);
+        return hours * 3600;
+      }
+    } else if (minutePattern.test(cleanValue)) {
+      // 格式：45m
+      const match = cleanValue.match(minutePattern);
+      if (match) {
+        const minutes = parseInt(match[1]);
+        return minutes * 60;
+      }
+    } else if (numberPattern.test(cleanValue)) {
+      // 纯数字，按分钟处理
+      const minutes = parseInt(cleanValue);
+      return minutes * 60;
+    }
+    
+    return 0;
+  };
+
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）
   const parseDuration = (value: string): string => {
     if (!value.trim()) return '';
@@ -255,9 +299,12 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       return;
     }
 
+    // 解析时间输入并转换为秒数
+    const initialTimeSeconds = parseDurationToSeconds(duration);
+
     // 无论是否输入时间，都添加到计时器区域
     if (onAddToTimer) {
-      onAddToTimer(taskName.trim(), selectedPath);
+      onAddToTimer(taskName.trim(), selectedPath, initialTimeSeconds);
       setShowDialog(false);
       setTaskName('');
       setSelectedPath('');

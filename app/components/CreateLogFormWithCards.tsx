@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string) => void;
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number) => void;
 }
 
 export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
