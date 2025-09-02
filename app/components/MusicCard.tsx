@@ -14,6 +14,7 @@ const MusicCard: React.FC<MusicCardProps> = ({ trackName, artist, album, albumAr
   return (
     <div className="w-full max-w-sm p-4 rounded-lg shadow-lg bg-gray-800 text-white">
       <div className="flex">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={albumArtUrl} alt={`${album} cover`} className="w-24 h-24 rounded-md mr-4" />
         <div className="flex flex-col justify-center">
           <p className="font-bold text-xl">{trackName}</p>

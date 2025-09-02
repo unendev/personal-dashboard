@@ -197,7 +197,6 @@ const WorkProgressWidget: React.FC<WorkProgressWidgetProps> = ({ classificationP
     intervalRef.current = window.setInterval(() => {
       setTasksForPath(prev => {
         const draft = clone(prev);
-        const now = Date.now();
         const update = (nodes: TaskNode[]) => {
           nodes.forEach(n => {
             // 展示层不修改 timeSpent，timeSpent 只在暂停时固化

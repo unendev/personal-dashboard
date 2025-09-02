@@ -29,6 +29,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ source, avatar, author, title, summ
       {/* 头部信息 */}
       <div className="flex items-start mb-3">
         <div className="relative flex-shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatar}
             alt={`${author}'s avatar`}

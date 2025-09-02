@@ -132,6 +132,7 @@ const BiliUserManager = () => {
         {users.map((user) => (
           <div key={user.uid} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=667eea&color=fff&size=32`}
                 alt={user.name}

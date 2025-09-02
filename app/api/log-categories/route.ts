@@ -20,8 +20,18 @@ interface CreateRequest {
   name: string;
 }
 
+// Database category type
+interface DatabaseCategory {
+  id: string;
+  name: string;
+  parentId: string | null;
+  children?: DatabaseCategory[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Helper function to convert database structure to frontend structure
-function convertToFrontendStructure(categories: any[]): CategoryNode[] {
+function convertToFrontendStructure(categories: DatabaseCategory[]): CategoryNode[] {
   return categories.map(cat => ({
     id: cat.id,
     name: cat.name,
@@ -112,7 +122,7 @@ export async function POST(request: Request) {
     }
     
     // Create the new category
-    const newCategory = await prisma.logCategory.create({
+    await prisma.logCategory.create({
       data: {
         name: name.trim(),
         parentId
@@ -157,7 +167,7 @@ export async function DELETE(request: Request) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
     
-    let categoryToDelete: any = null;
+    let categoryToDelete: DatabaseCategory | null = null;
     
     if (type === 'top') {
       // Delete top-level category
