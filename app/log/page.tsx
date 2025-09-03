@@ -3,45 +3,13 @@
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
-import LogCard from '@/app/components/LogCard'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 
-// 定义与API返回数据匹配的Log类型
-interface LogActivityInstance {
-  id: string;
-  name: string;
-  duration: string;
-}
 
-interface LogSubCategoryInstance {
-  id: string;
-  name: string;
-  activities: LogActivityInstance[];
-}
-
-interface LogCategoryInstance {
-  id: string;
-  name: string;
-  subCategories: LogSubCategoryInstance[];
-}
-
-interface Log {
-  id: string;
-  content: string | null;
-  createdAt: Date;
-  timestamp: Date;
-  quest?: {
-    id: string;
-    title: string;
-  } | null;
-  categories: LogCategoryInstance[];
-}
 
 export default function LogPage() {
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [timerTasks, setTimerTasks] = useState<{
@@ -66,39 +34,7 @@ export default function LogPage() {
     details?: string;
   }[]>([]);
 
-  const fetchLogs = async () => {
-    try {
-      const response = await fetch('/api/logs');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      
-      // 处理API返回的数据结构
-      let logsData = data;
-      if (data && typeof data === 'object' && 'value' in data) {
-        // 如果返回的是 {value: [...], Count: n} 格式
-        logsData = data.value;
-      }
-      
-      // 确保logsData是数组
-      if (Array.isArray(logsData)) {
-        setLogs(logsData);
-      } else {
-        console.error('API返回的数据不是数组:', logsData);
-        setLogs([]);
-      }
-    } catch (error) {
-      console.error('获取日志失败:', error);
-      setLogs([]); // 出错时设置为空数组
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
 
   // 从数据库加载任务
   const fetchTimerTasks = React.useCallback(async () => {
@@ -118,6 +54,7 @@ export default function LogPage() {
     const timer = setTimeout(() => {
       setIsPageReady(true);
       fetchTimerTasks(); // 加载任务数据
+      fetchOperationRecords(); // 加载操作记录
     }, 100); // 短暂延迟确保样式加载完成
 
     return () => clearTimeout(timer);
@@ -128,16 +65,42 @@ export default function LogPage() {
     // fetchLogs();
   };
 
+  // 获取操作记录
+  const fetchOperationRecords = async () => {
+    try {
+      const response = await fetch('/api/operation-records');
+      if (response.ok) {
+        const records = await response.json();
+        setOperationHistory(records);
+      }
+    } catch (error) {
+      console.error('获取操作记录失败:', error);
+    }
+  };
+
   // 记录操作历史
-  const recordOperation = (action: string, taskName: string, details?: string) => {
-    const newOperation = {
-      id: Date.now().toString(),
-      action,
-      taskName,
-      timestamp: new Date(),
-      details
-    };
-    setOperationHistory(prev => [newOperation, ...prev.slice(0, 9)]); // 只保留最近10条记录
+  const recordOperation = async (action: string, taskName: string, details?: string) => {
+    try {
+      // 保存到数据库
+      const response = await fetch('/api/operation-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          taskName,
+          details
+        }),
+      });
+
+      if (response.ok) {
+        // 重新获取操作记录
+        fetchOperationRecords();
+      }
+    } catch (error) {
+      console.error('保存操作记录失败:', error);
+    }
   };
 
   const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
@@ -273,25 +236,30 @@ export default function LogPage() {
           {/* 操作历史区域 */}
           <div className="operation-history-section">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">操作记录</h2>
+              <h2 className="text-lg font-semibold mb-4">📋 操作记录</h2>
               {operationHistory.length === 0 ? (
                 <p className="text-gray-500 text-sm">暂无操作记录</p>
               ) : (
                 <div className="space-y-3">
                   {operationHistory.map((operation) => (
-                    <div key={operation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={operation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-gray-800">{operation.action}</span>
                           <span className="text-sm text-gray-600">-</span>
-                          <span className="text-sm text-blue-600">{operation.taskName}</span>
+                          <span className="text-sm text-blue-600 font-medium">{operation.taskName}</span>
                         </div>
                         {operation.details && (
                           <p className="text-xs text-gray-500 mt-1">{operation.details}</p>
                         )}
                       </div>
                       <div className="text-xs text-gray-400">
-                        {operation.timestamp.toLocaleTimeString()}
+                        {new Date(operation.timestamp).toLocaleString('zh-CN', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </div>
                     </div>
                   ))}
@@ -300,23 +268,7 @@ export default function LogPage() {
             </div>
           </div>
 
-          {/* 日志列表区域 */}
-          <div className="log-list-section">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">日志历史</h2>
-              {isLoading ? (
-                <p className="text-gray-500 text-sm">加载中...</p>
-              ) : logs.length === 0 ? (
-                <p className="text-gray-500 text-sm">暂无日志记录</p>
-              ) : (
-                <div className="space-y-4">
-                  {logs.map((log) => (
-                    <LogCard key={log.id} log={log} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

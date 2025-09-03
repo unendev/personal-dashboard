@@ -23,6 +23,7 @@ model User {
   layout                      UserLayout?
   timerTasks                  TimerTask[]
   todos                       Todo[]
+  operationRecords            OperationRecord[]
 
   @@map("users")
 }
@@ -162,6 +163,18 @@ model Todo {
   updatedAt   DateTime @updatedAt
 
   @@map("todos")
+}
+
+model OperationRecord {
+  id          String   @id @default(cuid())
+  action      String   // 操作类型：开始计时、暂停计时、继续计时、完成任务等
+  taskName    String   // 任务名称
+  details     String?  // 详细信息
+  userId      String
+  timestamp   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("operation_records")
 }
 
 enum QuestStatus {
