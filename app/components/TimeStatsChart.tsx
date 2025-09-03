@@ -60,12 +60,19 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
       categoryMap.set(category, currentTime + taskTotalTime);
     });
     
-    return Array.from(categoryMap.entries()).map(([name, value]) => ({
-      name: name.length > 8 ? name.substring(0, 8) + '...' : name, // 缩短显示名称
-      value: Math.round(value / 60), // 转换为分钟
-      fullName: name, // 完整名称用于悬停显示
-      seconds: value // 保留秒数用于精确显示
-    })).sort((a, b) => b.value - a.value);
+    return Array.from(categoryMap.entries()).map(([name, value]) => {
+      // 提取最里层分类名称（最后一个斜杠后的部分）
+      const categoryParts = name.split('/');
+      const displayName = categoryParts[categoryParts.length - 1];
+      
+      return {
+        name: displayName.length > 8 ? displayName.substring(0, 8) + '...' : displayName, // 只显示最里层分类
+        value: Math.round(value / 60), // 转换为分钟
+        fullName: name, // 完整分类路径用于悬停显示
+        seconds: value, // 保留秒数用于精确显示
+        categoryPath: name // 完整分类路径
+      };
+    }).sort((a, b) => b.value - a.value);
   };
 
   // 按任务统计时间（只显示顶级任务）
@@ -174,7 +181,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
 
   const CustomTooltip = ({ active, payload, label }: {
     active?: boolean;
-    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean; seconds?: number; category?: string }; value: number }>;
+    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean; seconds?: number; categoryPath?: string }; value: number }>;
     label?: string;
   }) => {
     if (active && payload && payload.length) {
@@ -191,8 +198,15 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
               精确时间: {Math.floor(seconds / 3600)}h {Math.floor((seconds % 3600) / 60)}m {seconds % 60}s
             </p>
           )}
-          {data.category && (
-            <p className="text-xs text-gray-600 mt-1">分类: {data.category}</p>
+          {data.categoryPath && data.categoryPath.includes('/') && (
+            <div className="text-xs text-gray-600 mt-1">
+              <p className="font-medium">完整分类路径:</p>
+              {data.categoryPath.split('/').map((part, index) => (
+                <p key={index} className="ml-2 text-gray-500">
+                  {index === 0 ? '└─ ' : '  '.repeat(index) + '└─ '}{part}
+                </p>
+              ))}
+            </div>
           )}
           {data.hasChildren && (
             <p className="text-xs text-green-600 mt-1">✓ 包含子任务</p>

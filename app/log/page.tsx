@@ -3,45 +3,45 @@
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
-// import LogCard from '@/app/components/LogCard'
+import LogCard from '@/app/components/LogCard'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 
 // 定义与API返回数据匹配的Log类型
-// interface LogActivityInstance {
-//   id: string;
-//   name: string;
-//   duration: string;
-// }
+interface LogActivityInstance {
+  id: string;
+  name: string;
+  duration: string;
+}
 
-// interface LogSubCategoryInstance {
-//   id: string;
-//   name: string;
-//   activities: LogActivityInstance[];
-// }
+interface LogSubCategoryInstance {
+  id: string;
+  name: string;
+  activities: LogActivityInstance[];
+}
 
-// interface LogCategoryInstance {
-//   id: string;
-//   name: string;
-//   subCategories: LogSubCategoryInstance[];
-// }
+interface LogCategoryInstance {
+  id: string;
+  name: string;
+  subCategories: LogSubCategoryInstance[];
+}
 
-// interface Log {
-//   id: string;
-//   content: string | null;
-//   createdAt: Date;
-//   timestamp: Date;
-//   quest?: {
-//     id: string;
-//     title: string;
-//   } | null;
-//   categories: LogCategoryInstance[];
-// }
+interface Log {
+  id: string;
+  content: string | null;
+  createdAt: Date;
+  timestamp: Date;
+  quest?: {
+    id: string;
+    title: string;
+  } | null;
+  categories: LogCategoryInstance[];
+}
 
 export default function LogPage() {
-  // const [logs] = useState<Log[]>([]);
-  // const [isLoading] = useState(true);
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [timerTasks, setTimerTasks] = useState<{
@@ -66,39 +66,39 @@ export default function LogPage() {
     details?: string;
   }[]>([]);
 
-  // const fetchLogs = async () => {
-  //   try {
-  //     const response = await fetch('/api/logs');
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-  //     const data = await response.json();
+  const fetchLogs = async () => {
+    try {
+      const response = await fetch('/api/logs');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
       
-  //     // 处理API返回的数据结构
-  //     let logsData = data;
-  //     if (data && typeof data === 'object' && 'value' in data) {
-  //       // 如果返回的是 {value: [...], Count: n} 格式
-  //       logsData = data.value;
-  //     }
+      // 处理API返回的数据结构
+      let logsData = data;
+      if (data && typeof data === 'object' && 'value' in data) {
+        // 如果返回的是 {value: [...], Count: n} 格式
+        logsData = data.value;
+      }
       
-  //     // 确保logsData是数组
-  //     if (Array.isArray(logsData)) {
-  //       setLogs(logsData);
-  //     } else {
-  //       console.error('API返回的数据不是数组:', logsData);
-  //       setLogs([]);
-  //     }
-  //   } catch (error) {
-  //     console.error('获取日志失败:', error);
-  //     setLogs([]); // 出错时设置为空数组
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      // 确保logsData是数组
+      if (Array.isArray(logsData)) {
+        setLogs(logsData);
+      } else {
+        console.error('API返回的数据不是数组:', logsData);
+        setLogs([]);
+      }
+    } catch (error) {
+      console.error('获取日志失败:', error);
+      setLogs([]); // 出错时设置为空数组
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // useEffect(() => {
-  //   fetchLogs();
-  // }, []);
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   // 从数据库加载任务
   const fetchTimerTasks = React.useCallback(async () => {
@@ -300,8 +300,8 @@ export default function LogPage() {
             </div>
           </div>
 
-          {/* 日志列表区域 - 暂时隐藏 */}
-          {/* <div className="log-list-section">
+          {/* 日志列表区域 */}
+          <div className="log-list-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">日志历史</h2>
               {isLoading ? (
@@ -316,7 +316,7 @@ export default function LogPage() {
                 </div>
               )}
             </div>
-          </div> */}
+          </div>
         </div>
       </div>
     </div>
