@@ -565,7 +565,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700 font-medium">💡 嵌套功能提示：</p>
             <p className="text-xs text-blue-600 mt-1">
-              每个任务卡片右侧都有"➕ 添加子任务"按钮，点击可以创建无限层级的子任务
+              每个任务卡片右侧都有&ldquo;➕ 添加子任务&rdquo;按钮，点击可以创建无限层级的子任务
             </p>
           </div>
         </CardContent>
