@@ -14,6 +14,8 @@ interface TimerTask {
   startTime: number | null;
   isPaused: boolean;
   pausedTime: number;
+  parentId?: string | null;
+  children?: TimerTask[];
 }
 
 interface TimeStatsChartProps {
@@ -23,15 +25,39 @@ interface TimeStatsChartProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
 
 const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
-  // 按分类统计时间
+  // 递归计算任务的总时间（包括子任务）
+  const calculateTotalTime = (task: TimerTask): number => {
+    let total = task.elapsedTime;
+    if (task.children) {
+      task.children.forEach(child => {
+        total += calculateTotalTime(child);
+      });
+    }
+    return total;
+  };
+
+  // 获取所有任务（包括子任务）的扁平化列表
+  const getAllTasksFlat = (taskList: TimerTask[]): TimerTask[] => {
+    let allTasks: TimerTask[] = [];
+    taskList.forEach(task => {
+      allTasks.push(task);
+      if (task.children) {
+        allTasks = allTasks.concat(getAllTasksFlat(task.children));
+      }
+    });
+    return allTasks;
+  };
+
+  // 按分类统计时间（包含子任务）
   const getCategoryStats = () => {
     const categoryMap = new Map<string, number>();
     
-    tasks.forEach(task => {
+    const allTasks = getAllTasksFlat(tasks);
+    allTasks.forEach(task => {
       const category = task.categoryPath || '未分类';
       const currentTime = categoryMap.get(category) || 0;
-      // 使用elapsedTime，它包含了初始时间和计时器运行的时间
-      categoryMap.set(category, currentTime + task.elapsedTime);
+      const taskTotalTime = calculateTotalTime(task);
+      categoryMap.set(category, currentTime + taskTotalTime);
     });
     
     return Array.from(categoryMap.entries()).map(([name, value]) => ({
@@ -41,37 +67,42 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     })).sort((a, b) => b.value - a.value);
   };
 
-  // 按任务统计时间
+  // 按任务统计时间（只显示顶级任务）
   const getTaskStats = () => {
     return tasks
-      .filter(task => task.elapsedTime > 0) // 只显示有实际时间的任务
+      .filter(task => {
+        const totalTime = calculateTotalTime(task);
+        return totalTime > 0; // 只显示有实际时间的任务
+      })
       .map(task => ({
         name: task.name.length > 15 ? task.name.substring(0, 15) + '...' : task.name,
-        time: Math.round(task.elapsedTime / 60), // 使用elapsedTime，包含所有时间
+        time: Math.round(calculateTotalTime(task) / 60), // 包含子任务的总时间
         fullName: task.name,
-        category: task.categoryPath
+        category: task.categoryPath,
+        hasChildren: task.children && task.children.length > 0
       }))
       .sort((a, b) => b.time - a.time)
       .slice(0, 8); // 只显示前8个任务
   };
 
-  // 计算总时间
+  // 计算总时间（包含所有子任务）
   const getTotalTime = () => {
-    const totalSeconds = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
+    const totalSeconds = tasks.reduce((sum, task) => sum + calculateTotalTime(task), 0);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     return { hours, minutes, totalSeconds };
   };
 
-  // 计算运行中的任务数量
+  // 计算运行中的任务数量（包括子任务）
   const getRunningTasksCount = () => {
-    return tasks.filter(task => task.isRunning).length;
+    const allTasks = getAllTasksFlat(tasks);
+    return allTasks.filter(task => task.isRunning).length;
   };
 
-  // 计算平均任务时间
+  // 计算平均任务时间（只计算顶级任务）
   const getAverageTaskTime = () => {
     if (tasks.length === 0) return 0;
-    const totalSeconds = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
+    const totalSeconds = tasks.reduce((sum, task) => sum + calculateTotalTime(task), 0);
     return Math.round(totalSeconds / tasks.length / 60); // 转换为分钟
   };
 
@@ -79,11 +110,12 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
   const getMostActiveCategory = () => {
     const categoryMap = new Map<string, number>();
     
-    tasks.forEach(task => {
+    const allTasks = getAllTasksFlat(tasks);
+    allTasks.forEach(task => {
       const category = task.categoryPath || '未分类';
       const currentTime = categoryMap.get(category) || 0;
-      // 使用elapsedTime，它包含了初始时间和计时器运行的时间
-      categoryMap.set(category, currentTime + task.elapsedTime);
+      const taskTotalTime = calculateTotalTime(task);
+      categoryMap.set(category, currentTime + taskTotalTime);
     });
     
     if (categoryMap.size === 0) return null;
@@ -97,12 +129,38 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     };
   };
 
+  // 获取层级统计信息
+  const getHierarchyStats = () => {
+    const stats = {
+      topLevelTasks: tasks.length,
+      totalTasks: getAllTasksFlat(tasks).length,
+      tasksWithChildren: tasks.filter(task => task.children && task.children.length > 0).length,
+      maxDepth: 0
+    };
+
+    // 计算最大深度
+    const calculateDepth = (taskList: TimerTask[], currentDepth: number): number => {
+      let maxDepth = currentDepth;
+      taskList.forEach(task => {
+        if (task.children && task.children.length > 0) {
+          const childDepth = calculateDepth(task.children, currentDepth + 1);
+          maxDepth = Math.max(maxDepth, childDepth);
+        }
+      });
+      return maxDepth;
+    };
+
+    stats.maxDepth = calculateDepth(tasks, 1);
+    return stats;
+  };
+
   const categoryStats = getCategoryStats();
   const taskStats = getTaskStats();
   const totalTime = getTotalTime();
   const runningTasksCount = getRunningTasksCount();
   const averageTaskTime = getAverageTaskTime();
   const mostActiveCategory = getMostActiveCategory();
+  const hierarchyStats = getHierarchyStats();
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -115,14 +173,18 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
 
   const CustomTooltip = ({ active, payload, label }: {
     active?: boolean;
-    payload?: Array<{ payload: { fullName?: string }; value: number }>;
+    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean }; value: number }>;
     label?: string;
   }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium">{payload[0].payload.fullName || label}</p>
+          <p className="font-medium">{data.fullName || label}</p>
           <p className="text-blue-600">{formatTime(payload[0].value)}</p>
+          {data.hasChildren && (
+            <p className="text-xs text-green-600 mt-1">包含子任务</p>
+          )}
         </div>
       );
     }
@@ -159,9 +221,12 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {tasks.length}
+                {hierarchyStats.totalTasks}
               </div>
               <div className="text-sm text-gray-600">任务总数</div>
+              <div className="text-xs text-gray-500">
+                ({hierarchyStats.topLevelTasks}个顶级任务)
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -188,6 +253,35 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* 层级统计 */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-800 mb-2">层级统计</div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="text-xl font-bold text-indigo-600">
+                  {hierarchyStats.maxDepth}
+                </div>
+                <div className="text-sm text-gray-600">最大深度</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-green-600">
+                  {hierarchyStats.tasksWithChildren}
+                </div>
+                <div className="text-sm text-gray-600">有子任务</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-blue-600">
+                  {hierarchyStats.totalTasks - hierarchyStats.topLevelTasks}
+                </div>
+                <div className="text-sm text-gray-600">子任务数</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 最活跃分类 */}
       {mostActiveCategory && (

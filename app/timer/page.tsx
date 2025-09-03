@@ -2,10 +2,35 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import EnhancedTimer from '@/app/components/EnhancedTimer';
+import NestedTimerZone from '@/app/components/NestedTimerZone';
+import TimeStatsChart from '@/app/components/TimeStatsChart';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
+import { Input } from '@/app/components/ui/input';
+
+interface TimerTask {
+  id: string;
+  name: string;
+  categoryPath: string;
+  elapsedTime: number;
+  initialTime: number;
+  isRunning: boolean;
+  startTime: number | null;
+  isPaused: boolean;
+  pausedTime: number;
+  parentId?: string | null;
+  children?: TimerTask[];
+}
 
 export default function TimerPage() {
   const [isPageReady, setIsPageReady] = useState(false);
+  const [tasks, setTasks] = useState<TimerTask[]>([]);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [operationLog, setOperationLog] = useState<string[]>([]);
 
   // 确保页面完全加载后再显示内容
   useEffect(() => {
@@ -15,6 +40,61 @@ export default function TimerPage() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // 加载任务数据
+  useEffect(() => {
+    loadTasks();
+  }, [selectedDate]);
+
+  const loadTasks = async () => {
+    try {
+      const response = await fetch(`/api/timer-tasks?date=${selectedDate}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    }
+  };
+
+  const addTask = async () => {
+    if (!newTaskName.trim()) {
+      alert('请输入任务名称');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/timer-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newTaskName.trim(),
+          categoryPath: newTaskCategory.trim() || '未分类',
+          date: selectedDate
+        }),
+      });
+
+      if (response.ok) {
+        await loadTasks();
+        setNewTaskName('');
+        setNewTaskCategory('');
+        setShowAddDialog(false);
+        recordOperation('创建任务', newTaskName.trim());
+      }
+    } catch (error) {
+      console.error('Failed to add task:', error);
+      alert('创建失败，请重试');
+    }
+  };
+
+  const recordOperation = (action: string, taskName: string, details?: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${action}: ${taskName}${details ? ` ${details}` : ''}`;
+    setOperationLog(prev => [logEntry, ...prev.slice(0, 9)]); // 保留最近10条记录
+  };
 
   // 如果页面还没准备好，显示加载状态
   if (!isPageReady) {
@@ -52,14 +132,128 @@ export default function TimerPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">计时器</h1>
-          <p className="text-gray-600">管理你的时间，追踪任务进度</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">嵌套计时器</h1>
+          <p className="text-gray-600">管理你的时间，支持无限嵌套的任务结构</p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <EnhancedTimer />
+        {/* 日期选择器 */}
+        <div className="mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700">选择日期:</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                </div>
+                <Button onClick={() => setShowAddDialog(true)}>
+                  添加顶级任务
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 左侧：任务列表 */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>任务列表</span>
+                  <span className="text-sm text-gray-500">
+                    {tasks.length} 个顶级任务
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NestedTimerZone
+                  tasks={tasks}
+                  onTasksChange={setTasks}
+                  onOperationRecord={recordOperation}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 右侧：统计和日志 */}
+          <div className="space-y-6">
+            {/* 统计图表 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>时间统计</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TimeStatsChart tasks={tasks} />
+              </CardContent>
+            </Card>
+
+            {/* 操作日志 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>操作日志</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {operationLog.length === 0 ? (
+                    <p className="text-gray-500 text-sm">暂无操作记录</p>
+                  ) : (
+                    operationLog.map((log, index) => (
+                      <div key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                        {log}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
+
+      {/* 添加任务弹框 */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>添加顶级任务</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                任务名称
+              </label>
+              <Input
+                value={newTaskName}
+                onChange={(e) => setNewTaskName(e.target.value)}
+                placeholder="输入任务名称..."
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                分类 (可选)
+              </label>
+              <Input
+                value={newTaskCategory}
+                onChange={(e) => setNewTaskCategory(e.target.value)}
+                placeholder="输入分类..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={addTask}>
+              添加任务
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

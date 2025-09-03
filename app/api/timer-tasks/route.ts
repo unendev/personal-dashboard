@@ -5,14 +5,10 @@ import { TimerDB } from '@/app/lib/timer-db';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get('userId') || 'user-1'; // 默认用户ID
     const date = searchParams.get('date');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
 
     let tasks;
     if (date) {
@@ -34,10 +30,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, name, categoryPath, elapsedTime, initialTime, isRunning, startTime, isPaused, pausedTime, completedAt, date } = body;
+    const { 
+      userId = 'user-1', // 默认用户ID
+      name, 
+      categoryPath, 
+      elapsedTime, 
+      initialTime, 
+      isRunning, 
+      startTime, 
+      isPaused, 
+      pausedTime, 
+      completedAt, 
+      date,
+      parentId // 新增：父任务ID
+    } = body;
 
-    if (!userId || !name || !categoryPath || !date) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!name || !categoryPath || !date) {
+      return NextResponse.json({ error: 'Missing required fields: name, categoryPath, date' }, { status: 400 });
     }
 
     const newTask = await TimerDB.addTask({
@@ -51,7 +60,8 @@ export async function POST(request: NextRequest) {
       isPaused: isPaused || false,
       pausedTime: pausedTime || 0,
       completedAt: completedAt || null,
-      date
+      date,
+      parentId: parentId || null // 支持父任务ID
     });
 
     return NextResponse.json(newTask, { status: 201 });
