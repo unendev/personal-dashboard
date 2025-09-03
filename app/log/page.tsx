@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
+import CreateLogModal from '@/app/components/CreateLogModal'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 import AISummaryWidget from '@/app/components/AISummaryWidget'
+import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
 import DateBasedTodoList from '@/app/components/DateBasedTodoList'
+import { CategoryCache } from '@/app/lib/category-cache'
 
 export default function LogPage() {
   const [isPageReady, setIsPageReady] = useState(false);
@@ -37,12 +40,25 @@ export default function LogPage() {
   // 操作记录折叠状态
   const [isOperationHistoryExpanded, setIsOperationHistoryExpanded] = useState(false);
   
-  // 日志创建卡片折叠状态
-  const [isCreateLogExpanded, setIsCreateLogExpanded] = useState(false);
+  // 创建事物模态框状态
+  const [isCreateLogModalOpen, setIsCreateLogModalOpen] = useState(false);
 
   // 用于点击外部区域关闭折叠栏的ref
-  const createLogRef = useRef<HTMLDivElement>(null);
   const operationHistoryRef = useRef<HTMLDivElement>(null);
+
+  // 预加载分类数据
+  useEffect(() => {
+    const preloadCategories = async () => {
+      try {
+        await CategoryCache.preload();
+        console.log('分类数据预加载完成');
+      } catch (error) {
+        console.error('预加载分类失败:', error);
+      }
+    };
+
+    preloadCategories();
+  }, []);
 
   // 从数据库加载任务
   const fetchTimerTasks = React.useCallback(async () => {
@@ -68,14 +84,9 @@ export default function LogPage() {
     return () => clearTimeout(timer);
   }, [fetchTimerTasks]);
 
-  // 点击外部区域关闭折叠栏
+  // 点击外部区域关闭操作记录折叠栏
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // 检查是否点击了创建事物折叠栏外部
-      if (createLogRef.current && !createLogRef.current.contains(event.target as Node)) {
-        setIsCreateLogExpanded(false);
-      }
-      
       // 检查是否点击了操作记录折叠栏外部
       if (operationHistoryRef.current && !operationHistoryRef.current.contains(event.target as Node)) {
         setIsOperationHistoryExpanded(false);
@@ -83,14 +94,14 @@ export default function LogPage() {
     };
 
     // 只有在折叠栏打开时才添加事件监听器
-    if (isCreateLogExpanded || isOperationHistoryExpanded) {
+    if (isOperationHistoryExpanded) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isCreateLogExpanded, isOperationHistoryExpanded]);
+  }, [isOperationHistoryExpanded]);
 
   const handleLogSaved = () => {
     // 重新获取日志数据
@@ -162,6 +173,8 @@ export default function LogPage() {
         const createdTask = await response.json();
         setTimerTasks([...timerTasks, createdTask]);
         recordOperation('添加任务', taskName, `初始时间: ${initialTime}秒`);
+        // 关闭模态框
+        setIsCreateLogModalOpen(false);
       }
     } catch (error) {
       console.error('Failed to add task:', error);
@@ -192,43 +205,29 @@ export default function LogPage() {
         </Link>
       </div>
 
-      {/* 日志创建卡片折叠栏 - 左侧 */}
-      <div className="fixed top-4 left-20 z-40" ref={createLogRef}>
-        <div 
-          className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
-          onClick={() => setIsCreateLogExpanded(!isCreateLogExpanded)}
+      {/* 创建事物按钮 - 左侧 */}
+      <div className="fixed top-4 left-20 z-40">
+        <button
+          onClick={() => setIsCreateLogModalOpen(true)}
+          className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-all duration-300 min-w-[140px] flex items-center gap-2"
         >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📝</span>
-            <span className="text-sm font-medium">创建事物</span>
-            <span className={`text-xs transition-transform duration-300 ${isCreateLogExpanded ? 'rotate-180' : ''}`}>
-              ▼
-            </span>
-          </div>
-        </div>
-        
-        {/* 折叠的日志创建内容 */}
-        {isCreateLogExpanded && (
-          <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-xl p-4 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-sm font-semibold mb-3">📝 创建事物</h3>
-            <CreateLogFormWithCards 
-              onLogSaved={handleLogSaved}
-              onAddToTimer={handleAddToTimer}
-            />
-          </div>
-        )}
+          <span className="text-xl">📝</span>
+          <span className="text-sm font-medium">创建事物</span>
+        </button>
       </div>
 
       {/* 操作记录折叠栏 - 右侧 */}
       <div className="fixed top-4 right-4 z-40" ref={operationHistoryRef}>
         <div 
-          className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
+          className="bg-white rounded-lg shadow-lg p-4 cursor-pointer hover:shadow-xl transition-all duration-300 min-w-[140px]"
           onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📋</span>
-            <span className="text-sm font-medium">操作记录</span>
-            <span className={`text-xs transition-transform duration-300 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📋</span>
+              <span className="text-sm font-medium">操作记录</span>
+            </div>
+            <span className={`text-sm transition-transform duration-300 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
               ▼
             </span>
           </div>
@@ -237,7 +236,15 @@ export default function LogPage() {
         {/* 折叠的操作记录内容 */}
         {isOperationHistoryExpanded && (
           <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl p-4 max-h-96 overflow-y-auto">
-            <h3 className="text-sm font-semibold mb-3">📋 操作记录</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">📋 操作记录</h3>
+              <button 
+                onClick={() => setIsOperationHistoryExpanded(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg"
+              >
+                ×
+              </button>
+            </div>
             {operationHistory.length === 0 ? (
               <p className="text-gray-500 text-sm">暂无操作记录</p>
             ) : (
@@ -269,6 +276,14 @@ export default function LogPage() {
           </div>
         )}
       </div>
+
+      {/* 创建事物模态框 */}
+      <CreateLogModal
+        isOpen={isCreateLogModalOpen}
+        onClose={() => setIsCreateLogModalOpen(false)}
+        onLogSaved={handleLogSaved}
+        onAddToTimer={handleAddToTimer}
+      />
 
       {/* 页面导航 */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -323,12 +338,11 @@ export default function LogPage() {
           </div>
         </div>
 
-        {/* AI总结区域 */}
+        {/* 可折叠的AI总结区域 */}
         <div className="mb-8">
-          <AISummaryWidget 
+          <CollapsibleAISummary 
             userId={userId}
             date={selectedDate}
-            compact={true}
           />
         </div>
       </div>
