@@ -31,22 +31,45 @@ async function generateDailyAISummary() {
       try {
         console.log(`正在为用户 ${user.email || user.name} 生成总结...`);
         
+        // 检查是否已经存在总结
+        const existingSummary = await prisma.aISummary.findUnique({
+          where: {
+            userId_date: {
+              userId: user.id,
+              date: yesterdayStr
+            }
+          }
+        });
+        
+        if (existingSummary) {
+          console.log(`⚠️ 用户 ${user.email || user.name} 的总结已存在，跳过`);
+          results.push({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            date: yesterdayStr,
+            success: true,
+            skipped: true,
+            message: '总结已存在'
+          });
+          continue;
+        }
+        
         // 生成 AI 总结
         const summary = await AIService.generateSummary(user.id, yesterdayStr);
         
-        // 保存总结到数据库（可选）
-        // 这里可以创建一个新的表来存储历史总结
-        // await prisma.aiSummary.create({
-        //   data: {
-        //     userId: user.id,
-        //     date: yesterdayStr,
-        //     summary: summary.summary,
-        //     totalTime: summary.totalTime,
-        //     taskCount: summary.taskCount,
-        //     insights: summary.insights,
-        //     categories: summary.categories
-        //   }
-        // });
+        // 保存总结到数据库
+        const savedSummary = await prisma.aISummary.create({
+          data: {
+            userId: user.id,
+            date: yesterdayStr,
+            summary: summary.summary,
+            totalTime: summary.totalTime,
+            taskCount: summary.taskCount,
+            insights: summary.insights,
+            categories: summary.categories
+          }
+        });
         
         results.push({
           userId: user.id,
@@ -54,12 +77,13 @@ async function generateDailyAISummary() {
           name: user.name,
           date: yesterdayStr,
           success: true,
-          summary: summary.summary,
+          summaryId: savedSummary.id,
           totalTime: summary.totalTime,
           taskCount: summary.taskCount
         });
         
         console.log(`✅ 用户 ${user.email || user.name} 总结生成成功`);
+        console.log(`   总结ID: ${savedSummary.id}`);
         console.log(`   总时间: ${Math.floor(summary.totalTime / 3600)}小时${Math.floor((summary.totalTime % 3600) / 60)}分钟`);
         console.log(`   任务数: ${summary.taskCount}个`);
         console.log(`   总结: ${summary.summary.substring(0, 100)}...`);
@@ -82,27 +106,21 @@ async function generateDailyAISummary() {
     console.log('\n=== AI 总结生成报告 ===');
     console.log(`日期: ${yesterdayStr}`);
     console.log(`总用户数: ${users.length}`);
-    console.log(`成功: ${results.filter(r => r.success).length}`);
-    console.log(`失败: ${results.filter(r => !r.success).length}`);
-    
-    if (results.filter(r => r.success).length > 0) {
-      console.log('\n成功生成的总结:');
-      results.filter(r => r.success).forEach(result => {
-        console.log(`- ${result.email || result.name}: ${result.summary.substring(0, 80)}...`);
-      });
-    }
+    console.log(`成功生成: ${results.filter(r => r.success && !r.skipped).length}`);
+    console.log(`跳过生成: ${results.filter(r => r.skipped).length}`);
+    console.log(`生成失败: ${results.filter(r => !r.success).length}`);
     
     if (results.filter(r => !r.success).length > 0) {
-      console.log('\n失败的总结:');
+      console.log('\n失败详情:');
       results.filter(r => !r.success).forEach(result => {
         console.log(`- ${result.email || result.name}: ${result.error}`);
       });
     }
     
-    console.log('\nAI 总结生成完成！');
+    console.log('\n✅ 每日 AI 总结任务完成！');
     
   } catch (error) {
-    console.error('生成 AI 总结时发生错误:', error);
+    console.error('❌ 每日 AI 总结任务失败:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -112,18 +130,6 @@ async function generateDailyAISummary() {
 // 如果直接运行此脚本
 if (import.meta.url === `file://${process.argv[1]}`) {
   generateDailyAISummary();
-}
-
-// 手动触发一次（用于测试）
-if (process.argv.includes('--test')) {
-  console.log('手动触发AI总结生成...');
-  generateDailyAISummary().then(() => {
-    console.log('测试完成');
-    process.exit(0);
-  }).catch((error) => {
-    console.error('测试失败:', error);
-    process.exit(1);
-  });
 }
 
 export { generateDailyAISummary };

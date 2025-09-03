@@ -224,7 +224,8 @@ body {
 .log-input-section,
 .log-list-section,
 .stats-chart-section,
-.operation-history-section {
+.operation-history-section,
+.ai-summary-section {
   width: 100%;
 }
 

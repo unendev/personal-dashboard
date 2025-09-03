@@ -6,6 +6,7 @@ import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
+import AISummaryWidget from '@/app/components/AISummaryWidget'
 
 
 
@@ -202,11 +203,20 @@ export default function LogPage() {
         />
 
         <div className="log-content-grid">
+          {/* AI总结区域 */}
+          <div className="ai-summary-section">
+            <AISummaryWidget 
+              userId={userId}
+              date={selectedDate}
+              compact={true}
+            />
+          </div>
+
           {/* 计时器区域 */}
           <div className="timer-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">⏱️ 计时器区域</h2>
-                            <NestedTimerZone
+              <NestedTimerZone
                 tasks={timerTasks}
                 onTasksChange={setTimerTasks}
                 onOperationRecord={recordOperation}
@@ -267,8 +277,6 @@ export default function LogPage() {
               )}
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
