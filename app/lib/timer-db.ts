@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PrismaClient, TimerTask as PrismaTimerTask } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -73,7 +74,7 @@ export const TimerDB = {
   },
 
   // 更新任务
-  updateTask: async (taskId: string, updates: Partial<TimerTask>): Promise<TimerTask> => {
+  updateTask: async (taskId: string, updates: Partial<Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children'>>): Promise<TimerTask> => {
     try {
       const updatedTask = await prisma.timerTask.update({
         where: { id: taskId },
@@ -249,7 +250,7 @@ export const TimerDB = {
   // 获取任务的父任务链
   getTaskAncestors: async (taskId: string): Promise<TimerTask[]> => {
     try {
-      const ancestors: TimerTask[] = [];
+      const ancestors: any[] = [];
       let currentTask = await prisma.timerTask.findUnique({
         where: { id: taskId },
         select: { parentId: true }
