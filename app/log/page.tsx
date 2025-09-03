@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
-import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import CreateLogModal from '@/app/components/CreateLogModal'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
-import AISummaryWidget from '@/app/components/AISummaryWidget'
 import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
 import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 import { CategoryCache } from '@/app/lib/category-cache'

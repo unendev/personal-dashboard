@@ -52,7 +52,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
 
   useEffect(() => {
     fetchTodos();
-  }, [userId, date]);
+  }, [userId, date, fetchTodos]);
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;

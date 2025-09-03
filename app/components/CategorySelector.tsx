@@ -37,11 +37,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
 
-  // 缓存分类数据
-  const categoriesCache = useMemo(() => {
-    return categories;
-  }, [categories]);
-
   useEffect(() => {
     const load = async () => {
       setIsCategoriesLoading(true);
@@ -148,65 +143,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     } catch (error) {
       console.error('删除分类失败:', error);
       alert('删除失败，请重试');
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!taskName.trim()) {
-      alert('请输入任务名称');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 构建分类数据
-      const pathParts = selectedPath.split('/');
-      const categories = [{
-        name: pathParts[0] || '',
-        subCategories: [{
-          name: pathParts[1] || '',
-          activities: [{
-            name: pathParts[2] || taskName,
-            duration: duration ? `${duration}m` : '0m'
-          }]
-        }]
-      }];
-
-      const formData = new FormData();
-      formData.append('content', taskName);
-      formData.append('categories', JSON.stringify(categories));
-      formData.append('timestamp', getBeijingTime().toISOString());
-
-      // 创建日志记录
-      await createLog(formData);
-
-      // 如果提供了添加到计时器的回调，则调用
-      if (onAddToTimer) {
-        onAddToTimer(taskName, selectedPath, duration ? parseInt(duration) * 60 : 0);
-      }
-
-      // 如果提供了选择回调，则调用
-      if (onSelected) {
-        onSelected(selectedPath, taskName);
-      }
-
-      // 重置表单
-      setTaskName('');
-      setDuration('');
-      setShowDialog(false);
-      
-      // 调用保存回调
-      if (onLogSaved) {
-        onLogSaved();
-      }
-
-      alert('任务已创建并添加到计时器！');
-    } catch (error) {
-      console.error('创建任务失败:', error);
-      alert('创建失败，请重试');
-    } finally {
-      setIsLoading(false);
     }
   };
 

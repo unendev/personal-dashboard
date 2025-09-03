@@ -97,16 +97,6 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
-    });
-  };
-
   if (compact) {
     // 紧凑模式 - 用于日志页面
     if (loading && !summary) {

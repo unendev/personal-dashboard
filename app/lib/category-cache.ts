@@ -1,7 +1,13 @@
 // 全局分类数据缓存
-let categoriesCache: any[] = [];
+type CategoryNode = {
+  id: string;
+  name: string;
+  children?: CategoryNode[];
+};
+
+let categoriesCache: CategoryNode[] = [];
 let isCacheReady = false;
-let cachePromise: Promise<any[]> | null = null;
+let cachePromise: Promise<CategoryNode[]> | null = null;
 
 const CACHE_KEY = 'category_cache';
 const CACHE_TIMESTAMP_KEY = 'category_cache_timestamp';
@@ -9,7 +15,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 
 export const CategoryCache = {
   // 从本地存储加载缓存
-  loadFromStorage() {
+  loadFromStorage(): CategoryNode[] | null {
     try {
       if (typeof window === 'undefined') return null;
       
@@ -19,7 +25,7 @@ export const CategoryCache = {
       if (cached && timestamp) {
         const age = Date.now() - parseInt(timestamp);
         if (age < CACHE_DURATION) {
-          const data = JSON.parse(cached);
+          const data = JSON.parse(cached) as CategoryNode[];
           categoriesCache = data;
           isCacheReady = true;
           console.log('从本地存储加载分类缓存');
@@ -33,7 +39,7 @@ export const CategoryCache = {
   },
 
   // 保存到本地存储
-  saveToStorage(data: any[]) {
+  saveToStorage(data: CategoryNode[]): void {
     try {
       if (typeof window === 'undefined') return;
       
@@ -46,7 +52,7 @@ export const CategoryCache = {
   },
 
   // 预加载分类数据
-  async preload() {
+  async preload(): Promise<CategoryNode[]> {
     if (cachePromise) {
       return cachePromise;
     }
@@ -59,7 +65,7 @@ export const CategoryCache = {
 
     cachePromise = fetch('/api/log-categories')
       .then(res => res.json())
-      .then(data => {
+      .then((data: CategoryNode[]) => {
         categoriesCache = data;
         isCacheReady = true;
         // 保存到本地存储
@@ -77,24 +83,24 @@ export const CategoryCache = {
   },
 
   // 获取缓存的分类数据
-  getCategories() {
+  getCategories(): CategoryNode[] {
     return categoriesCache;
   },
 
   // 检查缓存是否准备就绪
-  isReady() {
+  isReady(): boolean {
     return isCacheReady;
   },
 
   // 更新缓存
-  updateCategories(categories: any[]) {
+  updateCategories(categories: CategoryNode[]): void {
     categoriesCache = categories;
     // 同时更新本地存储
     this.saveToStorage(categories);
   },
 
   // 清除缓存
-  clear() {
+  clear(): void {
     categoriesCache = [];
     isCacheReady = false;
     cachePromise = null;
