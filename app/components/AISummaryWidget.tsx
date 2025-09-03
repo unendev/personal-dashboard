@@ -72,11 +72,9 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   };
 
   useEffect(() => {
-    // 只在组件挂载时获取一次，避免重复加载
-    if (!summary) {
-      fetchSummary();
-    }
-  }, [userId, date, fetchSummary, summary]);
+    // 当 userId 或 date 改变时，重新获取数据
+    fetchSummary();
+  }, [userId, date, fetchSummary]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
