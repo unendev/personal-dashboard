@@ -7,6 +7,7 @@ import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 import AISummaryWidget from '@/app/components/AISummaryWidget'
+import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 
 
 
@@ -206,6 +207,15 @@ export default function LogPage() {
           {/* AI总结区域 */}
           <div className="ai-summary-section">
             <AISummaryWidget 
+              userId={userId}
+              date={selectedDate}
+              compact={true}
+            />
+          </div>
+
+          {/* 任务清单区域 */}
+          <div className="todo-list-section">
+            <DateBasedTodoList 
               userId={userId}
               date={selectedDate}
               compact={true}

@@ -225,7 +225,8 @@ body {
 .log-list-section,
 .stats-chart-section,
 .operation-history-section,
-.ai-summary-section {
+.ai-summary-section,
+.todo-list-section {
   width: 100%;
 }
 

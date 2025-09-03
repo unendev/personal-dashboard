@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // GET /api/todos - 获取指定日期的任务列表
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const date = searchParams.get('date');
+    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
-    if (!userId || !date) {
-      return NextResponse.json({ error: 'userId and date are required' }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
     const todos = await prisma.todo.findMany({
-      where: { 
+      where: {
         userId,
-        date 
+        date
       },
-      orderBy: { createdAtUnix: 'desc' }
+      orderBy: [
+        { priority: 'desc' },
+        { createdAtUnix: 'desc' }
+      ]
     });
 
     return NextResponse.json(todos);
@@ -31,25 +36,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, completed, createdAt, priority, category, userId, date } = body;
+    const { userId, text, priority = 'medium', category, date } = body;
 
-    if (!text || !userId || !date) {
-      return NextResponse.json({ error: 'text, userId, and date are required' }, { status: 400 });
+    if (!userId || !text) {
+      return NextResponse.json({ error: 'userId and text are required' }, { status: 400 });
     }
 
-    const newTodo = await prisma.todo.create({
+    const todo = await prisma.todo.create({
       data: {
-        text,
-        completed: completed || false,
-        createdAtUnix: createdAt || Date.now(),
-        priority: priority || 'medium',
-        category: category || null,
         userId,
-        date
+        text,
+        priority,
+        category,
+        date: date || new Date().toISOString().split('T')[0],
+        createdAtUnix: Math.floor(Date.now() / 1000)
       }
     });
 
-    return NextResponse.json(newTodo, { status: 201 });
+    return NextResponse.json(todo, { status: 201 });
   } catch (error) {
     console.error('Error creating todo:', error);
     return NextResponse.json({ error: 'Failed to create todo' }, { status: 500 });
@@ -60,18 +64,23 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, text, completed, priority, category } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Todo ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const updatedTodo = await prisma.todo.update({
+    const todo = await prisma.todo.update({
       where: { id },
-      data: updates
+      data: {
+        text,
+        completed,
+        priority,
+        category
+      }
     });
 
-    return NextResponse.json(updatedTodo);
+    return NextResponse.json(todo);
   } catch (error) {
     console.error('Error updating todo:', error);
     return NextResponse.json({ error: 'Failed to update todo' }, { status: 500 });
@@ -85,7 +94,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Todo ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
     await prisma.todo.delete({
