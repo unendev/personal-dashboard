@@ -291,25 +291,8 @@ export default function LogPage() {
           onDateChange={setSelectedDate}
         />
 
-        {/* 时间统计区域 - 页面顶部 */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
-            <TimeStatsChart tasks={timerTasks} />
-          </div>
-        </div>
-
-        {/* AI总结区域 */}
-        <div className="mb-8">
-          <AISummaryWidget 
-            userId={userId}
-            date={selectedDate}
-            compact={true}
-          />
-        </div>
-
-        {/* 任务清单与计时器的左右布局 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 任务清单与计时器的左右布局 - 页面顶部 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* 任务清单区域 */}
           <div className="todo-list-section">
             <DateBasedTodoList 
@@ -330,6 +313,23 @@ export default function LogPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* 时间统计区域 */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
+            <TimeStatsChart tasks={timerTasks} />
+          </div>
+        </div>
+
+        {/* AI总结区域 */}
+        <div className="mb-8">
+          <AISummaryWidget 
+            userId={userId}
+            date={selectedDate}
+            compact={true}
+          />
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input';
 import { createLog } from '@/app/actions';
 import { getBeijingTime } from '@/lib/utils';
+import { CategoryCache } from '@/app/lib/category-cache';
 
 type CategoryNode = {
   id: string;
@@ -45,9 +46,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     const load = async () => {
       setIsCategoriesLoading(true);
       try {
-        const res = await fetch('/api/log-categories');
-        const data = await res.json();
-        setCategories(data as CategoryNode[]);
+        // 首先尝试从缓存获取
+        if (CategoryCache.isReady()) {
+          const cachedData = CategoryCache.getCategories();
+          setCategories(cachedData);
+          setIsCategoriesLoading(false);
+          console.log('从缓存加载分类数据');
+          return;
+        }
+
+        // 如果缓存未准备好，等待缓存准备完成
+        const data = await CategoryCache.preload();
+        setCategories(data);
+        console.log('从API加载分类数据');
       } catch (e) {
         console.error('加载分类失败', e);
       } finally {
@@ -98,6 +109,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       if (response.ok) {
         const result = await response.json();
         setCategories(result.categories);
+        // 更新全局缓存
+        CategoryCache.updateCategories(result.categories);
         setShowCreateDialog(false);
         setNewCategoryName('');
         setCreateParentPath('');
@@ -125,6 +138,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       if (response.ok) {
         const result = await response.json();
         setCategories(result.categories);
+        // 更新全局缓存
+        CategoryCache.updateCategories(result.categories);
         setShowDeleteConfirm(false);
         setDeleteTarget(null);
       } else {
@@ -196,47 +211,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   };
 
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）并转换为秒数
-  const parseDurationToSeconds = (value: string): number => {
-    if (!value.trim()) return 0;
+  const parseTimeToSeconds = (timeStr: string): number => {
+    const hours = timeStr.match(/(\d+)h/);
+    const minutes = timeStr.match(/(\d+)m/);
     
-    // 移除所有空格
-    const cleanValue = value.replace(/\s/g, '');
+    const hoursNum = hours ? parseInt(hours[1]) : 0;
+    const minutesNum = minutes ? parseInt(minutes[1]) : 0;
     
-    // 匹配格式：数字+h+数字+m 或 数字+h 或 数字+m
-    const hourMinutePattern = /^(\d+)h(\d+)m$/;
-    const hourPattern = /^(\d+)h$/;
-    const minutePattern = /^(\d+)m$/;
-    const numberPattern = /^(\d+)$/;
-    
-    if (hourMinutePattern.test(cleanValue)) {
-      // 格式：1h20m
-      const match = cleanValue.match(hourMinutePattern);
-      if (match) {
-        const hours = parseInt(match[1]);
-        const minutes = parseInt(match[2]);
-        return hours * 3600 + minutes * 60;
-      }
-    } else if (hourPattern.test(cleanValue)) {
-      // 格式：2h
-      const match = cleanValue.match(hourPattern);
-      if (match) {
-        const hours = parseInt(match[1]);
-        return hours * 3600;
-      }
-    } else if (minutePattern.test(cleanValue)) {
-      // 格式：45m
-      const match = cleanValue.match(minutePattern);
-      if (match) {
-        const minutes = parseInt(match[1]);
-        return minutes * 60;
-      }
-    } else if (numberPattern.test(cleanValue)) {
-      // 纯数字，按分钟处理
-      const minutes = parseInt(cleanValue);
-      return minutes * 60;
-    }
-    
-    return 0;
+    return hoursNum * 3600 + minutesNum * 60;
   };
 
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）
@@ -307,7 +289,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
 
     // 解析时间输入并转换为秒数
-    const initialTimeSeconds = parseDurationToSeconds(duration);
+    const initialTimeSeconds = parseTimeToSeconds(duration);
 
     // 无论是否输入时间，都添加到计时器区域
     if (onAddToTimer) {
