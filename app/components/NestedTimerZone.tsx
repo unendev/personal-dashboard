@@ -557,7 +557,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       <Card className="bg-gray-50">
         <CardContent className="p-6 text-center">
           <p className="text-gray-500">暂无计时任务</p>
-          <p className="text-sm text-gray-400 mt-2">请先点击右上角的"添加顶级任务"按钮创建任务</p>
+          <p className="text-sm text-gray-400 mt-2">请先点击右上角的&ldquo;添加顶级任务&rdquo;按钮创建任务</p>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700 font-medium">💡 嵌套功能提示：</p>
             <p className="text-xs text-blue-600 mt-1">
@@ -567,9 +567,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 font-medium">📋 使用步骤：</p>
             <ol className="text-xs text-yellow-700 mt-1 ml-4 list-decimal">
-              <li>点击右上角"添加顶级任务"按钮</li>
+              <li>点击右上角&ldquo;添加顶级任务&rdquo;按钮</li>
               <li>输入任务名称创建任务</li>
-              <li>在任务卡片右侧找到绿色"➕ 添加子任务"按钮</li>
+                              <li>在任务卡片右侧找到绿色&ldquo;➕ 添加子任务&rdquo;按钮</li>
               <li>点击即可创建子任务，实现无限嵌套</li>
             </ol>
           </div>
