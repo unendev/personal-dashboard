@@ -435,7 +435,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           }`}
         >
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
@@ -466,32 +466,39 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 )}
               </div>
               
-              <div className="flex gap-2 ml-4">
+              <div className="flex flex-wrap gap-2 flex-shrink-0">
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 
                       onClick={() => resumeTimer(task.id)}
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                      title="继续计时"
                     >
-                      继续
+                      <span className="hidden sm:inline">继续</span>
+                      <span className="sm:hidden">继续</span>
                     </Button>
                   ) : (
                     <Button 
                       onClick={() => pauseTimer(task.id)}
                       variant="outline"
                       size="sm"
+                      className="whitespace-nowrap"
+                      title="暂停计时"
                     >
-                      暂停
+                      <span className="hidden sm:inline">暂停</span>
+                      <span className="sm:hidden">暂停</span>
                     </Button>
                   )
                 ) : (
                   <Button 
                     onClick={() => startTimer(task.id)}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
+                    title="开始计时"
                   >
-                    开始
+                    <span className="hidden sm:inline">开始</span>
+                    <span className="sm:hidden">开始</span>
                   </Button>
                 )}
                 
@@ -499,18 +506,22 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   onClick={() => setShowAddChildDialog(task.id)}
                   variant="outline"
                   size="sm"
-                  className="text-green-600 hover:text-green-700"
+                  className="text-green-600 hover:text-green-700 whitespace-nowrap"
+                  title="添加子任务"
                 >
-                  添加子任务
+                  <span className="hidden sm:inline">添加子任务</span>
+                  <span className="sm:hidden">+子</span>
                 </Button>
                 
                 <Button 
                   onClick={() => deleteTimer(task.id)}
                   variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 whitespace-nowrap"
+                  title="删除任务"
                 >
-                  删除
+                  <span className="hidden sm:inline">删除</span>
+                  <span className="sm:hidden">删除</span>
                 </Button>
               </div>
             </div>
