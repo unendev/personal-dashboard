@@ -77,14 +77,14 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
 
   if (loading) {
     return (
-      <Card className="glass-effect">
+      <Card>
         <CardHeader>
-          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
+          <CardTitle>AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-            <p className="text-white/60 mt-2">正在生成总结...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-600 mt-2">正在生成总结...</p>
           </div>
         </CardContent>
       </Card>
@@ -93,13 +93,13 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
 
   if (error) {
     return (
-      <Card className="glass-effect">
+      <Card>
         <CardHeader>
-          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
+          <CardTitle>AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-red-400 mb-4">{error}</p>
+            <p className="text-red-500 mb-4">{error}</p>
             <Button onClick={fetchSummary} variant="outline" size="sm">
               重试
             </Button>
@@ -111,13 +111,13 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
 
   if (!summary) {
     return (
-      <Card className="glass-effect">
+      <Card>
         <CardHeader>
-          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
+          <CardTitle>AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-white/60">暂无数据</p>
+            <p className="text-gray-600">暂无数据</p>
           </div>
         </CardContent>
       </Card>
@@ -125,46 +125,46 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   }
 
   return (
-    <Card className="glass-effect">
+    <Card>
       <CardHeader>
-        <CardTitle className="gradient-text flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between">
           <span>AI 昨日总结</span>
-          <span className="text-sm font-normal text-white/60">
+          <span className="text-sm font-normal text-gray-600">
             {formatDate(date)}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 主要总结 */}
-        <div className="bg-white/10 rounded-lg p-4">
-          <p className="text-white/90 leading-relaxed">{summary.summary}</p>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-gray-900 leading-relaxed">{summary.summary}</p>
         </div>
 
         {/* 统计数据 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-400">
+            <div className="text-2xl font-bold text-blue-600">
               {formatTime(summary.totalTime)}
             </div>
-            <div className="text-sm text-white/60">总工作时间</div>
+            <div className="text-sm text-gray-600">总工作时间</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-400">
+            <div className="text-2xl font-bold text-green-600">
               {summary.taskCount}
             </div>
-            <div className="text-sm text-white/60">任务数量</div>
+            <div className="text-sm text-gray-600">任务数量</div>
           </div>
         </div>
 
         {/* AI 洞察 */}
         {summary.insights.length > 0 && (
           <div>
-            <h4 className="text-white/80 font-medium mb-2">AI 洞察</h4>
+            <h4 className="text-gray-800 font-medium mb-2">AI 洞察</h4>
             <div className="space-y-2">
               {summary.insights.map((insight, index) => (
                 <div key={index} className="flex items-start space-x-2">
-                  <span className="text-blue-400 mt-1">💡</span>
-                  <p className="text-white/70 text-sm">{insight}</p>
+                  <span className="text-blue-500 mt-1">💡</span>
+                  <p className="text-gray-700 text-sm">{insight}</p>
                 </div>
               ))}
             </div>

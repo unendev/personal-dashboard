@@ -45,25 +45,24 @@ export default function SummaryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+    <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-4xl mx-auto">
         {/* 页面标题 */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">AI 昨日总结</h1>
-          <p className="text-white/60">智能分析您昨天的工作模式和效率</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">AI 昨日总结</h1>
+          <p className="text-gray-600">智能分析您昨天的工作模式和效率</p>
         </div>
 
         {/* 日期选择器 */}
-        <Card className="glass-effect mb-6">
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-white">选择日期</CardTitle>
+            <CardTitle>选择日期</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center space-x-4">
               <Button 
                 onClick={goToPreviousDay}
                 variant="outline"
-                className="text-white border-white/30 hover:bg-white/10"
               >
                 前一天
               </Button>
@@ -73,9 +72,9 @@ export default function SummaryPage() {
                   type="date"
                   value={selectedDate}
                   onChange={handleDateChange}
-                  className="bg-white/10 border border-white/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
-                <span className="text-white/60 text-sm">
+                <span className="text-gray-600 text-sm">
                   {formatDate(selectedDate)}
                 </span>
               </div>
@@ -83,7 +82,6 @@ export default function SummaryPage() {
               <Button 
                 onClick={goToNextDay}
                 variant="outline"
-                className="text-white border-white/30 hover:bg-white/10"
               >
                 后一天
               </Button>
@@ -91,7 +89,6 @@ export default function SummaryPage() {
               <Button 
                 onClick={goToYesterday}
                 variant="outline"
-                className="text-white border-white/30 hover:bg-white/10"
               >
                 昨天
               </Button>
@@ -104,11 +101,11 @@ export default function SummaryPage() {
           <AISummaryWidget userId={userId} date={selectedDate} />
           
           {/* 额外信息卡片 */}
-          <Card className="glass-effect">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white">功能说明</CardTitle>
+              <CardTitle>功能说明</CardTitle>
             </CardHeader>
-            <CardContent className="text-white/70 space-y-2">
+            <CardContent className="space-y-2">
               <p>• 默认显示昨天的总结，因为昨天的记录今天才完整</p>
               <p>• AI 会自动分析您的工作模式和时间分配</p>
               <p>• 提供个性化的效率建议和洞察</p>
