@@ -213,13 +213,6 @@ body {
   background-attachment: fixed;
 }
 
-.log-content-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  width: 100%;
-}
-
 .timer-section,
 .log-list-section,
 .stats-chart-section,
@@ -238,13 +231,13 @@ body {
 
 /* 响应式设计 */
 @media (min-width: 1024px) {
-  .log-content-grid {
+  .log-page-layout .grid {
     gap: 2rem;
   }
 }
 
 @media (max-width: 1023px) {
-  .log-content-grid {
+  .log-page-layout .grid {
     gap: 1.5rem;
   }
 }

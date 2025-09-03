@@ -9,8 +9,6 @@ import DateFilter from '@/app/components/DateFilter'
 import AISummaryWidget from '@/app/components/AISummaryWidget'
 import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 
-
-
 export default function LogPage() {
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -36,7 +34,11 @@ export default function LogPage() {
     details?: string;
   }[]>([]);
 
-
+  // 操作记录折叠状态
+  const [isOperationHistoryExpanded, setIsOperationHistoryExpanded] = useState(false);
+  
+  // 日志创建卡片折叠状态
+  const [isCreateLogExpanded, setIsCreateLogExpanded] = useState(false);
 
   // 从数据库加载任务
   const fetchTimerTasks = React.useCallback(async () => {
@@ -138,26 +140,6 @@ export default function LogPage() {
     }
   };
 
-  // 格式化时间显示
-  // const formatTime = (seconds: number) => {
-  //   const hours = Math.floor(seconds / 3600);
-  //   const minutes = Math.floor((seconds % 3600) / 60);
-    
-  //   if (hours > 0) {
-  //     return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
-  //   } else {
-  //     return `${minutes}m`;
-  //   }
-  // };
-
-  // const handleTimerTaskComplete = (taskId: string, duration: string) => {
-  //   // 计时器区域不再保存日志，只是记录事物
-  //   const task = timerTasks.find(t => t.id === taskId);
-  //   if (task) {
-  //     console.log('记录事物:', task.name, duration);
-  //   }
-  // };
-
   // 如果页面还没准备好，显示加载状态
   if (!isPageReady) {
     return (
@@ -182,6 +164,84 @@ export default function LogPage() {
         </Link>
       </div>
 
+      {/* 日志创建卡片折叠栏 - 左侧 */}
+      <div className="fixed top-4 left-20 z-40">
+        <div 
+          className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
+          onClick={() => setIsCreateLogExpanded(!isCreateLogExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📝</span>
+            <span className="text-sm font-medium">创建事物</span>
+            <span className={`text-xs transition-transform duration-300 ${isCreateLogExpanded ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </div>
+        </div>
+        
+        {/* 折叠的日志创建内容 */}
+        {isCreateLogExpanded && (
+          <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-xl p-4 max-h-[80vh] overflow-y-auto">
+            <h3 className="text-sm font-semibold mb-3">📝 创建事物</h3>
+            <CreateLogFormWithCards 
+              onLogSaved={handleLogSaved}
+              onAddToTimer={handleAddToTimer}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 操作记录折叠栏 - 右侧 */}
+      <div className="fixed top-4 right-4 z-40">
+        <div 
+          className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
+          onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📋</span>
+            <span className="text-sm font-medium">操作记录</span>
+            <span className={`text-xs transition-transform duration-300 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </div>
+        </div>
+        
+        {/* 折叠的操作记录内容 */}
+        {isOperationHistoryExpanded && (
+          <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl p-4 max-h-96 overflow-y-auto">
+            <h3 className="text-sm font-semibold mb-3">📋 操作记录</h3>
+            {operationHistory.length === 0 ? (
+              <p className="text-gray-500 text-sm">暂无操作记录</p>
+            ) : (
+              <div className="space-y-2">
+                {operationHistory.slice(0, 10).map((operation) => (
+                  <div key={operation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-gray-800">{operation.action}</span>
+                        <span className="text-xs text-gray-600">-</span>
+                        <span className="text-xs text-blue-600 font-medium truncate">{operation.taskName}</span>
+                      </div>
+                      {operation.details && (
+                        <p className="text-xs text-gray-500 mt-1 truncate">{operation.details}</p>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 ml-2">
+                      {new Date(operation.timestamp).toLocaleString('zh-CN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* 页面导航 */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex space-x-6">
@@ -203,16 +263,25 @@ export default function LogPage() {
           onDateChange={setSelectedDate}
         />
 
-        <div className="log-content-grid">
-          {/* AI总结区域 */}
-          <div className="ai-summary-section">
-            <AISummaryWidget 
-              userId={userId}
-              date={selectedDate}
-              compact={true}
-            />
+        {/* 时间统计区域 - 页面顶部 */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
+            <TimeStatsChart tasks={timerTasks} />
           </div>
+        </div>
 
+        {/* AI总结区域 */}
+        <div className="mb-8">
+          <AISummaryWidget 
+            userId={userId}
+            date={selectedDate}
+            compact={true}
+          />
+        </div>
+
+        {/* 任务清单与计时器的左右布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 任务清单区域 */}
           <div className="todo-list-section">
             <DateBasedTodoList 
@@ -231,51 +300,6 @@ export default function LogPage() {
                 onTasksChange={setTimerTasks}
                 onOperationRecord={recordOperation}
               />
-            </div>
-          </div>
-
-          {/* 图表统计区域 */}
-          <div className="stats-chart-section">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
-              <TimeStatsChart tasks={timerTasks} />
-            </div>
-          </div>
-
-
-
-          {/* 操作历史区域 */}
-          <div className="operation-history-section">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">📋 操作记录</h2>
-              {operationHistory.length === 0 ? (
-                <p className="text-gray-500 text-sm">暂无操作记录</p>
-              ) : (
-                <div className="space-y-3">
-                  {operationHistory.map((operation) => (
-                    <div key={operation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-800">{operation.action}</span>
-                          <span className="text-sm text-gray-600">-</span>
-                          <span className="text-sm text-blue-600 font-medium">{operation.taskName}</span>
-                        </div>
-                        {operation.details && (
-                          <p className="text-xs text-gray-500 mt-1">{operation.details}</p>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(operation.timestamp).toLocaleString('zh-CN', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
