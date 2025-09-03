@@ -425,8 +425,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const hasChildren = task.children && task.children.length > 0;
     const indentStyle = { marginLeft: `${level * 20}px` };
     
-    // 调试信息
-    console.log('渲染任务:', task.name, 'ID:', task.id, '级别:', level);
+
 
     return (
       <div key={task.id} style={indentStyle}>
@@ -499,10 +498,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 )}
                 
                 <Button 
-                  onClick={() => {
-                    console.log('添加子任务按钮被点击，任务ID:', task.id);
-                    setShowAddChildDialog(task.id);
-                  }}
+                  onClick={() => setShowAddChildDialog(task.id)}
                   variant="outline"
                   size="sm"
                   className="text-green-600 hover:text-green-700 border-2 border-green-400 hover:border-green-500 bg-green-50 hover:bg-green-100 font-medium"
@@ -561,12 +557,21 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       <Card className="bg-gray-50">
         <CardContent className="p-6 text-center">
           <p className="text-gray-500">暂无计时任务</p>
-          <p className="text-sm text-gray-400 mt-2">创建事物后会自动出现在这里</p>
+          <p className="text-sm text-gray-400 mt-2">请先点击右上角的"添加顶级任务"按钮创建任务</p>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700 font-medium">💡 嵌套功能提示：</p>
             <p className="text-xs text-blue-600 mt-1">
-              每个任务卡片右侧都有&ldquo;➕ 添加子任务&rdquo;按钮，点击可以创建无限层级的子任务
+              创建任务后，每个任务卡片右侧都有&ldquo;➕ 添加子任务&rdquo;按钮，点击可以创建无限层级的子任务
             </p>
+          </div>
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800 font-medium">📋 使用步骤：</p>
+            <ol className="text-xs text-yellow-700 mt-1 ml-4 list-decimal">
+              <li>点击右上角"添加顶级任务"按钮</li>
+              <li>输入任务名称创建任务</li>
+              <li>在任务卡片右侧找到绿色"➕ 添加子任务"按钮</li>
+              <li>点击即可创建子任务，实现无限嵌套</li>
+            </ol>
           </div>
         </CardContent>
       </Card>

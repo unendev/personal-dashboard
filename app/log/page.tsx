@@ -4,7 +4,7 @@ import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 // import LogCard from '@/app/components/LogCard'
-import TimerZone from '@/app/components/TimerZone'
+import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 
@@ -243,7 +243,7 @@ export default function LogPage() {
           <div className="timer-section">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">⏱️ 计时器区域</h2>
-                            <TimerZone
+                            <NestedTimerZone
                 tasks={timerTasks}
                 onTasksChange={setTimerTasks}
                 onOperationRecord={recordOperation}
