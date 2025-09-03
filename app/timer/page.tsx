@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import NestedTimerZone from '@/app/components/NestedTimerZone';
 import TimeStatsChart from '@/app/components/TimeStatsChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -41,12 +41,7 @@ export default function TimerPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // 加载任务数据
-  useEffect(() => {
-    loadTasks();
-  }, [selectedDate]);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       const response = await fetch(`/api/timer-tasks?date=${selectedDate}`);
       if (response.ok) {
@@ -56,7 +51,12 @@ export default function TimerPage() {
     } catch (error) {
       console.error('Failed to load tasks:', error);
     }
-  };
+  }, [selectedDate]);
+
+  // 加载任务数据
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const addTask = async () => {
     if (!newTaskName.trim()) {

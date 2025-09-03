@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
@@ -39,12 +38,7 @@ const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({
   const [sortBy, setSortBy] = useState<'created' | 'priority'>('created');
   const [isLoading, setIsLoading] = useState(false);
 
-  // 从数据库加载数据
-  useEffect(() => {
-    loadTodos();
-  }, [userId, selectedDate]);
-
-  const loadTodos = async () => {
+  const loadTodos = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/todos?userId=${userId}&date=${selectedDate}`);
@@ -61,7 +55,12 @@ const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, selectedDate]);
+
+  // 从数据库加载数据
+  useEffect(() => {
+    loadTodos();
+  }, [loadTodos]);
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;

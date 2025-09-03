@@ -1,24 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TimerTask as PrismaTimerTask } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export interface TimerTask {
-  id: string;
-  name: string;
-  categoryPath: string;
-  elapsedTime: number;
-  initialTime: number;
-  isRunning: boolean;
-  startTime: number | null;
-  isPaused: boolean;
-  pausedTime: number;
-  completedAt: number | null;
-  date: string; // ISO date string
-  userId: string;
-  parentId?: string | null;
+export interface TimerTask extends PrismaTimerTask {
   children?: TimerTask[];
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export const TimerDB = {
@@ -38,7 +23,7 @@ export const TimerDB = {
       });
 
       // 只返回顶级任务（没有父任务的任务）
-      return tasks.filter(task => !task.parentId);
+      return tasks.filter(task => !(task as any).parentId);
     } catch (error) {
       console.error('Failed to load timer tasks:', error);
       return [];
@@ -64,7 +49,7 @@ export const TimerDB = {
       });
 
       // 只返回顶级任务（没有父任务的任务）
-      return tasks.filter(task => !task.parentId);
+      return tasks.filter(task => !(task as any).parentId);
     } catch (error) {
       console.error('Failed to load timer tasks by date:', error);
       return [];
@@ -72,7 +57,7 @@ export const TimerDB = {
   },
 
   // 添加新任务
-  addTask: async (task: Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<TimerTask> => {
+  addTask: async (task: Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children'>): Promise<TimerTask> => {
     try {
       const newTask = await prisma.timerTask.create({
         data: task,
@@ -155,7 +140,7 @@ export const TimerDB = {
       });
 
       // 只返回顶级任务
-      return tasks.filter(task => !task.parentId);
+      return tasks.filter(task => !(task as any).parentId);
     } catch (error) {
       console.error('Failed to load timer tasks by date range:', error);
       return [];
@@ -203,7 +188,7 @@ export const TimerDB = {
   // 获取层级任务（包含子任务）
   getHierarchicalTasks: async (userId: string, date?: string): Promise<TimerTask[]> => {
     try {
-      const whereClause: any = { userId };
+      const whereClause: { userId: string; date?: string } = { userId };
       if (date) {
         whereClause.date = date;
       }
@@ -319,7 +304,7 @@ export const TimerDB = {
     totalTime: number;
   }> => {
     try {
-      const whereClause: any = { userId };
+      const whereClause: { userId: string; date?: string } = { userId };
       if (date) {
         whereClause.date = date;
       }
@@ -335,7 +320,7 @@ export const TimerDB = {
         }
       });
 
-      const topLevelTasks = allTasks.filter(task => !task.parentId);
+      const topLevelTasks = allTasks.filter(task => !(task as any).parentId);
       const tasksWithChildren = topLevelTasks.filter(task => task.children && task.children.length > 0);
 
       // 计算最大深度

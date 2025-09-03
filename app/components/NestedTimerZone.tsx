@@ -37,7 +37,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const [showAddChildDialog, setShowAddChildDialog] = useState<string | null>(null);
   const [newChildName, setNewChildName] = useState('');
   const [newChildCategory, setNewChildCategory] = useState('');
-  const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const intervalRefs = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   const updateTaskTime = useCallback((taskId: string, elapsedTime: number) => {
@@ -430,8 +429,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       <div key={task.id} style={indentStyle}>
         <Card 
           className={`transition-all duration-200 mb-3 ${
-            draggedTask === task.id ? 'opacity-50 scale-95' : ''
-          } ${task.isRunning ? 'border-blue-300 bg-blue-50' : 'border-gray-200'} ${
+            task.isRunning ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+          } ${
             hasChildren ? 'border-l-4 border-l-green-400' : ''
           }`}
         >
