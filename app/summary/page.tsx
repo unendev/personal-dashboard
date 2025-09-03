@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 
 export default function SummaryPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // 默认显示昨天的日期，因为昨天的记录今天才完整
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const [selectedDate, setSelectedDate] = useState(yesterday.toISOString().split('T')[0]);
   const [userId] = useState('user-1');
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,8 +28,10 @@ export default function SummaryPage() {
     setSelectedDate(date.toISOString().split('T')[0]);
   };
 
-  const goToToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+  const goToYesterday = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    setSelectedDate(yesterday.toISOString().split('T')[0]);
   };
 
   const formatDate = (dateString: string) => {
@@ -44,8 +49,8 @@ export default function SummaryPage() {
       <div className="max-w-4xl mx-auto">
         {/* 页面标题 */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">AI 每日总结</h1>
-          <p className="text-white/60">智能分析您的工作模式和效率</p>
+          <h1 className="text-4xl font-bold text-white mb-2">AI 昨日总结</h1>
+          <p className="text-white/60">智能分析您昨天的工作模式和效率</p>
         </div>
 
         {/* 日期选择器 */}
@@ -84,11 +89,11 @@ export default function SummaryPage() {
               </Button>
               
               <Button 
-                onClick={goToToday}
+                onClick={goToYesterday}
                 variant="outline"
                 className="text-white border-white/30 hover:bg-white/10"
               >
-                今天
+                昨天
               </Button>
             </div>
           </CardContent>
@@ -104,6 +109,7 @@ export default function SummaryPage() {
               <CardTitle className="text-white">功能说明</CardTitle>
             </CardHeader>
             <CardContent className="text-white/70 space-y-2">
+              <p>• 默认显示昨天的总结，因为昨天的记录今天才完整</p>
               <p>• AI 会自动分析您的工作模式和时间分配</p>
               <p>• 提供个性化的效率建议和洞察</p>
               <p>• 支持按日期查看历史总结</p>

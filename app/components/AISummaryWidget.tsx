@@ -79,7 +79,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     return (
       <Card className="glass-effect">
         <CardHeader>
-          <CardTitle className="gradient-text">AI 每日总结</CardTitle>
+          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -95,7 +95,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     return (
       <Card className="glass-effect">
         <CardHeader>
-          <CardTitle className="gradient-text">AI 每日总结</CardTitle>
+          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
@@ -113,7 +113,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     return (
       <Card className="glass-effect">
         <CardHeader>
-          <CardTitle className="gradient-text">AI 每日总结</CardTitle>
+          <CardTitle className="gradient-text">AI 昨日总结</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
@@ -128,7 +128,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     <Card className="glass-effect">
       <CardHeader>
         <CardTitle className="gradient-text flex items-center justify-between">
-          <span>AI 每日总结</span>
+          <span>AI 昨日总结</span>
           <span className="text-sm font-normal text-white/60">
             {formatDate(date)}
           </span>

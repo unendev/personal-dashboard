@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { AIService } from '../app/lib/ai-service.js';
+import { AIService } from './ai-service.js';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +22,7 @@ async function testAISummary() {
     
     // 创建一些测试任务数据
     const today = new Date().toISOString().split('T')[0];
+    const now = Math.floor(Date.now() / 1000); // 使用秒级时间戳
     const testTasks = [
       {
         name: '学习 React',
@@ -29,10 +30,10 @@ async function testAISummary() {
         elapsedTime: 7200, // 2小时
         initialTime: 7200,
         isRunning: false,
-        startTime: Date.now() - 7200000,
+        startTime: now - 7200,
         isPaused: false,
         pausedTime: 0,
-        completedAt: Date.now(),
+        completedAt: now,
         date: today,
         userId: testUser.id
       },
@@ -42,10 +43,10 @@ async function testAISummary() {
         elapsedTime: 3600, // 1小时
         initialTime: 3600,
         isRunning: false,
-        startTime: Date.now() - 3600000,
+        startTime: now - 3600,
         isPaused: false,
         pausedTime: 0,
-        completedAt: Date.now(),
+        completedAt: now,
         date: today,
         userId: testUser.id
       },
@@ -55,10 +56,10 @@ async function testAISummary() {
         elapsedTime: 10800, // 3小时
         initialTime: 10800,
         isRunning: false,
-        startTime: Date.now() - 10800000,
+        startTime: now - 10800,
         isPaused: false,
         pausedTime: 0,
-        completedAt: Date.now(),
+        completedAt: now,
         date: today,
         userId: testUser.id
       },
@@ -68,10 +69,10 @@ async function testAISummary() {
         elapsedTime: 1800, // 30分钟
         initialTime: 1800,
         isRunning: false,
-        startTime: Date.now() - 1800000,
+        startTime: now - 1800,
         isPaused: false,
         pausedTime: 0,
-        completedAt: Date.now(),
+        completedAt: now,
         date: today,
         userId: testUser.id
       }

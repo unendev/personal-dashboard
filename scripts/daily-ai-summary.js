@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { AIService } from '../app/lib/ai-service.js';
+import { AIService } from './ai-service.js';
 
 const prisma = new PrismaClient();
 
@@ -112,6 +112,18 @@ async function generateDailyAISummary() {
 // 如果直接运行此脚本
 if (import.meta.url === `file://${process.argv[1]}`) {
   generateDailyAISummary();
+}
+
+// 手动触发一次（用于测试）
+if (process.argv.includes('--test')) {
+  console.log('手动触发AI总结生成...');
+  generateDailyAISummary().then(() => {
+    console.log('测试完成');
+    process.exit(0);
+  }).catch((error) => {
+    console.error('测试失败:', error);
+    process.exit(1);
+  });
 }
 
 export { generateDailyAISummary };
