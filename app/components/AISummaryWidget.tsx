@@ -27,12 +27,22 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 计算前一天日期
+  const getPreviousDay = (currentDate: string) => {
+    const date = new Date(currentDate);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  };
+
+  // 在紧凑模式下使用前一天日期，否则使用传入的日期
+  const targetDate = compact ? getPreviousDay(date) : date;
+
   const fetchSummary = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/ai-summary?userId=${userId}&date=${date}`);
+      const response = await fetch(`/api/ai-summary?userId=${userId}&date=${targetDate}`);
       if (!response.ok) {
         throw new Error('Failed to fetch AI summary');
       }
@@ -43,7 +53,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [userId, date]);
+  }, [userId, targetDate]);
 
   const generateSummary = async () => {
     setLoading(true);
@@ -55,7 +65,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, date }),
+        body: JSON.stringify({ userId, date: targetDate }),
       });
       
       if (!response.ok) {
@@ -72,9 +82,9 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   };
 
   useEffect(() => {
-    // 当 userId 或 date 改变时，重新获取数据
+    // 当 userId 或 targetDate 改变时，重新获取数据
     fetchSummary();
-  }, [userId, date, fetchSummary]);
+  }, [userId, targetDate, fetchSummary]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -104,7 +114,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              🤖 AI 总结
+              🤖 前一天总结
               <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">加载中...</span>
             </CardTitle>
           </CardHeader>
@@ -122,7 +132,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
         <Card className="bg-gradient-to-r from-red-50 to-pink-50">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              🤖 AI 总结
+              🤖 前一天总结
               <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">错误</span>
             </CardTitle>
           </CardHeader>
@@ -146,13 +156,13 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
         <Card className="bg-gradient-to-r from-gray-50 to-slate-50">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              🤖 AI 总结
+              🤖 前一天总结
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">未生成</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-4">
-              <p className="text-gray-600 text-sm mb-3">点击按钮生成今日AI总结</p>
+              <p className="text-gray-600 text-sm mb-3">点击按钮生成前一天AI总结</p>
               <button
                 onClick={generateSummary}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
@@ -168,12 +178,12 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
     return (
       <Card className="bg-gradient-to-r from-green-50 to-emerald-50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            🤖 AI 总结
-            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-              {summary?.isFromCache ? '已缓存' : '实时生成'}
-            </span>
-          </CardTitle>
+                      <CardTitle className="text-lg flex items-center gap-2">
+              🤖 前一天总结
+              <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                {summary?.isFromCache ? '已缓存' : '实时生成'}
+              </span>
+            </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 主要总结 */}

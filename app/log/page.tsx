@@ -242,16 +242,7 @@ export default function LogPage() {
             </div>
           </div>
 
-          {/* 日志输入区域 */}
-          <div className="log-input-section">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">记录事物</h2>
-              <CreateLogFormWithCards 
-                onLogSaved={handleLogSaved}
-                onAddToTimer={handleAddToTimer}
-              />
-            </div>
-          </div>
+
 
           {/* 操作历史区域 */}
           <div className="operation-history-section">
