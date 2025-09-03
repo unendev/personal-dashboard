@@ -424,6 +424,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const totalTime = calculateTotalTime(task);
     const hasChildren = task.children && task.children.length > 0;
     const indentStyle = { marginLeft: `${level * 20}px` };
+    
+    // 调试信息
+    console.log('渲染任务:', task.name, 'ID:', task.id, '级别:', level);
 
     return (
       <div key={task.id} style={indentStyle}>
@@ -435,7 +438,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           }`}
         >
           <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
@@ -466,62 +469,61 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 )}
               </div>
               
-              <div className="flex flex-wrap gap-2 flex-shrink-0">
+              <div className="flex gap-2 ml-4 flex-shrink-0 flex-wrap" style={{ zIndex: 10 }}>
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 
                       onClick={() => resumeTimer(task.id)}
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                      title="继续计时"
+                      className="bg-green-600 hover:bg-green-700"
                     >
-                      <span className="hidden sm:inline">继续</span>
-                      <span className="sm:hidden">继续</span>
+                      继续
                     </Button>
                   ) : (
                     <Button 
                       onClick={() => pauseTimer(task.id)}
                       variant="outline"
                       size="sm"
-                      className="whitespace-nowrap"
-                      title="暂停计时"
                     >
-                      <span className="hidden sm:inline">暂停</span>
-                      <span className="sm:hidden">暂停</span>
+                      暂停
                     </Button>
                   )
                 ) : (
                   <Button 
                     onClick={() => startTimer(task.id)}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
-                    title="开始计时"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <span className="hidden sm:inline">开始</span>
-                    <span className="sm:hidden">开始</span>
+                    开始
                   </Button>
                 )}
                 
                 <Button 
-                  onClick={() => setShowAddChildDialog(task.id)}
+                  onClick={() => {
+                    console.log('添加子任务按钮被点击，任务ID:', task.id);
+                    setShowAddChildDialog(task.id);
+                  }}
                   variant="outline"
                   size="sm"
-                  className="text-green-600 hover:text-green-700 whitespace-nowrap"
+                  className="text-green-600 hover:text-green-700 border-2 border-green-400 hover:border-green-500 bg-green-50 hover:bg-green-100 font-medium"
                   title="添加子任务"
+                  style={{ 
+                    minWidth: '130px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    position: 'relative',
+                    zIndex: 10
+                  }}
                 >
-                  <span className="hidden sm:inline">添加子任务</span>
-                  <span className="sm:hidden">+子</span>
+                  ➕ 添加子任务
                 </Button>
                 
                 <Button 
                   onClick={() => deleteTimer(task.id)}
                   variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700 whitespace-nowrap"
-                  title="删除任务"
+                  className="text-red-600 hover:text-red-700"
                 >
-                  <span className="hidden sm:inline">删除</span>
-                  <span className="sm:hidden">删除</span>
+                  删除
                 </Button>
               </div>
             </div>
@@ -560,6 +562,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         <CardContent className="p-6 text-center">
           <p className="text-gray-500">暂无计时任务</p>
           <p className="text-sm text-gray-400 mt-2">创建事物后会自动出现在这里</p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700 font-medium">💡 嵌套功能提示：</p>
+            <p className="text-xs text-blue-600 mt-1">
+              每个任务卡片右侧都有"➕ 添加子任务"按钮，点击可以创建无限层级的子任务
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
