@@ -33,3 +33,56 @@ export async function GET() {
     );
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { content, questId, categories } = body;
+
+    // 创建日志
+    const log = await prisma.log.create({
+      data: {
+        content,
+        questId: questId || null,
+        userId: MOCK_USER_ID,
+        timestamp: new Date(),
+        categories: {
+          create: categories?.map((category: { name: string; subCategories?: Array<{ name: string; activities?: Array<{ name: string; duration: string }> }> }) => ({
+            name: category.name,
+            subCategories: {
+              create: category.subCategories?.map((subCategory: { name: string; activities?: Array<{ name: string; duration: string }> }) => ({
+                name: subCategory.name,
+                activities: {
+                  create: subCategory.activities?.map((activity: { name: string; duration: string }) => ({
+                    name: activity.name,
+                    duration: activity.duration
+                  })) || []
+                }
+              })) || []
+            }
+          })) || []
+        }
+      },
+      include: {
+        quest: { select: { id: true, title: true } },
+        categories: {
+          include: {
+            subCategories: {
+              include: {
+                activities: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(log, { status: 201 });
+  } catch (error) {
+    console.error('创建日志失败:', error);
+    return NextResponse.json(
+      { error: '创建日志失败' },
+      { status: 500 }
+    );
+  }
+}

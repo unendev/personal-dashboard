@@ -106,6 +106,35 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const task = findTask(tasks);
     if (!task) return;
 
+    // 立即更新前端状态，避免延迟
+    const currentTime = Math.floor(Date.now() / 1000);
+    const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      return taskList.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            isRunning: true,
+            isPaused: false,
+            startTime: currentTime,
+            pausedTime: 0
+          };
+        }
+        if (task.children) {
+          return { ...task, children: updateTaskRecursive(task.children) };
+        }
+        return task;
+      });
+    };
+
+    const updatedTasks = updateTaskRecursive(tasks);
+    onTasksChange(updatedTasks);
+    
+    if (onOperationRecord) {
+      const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
+      onOperationRecord('开始计时', task.name, timeText);
+    }
+
+    // 异步更新数据库
     try {
       const response = await fetch('/api/timer-tasks', {
         method: 'PUT',
@@ -116,43 +145,18 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           id: taskId,
           isRunning: true,
           isPaused: false,
-          startTime: Math.floor(Date.now() / 1000),
+          startTime: currentTime,
           pausedTime: 0
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start timer');
-      }
-
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId) {
-            return {
-              ...task,
-              isRunning: true,
-              isPaused: false,
-              startTime: Math.floor(Date.now() / 1000),
-              pausedTime: 0
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      const updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      if (onOperationRecord) {
-        const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
-        onOperationRecord('开始计时', task.name, timeText);
+        console.error('Failed to update database for start timer');
+        // 不显示错误提示，因为前端状态已经更新
       }
     } catch (error) {
-      console.error('Failed to start timer:', error);
-      alert('启动失败，请重试');
+      console.error('Failed to start timer in database:', error);
+      // 不显示错误提示，因为前端状态已经更新
     }
   };
 
@@ -171,6 +175,32 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const task = findTask(tasks);
     if (!task) return;
 
+    // 立即更新前端状态
+    const currentTime = Math.floor(Date.now() / 1000);
+    const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      return taskList.map(task => {
+        if (task.id === taskId && task.isRunning) {
+          return {
+            ...task,
+            isPaused: true,
+            pausedTime: currentTime
+          };
+        }
+        if (task.children) {
+          return { ...task, children: updateTaskRecursive(task.children) };
+        }
+        return task;
+      });
+    };
+
+    const updatedTasks = updateTaskRecursive(tasks);
+    onTasksChange(updatedTasks);
+    
+    if (onOperationRecord) {
+      onOperationRecord('暂停计时', task.name);
+    }
+
+    // 异步更新数据库
     try {
       const response = await fetch('/api/timer-tasks', {
         method: 'PUT',
@@ -180,39 +210,15 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         body: JSON.stringify({
           id: taskId,
           isPaused: true,
-          pausedTime: Math.floor(Date.now() / 1000)
+          pausedTime: currentTime
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to pause timer');
-      }
-
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId && task.isRunning) {
-            return {
-              ...task,
-              isPaused: true,
-              pausedTime: Math.floor(Date.now() / 1000)
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      const updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      if (onOperationRecord) {
-        onOperationRecord('暂停计时', task.name);
+        console.error('Failed to update database for pause timer');
       }
     } catch (error) {
-      console.error('Failed to pause timer:', error);
-      alert('暂停失败，请重试');
+      console.error('Failed to pause timer in database:', error);
     }
   };
 
@@ -231,10 +237,37 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const task = findTask(tasks);
     if (!task) return;
 
-    try {
-      const pauseDuration = Math.floor(Date.now() / 1000) - task.pausedTime;
-      const newStartTime = Number(task.startTime!) + pauseDuration;
+    // 立即更新前端状态
+    const currentTime = Math.floor(Date.now() / 1000);
+    const pauseDuration = currentTime - task.pausedTime;
+    const newStartTime = Number(task.startTime!) + pauseDuration;
 
+    const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      return taskList.map(task => {
+        if (task.id === taskId && task.isPaused) {
+          return {
+            ...task,
+            isPaused: false,
+            startTime: newStartTime,
+            pausedTime: 0
+          };
+        }
+        if (task.children) {
+          return { ...task, children: updateTaskRecursive(task.children) };
+        }
+        return task;
+      });
+    };
+
+    const updatedTasks = updateTaskRecursive(tasks);
+    onTasksChange(updatedTasks);
+    
+    if (onOperationRecord) {
+      onOperationRecord('继续计时', task.name);
+    }
+
+    // 异步更新数据库
+    try {
       const response = await fetch('/api/timer-tasks', {
         method: 'PUT',
         headers: {
@@ -249,35 +282,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to resume timer');
-      }
-
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId && task.isPaused) {
-            return {
-              ...task,
-              isPaused: false,
-              startTime: newStartTime,
-              pausedTime: 0
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      const updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      if (onOperationRecord) {
-        onOperationRecord('继续计时', task.name);
+        console.error('Failed to update database for resume timer');
       }
     } catch (error) {
-      console.error('Failed to resume timer:', error);
-      alert('继续失败，请重试');
+      console.error('Failed to resume timer in database:', error);
     }
   };
 

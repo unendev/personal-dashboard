@@ -61,9 +61,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     });
     
     return Array.from(categoryMap.entries()).map(([name, value]) => ({
-      name: name.length > 10 ? name.substring(0, 10) + '...' : name,
+      name: name.length > 8 ? name.substring(0, 8) + '...' : name, // 缩短显示名称
       value: Math.round(value / 60), // 转换为分钟
-      fullName: name
+      fullName: name, // 完整名称用于悬停显示
+      seconds: value // 保留秒数用于精确显示
     })).sort((a, b) => b.value - a.value);
   };
 
@@ -173,17 +174,28 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
 
   const CustomTooltip = ({ active, payload, label }: {
     active?: boolean;
-    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean }; value: number }>;
+    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean; seconds?: number; category?: string }; value: number }>;
     label?: string;
   }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const minutes = payload[0].value;
+      const seconds = data.seconds || (minutes * 60);
+      
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium">{data.fullName || label}</p>
-          <p className="text-blue-600">{formatTime(payload[0].value)}</p>
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs">
+          <p className="font-medium text-gray-800">{data.fullName || label}</p>
+          <p className="text-blue-600 font-semibold">{formatTime(minutes)}</p>
+          {data.seconds && (
+            <p className="text-xs text-gray-500 mt-1">
+              精确时间: {Math.floor(seconds / 3600)}h {Math.floor((seconds % 3600) / 60)}m {seconds % 60}s
+            </p>
+          )}
+          {data.category && (
+            <p className="text-xs text-gray-600 mt-1">分类: {data.category}</p>
+          )}
           {data.hasChildren && (
-            <p className="text-xs text-green-600 mt-1">包含子任务</p>
+            <p className="text-xs text-green-600 mt-1">✓ 包含子任务</p>
           )}
         </div>
       );
