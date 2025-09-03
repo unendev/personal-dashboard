@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// 使用内置的 fetch
 
 async function testWebAISummary() {
   try {
@@ -6,7 +6,7 @@ async function testWebAISummary() {
     
     const baseUrl = 'http://localhost:3000';
     const userId = 'user-1';
-    const date = new Date().toISOString().split('T')[0];
+    const date = new Date().toISOString().split('T')[0]; // 今天的日期
     
     // 测试 GET 请求 - 获取AI总结
     console.log('\n1. 测试获取AI总结...');

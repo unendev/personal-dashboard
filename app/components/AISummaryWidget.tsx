@@ -72,8 +72,11 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
   };
 
   useEffect(() => {
-    fetchSummary();
-  }, [userId, date, fetchSummary]);
+    // 只在组件挂载时获取一次，避免重复加载
+    if (!summary) {
+      fetchSummary();
+    }
+  }, [userId, date, fetchSummary, summary]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -98,13 +101,13 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
 
   if (compact) {
     // 紧凑模式 - 用于日志页面
-    if (loading) {
+    if (loading && !summary) {
       return (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               🤖 AI 总结
-              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">生成中...</span>
+              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">加载中...</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -140,7 +143,7 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
       );
     }
 
-    if (!summary) {
+    if (!summary && !loading) {
       return (
         <Card className="bg-gradient-to-r from-gray-50 to-slate-50">
           <CardHeader className="pb-3">
@@ -170,34 +173,34 @@ const AISummaryWidget: React.FC<AISummaryWidgetProps> = ({
           <CardTitle className="text-lg flex items-center gap-2">
             🤖 AI 总结
             <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-              {summary.isFromCache ? '已缓存' : '实时生成'}
+              {summary?.isFromCache ? '已缓存' : '实时生成'}
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 主要总结 */}
           <div className="bg-white rounded-lg p-3 border border-green-200">
-            <p className="text-gray-900 text-sm leading-relaxed">{summary.summary}</p>
+            <p className="text-gray-900 text-sm leading-relaxed">{summary?.summary}</p>
           </div>
 
           {/* 统计数据 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center bg-white rounded-lg p-2 border border-green-200">
               <div className="text-lg font-bold text-blue-600">
-                {formatTime(summary.totalTime)}
+                {formatTime(summary?.totalTime || 0)}
               </div>
               <div className="text-xs text-gray-600">总工作时间</div>
             </div>
             <div className="text-center bg-white rounded-lg p-2 border border-green-200">
               <div className="text-lg font-bold text-green-600">
-                {summary.taskCount}
+                {summary?.taskCount || 0}
               </div>
               <div className="text-xs text-gray-600">任务数量</div>
             </div>
           </div>
 
           {/* AI 洞察 */}
-          {summary.insights.length > 0 && (
+          {summary?.insights && summary.insights.length > 0 && (
             <div>
               <h4 className="text-gray-800 font-medium mb-2 text-sm">💡 AI 洞察</h4>
               <div className="space-y-1">
