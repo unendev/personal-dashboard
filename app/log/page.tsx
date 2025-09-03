@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CreateLogFormWithCards from '@/app/components/CreateLogFormWithCards'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
@@ -40,6 +40,10 @@ export default function LogPage() {
   // 日志创建卡片折叠状态
   const [isCreateLogExpanded, setIsCreateLogExpanded] = useState(false);
 
+  // 用于点击外部区域关闭折叠栏的ref
+  const createLogRef = useRef<HTMLDivElement>(null);
+  const operationHistoryRef = useRef<HTMLDivElement>(null);
+
   // 从数据库加载任务
   const fetchTimerTasks = React.useCallback(async () => {
     try {
@@ -63,6 +67,30 @@ export default function LogPage() {
 
     return () => clearTimeout(timer);
   }, [fetchTimerTasks]);
+
+  // 点击外部区域关闭折叠栏
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // 检查是否点击了创建事物折叠栏外部
+      if (createLogRef.current && !createLogRef.current.contains(event.target as Node)) {
+        setIsCreateLogExpanded(false);
+      }
+      
+      // 检查是否点击了操作记录折叠栏外部
+      if (operationHistoryRef.current && !operationHistoryRef.current.contains(event.target as Node)) {
+        setIsOperationHistoryExpanded(false);
+      }
+    };
+
+    // 只有在折叠栏打开时才添加事件监听器
+    if (isCreateLogExpanded || isOperationHistoryExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCreateLogExpanded, isOperationHistoryExpanded]);
 
   const handleLogSaved = () => {
     // 重新获取日志数据
@@ -165,7 +193,7 @@ export default function LogPage() {
       </div>
 
       {/* 日志创建卡片折叠栏 - 左侧 */}
-      <div className="fixed top-4 left-20 z-40">
+      <div className="fixed top-4 left-20 z-40" ref={createLogRef}>
         <div 
           className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
           onClick={() => setIsCreateLogExpanded(!isCreateLogExpanded)}
@@ -192,7 +220,7 @@ export default function LogPage() {
       </div>
 
       {/* 操作记录折叠栏 - 右侧 */}
-      <div className="fixed top-4 right-4 z-40">
+      <div className="fixed top-4 right-4 z-40" ref={operationHistoryRef}>
         <div 
           className="bg-white rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-300"
           onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}

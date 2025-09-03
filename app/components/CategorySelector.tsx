@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -34,15 +34,24 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const [createType, setCreateType] = useState<'top' | 'mid' | 'sub'>('top');
   const [createParentPath, setCreateParentPath] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
+
+  // 缓存分类数据
+  const categoriesCache = useMemo(() => {
+    return categories;
+  }, [categories]);
 
   useEffect(() => {
     const load = async () => {
+      setIsCategoriesLoading(true);
       try {
         const res = await fetch('/api/log-categories');
         const data = await res.json();
         setCategories(data as CategoryNode[]);
       } catch (e) {
         console.error('加载分类失败', e);
+      } finally {
+        setIsCategoriesLoading(false);
       }
     };
     load();
@@ -127,66 +136,64 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
   };
 
-  // const handleSubmit = async () => {
-  //   if (!taskName.trim()) {
-  //     alert('请输入任务名称');
-  //     return;
-  //   }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskName.trim()) {
+      alert('请输入任务名称');
+      return;
+    }
 
-  //   if (!duration.trim()) {
-  //     alert('请输入时间消耗');
-  //     return;
-  //   }
+    setIsLoading(true);
+    try {
+      // 构建分类数据
+      const pathParts = selectedPath.split('/');
+      const categories = [{
+        name: pathParts[0] || '',
+        subCategories: [{
+          name: pathParts[1] || '',
+          activities: [{
+            name: pathParts[2] || taskName,
+            duration: duration ? `${duration}m` : '0m'
+          }]
+        }]
+      }];
 
-  //   // 如果有onSelected回调，调用它（用于progress页面）
-  //   if (onSelected) {
-  //     onSelected(selectedPath, taskName.trim());
-  //     setShowDialog(false);
-  //     setTaskName('');
-  //     setSelectedPath('');
-  //     return;
-  //   }
+      const formData = new FormData();
+      formData.append('content', taskName);
+      formData.append('categories', JSON.stringify(categories));
+      formData.append('timestamp', getBeijingTime().toISOString());
 
-  //   // 否则直接创建日志（用于log页面）
-  //   setIsLoading(true);
-  //   try {
-  //     // 构建分类数据
-  //     const pathParts = selectedPath.split('/');
-  //     const categories = [{
-  //       name: pathParts[0] || '',
-  //       subCategories: [{
-  //         name: pathParts[1] || '',
-  //         activities: [{
-  //           name: pathParts[2] || taskName,
-  //           duration: duration || '0h'
-  //         }]
-  //       }]
-  //     }];
+      // 创建日志记录
+      await createLog(formData);
 
-  //     const formData = new FormData();
-  //     formData.append('categories', JSON.stringify(categories));
-  //     formData.append('content', ''); // 空内容
-  //     // 使用北京时间
-  //     const beijingTime = getBeijingTime();
-  //     formData.append('timestamp', beijingTime.toISOString());
+      // 如果提供了添加到计时器的回调，则调用
+      if (onAddToTimer) {
+        onAddToTimer(taskName, selectedPath, duration ? parseInt(duration) * 60 : 0);
+      }
 
-  //     await createLog(formData);
+      // 如果提供了选择回调，则调用
+      if (onSelected) {
+        onSelected(selectedPath, taskName);
+      }
+
+      // 重置表单
+      setTaskName('');
+      setDuration('');
+      setShowDialog(false);
       
-  //     // 重置表单
-  //     setTaskName('');
-  //     setDuration('');
-  //     setShowDialog(false);
-      
-  //     if (onLogSaved) {
-  //       onLogSaved();
-  //     }
-  //   } catch (error) {
-  //     console.error('创建日志失败:', error);
-  //     alert('保存失败，请重试');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      // 调用保存回调
+      if (onLogSaved) {
+        onLogSaved();
+      }
+
+      alert('任务已创建并添加到计时器！');
+    } catch (error) {
+      console.error('创建任务失败:', error);
+      alert('创建失败，请重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）并转换为秒数
   const parseDurationToSeconds = (value: string): number => {
@@ -378,6 +385,35 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       handleSubmitWithFormat();
     }
   };
+
+  // 如果正在加载分类，显示加载状态
+  if (isCategoriesLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <p className="text-gray-600 text-sm">加载分类中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果没有分类，显示空状态
+  if (categories.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600 text-sm mb-4">暂无分类，请先创建分类</p>
+          <Button
+            onClick={() => handleCreateCategory('top')}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            + 创建顶级分类
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import { createLog } from '@/app/actions';
 // import { getBeijingTime } from '@/lib/utils';
 import CategorySelector from './CategorySelector';
@@ -16,6 +16,23 @@ interface CreateLogFormWithCardsProps {
 export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
   const [isLoading] = useState(false);
   const [logContent, setLogContent] = useState('');
+  const [isCategorySelectorReady, setIsCategorySelectorReady] = useState(false);
+
+  // 预加载分类数据
+  useEffect(() => {
+    const preloadCategories = async () => {
+      try {
+        // 预加载分类数据到缓存
+        await fetch('/api/log-categories');
+        setIsCategorySelectorReady(true);
+      } catch (error) {
+        console.error('预加载分类失败:', error);
+        setIsCategorySelectorReady(true); // 即使失败也设置为ready，让用户看到错误状态
+      }
+    };
+
+    preloadCategories();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +60,18 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
           <CardTitle>快速添加事物</CardTitle>
         </CardHeader>
         <CardContent>
-          <CategorySelector 
-            onLogSaved={onLogSaved}
-            onAddToTimer={onAddToTimer}
-            className="mb-4"
-          />
+          {isCategorySelectorReady ? (
+            <CategorySelector 
+              onLogSaved={onLogSaved}
+              onAddToTimer={onAddToTimer}
+              className="mb-4"
+            />
+          ) : (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-gray-600 text-sm">加载分类中...</p>
+            </div>
+          )}
           <p className="text-sm text-gray-600 mt-4">
             点击上面的卡片按钮，可以将事物添加到计时器区域进行时间管理
           </p>
