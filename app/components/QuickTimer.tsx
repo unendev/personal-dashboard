@@ -118,7 +118,7 @@ const QuickTimer: React.FC = () => {
     const updatedTask = {
       ...currentTask,
       isPaused: true,
-      pausedTime: Date.now()
+              pausedTime: Math.floor(Date.now() / 1000)
     };
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t));
@@ -128,7 +128,7 @@ const QuickTimer: React.FC = () => {
   const resumeTask = () => {
     if (!currentTask || !currentTask.isPaused) return;
 
-    const pauseDuration = Date.now() - currentTask.pausedTime;
+          const pauseDuration = Math.floor(Date.now() / 1000) - currentTask.pausedTime;
     const updatedTask = {
       ...currentTask,
               startTime: currentTask.startTime! + pauseDuration,
