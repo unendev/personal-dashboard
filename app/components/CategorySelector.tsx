@@ -146,6 +146,62 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     }
   };
 
+  // 乐观更新：立即添加到计时器，然后异步处理数据库操作
+  const handleOptimisticAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
+    // 立即调用回调，给用户即时反馈
+    if (onAddToTimer) {
+      onAddToTimer(taskName, categoryPath, initialTime);
+    }
+
+    // 如果提供了选择回调，也立即调用
+    if (onSelected) {
+      onSelected(categoryPath, taskName);
+    }
+
+    // 重置表单
+    setTaskName('');
+    setDuration('');
+    setShowDialog(false);
+    
+    // 调用保存回调
+    if (onLogSaved) {
+      onLogSaved();
+    }
+
+    // 显示成功消息
+    alert('任务已添加到计时器！');
+
+    // 后台异步处理数据库操作
+    try {
+      // 构建分类数据
+      const pathParts = categoryPath.split('/');
+      const categories = [{
+        name: pathParts[0] || '',
+        subCategories: [{
+          name: pathParts[1] || '',
+          activities: [{
+            name: pathParts[2] || taskName,
+            duration: initialTime ? `${Math.floor(initialTime / 60)}m` : '0m'
+          }]
+        }]
+      }];
+
+      const formData = new FormData();
+      formData.append('content', taskName);
+      formData.append('categories', JSON.stringify(categories));
+      formData.append('timestamp', getBeijingTime().toISOString());
+
+      // 异步创建日志记录（不阻塞UI）
+      createLog(formData).catch(error => {
+        console.error('后台保存日志失败:', error);
+        // 可以选择显示一个不显眼的错误提示
+      });
+    } catch (error) {
+      console.error('后台处理失败:', error);
+      // 不影响用户体验，只在控制台记录错误
+    }
+  };
+
   // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）并转换为秒数
   const parseTimeToSeconds = (timeStr: string): number => {
     const hours = timeStr.match(/(\d+)h/);
@@ -217,7 +273,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     setDuration(value);
   };
 
-  // 在提交时转换时间格式
+  // 在提交时转换时间格式 - 使用乐观更新
   const handleSubmitWithFormat = async () => {
     if (!taskName.trim()) {
       alert('请输入任务名称');
@@ -227,74 +283,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     // 解析时间输入并转换为秒数
     const initialTimeSeconds = parseTimeToSeconds(duration);
 
-    // 无论是否输入时间，都添加到计时器区域
-    if (onAddToTimer) {
-      onAddToTimer(taskName.trim(), selectedPath, initialTimeSeconds);
-      setShowDialog(false);
-      setTaskName('');
-      setSelectedPath('');
-      setDuration('');
-      return;
-    }
-
-    // 如果没有onAddToTimer回调，继续执行下面的逻辑（用于progress页面）
-    if (onSelected) {
-      onSelected(selectedPath, taskName.trim());
-      setShowDialog(false);
-      setTaskName('');
-      setSelectedPath('');
-      return;
-    }
-
-    // 如果既没有onAddToTimer也没有onSelected回调，则创建日志（兼容性处理）
-    setIsLoading(true);
-    try {
-      // 转换时间格式（如果输入了时间）
-      let formattedDuration = '0h'; // 默认值
-      if (duration.trim()) {
-        formattedDuration = parseDuration(duration);
-        if (!formattedDuration) {
-          alert('请输入有效的时间格式，如：45m, 1h20m, 2h');
-          return;
-        }
-      }
-
-      // 构建分类数据
-      const pathParts = selectedPath.split('/');
-      const categories = [{
-        name: pathParts[0] || '',
-        subCategories: [{
-          name: pathParts[1] || '',
-          activities: [{
-            name: pathParts[2] || taskName,
-            duration: formattedDuration
-          }]
-        }]
-      }];
-
-      const formData = new FormData();
-      formData.append('categories', JSON.stringify(categories));
-      formData.append('content', ''); // 空内容
-      // 使用北京时间
-      const beijingTime = getBeijingTime();
-      formData.append('timestamp', beijingTime.toISOString());
-
-      await createLog(formData);
-      
-      // 重置表单
-      setTaskName('');
-      setDuration('');
-      setShowDialog(false);
-      
-      if (onLogSaved) {
-        onLogSaved();
-      }
-    } catch (error) {
-      console.error('创建日志失败:', error);
-      alert('保存失败，请重试');
-    } finally {
-      setIsLoading(false);
-    }
+    // 使用乐观更新：立即添加到计时器，然后异步处理数据库操作
+    await handleOptimisticAddToTimer(taskName.trim(), selectedPath, initialTimeSeconds);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -485,8 +475,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmitWithFormat} disabled={!taskName.trim() || isLoading}>
-              {isLoading ? '保存中...' : '保存记录'}
+            <Button onClick={handleSubmitWithFormat} disabled={!taskName.trim()}>
+              添加到计时器
             </Button>
           </DialogFooter>
         </DialogContent>
