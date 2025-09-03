@@ -212,60 +212,35 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     }
   };
 
-  const stopTimer = async (taskId: string) => {
+  const deleteTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // 计算最终时间（如果正在运行）
-    let finalElapsedTime = task.elapsedTime;
-    if (task.isRunning && task.startTime) {
-      const elapsed = Math.floor((Date.now() / 1000 - task.startTime));
-      finalElapsedTime = task.initialTime + elapsed;
-    }
+    // 确认删除
+    const isConfirmed = confirm(`确定要删除任务"${task.name}"吗？\n\n这将永久删除该任务及其所有计时数据。`);
+    if (!isConfirmed) return;
 
     try {
-      // 更新数据库中的任务
-      const response = await fetch('/api/timer-tasks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: taskId,
-          isRunning: false,
-          isPaused: false,
-          startTime: null,
-          elapsedTime: finalElapsedTime,
-          completedAt: Math.floor(Date.now() / 1000)
-        }),
+      // 删除数据库中的任务
+      const response = await fetch(`/api/timer-tasks?id=${taskId}`, {
+        method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update task');
+        throw new Error('Failed to delete task');
       }
 
       // 更新本地状态
-      const updatedTasks = tasks.map(t => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            isRunning: false,
-            isPaused: false,
-            startTime: null,
-            elapsedTime: finalElapsedTime
-          };
-        }
-        return t;
-      });
+      const updatedTasks = tasks.filter(t => t.id !== taskId);
       onTasksChange(updatedTasks);
       
       // 记录操作
       if (task && onOperationRecord) {
-        onOperationRecord('完成计时', task.name, `总时间: ${formatTime(finalElapsedTime)}`);
+        onOperationRecord('删除任务', task.name);
       }
     } catch (error) {
-      console.error('Failed to stop timer:', error);
-      alert('保存失败，请重试');
+      console.error('Failed to delete timer:', error);
+      alert('删除失败，请重试');
     }
   };
 
@@ -391,12 +366,12 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                 )}
                 
                 <Button 
-                  onClick={() => stopTimer(task.id)}
+                  onClick={() => deleteTimer(task.id)}
                   variant="outline"
                   size="sm"
                   className="text-red-600 hover:text-red-700"
                 >
-                  完成
+                  删除
                 </Button>
               </div>
             </div>

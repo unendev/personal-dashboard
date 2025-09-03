@@ -105,7 +105,7 @@ const TimerWidget: React.FC = () => {
             onClick={stopCurrentTask}
             className="bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30"
           >
-            完成
+            停止
           </Button>
         </div>
       ) : (
