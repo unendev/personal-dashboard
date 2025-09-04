@@ -56,7 +56,6 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const [newCategory, setNewCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [sortBy, setSortBy] = useState<'created' | 'priority' | 'custom'>('created');
   
   // 子任务相关状态
   const [showAddSubtaskDialog, setShowAddSubtaskDialog] = useState<string | null>(null);
@@ -97,7 +96,6 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         console.log('拖拽成功，新顺序:', updatedTodos.map(t => t.text));
         
         setTodos(updatedTodos);
-        setSortBy('custom');
       }
     }
   };
