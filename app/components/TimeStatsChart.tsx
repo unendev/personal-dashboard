@@ -28,7 +28,7 @@ interface TimeStatsChartProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
 
 const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
-  const [chartType, setChartType] = React.useState<'sunburst' | 'pie' | 'bar'>('sunburst');
+  const [chartType, setChartType] = React.useState<'sunburst' | 'pie' | 'bar'>('pie');
   // 递归计算任务的总时间（包括子任务）
   const calculateTotalTime = (task: TimerTask): number => {
     let total = task.elapsedTime;

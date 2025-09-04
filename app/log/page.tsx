@@ -8,6 +8,7 @@ import TimeStatsChart from '@/app/components/TimeStatsChart'
 import DateFilter from '@/app/components/DateFilter'
 import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
 import DateBasedTodoList from '@/app/components/DateBasedTodoList'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
 
 export default function LogPage() {
@@ -303,50 +304,68 @@ export default function LogPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">每日日志</h1>
+        
+        {/* 日期过滤器 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">每日日志</h1>
-          <p className="text-gray-600">记录你的日常事物和时间管理</p>
+          <DateFilter 
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
         </div>
 
-        {/* 日期过滤器 */}
-        <DateFilter 
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* 任务清单 */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-xl">📋</span>
+                任务清单
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DateBasedTodoList 
+                userId={userId}
+                date={selectedDate}
+                compact={true}
+              />
+            </CardContent>
+          </Card>
 
-        {/* 任务清单与计时器的左右布局 - 页面顶部 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* 任务清单区域 */}
-          <div className="todo-list-section">
-            <DateBasedTodoList 
-              userId={userId}
-              date={selectedDate}
-              compact={true}
-            />
-          </div>
-
-          {/* 计时器区域 */}
-          <div className="timer-section">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">⏱️ 计时器区域</h2>
+          {/* 计时器 */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-xl">⏱️</span>
+                计时器
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <NestedTimerZone
                 tasks={timerTasks}
                 onTasksChange={setTimerTasks}
                 onOperationRecord={recordOperation}
               />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* 时间统计区域 */}
+        {/* 时间统计 */}
         <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">📊 时间统计</h2>
-            <TimeStatsChart tasks={timerTasks} />
-          </div>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-xl">📊</span>
+                时间统计
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TimeStatsChart tasks={timerTasks} />
+            </CardContent>
+          </Card>
         </div>
 
-        {/* 可折叠的AI总结区域 */}
+        {/* AI总结 */}
         <div className="mb-8">
           <CollapsibleAISummary 
             userId={userId}

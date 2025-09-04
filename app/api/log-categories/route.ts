@@ -61,7 +61,7 @@ export async function GET() {
     return NextResponse.json(frontendCategories);
   } catch (error) {
     console.error('Failed to read log categories:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const { type, parentPath, name } = await request.json() as CreateRequest;
     
     if (!name || name.trim() === '') {
-      return new NextResponse('分类名称不能为空', { status: 400 });
+      return NextResponse.json({ error: '分类名称不能为空' }, { status: 400 });
     }
     
     let parentId: string | null = null;
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       });
       
       if (!parentCategory) {
-        return new NextResponse('父级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '父级分类不存在' }, { status: 400 });
       }
       
       parentId = parentCategory.id;
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       });
       
       if (!topCategory) {
-        return new NextResponse('顶级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '顶级分类不存在' }, { status: 400 });
       }
       
       const midCategory = await prisma.logCategory.findFirst({
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       });
       
       if (!midCategory) {
-        return new NextResponse('中级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '中级分类不存在' }, { status: 400 });
       }
       
       parentId = midCategory.id;
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, categories: frontendCategories });
   } catch (error) {
     console.error('Failed to create category:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -164,7 +164,7 @@ export async function DELETE(request: Request) {
     
     if (!type || !name) {
       console.error('Missing required fields:', { type, name });
-      return new NextResponse('Missing required fields', { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
     let categoryToDelete: DatabaseCategory | null = null;
@@ -187,7 +187,7 @@ export async function DELETE(request: Request) {
       });
       
       if (!topCategory) {
-        return new NextResponse('顶级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '顶级分类不存在' }, { status: 400 });
       }
       
       categoryToDelete = await prisma.logCategory.findFirst({
@@ -208,7 +208,7 @@ export async function DELETE(request: Request) {
       });
       
       if (!topCategory) {
-        return new NextResponse('顶级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '顶级分类不存在' }, { status: 400 });
       }
       
       const midCategory = await prisma.logCategory.findFirst({
@@ -219,7 +219,7 @@ export async function DELETE(request: Request) {
       });
       
       if (!midCategory) {
-        return new NextResponse('中级分类不存在', { status: 400 });
+        return NextResponse.json({ error: '中级分类不存在' }, { status: 400 });
       }
       
       categoryToDelete = await prisma.logCategory.findFirst({
@@ -230,11 +230,11 @@ export async function DELETE(request: Request) {
       });
     } else {
       console.error('Invalid delete type:', type);
-      return new NextResponse('Invalid delete type', { status: 400 });
+      return NextResponse.json({ error: 'Invalid delete type' }, { status: 400 });
     }
     
     if (!categoryToDelete) {
-      return new NextResponse('分类不存在', { status: 404 });
+      return NextResponse.json({ error: '分类不存在' }, { status: 404 });
     }
     
     // Delete the category (cascade will handle children)
@@ -268,6 +268,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true, categories: frontendCategories });
   } catch (error) {
     console.error('Failed to delete category:', error);
-    return new NextResponse(`Internal Server Error: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
+    return NextResponse.json({ error: `Internal Server Error: ${error instanceof Error ? error.message : 'Unknown error'}` }, { status: 500 });
   }
 }

@@ -582,8 +582,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       <div ref={setNodeRef} style={{ ...style, ...indentStyle }} {...attributes}>
         <Card 
           {...listeners} // 整个卡片可拖拽
-          className={`transition-all duration-200 mb-3 cursor-grab active:cursor-grabbing ${
-            task.isRunning ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+          className={`transition-all duration-200 mb-3 cursor-grab active:cursor-grabbing bg-gray-900 text-white ${
+            task.isRunning ? 'border-blue-300' : 'border-gray-600'
           } ${
             hasChildren ? 'border-l-4 border-l-green-400' : ''
           } ${
@@ -598,26 +598,26 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   <div className={`w-2 h-2 rounded-full ${
                     hasChildren ? 'bg-green-400' : 'bg-gray-400'
                   }`}></div>
-                  <h3 className="font-medium text-gray-800 truncate">
+                  <h3 className="font-medium text-white truncate">
                     {task.name}
                     {hasChildren && (
-                      <span className="text-xs text-green-600 ml-2">
+                      <span className="text-xs text-green-400 ml-2">
                         ({task.children!.length}个子任务)
                       </span>
                     )}
                   </h3>
                 </div>
-                <p className="text-sm text-gray-500 mt-1 truncate">
+                <p className="text-sm text-gray-300 mt-1 truncate">
                   {task.categoryPath}
                 </p>
-                <div className="text-lg font-mono text-blue-600 mt-2">
+                <div className="text-lg font-mono text-blue-400 mt-2">
                   {formatDisplayTime(getCurrentDisplayTime(task))}
                   {task.initialTime > 0 && task.elapsedTime === task.initialTime && (
-                    <span className="text-xs text-gray-500 ml-2">(预设时间)</span>
+                    <span className="text-xs text-gray-400 ml-2">(预设时间)</span>
                   )}
                 </div>
                 {hasChildren && (
-                  <div className="text-sm text-green-600 mt-1">
+                  <div className="text-sm text-green-400 mt-1">
                     总计: {formatTime(totalTime)}
                   </div>
                 )}
