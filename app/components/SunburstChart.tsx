@@ -90,6 +90,11 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
     const x4 = x0 + innerRadius * Math.cos(endRad);
     const y4 = y0 + innerRadius * Math.sin(endRad);
     
+    // 确保所有坐标都是有效数字
+    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) || isNaN(x3) || isNaN(y3) || isNaN(x4) || isNaN(y4)) {
+      return paths;
+    }
+    
     const largeArcFlag = angleRange > 180 ? 1 : 0;
     
     const path = [
@@ -145,6 +150,28 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
   const centerX = width / 2;
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 20;
+  
+  // 确保数据有效
+  if (!currentView || !currentView.children || currentView.children.length === 0) {
+    return (
+      <div className="relative">
+        <svg width={width} height={height} className="mx-auto">
+          <g>
+            <text
+              x={centerX}
+              y={centerY}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="16"
+              fill="#666"
+            >
+              暂无数据
+            </text>
+          </g>
+        </svg>
+      </div>
+    );
+  }
   
   const paths = generateSunburstPaths(currentView, centerX, centerY, radius, 0, 360);
 
@@ -229,21 +256,35 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
               />
               {/* 添加文本标签 */}
               {pathData.node.children && pathData.node.children.length === 0 && (
-                <text
-                  x={centerX + (pathData.radius * 0.7) * Math.cos((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                  y={centerY + (pathData.radius * 0.7) * Math.sin((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="10"
-                  fill="#fff"
-                  fontWeight="bold"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {pathData.node.name.length > 8 ? 
-                    pathData.node.name.substring(0, 8) + '...' : 
-                    pathData.node.name
+                (() => {
+                  const midAngle = (pathData.startAngle + pathData.endAngle) / 2;
+                  const textRadius = pathData.radius * 0.7;
+                  const textX = centerX + textRadius * Math.cos(midAngle * Math.PI / 180);
+                  const textY = centerY + textRadius * Math.sin(midAngle * Math.PI / 180);
+                  
+                  // 确保坐标是有效数字
+                  if (isNaN(textX) || isNaN(textY)) {
+                    return null;
                   }
-                </text>
+                  
+                  return (
+                    <text
+                      x={textX}
+                      y={textY}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize="10"
+                      fill="#fff"
+                      fontWeight="bold"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      {pathData.node.name.length > 8 ? 
+                        pathData.node.name.substring(0, 8) + '...' : 
+                        pathData.node.name
+                      }
+                    </text>
+                  );
+                })()
               )}
             </g>
           ))}

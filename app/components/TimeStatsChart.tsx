@@ -82,7 +82,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         } else {
           const newChild = {
             name: part,
-            value: index === categoryParts.length - 1 ? value.time : 0,
+            value: index === categoryParts.length - 1 ? Math.max(value.time, 0) : 0,
             children: [],
             tasks: index === categoryParts.length - 1 ? value.tasks : []
           };
@@ -94,6 +94,11 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
 
     // 计算根节点的总值
     root.value = root.children.reduce((sum, child) => sum + child.value, 0);
+
+    // 确保根节点有有效值
+    if (root.value <= 0) {
+      root.value = 1; // 设置默认值避免除零错误
+    }
 
     return root;
   };
