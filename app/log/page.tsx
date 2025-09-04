@@ -169,10 +169,12 @@ export default function LogPage() {
 
       if (response.ok) {
         const createdTask = await response.json();
-        setTimerTasks([...timerTasks, createdTask]);
+        // 将新任务添加到列表最前面
+        setTimerTasks([createdTask, ...timerTasks]);
         recordOperation('添加任务', taskName, `初始时间: ${initialTime}秒`);
         // 关闭模态框
         setIsCreateLogModalOpen(false);
+        console.log('新任务已添加到列表前面:', createdTask.name);
       }
     } catch (error) {
       console.error('Failed to add task:', error);
