@@ -282,17 +282,6 @@ const TodoList: React.FC = () => {
 
   const filteredTodos = filterRecursive(todos);
 
-  const sortedTodos = [...filteredTodos].sort((a, b) => {
-    if (sortBy === 'custom') {
-      return (a.order || 0) - (b.order || 0);
-    }
-    if (sortBy === 'priority') {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
-    }
-    return b.createdAt - a.createdAt;
-  });
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'text-red-600 bg-red-50';

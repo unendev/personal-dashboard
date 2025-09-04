@@ -65,10 +65,17 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     });
 
     // 构建层级结构
-    const root = {
+    interface SunburstNode {
+      name: string;
+      value: number;
+      children: SunburstNode[];
+      tasks?: TimerTask[];
+    }
+
+    const root: SunburstNode = {
       name: '总时间',
       value: 0,
-      children: [] as any[]
+      children: []
     };
 
     categoryMap.forEach((value, category) => {
@@ -404,7 +411,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                     outerRadius={120}
                     fill="#8884d8"
                     dataKey="value"

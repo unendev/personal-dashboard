@@ -48,18 +48,18 @@ export default function TimerPage() {
         const data = await response.json();
         
         // 调试：显示任务的创建时间顺序
-        console.log('加载的任务数据:', data.map((task: any) => ({
+        console.log('加载的任务数据:', data.map((task: TimerTask) => ({
           name: task.name,
           createdAt: task.createdAt,
           id: task.id
         })));
         
         // 确保按创建时间降序排序（新任务在前）
-        const sortedData = [...data].sort((a: any, b: any) => 
+        const sortedData = [...data].sort((a: TimerTask, b: TimerTask) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         
-        console.log('排序后的任务:', sortedData.map((task: any) => ({
+        console.log('排序后的任务:', sortedData.map((task: TimerTask) => ({
           name: task.name,
           createdAt: task.createdAt
         })));

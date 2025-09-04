@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
-import { TimerDB, TimerTask } from '../lib/timer-db';
+import { TimerTask } from '../lib/timer-db';
 
 const TimerWidget: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<TimerTask | null>(null);

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -71,7 +71,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   );
 
   // 拖拽开始处理函数
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: DragStartEvent) => {
     console.log('拖拽开始:', event.active.id);
   };
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -28,7 +28,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{type: string, path: string, name: string} | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -213,59 +213,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     return hoursNum * 3600 + minutesNum * 60;
   };
 
-  // 解析时间格式（支持 "1h20m", "45m", "2h" 等格式）
-  const parseDuration = (value: string): string => {
-    if (!value.trim()) return '';
-    
-    // 移除所有空格
-    const cleanValue = value.replace(/\s/g, '');
-    
-    // 匹配格式：数字+h+数字+m 或 数字+h 或 数字+m
-    const hourMinutePattern = /^(\d+)h(\d+)m$/;
-    const hourPattern = /^(\d+)h$/;
-    const minutePattern = /^(\d+)m$/;
-    const numberPattern = /^(\d+)$/;
-    
-    if (hourMinutePattern.test(cleanValue)) {
-      // 格式：1h20m
-      const match = cleanValue.match(hourMinutePattern);
-      if (match) {
-        const hours = parseInt(match[1]);
-        const minutes = parseInt(match[2]);
-        return `${hours}h${minutes}m`;
-      }
-    } else if (hourPattern.test(cleanValue)) {
-      // 格式：2h
-      const match = cleanValue.match(hourPattern);
-      if (match) {
-        const hours = parseInt(match[1]);
-        return `${hours}h`;
-      }
-    } else if (minutePattern.test(cleanValue)) {
-      // 格式：45m
-      const match = cleanValue.match(minutePattern);
-      if (match) {
-        const minutes = parseInt(match[1]);
-        return `${minutes}m`;
-      }
-    } else if (numberPattern.test(cleanValue)) {
-      // 纯数字，按分钟处理
-      const minutes = parseInt(cleanValue);
-      if (minutes < 60) {
-        return `${minutes}m`;
-      } else {
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        if (remainingMinutes === 0) {
-          return `${hours}h`;
-        } else {
-          return `${hours}h${remainingMinutes}m`;
-        }
-      }
-    }
-    
-    return '';
-  };
+
 
   // 处理时间输入
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
