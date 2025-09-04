@@ -295,7 +295,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           });
         };
 
-        setTodos(updateSubtaskRecursive(todos));
+        setTodos(prevTodos => updateSubtaskRecursive(prevTodos));
         console.log('子任务已添加:', realSubtask.text);
       } else {
         // 如果失败，回滚乐观更新
@@ -313,7 +313,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             return todo;
           });
         };
-        setTodos(removeSubtaskRecursive(todos));
+        setTodos(prevTodos => removeSubtaskRecursive(prevTodos));
         setNewSubtaskText(optimisticSubtask.text);
         setNewSubtaskCategory(optimisticSubtask.category || '');
         setShowAddSubtaskDialog(parentId);
@@ -336,7 +336,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           return todo;
         });
       };
-      setTodos(removeSubtaskRecursive(todos));
+      setTodos(prevTodos => removeSubtaskRecursive(prevTodos));
       setNewSubtaskText(optimisticSubtask.text);
       setNewSubtaskCategory(optimisticSubtask.category || '');
       setShowAddSubtaskDialog(parentId);
@@ -372,7 +372,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         return todo;
       });
     };
-    setTodos(updateRecursive(todos));
+    setTodos(prevTodos => updateRecursive(prevTodos));
 
     try {
       const response = await fetch('/api/todos', {
@@ -391,13 +391,13 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
 
       if (!response.ok) {
         // 如果失败，回滚乐观更新
-        setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+        setTodos(prevTodos => updateRecursive(prevTodos)); // 再次调用会恢复原状态
         alert('更新任务状态失败，请重试');
       }
     } catch (error) {
       console.error('Failed to toggle todo:', error);
       // 回滚乐观更新
-      setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+      setTodos(prevTodos => updateRecursive(prevTodos)); // 再次调用会恢复原状态
       alert('更新任务状态失败，请重试');
     }
   };
@@ -416,7 +416,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     
     // 保存原始状态用于回滚
     const originalTodos = todos;
-    setTodos(deleteRecursive(todos));
+    setTodos(prevTodos => deleteRecursive(prevTodos));
 
     try {
       const response = await fetch(`/api/todos?id=${id}`, {
@@ -452,7 +452,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         return todo;
       });
     };
-    setTodos(updateRecursive(todos));
+    setTodos(prevTodos => updateRecursive(prevTodos));
 
     try {
       const response = await fetch('/api/todos', {
@@ -471,13 +471,13 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
 
       if (!response.ok) {
         // 如果失败，回滚乐观更新
-        setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+        setTodos(prevTodos => updateRecursive(prevTodos)); // 再次调用会恢复原状态
         alert('更新优先级失败，请重试');
       }
     } catch (error) {
       console.error('Failed to update priority:', error);
       // 回滚乐观更新
-      setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+      setTodos(prevTodos => updateRecursive(prevTodos)); // 再次调用会恢复原状态
       alert('更新优先级失败，请重试');
     }
   };
