@@ -5,6 +5,25 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TimerTask {
   id: string;
@@ -38,6 +57,46 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const [newChildName, setNewChildName] = useState('');
   const [newChildCategory, setNewChildCategory] = useState('');
   const [newChildInitialTime, setNewChildInitialTime] = useState('');
+
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 移动8px后才开始拖拽
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 拖拽开始处理函数
+  const handleDragStart = (event: any) => {
+    console.log('拖拽开始:', event.active.id);
+  };
+
+  // 拖拽结束处理函数
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
+
+    if (active.id !== over?.id && over) {
+      const oldIndex = tasks.findIndex((task) => task.id === active.id);
+      const newIndex = tasks.findIndex((task) => task.id === over.id);
+
+      console.log('任务重排序:', { oldIndex, newIndex, taskName: tasks[oldIndex]?.name });
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
+        onTasksChange(reorderedTasks);
+
+        if (onOperationRecord) {
+          onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
+        }
+      }
+    }
+  };
 
   // 计算任务的当前显示时间（不修改原始数据）
   const getCurrentDisplayTime = (task: TimerTask): number => {
@@ -495,21 +554,39 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   };
 
-  const renderTask = (task: TimerTask) => {
+  // 可拖拽的任务项组件
+  const SortableTaskItem: React.FC<{ task: TimerTask }> = ({ task }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: task.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
     const totalTime = calculateTotalTime(task);
     const hasChildren = task.children && task.children.length > 0;
     const indentStyle = { marginLeft: `${level * 20}px` };
-    
-
 
     return (
-      <div key={task.id} style={indentStyle}>
+      <div ref={setNodeRef} style={{ ...style, ...indentStyle }} {...attributes}>
         <Card 
-          className={`transition-all duration-200 mb-3 ${
+          {...listeners} // 整个卡片可拖拽
+          className={`transition-all duration-200 mb-3 cursor-grab active:cursor-grabbing ${
             task.isRunning ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
           } ${
             hasChildren ? 'border-l-4 border-l-green-400' : ''
+          } ${
+            isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-md'
           }`}
+          title="拖拽重新排序"
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -543,7 +620,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 )}
               </div>
               
-              <div className="flex gap-2 ml-4 flex-shrink-0 flex-wrap" style={{ zIndex: 10 }}>
+              <div 
+                className="flex gap-2 ml-4 flex-shrink-0 flex-wrap" 
+                style={{ zIndex: 10 }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 
@@ -627,6 +709,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     );
   };
 
+
   if (tasks.length === 0) {
     return (
       <Card className="bg-gray-50">
@@ -654,60 +737,71 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   }
 
   return (
-    <div className="space-y-3">
-      {tasks.map(renderTask)}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area">
+        <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+          {tasks.map(task => (
+            <SortableTaskItem key={task.id} task={task} />
+          ))}
+        </SortableContext>
 
-      {/* 添加子任务弹框 */}
-      <Dialog open={!!showAddChildDialog} onOpenChange={(open) => !open && setShowAddChildDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>添加子任务</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                任务名称
-              </label>
-              <Input
-                value={newChildName}
-                onChange={(e) => setNewChildName(e.target.value)}
-                placeholder="输入子任务名称..."
-                autoFocus
-              />
+        {/* 添加子任务弹框 */}
+        <Dialog open={!!showAddChildDialog} onOpenChange={(open) => !open && setShowAddChildDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>添加子任务</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  任务名称
+                </label>
+                <Input
+                  value={newChildName}
+                  onChange={(e) => setNewChildName(e.target.value)}
+                  placeholder="输入子任务名称..."
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  分类 (可选)
+                </label>
+                <Input
+                  value={newChildCategory}
+                  onChange={(e) => setNewChildCategory(e.target.value)}
+                  placeholder="输入分类..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  初始时间 (分钟, 可选)
+                </label>
+                <Input
+                  type="number"
+                  value={newChildInitialTime}
+                  onChange={(e) => setNewChildInitialTime(e.target.value)}
+                  placeholder="例如: 30"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                分类 (可选)
-              </label>
-              <Input
-                value={newChildCategory}
-                onChange={(e) => setNewChildCategory(e.target.value)}
-                placeholder="输入分类..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                初始时间 (分钟, 可选)
-              </label>
-              <Input
-                type="number"
-                value={newChildInitialTime}
-                onChange={(e) => setNewChildInitialTime(e.target.value)}
-                placeholder="例如: 30"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddChildDialog(null)}>
-              取消
-            </Button>
-            <Button onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
-              添加子任务
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddChildDialog(null)}>
+                取消
+              </Button>
+              <Button onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
+                添加子任务
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DndContext>
   );
 };
 

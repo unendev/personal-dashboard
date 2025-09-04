@@ -46,7 +46,25 @@ export default function TimerPage() {
       const response = await fetch(`/api/timer-tasks?date=${selectedDate}`);
       if (response.ok) {
         const data = await response.json();
-        setTasks(data);
+        
+        // 调试：显示任务的创建时间顺序
+        console.log('加载的任务数据:', data.map((task: any) => ({
+          name: task.name,
+          createdAt: task.createdAt,
+          id: task.id
+        })));
+        
+        // 确保按创建时间降序排序（新任务在前）
+        const sortedData = [...data].sort((a: any, b: any) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        console.log('排序后的任务:', sortedData.map((task: any) => ({
+          name: task.name,
+          createdAt: task.createdAt
+        })));
+        
+        setTasks(sortedData);
       }
     } catch (error) {
       console.error('Failed to load tasks:', error);
@@ -78,11 +96,17 @@ export default function TimerPage() {
       });
 
       if (response.ok) {
-        await loadTasks();
+        const newTask = await response.json();
+        
+        // 立即将新任务添加到列表最前面，无需等待重新加载
+        setTasks(prevTasks => [newTask, ...prevTasks]);
+        
         setNewTaskName('');
         setNewTaskCategory('');
         setShowAddDialog(false);
         recordOperation('创建任务', newTaskName.trim());
+        
+        console.log('新任务已添加到列表前面:', newTask.name);
       }
     } catch (error) {
       console.error('Failed to add task:', error);

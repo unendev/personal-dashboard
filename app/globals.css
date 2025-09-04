@@ -257,3 +257,47 @@ body {
   width: 100%;
   height: 100%;
 }
+
+/* 计时器区域滚动条样式 */
+.timer-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.6) rgba(243, 244, 246, 0.1);
+}
+
+.timer-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timer-scroll-area::-webkit-scrollbar-track {
+  background: rgba(243, 244, 246, 0.1);
+  border-radius: 3px;
+}
+
+.timer-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.6);
+  border-radius: 3px;
+}
+
+.timer-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* 拖拽时的视觉反馈 */
+.task-dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.drag-handle {
+  cursor: grab;
+  transition: background-color 0.2s ease;
+}
+
+.drag-handle:hover {
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
