@@ -14,6 +14,8 @@ interface TimerTask {
   startTime: number | null;
   isPaused: boolean;
   pausedTime: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface TimerZoneProps {

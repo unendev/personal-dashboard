@@ -17,6 +17,8 @@ interface TimerTask {
   pausedTime: number;
   parentId?: string | null;
   children?: TimerTask[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface TimeStatsChartProps {

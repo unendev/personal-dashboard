@@ -23,6 +23,8 @@ export default function LogPage() {
     startTime: number | null;
     isPaused: boolean;
     pausedTime: number;
+    createdAt: string;
+    updatedAt: string;
   }[]>([]);
   const [userId] = useState('user-1'); // 临时用户ID
   

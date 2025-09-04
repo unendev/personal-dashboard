@@ -14,6 +14,8 @@ interface TimerTask {
   totalTime: number; // 累计时间（秒）
   isRunning: boolean;
   isPaused: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface DailyStats {

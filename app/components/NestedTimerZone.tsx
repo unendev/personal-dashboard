@@ -39,6 +39,8 @@ interface TimerTask {
   parentId?: string | null;
   children?: TimerTask[];
   totalTime?: number; // 包含子任务的总时间
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface NestedTimerZoneProps {

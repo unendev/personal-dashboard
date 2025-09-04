@@ -21,6 +21,8 @@ interface TimerTask {
   pausedTime: number;
   parentId?: string | null;
   children?: TimerTask[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function TimerPage() {
