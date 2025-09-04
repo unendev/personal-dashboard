@@ -197,86 +197,92 @@ export default function LogPage() {
 
   return (
     <div className="log-page-layout">
-      {/* 返回主页按钮 */}
-      <div className="fixed top-4 left-4 z-40">
-        <Link
-          href="/"
-          className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-        >
-          <span className="text-white font-bold text-xl">←</span>
-        </Link>
-      </div>
+      {/* 顶部操作栏 */}
+      <div className="fixed top-4 left-4 right-4 z-40">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          {/* 左侧：返回按钮 */}
+          <Link
+            href="/"
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+          >
+            <span className="text-gray-600 font-medium text-lg">←</span>
+          </Link>
 
-      {/* 创建事物按钮 - 左侧 */}
-      <div className="fixed top-4 left-20 z-40">
-        <button
-          onClick={() => setIsCreateLogModalOpen(true)}
-          className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all duration-300 min-w-[140px] flex items-center gap-2 transform hover:scale-105"
-        >
-          <span className="text-xl">📝</span>
-          <span className="text-sm font-medium">创建事物</span>
-        </button>
-      </div>
+          {/* 右侧：操作按钮组 */}
+          <div className="flex items-center gap-3">
+            {/* 创建事物按钮 */}
+            <button
+              onClick={() => setIsCreateLogModalOpen(true)}
+              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            >
+              <span className="text-lg">✏️</span>
+              <span className="text-sm font-medium text-gray-700">记录</span>
+            </button>
 
-      {/* 操作记录折叠栏 - 右侧 */}
-      <div className="fixed top-4 right-4 z-40" ref={operationHistoryRef}>
-        <div 
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transition-all duration-300 min-w-[140px] transform hover:scale-105"
-          onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📋</span>
-              <span className="text-sm font-medium">操作记录</span>
+            {/* 操作记录按钮 */}
+            <div className="relative" ref={operationHistoryRef}>
+              <button
+                onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
+                className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <span className="text-lg">📊</span>
+                <span className="text-sm font-medium text-gray-700">记录</span>
+                <span className={`text-xs transition-transform duration-200 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              {/* 操作记录下拉面板 */}
+              {isOperationHistoryExpanded && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-800">操作记录</h3>
+                    <button 
+                      onClick={() => setIsOperationHistoryExpanded(false)}
+                      className="text-gray-400 hover:text-gray-600 text-lg hover:bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  {operationHistory.length === 0 ? (
+                    <div className="text-center py-8">
+                      <span className="text-3xl mb-2 block">📝</span>
+                      <p className="text-gray-500 text-sm">暂无操作记录</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {operationHistory.slice(0, 8).map((operation) => (
+                        <div key={operation.id} className="p-3 bg-gray-50/50 rounded-lg hover:bg-gray-100/50 transition-colors border border-gray-100">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-gray-700 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                  {operation.action}
+                                </span>
+                                <span className="text-xs text-gray-600 truncate">{operation.taskName}</span>
+                              </div>
+                              {operation.details && (
+                                <p className="text-xs text-gray-500 truncate">{operation.details}</p>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                              {new Date(operation.timestamp).toLocaleString('zh-CN', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <span className={`text-sm transition-transform duration-300 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
-              ▼
-            </span>
           </div>
         </div>
-        
-        {/* 折叠的操作记录内容 */}
-        {isOperationHistoryExpanded && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl p-4 max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">📋 操作记录</h3>
-              <button 
-                onClick={() => setIsOperationHistoryExpanded(false)}
-                className="text-gray-400 hover:text-gray-600 text-lg"
-              >
-                ×
-              </button>
-            </div>
-            {operationHistory.length === 0 ? (
-              <p className="text-gray-500 text-sm">暂无操作记录</p>
-            ) : (
-              <div className="space-y-2">
-                {operationHistory.slice(0, 10).map((operation) => (
-                  <div key={operation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-medium text-gray-800">{operation.action}</span>
-                        <span className="text-xs text-gray-600">-</span>
-                        <span className="text-xs text-blue-600 font-medium truncate">{operation.taskName}</span>
-                      </div>
-                      {operation.details && (
-                        <p className="text-xs text-gray-500 mt-1 truncate">{operation.details}</p>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400 ml-2">
-                      {new Date(operation.timestamp).toLocaleString('zh-CN', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 创建事物模态框 */}
