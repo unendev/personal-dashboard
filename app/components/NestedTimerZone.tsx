@@ -794,8 +794,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               <Button variant="outline" onClick={() => setShowAddChildDialog(null)}>
                 取消
               </Button>
-              <Button onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
-                添加子任务
+              <Button variant="subtask" onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
+                ➕ 添加子任务
               </Button>
             </DialogFooter>
           </DialogContent>

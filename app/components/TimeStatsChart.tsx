@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+// 移除不再使用的recharts导入
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import SunburstChart from './SunburstChart';
 
 interface TimerTask {
   id: string;
@@ -22,7 +23,7 @@ interface TimeStatsChartProps {
   tasks: TimerTask[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
+// COLORS常量已移除，因为新的SunburstChart组件有自己的颜色定义
 
 const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
   // 递归计算任务的总时间（包括子任务）
@@ -46,6 +47,54 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
       }
     });
     return allTasks;
+  };
+
+  // 构建旭日图数据
+  const buildSunburstData = () => {
+    const categoryMap = new Map<string, { time: number; tasks: TimerTask[] }>();
+    
+    const allTasks = getAllTasksFlat(tasks);
+    allTasks.forEach(task => {
+      const category = task.categoryPath || '未分类';
+      const current = categoryMap.get(category) || { time: 0, tasks: [] };
+      const taskTotalTime = calculateTotalTime(task);
+      current.time += taskTotalTime;
+      current.tasks.push(task);
+      categoryMap.set(category, current);
+    });
+
+    // 构建层级结构
+    const root = {
+      name: '总时间',
+      value: 0,
+      children: [] as any[]
+    };
+
+    categoryMap.forEach((value, category) => {
+      const categoryParts = category.split('/');
+      let currentLevel = root;
+      
+      categoryParts.forEach((part, index) => {
+        const existingChild = currentLevel.children?.find(child => child.name === part);
+        if (existingChild) {
+          currentLevel = existingChild;
+        } else {
+          const newChild = {
+            name: part,
+            value: index === categoryParts.length - 1 ? value.time : 0,
+            children: [],
+            tasks: index === categoryParts.length - 1 ? value.tasks : []
+          };
+          currentLevel.children.push(newChild);
+          currentLevel = newChild;
+        }
+      });
+    });
+
+    // 计算根节点的总值
+    root.value = root.children.reduce((sum, child) => sum + child.value, 0);
+
+    return root;
   };
 
   // 按分类统计时间（包含子任务）
@@ -162,6 +211,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     return stats;
   };
 
+  const sunburstData = buildSunburstData();
   const categoryStats = getCategoryStats();
   const taskStats = getTaskStats();
   const totalTime = getTotalTime();
@@ -179,43 +229,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     return `${mins}m`;
   };
 
-  const CustomTooltip = ({ active, payload, label }: {
-    active?: boolean;
-    payload?: Array<{ payload: { fullName?: string; hasChildren?: boolean; seconds?: number; categoryPath?: string }; value: number }>;
-    label?: string;
-  }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const minutes = payload[0].value;
-      const seconds = data.seconds || (minutes * 60);
-      
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs">
-          <p className="font-medium text-gray-800">{data.fullName || label}</p>
-          <p className="text-blue-600 font-semibold">{formatTime(minutes)}</p>
-          {data.seconds && (
-            <p className="text-xs text-gray-500 mt-1">
-              精确时间: {Math.floor(seconds / 3600)}h {Math.floor((seconds % 3600) / 60)}m {seconds % 60}s
-            </p>
-          )}
-          {data.categoryPath && data.categoryPath.includes('/') && (
-            <div className="text-xs text-gray-600 mt-1">
-              <p className="font-medium">完整分类路径:</p>
-              {data.categoryPath.split('/').map((part, index) => (
-                <p key={index} className="ml-2 text-gray-500">
-                  {index === 0 ? '└─ ' : '  '.repeat(index) + '└─ '}{part}
-                </p>
-              ))}
-            </div>
-          )}
-          {data.hasChildren && (
-            <p className="text-xs text-green-600 mt-1">✓ 包含子任务</p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+  // CustomTooltip 函数已移除，因为新的SunburstChart组件有自己的tooltip实现
 
   if (tasks.length === 0) {
     return (
@@ -326,52 +340,39 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         </Card>
       )}
 
-      {/* 分类饼图 */}
-      {categoryStats.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>按分类统计</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryStats}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {categoryStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* 旭日图 */}
+      {sunburstData.children && sunburstData.children.length > 0 && (
+        <SunburstChart data={sunburstData} width={400} height={400} />
       )}
 
-      {/* 任务柱状图 */}
+      {/* 任务时间排行 */}
       {taskStats.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>任务时间排行</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={taskStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="time" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-3">
+              {taskStats.map((task, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-800">{task.fullName}</div>
+                      <div className="text-sm text-gray-500">{task.category}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-blue-600">{formatTime(task.time)}</div>
+                    {task.hasChildren && (
+                      <div className="text-xs text-green-600">包含子任务</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

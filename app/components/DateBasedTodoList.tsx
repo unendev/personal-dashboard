@@ -604,22 +604,22 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
                 <option value="medium">中</option>
                 <option value="high">高</option>
               </select>
-              <Button
-                variant="subtask"
-                size="xs"
-                onClick={() => setShowAddSubtaskDialog(todo.id)}
-                className="text-xs p-1 h-6 w-12"
-              >
-                ➕
-              </Button>
-              <Button
-                variant="delete"
-                size="xs"
-                onClick={() => deleteTodo(todo.id)}
-                className="p-1 h-6 w-6"
-              >
-                ×
-              </Button>
+                             <Button
+                 variant="outline"
+                 size="xs"
+                 onClick={() => setShowAddSubtaskDialog(todo.id)}
+                 className="text-xs p-1 h-6 w-12"
+               >
+                 ➕
+               </Button>
+               <Button
+                 variant="outline"
+                 size="xs"
+                 onClick={() => deleteTodo(todo.id)}
+                 className="p-1 h-6 w-6"
+               >
+                 ×
+               </Button>
             </div>
           </div>
           
@@ -688,14 +688,14 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <option value="high">高</option>
             </select>
             <Button
-              variant="subtask"
+              variant="outline"
               size="sm"
               onClick={() => setShowAddSubtaskDialog(todo.id)}
             >
               ➕ 子任务
             </Button>
             <Button
-              variant="delete"
+              variant="outline"
               size="sm"
               onClick={() => deleteTodo(todo.id)}
             >
@@ -744,7 +744,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               placeholder="分类"
               className="w-20 text-sm"
             />
-            <Button onClick={addTodo} size="sm" variant="create">
+            <Button onClick={addTodo} size="sm" variant="outline">
               ➕ 添加
             </Button>
           </div>
@@ -836,7 +836,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
                 取消
               </Button>
-              <Button variant="subtask" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
+              <Button variant="outline" size="sm" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
                 ➕ 添加子任务
               </Button>
             </DialogFooter>
@@ -990,7 +990,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
                 取消
               </Button>
-              <Button variant="subtask" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
+              <Button variant="outline" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
                 ➕ 添加子任务
               </Button>
             </DialogFooter>
