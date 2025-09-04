@@ -29,7 +29,7 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
 }) => {
   const [selectedNode, setSelectedNode] = React.useState<SunburstData | null>(null);
   const [hoveredNode, setHoveredNode] = React.useState<SunburstData | null>(null);
-  const [expandedNodes, setExpandedNodes] = React.useState<Set<string>>(new Set());
+  const [currentView, setCurrentView] = React.useState<SunburstData>(data);
 
   // 计算总值
   const calculateTotalValue = (node: SunburstData): number => {
@@ -59,7 +59,6 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
     endAngle: number;
     depth: number;
     color: string;
-    isExpanded: boolean;
   }> => {
     const paths: Array<{
       path: string;
@@ -71,7 +70,6 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
       endAngle: number;
       depth: number;
       color: string;
-      isExpanded: boolean;
     }> = [];
 
     const totalValue = calculateTotalValue(node);
@@ -105,7 +103,6 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
     ].join(' ');
 
     const color = node.color || COLORS[colorIndex % COLORS.length];
-    const isExpanded = expandedNodes.has(node.name);
     
     paths.push({
       path,
@@ -116,12 +113,11 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
       startAngle,
       endAngle,
       depth,
-      color,
-      isExpanded
+      color
     });
 
-    // 为子节点创建路径（只有当父节点展开时才显示）
-    if (node.children && node.children.length > 0 && isExpanded) {
+    // 为子节点创建路径
+    if (node.children && node.children.length > 0) {
       let currentAngle = startAngle;
       node.children.forEach((child, index) => {
         const childValue = calculateTotalValue(child);
@@ -151,7 +147,7 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 20;
   
-  const paths = generateSunburstPaths(data, centerX, centerY, radius, 0, 360);
+  const paths = generateSunburstPaths(currentView, centerX, centerY, radius, 0, 360);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -164,17 +160,33 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
 
   const handlePathClick = (node: SunburstData) => {
     if (node.children && node.children.length > 0) {
-      // 如果有子节点，切换展开状态
-      const newExpandedNodes = new Set(expandedNodes);
-      if (newExpandedNodes.has(node.name)) {
-        newExpandedNodes.delete(node.name);
-      } else {
-        newExpandedNodes.add(node.name);
-      }
-      setExpandedNodes(newExpandedNodes);
+      // 如果有子节点，切换到该节点的视图
+      setCurrentView(node);
     } else {
       // 如果没有子节点，切换选中状态
       setSelectedNode(selectedNode?.name === node.name ? null : node);
+    }
+  };
+
+  const handleCenterClick = () => {
+    // 点击中心区域回到上一级
+    if (currentView !== data) {
+      // 找到当前视图的父节点
+      const findParent = (node: SunburstData, target: SunburstData): SunburstData | null => {
+        if (node.children) {
+          for (const child of node.children) {
+            if (child === target) {
+              return node;
+            }
+            const parent = findParent(child, target);
+            if (parent) return parent;
+          }
+        }
+        return null;
+      };
+      
+      const parent = findParent(data, currentView);
+      setCurrentView(parent || data);
     }
   };
 
@@ -192,35 +204,35 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
         <CardTitle>时间分布旭日图</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative">
+                <div className="relative">
           <svg width={width} height={height} className="mx-auto">
             <g>
+              {/* 中心点击区域 */}
+              {currentView !== data && (
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={radius * 0.3}
+                  fill="rgba(255,255,255,0.1)"
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth="2"
+                  style={{ cursor: 'pointer' }}
+                  onClick={handleCenterClick}
+                />
+              )}
               {paths.map((pathData, index) => (
                 <g key={index}>
-                                     <path
-                     d={pathData.path}
-                     fill={pathData.color}
-                     stroke="#fff"
-                     strokeWidth={1}
-                     opacity={hoveredNode?.name === pathData.node.name ? 0.8 : 0.6}
-                     style={{ cursor: 'pointer' }}
-                     onClick={() => handlePathClick(pathData.node)}
-                     onMouseEnter={() => handlePathMouseEnter(pathData.node)}
-                     onMouseLeave={handlePathMouseLeave}
-                   />
-                   {/* 展开指示器 */}
-                   {pathData.node.children && pathData.node.children.length > 0 && (
-                     <circle
-                       cx={centerX + (pathData.radius * 0.6) * Math.cos((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                       cy={centerY + (pathData.radius * 0.6) * Math.sin((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                       r="8"
-                       fill={pathData.isExpanded ? "#fff" : "rgba(255,255,255,0.3)"}
-                       stroke="#333"
-                       strokeWidth="1"
-                       style={{ cursor: 'pointer' }}
-                       onClick={() => handlePathClick(pathData.node)}
-                     />
-                   )}
+                  <path
+                    d={pathData.path}
+                    fill={pathData.color}
+                    stroke="#fff"
+                    strokeWidth={1}
+                    opacity={hoveredNode?.name === pathData.node.name ? 0.8 : 0.6}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handlePathClick(pathData.node)}
+                    onMouseEnter={() => handlePathMouseEnter(pathData.node)}
+                    onMouseLeave={handlePathMouseLeave}
+                  />
                   {/* 添加文本标签 */}
                   {pathData.node.children && pathData.node.children.length === 0 && (
                     <text
@@ -271,8 +283,8 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
         </div>
         
         <div className="mt-4 text-sm text-gray-600 text-center">
-          <p>点击有子项的扇形区域可以展开/收起子项</p>
-          <p className="text-xs text-gray-500 mt-1">白色圆点表示可展开的区域</p>
+          <p>点击扇形区域进入该类别，点击中心区域返回上一级</p>
+          <p className="text-xs text-gray-500 mt-1">当前查看: {currentView.name}</p>
         </div>
       </CardContent>
     </Card>
