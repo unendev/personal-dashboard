@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -35,7 +35,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
   // 从数据库加载数据
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/todos?userId=${userId}&date=${date}`);
@@ -48,11 +48,11 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, date]);
 
   useEffect(() => {
     fetchTodos();
-  }, [userId, date, fetchTodos]);
+  }, [fetchTodos]);
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;

@@ -37,59 +37,59 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const [showAddChildDialog, setShowAddChildDialog] = useState<string | null>(null);
   const [newChildName, setNewChildName] = useState('');
   const [newChildCategory, setNewChildCategory] = useState('');
-  const intervalRefs = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const [newChildInitialTime, setNewChildInitialTime] = useState('');
 
-  const updateTaskTime = useCallback((taskId: string, elapsedTime: number) => {
-    const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-      return taskList.map(task => {
-        if (task.id === taskId) {
-          return { ...task, elapsedTime };
-        }
-        if (task.children) {
-          return { ...task, children: updateTaskRecursive(task.children) };
-        }
-        return task;
+  // 计算任务的当前显示时间（不修改原始数据）
+  const getCurrentDisplayTime = (task: TimerTask): number => {
+    let displayTime;
+    if (task.isRunning && !task.isPaused && task.startTime) {
+      const elapsed = Math.floor((Date.now() / 1000 - task.startTime));
+      displayTime = task.elapsedTime + elapsed;
+      console.log(`${task.name} 运行中时间计算:`, {
+        isRunning: task.isRunning,
+        isPaused: task.isPaused,
+        startTime: task.startTime,
+        elapsedTime: task.elapsedTime,
+        currentElapsed: elapsed,
+        displayTime
       });
-    };
-    
-    const updatedTasks = updateTaskRecursive(tasks);
-    onTasksChange(updatedTasks);
-  }, [tasks, onTasksChange]);
+    } else {
+      displayTime = task.elapsedTime;
+      console.log(`${task.name} 非运行状态时间:`, {
+        isRunning: task.isRunning,
+        isPaused: task.isPaused,
+        elapsedTime: task.elapsedTime,
+        displayTime
+      });
+    }
+    return displayTime;
+  };
 
-  // 更新所有运行中的计时器
+  // 强制重新渲染组件以更新时间显示
+  const [, forceUpdate] = useState({});
+  const triggerUpdate = useCallback(() => {
+    forceUpdate({});
+  }, []);
+
+  // 只用于触发重新渲染，不修改任务数据
   useEffect(() => {
-    const updateTimers = (taskList: TimerTask[]) => {
-      taskList.forEach(task => {
+    const hasRunningTask = (taskList: TimerTask[]): boolean => {
+      for (const task of taskList) {
         if (task.isRunning && !task.isPaused && task.startTime) {
-          if (!intervalRefs.current[task.id]) {
-            intervalRefs.current[task.id] = setInterval(() => {
-              const elapsed = Math.floor((Date.now() / 1000 - task.startTime!));
-              const totalTime = task.initialTime + elapsed;
-              updateTaskTime(task.id, totalTime);
-            }, 1000);
-          }
-        } else {
-          if (intervalRefs.current[task.id]) {
-            clearInterval(intervalRefs.current[task.id]);
-            delete intervalRefs.current[task.id];
-          }
+          return true;
         }
-        
-        if (task.children) {
-          updateTimers(task.children);
+        if (task.children && hasRunningTask(task.children)) {
+          return true;
         }
-      });
+      }
+      return false;
     };
 
-    updateTimers(tasks);
-
-    return () => {
-      Object.values(intervalRefs.current).forEach(interval => {
-        clearInterval(interval);
-      });
-      intervalRefs.current = {};
-    };
-  }, [tasks, updateTaskTime]);
+    if (hasRunningTask(tasks)) {
+      const interval = setInterval(triggerUpdate, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [tasks, triggerUpdate]);
 
   const startTimer = async (taskId: string) => {
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
@@ -173,17 +173,41 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     };
 
     const task = findTask(tasks);
-    if (!task) return;
+    if (!task || !task.startTime) {
+      console.log('暂停失败：未找到任务或任务没有开始时间', { taskId, task });
+      return;
+    }
+
+    // 计算当前运行时间
+    const currentTime = Math.floor(Date.now() / 1000);
+    const runningTime = currentTime - task.startTime;
+    const newElapsedTime = task.elapsedTime + runningTime;
+
+    console.log('暂停计时器计算:', {
+      taskName: task.name,
+      currentTime,
+      startTime: task.startTime,
+      runningTime,
+      originalElapsedTime: task.elapsedTime,
+      newElapsedTime
+    });
 
     // 立即更新前端状态
-    const currentTime = Math.floor(Date.now() / 1000);
     const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
       return taskList.map(task => {
         if (task.id === taskId && task.isRunning) {
+          console.log('更新任务状态:', { 
+            taskName: task.name, 
+            oldElapsedTime: task.elapsedTime, 
+            newElapsedTime 
+          });
           return {
             ...task,
+            elapsedTime: newElapsedTime,
             isPaused: true,
-            pausedTime: currentTime
+            isRunning: false, // 暂停时应该设置为false
+            startTime: null,
+            pausedTime: 0
           };
         }
         if (task.children) {
@@ -209,13 +233,20 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         },
         body: JSON.stringify({
           id: taskId,
+          elapsedTime: newElapsedTime,
           isPaused: true,
-          pausedTime: currentTime
+          isRunning: false, // 数据库中也要设置isRunning为false
+          startTime: null,
+          pausedTime: 0
         }),
       });
 
       if (!response.ok) {
         console.error('Failed to update database for pause timer');
+        const errorText = await response.text();
+        console.error('Database error details:', errorText);
+      } else {
+        console.log('成功更新数据库 - 暂停任务:', { taskId, newElapsedTime });
       }
     } catch (error) {
       console.error('Failed to pause timer in database:', error);
@@ -235,20 +266,33 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     };
 
     const task = findTask(tasks);
-    if (!task) return;
+    if (!task || !task.isPaused) {
+      console.log('恢复失败：未找到任务或任务未暂停', { taskId, task });
+      return;
+    }
 
     // 立即更新前端状态
     const currentTime = Math.floor(Date.now() / 1000);
-    const pauseDuration = currentTime - task.pausedTime;
-    const newStartTime = Number(task.startTime!) + pauseDuration;
+
+    console.log('恢复计时器:', {
+      taskName: task.name,
+      currentTime,
+      elapsedTime: task.elapsedTime,
+      wasPaused: task.isPaused
+    });
 
     const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
       return taskList.map(task => {
         if (task.id === taskId && task.isPaused) {
+          console.log('恢复任务状态:', { 
+            taskName: task.name, 
+            elapsedTime: task.elapsedTime 
+          });
           return {
             ...task,
+            isRunning: true,
             isPaused: false,
-            startTime: newStartTime,
+            startTime: currentTime,
             pausedTime: 0
           };
         }
@@ -275,14 +319,19 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         },
         body: JSON.stringify({
           id: taskId,
+          isRunning: true,
           isPaused: false,
-          startTime: newStartTime,
+          startTime: currentTime,
           pausedTime: 0
         }),
       });
 
       if (!response.ok) {
         console.error('Failed to update database for resume timer');
+        const errorText = await response.text();
+        console.error('Database error details:', errorText);
+      } else {
+        console.log('成功更新数据库 - 恢复任务:', { taskId });
       }
     } catch (error) {
       console.error('Failed to resume timer in database:', error);
@@ -344,6 +393,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return;
     }
 
+    const initialTimeInSeconds = newChildInitialTime ? parseInt(newChildInitialTime, 10) * 60 : 0;
+
     try {
       const response = await fetch('/api/timer-tasks', {
         method: 'POST',
@@ -354,7 +405,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           name: newChildName.trim(),
           categoryPath: newChildCategory.trim() || '未分类',
           parentId: parentId,
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          initialTime: initialTimeInSeconds,
+          elapsedTime: initialTimeInSeconds
         }),
       });
 
@@ -384,6 +437,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       
       setNewChildName('');
       setNewChildCategory('');
+      setNewChildInitialTime('');
       setShowAddChildDialog(null);
       
       if (onOperationRecord) {
@@ -396,12 +450,25 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   };
 
   const calculateTotalTime = (task: TimerTask): number => {
-    let total = task.elapsedTime;
-    if (task.children) {
+    let total = getCurrentDisplayTime(task);
+    let childrenTotal = 0;
+    
+    if (task.children && task.children.length > 0) {
       task.children.forEach(child => {
-        total += calculateTotalTime(child);
+        const childTime = calculateTotalTime(child);
+        childrenTotal += childTime;
       });
     }
+    
+    total += childrenTotal;
+    
+    console.log(`${task.name} 总时间计算:`, {
+      ownTime: getCurrentDisplayTime(task),
+      childrenCount: task.children?.length || 0,
+      childrenTotal,
+      total
+    });
+    
     return total;
   };
 
@@ -464,7 +531,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   {task.categoryPath}
                 </p>
                 <div className="text-lg font-mono text-blue-600 mt-2">
-                  {formatDisplayTime(task.elapsedTime)}
+                  {formatDisplayTime(getCurrentDisplayTime(task))}
                   {task.initialTime > 0 && task.elapsedTime === task.initialTime && (
                     <span className="text-xs text-gray-500 ml-2">(预设时间)</span>
                   )}
@@ -616,6 +683,17 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 value={newChildCategory}
                 onChange={(e) => setNewChildCategory(e.target.value)}
                 placeholder="输入分类..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                初始时间 (分钟, 可选)
+              </label>
+              <Input
+                type="number"
+                value={newChildInitialTime}
+                onChange={(e) => setNewChildInitialTime(e.target.value)}
+                placeholder="例如: 30"
               />
             </div>
           </div>

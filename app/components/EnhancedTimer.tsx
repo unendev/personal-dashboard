@@ -14,7 +14,6 @@ interface TimerTask {
   totalTime: number; // 累计时间（秒）
   isRunning: boolean;
   isPaused: boolean;
-  pausedTime: number; // 暂停时的时间点
 }
 
 interface DailyStats {
@@ -48,8 +47,11 @@ const EnhancedTimer: React.FC = () => {
       const runningTask = parsedTasks.find((task: TimerTask) => task.isRunning);
       if (runningTask) {
         setCurrentTask(runningTask);
-        if (runningTask.startTime && !runningTask.isPaused) {
-          setElapsedTime(Math.floor((Date.now() / 1000 - runningTask.startTime)));
+        if (runningTask.isPaused) {
+          setElapsedTime(runningTask.totalTime);
+        } else if (runningTask.startTime) {
+          const currentRunTime = Math.floor(Date.now() / 1000 - runningTask.startTime);
+          setElapsedTime(runningTask.totalTime + currentRunTime);
         }
       }
     }
@@ -64,7 +66,7 @@ const EnhancedTimer: React.FC = () => {
   useEffect(() => {
           if (currentTask && currentTask.isRunning && !currentTask.isPaused && currentTask.startTime) {
         intervalRef.current = setInterval(() => {
-          setElapsedTime(Math.floor((Date.now() / 1000 - currentTask.startTime!)));
+          setElapsedTime(currentTask.totalTime + Math.floor((Date.now() / 1000 - currentTask.startTime!)));
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -117,7 +119,6 @@ const EnhancedTimer: React.FC = () => {
       totalTime: 0,
       isRunning: false,
       isPaused: false,
-      pausedTime: 0
     };
 
     setTasks([...tasks, newTask]);
@@ -138,36 +139,36 @@ const EnhancedTimer: React.FC = () => {
               startTime: Math.floor(Date.now() / 1000),
       isRunning: true,
       isPaused: false,
-      pausedTime: 0
     };
 
     setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
     setCurrentTask(updatedTask);
-    setElapsedTime(0);
+    setElapsedTime(updatedTask.totalTime);
   };
 
   const pauseTask = () => {
-    if (!currentTask || !currentTask.isRunning) return;
+    if (!currentTask || !currentTask.isRunning || !currentTask.startTime) return;
 
+    const elapsed = Math.floor(Date.now() / 1000) - currentTask.startTime;
     const updatedTask = {
       ...currentTask,
+      totalTime: currentTask.totalTime + elapsed,
+      startTime: null,
       isPaused: true,
-      pausedTime: Math.floor(Date.now() / 1000)
     };
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t));
     setCurrentTask(updatedTask);
+    setElapsedTime(updatedTask.totalTime);
   };
 
   const resumeTask = () => {
     if (!currentTask || !currentTask.isPaused) return;
 
-          const pauseDuration = Math.floor(Date.now() / 1000) - currentTask.pausedTime;
     const updatedTask = {
       ...currentTask,
-              startTime: currentTask.startTime! + pauseDuration,
+      startTime: Math.floor(Date.now() / 1000),
       isPaused: false,
-      pausedTime: 0
     };
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t));
@@ -175,16 +176,20 @@ const EnhancedTimer: React.FC = () => {
   };
 
   const stopCurrentTask = () => {
-          if (!currentTask || !currentTask.startTime) return;
+    if (!currentTask) return;
 
-      const elapsed = Math.floor((Date.now() / 1000 - currentTask.startTime));
+    let finalTotalTime = currentTask.totalTime;
+    if (currentTask.startTime && !currentTask.isPaused) {
+      const elapsed = Math.floor(Date.now() / 1000 - currentTask.startTime);
+      finalTotalTime += elapsed;
+    }
+
     const updatedTask = {
       ...currentTask,
       startTime: null,
-      totalTime: currentTask.totalTime + elapsed,
+      totalTime: finalTotalTime,
       isRunning: false,
       isPaused: false,
-      pausedTime: 0
     };
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t));

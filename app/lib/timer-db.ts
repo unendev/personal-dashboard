@@ -166,11 +166,53 @@ export const TimerDB = {
   // 获取运行中的任务（包括子任务）
   getRunningTask: async (userId: string): Promise<TimerTask | null> => {
     try {
-      const runningTask = await prisma.timerTask.findFirst({
-        where: {
-          userId,
-          isRunning: true
-        },
+      // 递归查找运行中的任务，优先查找正在运行的任务，再查找暂停的任务
+      const findRunningTaskRecursively = (tasks: TimerTask[]): TimerTask | null => {
+        let pausedTask: TimerTask | null = null;
+        
+        for (const task of tasks) {
+          console.log('检查任务:', {
+            name: task.name,
+            isRunning: task.isRunning,
+            isPaused: task.isPaused,
+            elapsedTime: task.elapsedTime,
+            hasChildren: !!(task.children && task.children.length > 0)
+          });
+          
+          // 先递归检查子任务
+          if (task.children && task.children.length > 0) {
+            const runningChild = findRunningTaskRecursively(task.children);
+            if (runningChild) {
+              console.log('找到运行中的子任务:', runningChild.name);
+              return runningChild;
+            }
+          }
+          
+          // 检查当前任务是否在运行（优先返回正在运行的）
+          if (task.isRunning && !task.isPaused) {
+            console.log('找到正在运行的任务:', task.name);
+            return task;
+          }
+          
+          // 记录暂停的任务，但继续查找正在运行的
+          if (task.isPaused && !pausedTask) {
+            console.log('记录暂停的任务:', task.name);
+            pausedTask = task;
+          }
+        }
+        
+        // 如果没有正在运行的任务，返回暂停的任务
+        if (pausedTask) {
+          console.log('返回暂停的任务:', pausedTask.name);
+        } else {
+          console.log('没有找到运行中或暂停的任务');
+        }
+        return pausedTask;
+      };
+
+      // 获取所有任务
+      const allTasks = await prisma.timerTask.findMany({
+        where: { userId },
         include: {
           children: {
             include: {
@@ -179,6 +221,17 @@ export const TimerDB = {
           }
         }
       });
+
+      console.log('获取到的所有任务数量:', allTasks.length);
+
+      // 只处理顶级任务
+      const topLevelTasks = allTasks.filter(task => !task.parentId);
+      console.log('顶级任务数量:', topLevelTasks.length);
+      
+      // 递归查找运行中的任务
+      const runningTask = findRunningTaskRecursively(topLevelTasks);
+      console.log('最终找到的运行中任务:', runningTask?.name || '无');
+      
       return runningTask;
     } catch (error) {
       console.error('Failed to get running task:', error);
