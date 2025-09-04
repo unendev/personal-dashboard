@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react';
-// 移除不再使用的recharts导入
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import SunburstChart from './SunburstChart';
 
@@ -23,9 +23,10 @@ interface TimeStatsChartProps {
   tasks: TimerTask[];
 }
 
-// COLORS常量已移除，因为新的SunburstChart组件有自己的颜色定义
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
 
 const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
+  const [chartType, setChartType] = React.useState<'sunburst' | 'pie' | 'bar'>('sunburst');
   // 递归计算任务的总时间（包括子任务）
   const calculateTotalTime = (task: TimerTask): number => {
     let total = task.elapsedTime;
@@ -229,6 +230,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     return `${mins}m`;
   };
 
+  const handleChartHover = (type: 'sunburst' | 'pie' | 'bar') => {
+    setChartType(type);
+  };
+
   // CustomTooltip 函数已移除，因为新的SunburstChart组件有自己的tooltip实现
 
   if (tasks.length === 0) {
@@ -340,10 +345,103 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         </Card>
       )}
 
-      {/* 旭日图 */}
-      {sunburstData.children && sunburstData.children.length > 0 && (
-        <SunburstChart data={sunburstData} width={400} height={400} />
-      )}
+      {/* 图表切换区域 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>时间分布图表</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* 图表类型选择器 */}
+          <div className="flex gap-2 mb-4">
+            <div 
+              className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                chartType === 'sunburst' 
+                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-300' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+              onMouseEnter={() => handleChartHover('sunburst')}
+            >
+              旭日图
+            </div>
+            <div 
+              className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                chartType === 'pie' 
+                  ? 'bg-green-100 text-green-700 border-2 border-green-300' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+              onMouseEnter={() => handleChartHover('pie')}
+            >
+              饼图
+            </div>
+            <div 
+              className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                chartType === 'bar' 
+                  ? 'bg-purple-100 text-purple-700 border-2 border-purple-300' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+              onMouseEnter={() => handleChartHover('bar')}
+            >
+              柱状图
+            </div>
+          </div>
+
+          {/* 图表显示区域 */}
+          <div className="h-96 flex items-center justify-center">
+            {chartType === 'sunburst' && sunburstData.children && sunburstData.children.length > 0 && (
+              <SunburstChart data={sunburstData} width={400} height={400} />
+            )}
+            
+            {chartType === 'pie' && categoryStats.length > 0 && (
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={categoryStats}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {categoryStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [formatTime(value), '时间']}
+                    labelFormatter={(label) => `分类: ${label}`}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            
+            {chartType === 'bar' && taskStats.length > 0 && (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={taskStats}>
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={12}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [formatTime(value), '时间']}
+                    labelFormatter={(label) => `任务: ${label}`}
+                  />
+                  <Bar dataKey="time" fill="#8884d8">
+                    {taskStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 任务时间排行 */}
       {taskStats.length > 0 && (

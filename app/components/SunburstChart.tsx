@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 interface SunburstData {
   name: string;
@@ -199,95 +198,88 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>时间分布旭日图</CardTitle>
-      </CardHeader>
-      <CardContent>
-                <div className="relative">
-          <svg width={width} height={height} className="mx-auto">
-            <g>
-              {/* 中心点击区域 */}
-              {currentView !== data && (
-                <circle
-                  cx={centerX}
-                  cy={centerY}
-                  r={radius * 0.3}
-                  fill="rgba(255,255,255,0.1)"
-                  stroke="rgba(255,255,255,0.3)"
-                  strokeWidth="2"
-                  style={{ cursor: 'pointer' }}
-                  onClick={handleCenterClick}
-                />
+    <div className="relative">
+      <svg width={width} height={height} className="mx-auto">
+        <g>
+          {/* 中心点击区域 */}
+          {currentView !== data && (
+            <circle
+              cx={centerX}
+              cy={centerY}
+              r={radius * 0.3}
+              fill="rgba(255,255,255,0.1)"
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="2"
+              style={{ cursor: 'pointer' }}
+              onClick={handleCenterClick}
+            />
+          )}
+          {paths.map((pathData, index) => (
+            <g key={index}>
+              <path
+                d={pathData.path}
+                fill={pathData.color}
+                stroke="#fff"
+                strokeWidth={1}
+                opacity={hoveredNode?.name === pathData.node.name ? 0.8 : 0.6}
+                style={{ cursor: 'pointer' }}
+                onClick={() => handlePathClick(pathData.node)}
+                onMouseEnter={() => handlePathMouseEnter(pathData.node)}
+                onMouseLeave={handlePathMouseLeave}
+              />
+              {/* 添加文本标签 */}
+              {pathData.node.children && pathData.node.children.length === 0 && (
+                <text
+                  x={centerX + (pathData.radius * 0.7) * Math.cos((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
+                  y={centerY + (pathData.radius * 0.7) * Math.sin((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="10"
+                  fill="#fff"
+                  fontWeight="bold"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {pathData.node.name.length > 8 ? 
+                    pathData.node.name.substring(0, 8) + '...' : 
+                    pathData.node.name
+                  }
+                </text>
               )}
-              {paths.map((pathData, index) => (
-                <g key={index}>
-                  <path
-                    d={pathData.path}
-                    fill={pathData.color}
-                    stroke="#fff"
-                    strokeWidth={1}
-                    opacity={hoveredNode?.name === pathData.node.name ? 0.8 : 0.6}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handlePathClick(pathData.node)}
-                    onMouseEnter={() => handlePathMouseEnter(pathData.node)}
-                    onMouseLeave={handlePathMouseLeave}
-                  />
-                  {/* 添加文本标签 */}
-                  {pathData.node.children && pathData.node.children.length === 0 && (
-                    <text
-                      x={centerX + (pathData.radius * 0.7) * Math.cos((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                      y={centerY + (pathData.radius * 0.7) * Math.sin((pathData.startAngle + pathData.endAngle) / 2 * Math.PI / 180)}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize="10"
-                      fill="#fff"
-                      fontWeight="bold"
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      {pathData.node.name.length > 8 ? 
-                        pathData.node.name.substring(0, 8) + '...' : 
-                        pathData.node.name
-                      }
-                    </text>
-                  )}
-                </g>
-              ))}
             </g>
-          </svg>
-          
-          {/* 悬停提示 */}
-          {hoveredNode && (
-            <div className="absolute bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs z-10"
-                 style={{
-                   left: Math.min(width - 200, Math.max(0, centerX - 100)),
-                   top: Math.min(height - 100, Math.max(0, centerY - 50))
-                 }}>
-              <p className="font-medium text-gray-800">{hoveredNode.name}</p>
-              <p className="text-blue-600 font-semibold">
-                {formatTime(Math.round(hoveredNode.value / 60))}
-              </p>
-              {hoveredNode.children && hoveredNode.children.length > 0 && (
-                <div className="text-xs text-gray-500 mt-1">
-                  <p className="font-medium">包含子项:</p>
-                  {hoveredNode.children.slice(0, 3).map((child, index) => (
-                    <p key={index} className="ml-2">• {child.name}</p>
-                  ))}
-                  {hoveredNode.children.length > 3 && (
-                    <p className="ml-2 text-gray-400">...还有 {hoveredNode.children.length - 3} 项</p>
-                  )}
-                </div>
+          ))}
+        </g>
+      </svg>
+      
+      {/* 悬停提示 */}
+      {hoveredNode && (
+        <div className="absolute bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs z-10"
+             style={{
+               left: Math.min(width - 200, Math.max(0, centerX - 100)),
+               top: Math.min(height - 100, Math.max(0, centerY - 50))
+             }}>
+          <p className="font-medium text-gray-800">{hoveredNode.name}</p>
+          <p className="text-blue-600 font-semibold">
+            {formatTime(Math.round(hoveredNode.value / 60))}
+          </p>
+          {hoveredNode.children && hoveredNode.children.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              <p className="font-medium">包含子项:</p>
+              {hoveredNode.children.slice(0, 3).map((child, index) => (
+                <p key={index} className="ml-2">• {child.name}</p>
+              ))}
+              {hoveredNode.children.length > 3 && (
+                <p className="ml-2 text-gray-400">...还有 {hoveredNode.children.length - 3} 项</p>
               )}
             </div>
           )}
         </div>
-        
-        <div className="mt-4 text-sm text-gray-600 text-center">
-          <p>点击扇形区域进入该类别，点击中心区域返回上一级</p>
-          <p className="text-xs text-gray-500 mt-1">当前查看: {currentView.name}</p>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+      
+      <div className="mt-4 text-sm text-gray-600 text-center">
+        <p>点击扇形区域进入该类别，点击中心区域返回上一级</p>
+        <p className="text-xs text-gray-500 mt-1">当前查看: {currentView.name}</p>
+      </div>
+    </div>
   );
 };
 

@@ -1,41 +1,69 @@
 'use client'
 
 import React from 'react';
-import SunburstChart from '../components/SunburstChart';
+import TimeStatsChart from '../components/TimeStatsChart';
 
 const TestSunburstPage = () => {
   // 测试数据
-  const testData = {
-    name: '总时间',
-    value: 480, // 8小时
-    children: [
-      {
-        name: '工作',
-        value: 240, // 4小时
-        children: [
-          { name: '编程', value: 120 },
-          { name: '会议', value: 60 },
-          { name: '文档', value: 60 }
-        ]
-      },
-      {
-        name: '学习',
-        value: 120, // 2小时
-        children: [
-          { name: '阅读', value: 60 },
-          { name: '练习', value: 60 }
-        ]
-      },
-      {
-        name: '休息',
-        value: 120, // 2小时
-        children: [
-          { name: '娱乐', value: 90 },
-          { name: '运动', value: 30 }
-        ]
-      }
-    ]
-  };
+  const testTasks = [
+    {
+      id: '1',
+      name: '编程',
+      categoryPath: '工作/开发',
+      elapsedTime: 7200, // 2小时
+      initialTime: 3600,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      children: [
+        {
+          id: '1-1',
+          name: '前端开发',
+          categoryPath: '工作/开发/前端',
+          elapsedTime: 3600,
+          initialTime: 1800,
+          isRunning: false,
+          startTime: null,
+          isPaused: false,
+          pausedTime: 0
+        },
+        {
+          id: '1-2',
+          name: '后端开发',
+          categoryPath: '工作/开发/后端',
+          elapsedTime: 3600,
+          initialTime: 1800,
+          isRunning: false,
+          startTime: null,
+          isPaused: false,
+          pausedTime: 0
+        }
+      ]
+    },
+    {
+      id: '2',
+      name: '会议',
+      categoryPath: '工作/沟通',
+      elapsedTime: 1800, // 30分钟
+      initialTime: 1800,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0
+    },
+    {
+      id: '3',
+      name: '阅读',
+      categoryPath: '学习/阅读',
+      elapsedTime: 3600, // 1小时
+      initialTime: 3600,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -43,18 +71,18 @@ const TestSunburstPage = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-8">旭日图组件测试</h1>
         
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <SunburstChart data={testData} width={500} height={500} />
+          <TimeStatsChart tasks={testTasks} />
         </div>
         
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">测试说明</h2>
           <ul className="space-y-2 text-gray-600">
-            <li>• 这是一个真正的圆形旭日图，不是矩形树图</li>
-            <li>• 支持多层嵌套数据结构</li>
-            <li>• 鼠标悬停显示详细信息</li>
-            <li>• 点击扇形区域进入该类别</li>
-            <li>• 点击中心区域返回上一级</li>
-            <li>• 颜色自动分配，支持自定义颜色</li>
+            <li>• 三种图表类型：旭日图、饼图、柱状图</li>
+            <li>• 鼠标悬停切换图表类型</li>
+            <li>• 使用原生Recharts组件</li>
+            <li>• 旭日图：点击扇形区域进入该类别，点击中心区域返回上一级</li>
+            <li>• 饼图：显示分类时间分布</li>
+            <li>• 柱状图：显示任务时间排行</li>
           </ul>
         </div>
       </div>
