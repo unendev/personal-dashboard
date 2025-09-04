@@ -154,6 +154,26 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const addTodo = async () => {
     if (!newTodo.trim()) return;
 
+    // 乐观更新：立即添加到UI
+    const optimisticTodo = {
+      id: `temp-${Date.now()}`,
+      text: newTodo.trim(),
+      completed: false,
+      createdAtUnix: Date.now(),
+      priority: 'medium' as const,
+      category: newCategory.trim() || undefined,
+      date,
+      userId,
+      parentId: null,
+      children: [],
+      order: 0
+    };
+
+    const todoWithChildren = { ...optimisticTodo, children: [] };
+    setTodos([todoWithChildren, ...todos]);
+    setNewTodo('');
+    setNewCategory('');
+
     try {
       const response = await fetch('/api/todos', {
         method: 'POST',
@@ -162,24 +182,36 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         },
         body: JSON.stringify({
           userId,
-          text: newTodo.trim(),
-          category: newCategory.trim() || undefined,
+          text: optimisticTodo.text,
+          category: optimisticTodo.category,
           date,
-          parentId: null // 顶级任务
+          parentId: null
         }),
       });
 
       if (response.ok) {
-        const todo = await response.json();
-        // 新任务添加到列表最前面
-        const todoWithChildren = { ...todo, children: [] };
-        setTodos([todoWithChildren, ...todos]);
-        setNewTodo('');
-        setNewCategory('');
-        console.log('新任务已添加到列表前面:', todo.text);
+        const realTodo = await response.json();
+        // 用真实数据替换临时数据
+        setTodos(prevTodos => 
+          prevTodos.map(todo => 
+            todo.id === optimisticTodo.id ? { ...realTodo, children: [] } : todo
+          )
+        );
+        console.log('新任务已添加到列表前面:', realTodo.text);
+      } else {
+        // 如果失败，回滚乐观更新
+        setTodos(prevTodos => prevTodos.filter(todo => todo.id !== optimisticTodo.id));
+        setNewTodo(optimisticTodo.text);
+        setNewCategory(optimisticTodo.category || '');
+        alert('添加任务失败，请重试');
       }
     } catch (error) {
       console.error('Failed to add todo:', error);
+      // 回滚乐观更新
+      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== optimisticTodo.id));
+      setNewTodo(optimisticTodo.text);
+      setNewCategory(optimisticTodo.category || '');
+      alert('添加任务失败，请重试');
     }
   };
 
@@ -190,6 +222,43 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       return;
     }
 
+    // 乐观更新：立即添加到UI
+    const optimisticSubtask = {
+      id: `temp-subtask-${Date.now()}`,
+      text: newSubtaskText.trim(),
+      completed: false,
+      createdAtUnix: Date.now(),
+      priority: 'medium' as const,
+      category: newSubtaskCategory.trim() || undefined,
+      date,
+      userId,
+      parentId: parentId,
+      children: [],
+      order: 0
+    };
+
+    const subtaskWithChildren = { ...optimisticSubtask, children: [] };
+
+    const addSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
+      return todoList.map(todo => {
+        if (todo.id === parentId) {
+          return {
+            ...todo,
+            children: [subtaskWithChildren, ...(todo.children || [])]
+          };
+        }
+        if (todo.children) {
+          return { ...todo, children: addSubtaskRecursive(todo.children) };
+        }
+        return todo;
+      });
+    };
+
+    setTodos(addSubtaskRecursive(todos));
+    setNewSubtaskText('');
+    setNewSubtaskCategory('');
+    setShowAddSubtaskDialog(null);
+
     try {
       const response = await fetch('/api/todos', {
         method: 'POST',
@@ -198,40 +267,80 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         },
         body: JSON.stringify({
           userId,
-          text: newSubtaskText.trim(),
-          category: newSubtaskCategory.trim() || undefined,
+          text: optimisticSubtask.text,
+          category: optimisticSubtask.category,
           date,
           parentId: parentId
         }),
       });
 
       if (response.ok) {
-        const subtask = await response.json();
-        const subtaskWithChildren = { ...subtask, children: [] };
+        const realSubtask = await response.json();
+        const realSubtaskWithChildren = { ...realSubtask, children: [] };
 
-        const addSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
+        const updateSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
           return todoList.map(todo => {
             if (todo.id === parentId) {
               return {
                 ...todo,
-                children: [subtaskWithChildren, ...(todo.children || [])]
+                children: todo.children?.map(child => 
+                  child.id === optimisticSubtask.id ? realSubtaskWithChildren : child
+                ) || []
               };
             }
             if (todo.children) {
-              return { ...todo, children: addSubtaskRecursive(todo.children) };
+              return { ...todo, children: updateSubtaskRecursive(todo.children) };
             }
             return todo;
           });
         };
 
-        setTodos(addSubtaskRecursive(todos));
-        setNewSubtaskText('');
-        setNewSubtaskCategory('');
-        setShowAddSubtaskDialog(null);
-        console.log('子任务已添加:', subtask.text);
+        setTodos(updateSubtaskRecursive(todos));
+        console.log('子任务已添加:', realSubtask.text);
+      } else {
+        // 如果失败，回滚乐观更新
+        const removeSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
+          return todoList.map(todo => {
+            if (todo.id === parentId) {
+              return {
+                ...todo,
+                children: todo.children?.filter(child => child.id !== optimisticSubtask.id) || []
+              };
+            }
+            if (todo.children) {
+              return { ...todo, children: removeSubtaskRecursive(todo.children) };
+            }
+            return todo;
+          });
+        };
+        setTodos(removeSubtaskRecursive(todos));
+        setNewSubtaskText(optimisticSubtask.text);
+        setNewSubtaskCategory(optimisticSubtask.category || '');
+        setShowAddSubtaskDialog(parentId);
+        alert('添加子任务失败，请重试');
       }
     } catch (error) {
       console.error('Failed to add subtask:', error);
+      // 回滚乐观更新
+      const removeSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
+        return todoList.map(todo => {
+          if (todo.id === parentId) {
+            return {
+              ...todo,
+              children: todo.children?.filter(child => child.id !== optimisticSubtask.id) || []
+            };
+          }
+          if (todo.children) {
+            return { ...todo, children: removeSubtaskRecursive(todo.children) };
+          }
+          return todo;
+        });
+      };
+      setTodos(removeSubtaskRecursive(todos));
+      setNewSubtaskText(optimisticSubtask.text);
+      setNewSubtaskCategory(optimisticSubtask.category || '');
+      setShowAddSubtaskDialog(parentId);
+      alert('添加子任务失败，请重试');
     }
   };
 
@@ -251,6 +360,20 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     const todo = findTodoRecursive(todos, id);
     if (!todo) return;
 
+    // 乐观更新：立即更新UI
+    const updateRecursive = (todoList: TodoItem[]): TodoItem[] => {
+      return todoList.map(todo => {
+        if (todo.id === id) {
+          return { ...todo, completed: !todo.completed };
+        }
+        if (todo.children) {
+          return { ...todo, children: updateRecursive(todo.children) };
+        }
+        return todo;
+      });
+    };
+    setTodos(updateRecursive(todos));
+
     try {
       const response = await fetch('/api/todos', {
         method: 'PUT',
@@ -266,51 +389,70 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         }),
       });
 
-      if (response.ok) {
-        const updateRecursive = (todoList: TodoItem[]): TodoItem[] => {
-          return todoList.map(todo => {
-            if (todo.id === id) {
-              return { ...todo, completed: !todo.completed };
-            }
-            if (todo.children) {
-              return { ...todo, children: updateRecursive(todo.children) };
-            }
-            return todo;
-          });
-        };
-        setTodos(updateRecursive(todos));
+      if (!response.ok) {
+        // 如果失败，回滚乐观更新
+        setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+        alert('更新任务状态失败，请重试');
       }
     } catch (error) {
       console.error('Failed to toggle todo:', error);
+      // 回滚乐观更新
+      setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+      alert('更新任务状态失败，请重试');
     }
   };
 
   const deleteTodo = async (id: string) => {
+    // 乐观更新：立即从UI中删除
+    const deleteRecursive = (todoList: TodoItem[]): TodoItem[] => {
+      return todoList.filter(todo => {
+        if (todo.id === id) return false;
+        if (todo.children) {
+          todo.children = deleteRecursive(todo.children);
+        }
+        return true;
+      });
+    };
+    
+    // 保存原始状态用于回滚
+    const originalTodos = todos;
+    setTodos(deleteRecursive(todos));
+
     try {
       const response = await fetch(`/api/todos?id=${id}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        const deleteRecursive = (todoList: TodoItem[]): TodoItem[] => {
-          return todoList.filter(todo => {
-            if (todo.id === id) return false;
-            if (todo.children) {
-              todo.children = deleteRecursive(todo.children);
-            }
-            return true;
-          });
-        };
-        setTodos(deleteRecursive(todos));
+      if (!response.ok) {
+        // 如果失败，回滚乐观更新
+        setTodos(originalTodos);
+        alert('删除任务失败，请重试');
       }
     } catch (error) {
       console.error('Failed to delete todo:', error);
+      // 回滚乐观更新
+      setTodos(originalTodos);
+      alert('删除任务失败，请重试');
     }
   };
 
   const updatePriority = async (id: string, priority: 'low' | 'medium' | 'high') => {
     const todo = findTodoRecursive(todos, id);
     if (!todo) return;
+
+    // 乐观更新：立即更新UI
+    const updateRecursive = (todoList: TodoItem[]): TodoItem[] => {
+      return todoList.map(todo => {
+        if (todo.id === id) {
+          return { ...todo, priority };
+        }
+        if (todo.children) {
+          return { ...todo, children: updateRecursive(todo.children) };
+        }
+        return todo;
+      });
+    };
+    setTodos(updateRecursive(todos));
 
     try {
       const response = await fetch('/api/todos', {
@@ -327,22 +469,16 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
         }),
       });
 
-      if (response.ok) {
-        const updateRecursive = (todoList: TodoItem[]): TodoItem[] => {
-          return todoList.map(todo => {
-            if (todo.id === id) {
-              return { ...todo, priority };
-            }
-            if (todo.children) {
-              return { ...todo, children: updateRecursive(todo.children) };
-            }
-            return todo;
-          });
-        };
-        setTodos(updateRecursive(todos));
+      if (!response.ok) {
+        // 如果失败，回滚乐观更新
+        setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+        alert('更新优先级失败，请重试');
       }
     } catch (error) {
       console.error('Failed to update priority:', error);
+      // 回滚乐观更新
+      setTodos(updateRecursive(todos)); // 再次调用会恢复原状态
+      alert('更新优先级失败，请重试');
     }
   };
 
@@ -469,18 +605,18 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
                 <option value="high">高</option>
               </select>
               <Button
-                variant="outline"
-                size="sm"
+                variant="subtask"
+                size="xs"
                 onClick={() => setShowAddSubtaskDialog(todo.id)}
-                className="text-green-600 hover:text-green-700 text-xs p-1 h-6 w-12"
+                className="text-xs p-1 h-6 w-12"
               >
                 ➕
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="delete"
+                size="xs"
                 onClick={() => deleteTodo(todo.id)}
-                className="text-red-600 hover:text-red-700 p-1 h-6 w-6"
+                className="p-1 h-6 w-6"
               >
                 ×
               </Button>
@@ -552,18 +688,16 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <option value="high">高</option>
             </select>
             <Button
-              variant="outline"
+              variant="subtask"
               size="sm"
               onClick={() => setShowAddSubtaskDialog(todo.id)}
-              className="text-green-600 hover:text-green-700 border-green-400"
             >
               ➕ 子任务
             </Button>
             <Button
-              variant="ghost"
+              variant="delete"
               size="sm"
               onClick={() => deleteTodo(todo.id)}
-              className="text-red-600 hover:text-red-700"
             >
               删除
             </Button>
@@ -610,8 +744,8 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               placeholder="分类"
               className="w-20 text-sm"
             />
-            <Button onClick={addTodo} size="sm" className="bg-purple-500 hover:bg-purple-600">
-              添加
+            <Button onClick={addTodo} size="sm" variant="create">
+              ➕ 添加
             </Button>
           </div>
 
@@ -702,8 +836,8 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
                 取消
               </Button>
-              <Button onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
-                添加子任务
+              <Button variant="subtask" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
+                ➕ 添加子任务
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -852,14 +986,14 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
-              取消
-            </Button>
-            <Button onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
-              添加子任务
-            </Button>
-          </DialogFooter>
+                      <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
+                取消
+              </Button>
+              <Button variant="subtask" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
+                ➕ 添加子任务
+              </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

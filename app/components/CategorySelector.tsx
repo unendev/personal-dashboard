@@ -314,9 +314,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
           <p className="text-gray-600 text-sm mb-4">暂无分类，请先创建分类</p>
           <Button
             onClick={() => handleCreateCategory('top')}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            variant="category"
+            size="sm"
           >
-            + 创建顶级分类
+            ➕ 创建顶级分类
           </Button>
         </div>
       </div>
@@ -330,9 +331,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
         <h3 className="text-lg font-semibold text-gray-800">分类管理</h3>
         <Button
           onClick={() => handleCreateCategory('top')}
-          className="bg-green-600 hover:bg-green-700"
+          variant="category"
+          size="sm"
         >
-          + 创建顶级分类
+          ➕ 创建顶级分类
         </Button>
       </div>
       
@@ -475,8 +477,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmitWithFormat} disabled={!taskName.trim()}>
-              添加到计时器
+            <Button variant="timer" onClick={handleSubmitWithFormat} disabled={!taskName.trim()}>
+              ⏱️ 添加到计时器
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -500,8 +502,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
               取消
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              确认删除
+            <Button variant="delete" onClick={confirmDelete}>
+              🗑️ 确认删除
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -535,8 +537,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               取消
             </Button>
-            <Button onClick={confirmCreate} disabled={!newCategoryName.trim()}>
-              创建分类
+            <Button variant="category" onClick={confirmCreate} disabled={!newCategoryName.trim()}>
+              ➕ 创建分类
             </Button>
           </DialogFooter>
         </DialogContent>

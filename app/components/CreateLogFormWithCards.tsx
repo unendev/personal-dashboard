@@ -75,9 +75,10 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         onClick={handleSubmit}
         disabled={isLoading}
         className="w-full"
-        size="lg"
+        size="xl"
+        variant="timer"
       >
-        {isLoading ? '添加中...' : '添加到计时器'}
+        {isLoading ? '添加中...' : '⏱️ 添加到计时器'}
       </Button>
     </div>
   );

@@ -209,7 +209,7 @@ export default function LogPage() {
       <div className="fixed top-4 left-20 z-40">
         <button
           onClick={() => setIsCreateLogModalOpen(true)}
-          className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-all duration-300 min-w-[140px] flex items-center gap-2"
+          className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all duration-300 min-w-[140px] flex items-center gap-2 transform hover:scale-105"
         >
           <span className="text-xl">📝</span>
           <span className="text-sm font-medium">创建事物</span>
@@ -219,7 +219,7 @@ export default function LogPage() {
       {/* 操作记录折叠栏 - 右侧 */}
       <div className="fixed top-4 right-4 z-40" ref={operationHistoryRef}>
         <div 
-          className="bg-white rounded-lg shadow-lg p-4 cursor-pointer hover:shadow-xl transition-all duration-300 min-w-[140px]"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transition-all duration-300 min-w-[140px] transform hover:scale-105"
           onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
         >
           <div className="flex items-center justify-between gap-3">
