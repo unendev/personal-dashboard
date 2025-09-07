@@ -316,21 +316,11 @@ export default function LogPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* 任务清单 */}
-          <Card className="hover:shadow-lg transition-shadow duration-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">📋</span>
-                任务清单
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DateBasedTodoList 
-                userId={userId}
-                date={selectedDate}
-                compact={true}
-              />
-            </CardContent>
-          </Card>
+          <DateBasedTodoList 
+            userId={userId}
+            date={selectedDate}
+            compact={true}
+          />
 
           {/* 计时器 */}
           <Card className="hover:shadow-lg transition-shadow duration-200">

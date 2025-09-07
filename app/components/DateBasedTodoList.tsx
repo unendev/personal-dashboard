@@ -887,7 +887,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="space-y-2 max-h-60 overflow-y-auto timer-scroll-area">
+            <div className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area">
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mx-auto"></div>
