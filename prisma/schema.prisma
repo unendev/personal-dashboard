@@ -8,23 +8,23 @@ datasource db {
 }
 
 model User {
-  id                          String      @id @default(cuid())
-  email                       String      @unique
+  id                          String            @id @default(cuid())
+  email                       String            @unique
   name                        String?
-  createdAt                   DateTime    @default(now())
-  updatedAt                   DateTime    @updatedAt
-  spotifyId                   String?     @unique
-  spotifyAccessToken          String?     @map("spotify_access_token")
-  spotifyAccessTokenExpiresAt DateTime?   @map("spotify_access_token_expires_at")
-  spotifyRefreshToken         String?     @map("spotify_refresh_token")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  spotifyId                   String?           @unique
+  spotifyAccessToken          String?           @map("spotify_access_token")
+  spotifyAccessTokenExpiresAt DateTime?         @map("spotify_access_token_expires_at")
+  spotifyRefreshToken         String?           @map("spotify_refresh_token")
+  aiSummaries                 AISummary[]
   logs                        Log[]
+  operationRecords            OperationRecord[]
   quests                      Quest[]
   skills                      Skill[]
-  layout                      UserLayout?
   timerTasks                  TimerTask[]
   todos                       Todo[]
-  operationRecords            OperationRecord[]
-  aiSummaries                 AISummary[]
+  layout                      UserLayout?
 
   @@map("users")
 }
@@ -128,74 +128,74 @@ model UserLayout {
 }
 
 model TimerTask {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   name         String
   categoryPath String
-  elapsedTime  Int      @default(0)
-  initialTime  Int      @default(0)
-  isRunning    Boolean  @default(false)
-  startTime    Int?     // Unix timestamp in seconds
-  isPaused     Boolean  @default(false)
-  pausedTime   Int      @default(0)
-  completedAt  Int?     // Unix timestamp in seconds
-  date         String   // ISO date string
+  elapsedTime  Int         @default(0)
+  initialTime  Int         @default(0)
+  isRunning    Boolean     @default(false)
+  startTime    Int?
+  isPaused     Boolean     @default(false)
+  pausedTime   Int         @default(0)
+  completedAt  Int?
+  date         String
   userId       String
-  parentId     String?  // 父任务ID，支持嵌套
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       TimerTask? @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  parent       TimerTask?  @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children     TimerTask[] @relation("TaskHierarchy")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("timer_tasks")
 }
 
 model Todo {
-  id          String   @id @default(cuid())
-  text        String
-  completed   Boolean  @default(false)
-  createdAtUnix Int      // Unix timestamp
-  priority    String   @default("medium") // low, medium, high
-  category    String?
-  userId      String
-  date        String   // ISO date string
-  parentId    String?  // 父任务ID，支持嵌套
-  order       Int      @default(0) // 排序字段
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent      Todo?    @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Todo[]   @relation("TodoHierarchy")
-  createdAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  text          String
+  completed     Boolean  @default(false)
+  createdAtUnix Int
+  priority      String   @default("medium")
+  category      String?
+  userId        String
+  date          String
+  parentId      String?
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  parent        Todo?    @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Todo[]   @relation("TodoHierarchy")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("todos")
 }
 
 model OperationRecord {
-  id          String   @id @default(cuid())
-  action      String   // 操作类型：开始计时、暂停计时、继续计时、完成任务等
-  taskName    String   // 任务名称
-  details     String?  // 详细信息
-  userId      String
-  timestamp   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  action    String
+  taskName  String
+  details   String?
+  userId    String
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("operation_records")
 }
 
 model AISummary {
-  id          String   @id @default(cuid())
-  userId      String
-  date        String   // ISO date string
-  summary     String   // AI生成的总结内容
-  totalTime   Int      // 总工作时间（秒）
-  taskCount   Int      // 任务数量
-  insights    Json     // AI洞察（数组）
-  categories  Json     // 分类统计（对象）
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  date       String
+  summary    String
+  totalTime  Int
+  taskCount  Int
+  insights   Json
+  categories Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, date]) // 每个用户每天只能有一条总结记录
+  @@unique([userId, date])
   @@map("ai_summaries")
 }
 

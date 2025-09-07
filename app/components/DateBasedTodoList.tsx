@@ -193,21 +193,31 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     const todoMap = new Map<string, TodoItem>();
     const rootTodos: TodoItem[] = [];
 
-    // 第一遍：创建所有todo的映射
+    // 第一遍：创建所有todo的映射，确保每个todo都有children数组
     flatTodos.forEach(todo => {
-      todoMap.set(todo.id, { ...todo, children: [] });
+      todoMap.set(todo.id, { 
+        ...todo, 
+        children: [],
+        // 确保parentId字段正确
+        parentId: todo.parentId || null
+      });
     });
 
     // 第二遍：建立父子关系
     flatTodos.forEach(todo => {
       const todoItem = todoMap.get(todo.id)!;
-      if (todo.parentId) {
+      if (todo.parentId && todo.parentId !== null) {
         const parent = todoMap.get(todo.parentId);
         if (parent) {
           parent.children = parent.children || [];
           parent.children.push(todoItem);
+        } else {
+          // 如果找不到父任务，将其作为根任务
+          console.warn(`找不到父任务 ${todo.parentId}，将任务 ${todo.id} 作为根任务`);
+          rootTodos.push(todoItem);
         }
       } else {
+        // 确保没有parentId的任务被添加到根任务
         rootTodos.push(todoItem);
       }
     });

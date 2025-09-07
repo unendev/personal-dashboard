@@ -71,6 +71,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     setShowDialog(true);
   };
 
+  // 时间黑洞直接创建功能 - 使用分类名作为任务名
+  const handleTimeHoleCreate = async (topName: string, midName: string, subName: string) => {
+    const path = `${topName}/${midName}/${subName}`;
+    const taskName = subName || midName || topName; // 使用最具体的分类名作为任务名
+    
+    // 直接创建时间黑洞任务，不需要用户输入
+    await handleOptimisticAddToTimer(taskName, path, 0);
+  };
+
   const handleDeleteCategory = (type: string, path: string, name: string) => {
     setDeleteTarget({ type, path, name });
     setShowDeleteConfirm(true);
@@ -292,7 +301,18 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
           <Card key={topCategory.name} className="shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
               <CardTitle className="text-lg font-bold text-gray-800 flex justify-between items-center">
-                {topCategory.name}
+                <div className="flex items-center gap-2">
+                  <span>{topCategory.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    onClick={() => handleTimeHoleCreate(topCategory.name, '', '')}
+                    title="时间黑洞 - 直接创建"
+                  >
+                    🕳️
+                  </Button>
+                </div>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
@@ -320,7 +340,18 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                   <Card key={midCategory.name} className="border border-gray-200 hover:border-blue-300 transition-colors">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-semibold text-gray-700 flex justify-between items-center">
-                        {midCategory.name}
+                        <div className="flex items-center gap-2">
+                          <span>{midCategory.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs"
+                            onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
+                            title="时间黑洞 - 直接创建"
+                          >
+                            🕳️
+                          </Button>
+                        </div>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
@@ -349,10 +380,20 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs hover:bg-blue-50 hover:border-blue-300 pr-8"
+                              className="text-xs hover:bg-blue-50 hover:border-blue-300 pr-16"
                               onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
                             >
                               {subCategory.name}
+                            </Button>
+                            {/* 时间黑洞按钮 */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-6 top-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, subCategory.name)}
+                              title="时间黑洞 - 直接创建"
+                            >
+                              🕳️
                             </Button>
                             <Button
                               variant="ghost"
@@ -364,16 +405,27 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                             </Button>
                           </div>
                         ))}
-                        {/* 如果中类没有子类，显示一个通用按钮 */}
+                        {/* 如果中类没有子类，显示通用按钮和时间黑洞按钮 */}
                         {(!midCategory.children || midCategory.children.length === 0) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs hover:bg-blue-50 hover:border-blue-300"
-                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
-                          >
-                            直接创建任务
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs hover:bg-blue-50 hover:border-blue-300"
+                              onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
+                            >
+                              直接创建任务
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs hover:bg-purple-50 hover:border-purple-300 text-purple-600"
+                              onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
+                              title="时间黑洞 - 直接创建"
+                            >
+                              🕳️ 时间黑洞
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </CardContent>
