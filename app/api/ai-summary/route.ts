@@ -36,11 +36,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 如果没有保存的总结，实时生成（仅用于测试或手动触发）
-    const summary = await AIService.generateSummary(userId, date);
+    // 如果没有保存的总结，返回空数据而不是实时生成
+    // 这样可以避免每次刷新页面都调用AI API
     return NextResponse.json({
-      ...summary,
-      isFromCache: false
+      summary: "暂无AI总结数据。请等待定时任务生成或手动触发生成。",
+      totalTime: 0,
+      taskCount: 0,
+      insights: [],
+      categories: {},
+      isFromCache: false,
+      needsGeneration: true
     });
   } catch (error) {
     console.error('Error fetching AI summary:', error);

@@ -56,14 +56,30 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
   const buildSunburstData = () => {
     const categoryMap = new Map<string, { time: number; tasks: TimerTask[] }>();
     
-    const allTasks = getAllTasksFlat(tasks);
-    allTasks.forEach(task => {
+    // 只统计顶级任务，子任务的时间已经包含在父任务的calculateTotalTime中
+    tasks.forEach(task => {
       const category = task.categoryPath || '未分类';
-      const current = categoryMap.get(category) || { time: 0, tasks: [] };
-      const taskTotalTime = calculateTotalTime(task);
+      const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
+      
+      // 根据分类层级决定统计到哪个级别
+      const categoryParts = category.split('/');
+      let targetCategory: string;
+      
+      // 如果有三级分类，统计到第二级（父类）
+      if (categoryParts.length >= 3) {
+        targetCategory = categoryParts.slice(0, 2).join('/');
+      } else if (categoryParts.length === 2) {
+        // 如果有两级分类，统计到第一级
+        targetCategory = categoryParts[0];
+      } else {
+        // 如果只有一级分类，直接统计
+        targetCategory = category;
+      }
+      
+      const current = categoryMap.get(targetCategory) || { time: 0, tasks: [] };
       current.time += taskTotalTime;
       current.tasks.push(task);
-      categoryMap.set(category, current);
+      categoryMap.set(targetCategory, current);
     });
 
     // 构建层级结构
@@ -91,7 +107,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         } else {
           const newChild = {
             name: part,
-            value: index === categoryParts.length - 1 ? Math.max(value.time, 0) : 0,
+            value: Math.max(value.time, 0),
             children: [],
             tasks: index === categoryParts.length - 1 ? value.tasks : []
           };
@@ -112,25 +128,41 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
     return root;
   };
 
-  // 按分类统计时间（包含子任务）
+  // 按分类统计时间（只统计顶级任务，子任务时间包含在父任务中）
   const getCategoryStats = () => {
     const categoryMap = new Map<string, number>();
     
-    const allTasks = getAllTasksFlat(tasks);
-    allTasks.forEach(task => {
+    // 只统计顶级任务，子任务的时间已经包含在父任务的calculateTotalTime中
+    tasks.forEach(task => {
       const category = task.categoryPath || '未分类';
-      const currentTime = categoryMap.get(category) || 0;
-      const taskTotalTime = calculateTotalTime(task);
-      categoryMap.set(category, currentTime + taskTotalTime);
+      const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
+      
+      // 根据分类层级决定统计到哪个级别
+      const categoryParts = category.split('/');
+      let targetCategory: string;
+      
+      // 如果有三级分类，统计到第二级（父类）
+      if (categoryParts.length >= 3) {
+        targetCategory = categoryParts.slice(0, 2).join('/');
+      } else if (categoryParts.length === 2) {
+        // 如果有两级分类，统计到第一级
+        targetCategory = categoryParts[0];
+      } else {
+        // 如果只有一级分类，直接统计
+        targetCategory = category;
+      }
+      
+      const currentTime = categoryMap.get(targetCategory) || 0;
+      categoryMap.set(targetCategory, currentTime + taskTotalTime);
     });
     
     return Array.from(categoryMap.entries()).map(([name, value]) => {
-      // 提取最里层分类名称（最后一个斜杠后的部分）
+      // 提取显示名称
       const categoryParts = name.split('/');
       const displayName = categoryParts[categoryParts.length - 1];
       
       return {
-        name: displayName.length > 8 ? displayName.substring(0, 8) + '...' : displayName, // 只显示最里层分类
+        name: displayName.length > 8 ? displayName.substring(0, 8) + '...' : displayName,
         value: Math.round(value / 60), // 转换为分钟
         fullName: name, // 完整分类路径用于悬停显示
         seconds: value, // 保留秒数用于精确显示
@@ -182,12 +214,28 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
   const getMostActiveCategory = () => {
     const categoryMap = new Map<string, number>();
     
-    const allTasks = getAllTasksFlat(tasks);
-    allTasks.forEach(task => {
+    // 只统计顶级任务，子任务的时间已经包含在父任务的calculateTotalTime中
+    tasks.forEach(task => {
       const category = task.categoryPath || '未分类';
-      const currentTime = categoryMap.get(category) || 0;
-      const taskTotalTime = calculateTotalTime(task);
-      categoryMap.set(category, currentTime + taskTotalTime);
+      const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
+      
+      // 根据分类层级决定统计到哪个级别
+      const categoryParts = category.split('/');
+      let targetCategory: string;
+      
+      // 如果有三级分类，统计到第二级（父类）
+      if (categoryParts.length >= 3) {
+        targetCategory = categoryParts.slice(0, 2).join('/');
+      } else if (categoryParts.length === 2) {
+        // 如果有两级分类，统计到第一级
+        targetCategory = categoryParts[0];
+      } else {
+        // 如果只有一级分类，直接统计
+        targetCategory = category;
+      }
+      
+      const currentTime = categoryMap.get(targetCategory) || 0;
+      categoryMap.set(targetCategory, currentTime + taskTotalTime);
     });
     
     if (categoryMap.size === 0) return null;

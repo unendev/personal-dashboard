@@ -1,24 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { AIService } from '@/app/lib/ai-service';
 import { PrismaClient } from '@prisma/client';
-import { AIService } from './ai-service.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// 获取当前文件的目录
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 设置项目根目录
-process.chdir(path.join(__dirname, '..'));
 
 const prisma = new PrismaClient();
 
-/**
- * 生成昨日 AI 总结的定时任务
- * 建议在每天凌晨 1:00 运行
- */
-async function generateDailyAISummary() {
+// POST /api/ai-summary/cron - 定时任务：生成昨日AI总结
+export async function POST(request: NextRequest) {
   try {
-    console.log('开始生成昨日 AI 总结...');
+    // 验证请求来源（可选：添加API密钥验证）
+    const authHeader = request.headers.get('authorization');
+    const expectedToken = process.env.CRON_SECRET_TOKEN;
+    
+    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('开始执行AI总结定时任务...');
     
     // 获取昨天的日期
     const yesterday = new Date();
@@ -29,8 +26,6 @@ async function generateDailyAISummary() {
     
     // 获取所有用户（这里使用硬编码的用户ID，实际项目中应该从数据库获取）
     const userIds = ['user-1']; // 可以根据需要扩展
-    
-    console.log(`处理 ${userIds.length} 个用户`);
     
     const results = [];
     
@@ -89,48 +84,92 @@ async function generateDailyAISummary() {
         console.log(`   总结ID: ${savedSummary.id}`);
         console.log(`   总时间: ${Math.floor(summary.totalTime / 3600)}小时${Math.floor((summary.totalTime % 3600) / 60)}分钟`);
         console.log(`   任务数: ${summary.taskCount}个`);
-        console.log(`   总结: ${summary.summary.substring(0, 100)}...`);
         
       } catch (error) {
-        console.error(`❌ 用户 ${userId} 总结生成失败:`, error.message);
+        console.error(`❌ 用户 ${userId} 总结生成失败:`, error);
         
         results.push({
           userId: userId,
           date: yesterdayStr,
           success: false,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
     
     // 输出总结报告
+    const successCount = results.filter(r => r.success && !r.skipped).length;
+    const skippedCount = results.filter(r => r.skipped).length;
+    const failedCount = results.filter(r => !r.success).length;
+    
     console.log('\n=== AI 总结生成报告 ===');
     console.log(`日期: ${yesterdayStr}`);
     console.log(`总用户数: ${userIds.length}`);
-    console.log(`成功生成: ${results.filter(r => r.success && !r.skipped).length}`);
-    console.log(`跳过生成: ${results.filter(r => r.skipped).length}`);
-    console.log(`生成失败: ${results.filter(r => !r.success).length}`);
+    console.log(`成功生成: ${successCount}`);
+    console.log(`跳过生成: ${skippedCount}`);
+    console.log(`生成失败: ${failedCount}`);
     
-    if (results.filter(r => !r.success).length > 0) {
-      console.log('\n失败详情:');
-      results.filter(r => !r.success).forEach(result => {
-        console.log(`- ${result.userId}: ${result.error}`);
-      });
-    }
-    
-    console.log('\n✅ 每日 AI 总结任务完成！');
+    return NextResponse.json({
+      success: true,
+      date: yesterdayStr,
+      totalUsers: userIds.length,
+      successCount,
+      skippedCount,
+      failedCount,
+      results
+    });
     
   } catch (error) {
-    console.error('❌ 每日 AI 总结任务失败:', error);
-    process.exit(1);
+    console.error('❌ AI总结定时任务失败:', error);
+    return NextResponse.json({ 
+      error: 'AI总结定时任务失败',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   } finally {
     await prisma.$disconnect();
   }
 }
 
-// 如果直接运行此脚本
-if (import.meta.url === `file://${process.argv[1]}`) {
-  generateDailyAISummary();
+// GET /api/ai-summary/cron - 检查定时任务状态
+export async function GET() {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    // 检查昨天的总结是否存在
+    const summaries = await prisma.aISummary.findMany({
+      where: {
+        date: yesterdayStr
+      },
+      select: {
+        userId: true,
+        date: true,
+        createdAt: true,
+        totalTime: true,
+        taskCount: true
+      }
+    });
+    
+    return NextResponse.json({
+      date: yesterdayStr,
+      summaryCount: summaries.length,
+      summaries: summaries.map(s => ({
+        userId: s.userId,
+        date: s.date,
+        createdAt: s.createdAt,
+        totalTime: s.totalTime,
+        taskCount: s.taskCount
+      }))
+    });
+    
+  } catch (error) {
+    console.error('检查定时任务状态失败:', error);
+    return NextResponse.json({ 
+      error: '检查定时任务状态失败',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
 }
-
-export { generateDailyAISummary };

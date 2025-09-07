@@ -10,6 +10,7 @@ interface AISummary {
   insights: string[];
   categories: Record<string, number>;
   isFromCache?: boolean;
+  needsGeneration?: boolean;
 }
 
 interface CollapsibleAISummaryProps {
@@ -139,8 +140,8 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
     );
   }
 
-  // 如果没有总结数据
-  if (!summary && !loading) {
+  // 如果没有总结数据或需要生成
+  if ((!summary && !loading) || (summary && summary.needsGeneration)) {
     return (
       <Card className="bg-gradient-to-r from-gray-50 to-slate-50">
         <CardHeader className="pb-3">
@@ -151,13 +152,22 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-gray-600 text-sm mb-3">点击按钮生成前一天AI总结</p>
+            <p className="text-gray-600 text-sm mb-3">
+              {summary?.needsGeneration 
+                ? "AI总结尚未生成，点击按钮手动生成" 
+                : "点击按钮生成前一天AI总结"
+              }
+            </p>
             <button
               onClick={generateSummary}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+              disabled={loading}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              生成总结
+              {loading ? '生成中...' : '生成总结'}
             </button>
+            <p className="text-xs text-gray-500 mt-2">
+              定时任务会在每天凌晨自动生成前一天的总结
+            </p>
           </div>
         </CardContent>
       </Card>
