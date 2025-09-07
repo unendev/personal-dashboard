@@ -31,7 +31,7 @@ const LinuxDoWidget = () => {
 
   if (loading) {
     return (
-      <div className="glass-effect rounded-2xl p-6">
+      <div className="p-6">
         <div className="text-center">Loading Linux.do report...</div>
       </div>
     );
@@ -39,7 +39,7 @@ const LinuxDoWidget = () => {
 
   if (error || !report) {
     return (
-      <div className="glass-effect rounded-2xl p-6">
+      <div className="p-6">
         <div className="text-center text-red-500">Error: {error}</div>
       </div>
     );
@@ -69,7 +69,7 @@ const LinuxDoWidget = () => {
   const displayPosts = expandedPosts ? report.posts.slice(0, 10) : report.posts.slice(0, 5);
 
   return (
-    <div className="glass-effect rounded-2xl p-4 hover-lift max-h-[600px] overflow-hidden">
+    <div className="p-4 max-h-[600px] overflow-hidden">
       {/* 紧凑的标题区域 */}
       <div className="text-center mb-4">
         <h2 className="text-lg font-bold gradient-text mb-1">Linux.do 热帖报告</h2>

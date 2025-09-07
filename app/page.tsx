@@ -1,44 +1,57 @@
 'use client';
 
-import { Suspense } from 'react';
-import MusicWidget from './components/MusicWidget';
-import BiliUserManager from './components/BiliUserManager'; // 暂时保留，如果后续不需要可以移除
-import LinuxDoWidget from './components/LinuxDoWidget';
-import WaterfallGrid from './components/WaterfallGrid';
-import RuanYiFengCard from './components/RuanYiFengCard'; // 引入阮一峰周刊卡片
-import BilibiliCard from './components/BilibiliCard';     // 引入B站动态卡片
-import React from 'react';
+import React, { useState } from 'react';
+import TabbedLayout from './components/TabbedLayout';
+import ScrollableLayout from './components/ScrollableLayout';
+import DashboardLayout from './components/DashboardLayout';
+
+type LayoutType = 'tabbed' | 'scrollable' | 'dashboard';
 
 export default function Home() {
+  const [layoutType, setLayoutType] = useState<LayoutType>('dashboard');
+
+  const layouts = [
+    { id: 'dashboard' as LayoutType, label: '仪表板式', description: '分类折叠，适合大量信息源' },
+    { id: 'tabbed' as LayoutType, label: '标签页式', description: '按类别分页，清晰简洁' },
+    { id: 'scrollable' as LayoutType, label: '滚动式', description: '单页滚动，适合快速浏览' }
+  ];
+
+  const renderLayout = () => {
+    switch (layoutType) {
+      case 'tabbed': return <TabbedLayout />;
+      case 'scrollable': return <ScrollableLayout />;
+      case 'dashboard': return <DashboardLayout />;
+      default: return <DashboardLayout />;
+    }
+  };
+
   return (
-    <main className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
--------
-      <div className="relative">
-        <WaterfallGrid>
-          {/* 阮一峰周刊卡片 */}
-          <Suspense key="ruanyifeng" fallback={<div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-white/60">加载阮一峰周刊中...</div>}>
-            <RuanYiFengCard />
-          </Suspense>
-
-          {/* B站动态卡片 */}
-          <Suspense key="bilibili" fallback={<div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-white/60">加载B站动态中...</div>}>
-            <BilibiliCard />
-          </Suspense>
-
-          {/* 音乐组件 */}
-          <Suspense key="music" fallback={<div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center">
-            <div className="text-white/60">加载音乐组件中...</div>
-          </div>}>
-            <MusicWidget />
-          </Suspense>
-
-          {/* Linux.do 社区报告 */}
-          <LinuxDoWidget key="linuxdo" />
-
-          {/* UP主管理界面 (如果不再需要，可以移除) */}
-          {/* <BiliUserManager key="bili-manager" /> */}
-        </WaterfallGrid>
+    <main className="w-full min-h-screen">
+      {/* 布局选择器 */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="bg-black/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+          <div className="text-white/80 text-sm mb-2">布局模式</div>
+          <div className="flex gap-2">
+            {layouts.map((layout) => (
+              <button
+                key={layout.id}
+                onClick={() => setLayoutType(layout.id)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                  layoutType === layout.id
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+                title={layout.description}
+              >
+                {layout.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* 渲染选中的布局 */}
+      {renderLayout()}
     </main>
   );
 }

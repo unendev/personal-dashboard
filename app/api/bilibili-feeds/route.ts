@@ -123,6 +123,7 @@ export async function GET() {
     return NextResponse.json(allItems);
   } catch (error) {
     console.error('Failed to fetch Bilibili feeds:', error);
-    return NextResponse.json({ error: 'Failed to fetch Bilibili feeds' }, { status: 500 });
+    // 返回空数组而不是错误对象，确保前端能正常处理
+    return NextResponse.json([]);
   }
 }

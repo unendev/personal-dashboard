@@ -88,7 +88,7 @@ const MusicWidget = () => {
   };
 
   return (
-    <div className="glass-effect rounded-2xl p-5 hover-lift animate-fade-in-up delay-200 h-full">
+    <div className="p-5 h-full">
       <div className="text-center mb-4">
         <div className="inline-flex items-center gap-2 mb-1">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

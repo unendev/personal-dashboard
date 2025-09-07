@@ -21,11 +21,11 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 const RuanYiFengCard: React.FC = () => {
   const { data: feeds, error } = useSWR<FeedItem[]>('/api/ruanyifeng-feeds', fetcher, { revalidateOnFocus: false });
 
-  if (error) return <div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-red-400">加载阮一峰周刊失败</div>;
-  if (!feeds) return <div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-white/60">加载阮一峰周刊中...</div>;
+  if (error) return <div className="p-6 h-full flex items-center justify-center text-red-400">加载阮一峰周刊失败</div>;
+  if (!feeds || !Array.isArray(feeds)) return <div className="p-6 h-full flex items-center justify-center text-white/60">加载阮一峰周刊中...</div>;
 
   return (
-    <Card className="glass-effect rounded-2xl p-6 hover-lift h-full flex flex-col">
+    <Card className="p-6 h-full flex flex-col bg-transparent border-none shadow-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-xl font-medium text-white">阮一峰周刊</CardTitle>
         <Avatar>

@@ -41,11 +41,19 @@ const WaterfallGrid: React.FC<WaterfallGridProps> = ({
           {child}
         </div>
       );
-      // 估算子组件高度，这里简化处理，实际应用可能需要更精确的测量
-      // 暂时假设所有子组件高度大致相同，或者通过其他方式获取实际高度
-      // 为了演示，我们假设每个子组件的高度为 minColumnWidth * 0.75 (一个大致的比例)
-      // 实际项目中，可能需要使用 ResizeObserver 或其他方式来获取准确的子组件高度
-      columnHeights[minHeightColumnIndex] += minColumnWidth * 0.75 + gap;
+      // 估算子组件高度，根据不同的组件类型设置不同的高度
+      let estimatedHeight = minColumnWidth * 0.75; // 默认高度
+      
+      // 根据组件类型调整高度估算
+      if (child.key === 'music') {
+        estimatedHeight = minColumnWidth * 0.6; // 音乐组件较矮
+      } else if (child.key === 'ruanyifeng' || child.key === 'bilibili') {
+        estimatedHeight = minColumnWidth * 1.2; // 内容卡片较高
+      } else if (child.key === 'linuxdo') {
+        estimatedHeight = minColumnWidth * 0.8; // Linux.do组件中等高度
+      }
+      
+      columnHeights[minHeightColumnIndex] += estimatedHeight + gap;
     }
   });
 

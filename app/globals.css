@@ -4,8 +4,12 @@
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --module-bg: rgba(255, 255, 255, 0.08);
+  --module-border: rgba(255, 255, 255, 0.25);
+  --module-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 
 * {
@@ -49,7 +53,59 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 增强的模块效果 */
+.glass-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+/* 模块边框增强 */
+.module-card {
+  background: var(--module-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2px solid var(--module-border);
+  box-shadow: var(--module-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    rgba(102, 126, 234, 0.6), 
+    rgba(118, 75, 162, 0.6), 
+    rgba(102, 126, 234, 0.6)
+  );
+}
+
+.module-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.3), 
+    transparent, 
+    rgba(255, 255, 255, 0.3)
+  );
 }
 
 /* 渐变文本 */
@@ -60,14 +116,33 @@ body {
   background-clip: text;
 }
 
-/* 悬停效果 */
+/* 悬停效果增强 */
 .hover-lift {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hover-lift:hover {
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* 模块悬停时的额外效果 */
+.module-card:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.module-card:hover::before {
+  background: linear-gradient(90deg, 
+    rgba(102, 126, 234, 0.8), 
+    rgba(118, 75, 162, 0.8), 
+    rgba(102, 126, 234, 0.8)
+  );
+}
+
+/* 模块间距增强 */
+.module-card + .module-card {
+  margin-top: 1.5rem;
 }
 
 /* 动画延迟 */

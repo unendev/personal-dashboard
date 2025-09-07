@@ -39,7 +39,7 @@ export async function GET() {
       }
     });
     const feed = await parser.parseString(response.data);
-    const items: FeedItem[] = feed.items.slice(0, 5).map(item => ({ // 获取最新的5条
+    const items: FeedItem[] = feed.items?.slice(0, 5).map(item => ({ // 获取最新的5条
       source: RUANYIFENG_FEED.source,
       avatar: RUANYIFENG_FEED.avatar,
       author: item.creator || feed.title || 'Unknown author',
@@ -47,11 +47,12 @@ export async function GET() {
       summary: item.contentSnippet?.slice(0, 150) || 'No summary', // 增加摘要长度
       timestamp: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
       url: item.link,
-    }));
+    })) || [];
 
     return NextResponse.json(items);
   } catch (error) {
     console.error('Failed to fetch Ruan Yi Feng RSS feed:', error);
-    return NextResponse.json({ error: 'Failed to fetch Ruan Yi Feng RSS feed' }, { status: 500 });
+    // 返回空数组而不是错误对象，确保前端能正常处理
+    return NextResponse.json([]);
   }
 }

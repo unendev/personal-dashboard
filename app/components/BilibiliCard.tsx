@@ -21,8 +21,8 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 const BilibiliCard: React.FC = () => {
   const { data: feeds, error } = useSWR<FeedItem[]>('/api/bilibili-feeds', fetcher, { revalidateOnFocus: false });
 
-  if (error) return <div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-red-400">加载B站动态失败</div>;
-  if (!feeds) return <div className="glass-effect rounded-2xl p-6 hover-lift h-full flex items-center justify-center text-white/60">加载B站动态中...</div>;
+  if (error) return <div className="p-6 h-full flex items-center justify-center text-red-400">加载B站动态失败</div>;
+  if (!feeds || !Array.isArray(feeds)) return <div className="p-6 h-full flex items-center justify-center text-white/60">加载B站动态中...</div>;
 
   // Group feeds by author
   const feedsByAuthor: { [key: string]: FeedItem[] } = feeds.reduce((acc, item) => {
@@ -34,7 +34,7 @@ const BilibiliCard: React.FC = () => {
   }, {} as { [key: string]: FeedItem[] });
 
   return (
-    <Card className="glass-effect rounded-2xl p-6 hover-lift h-full flex flex-col">
+    <Card className="p-6 h-full flex flex-col bg-transparent border-none shadow-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-xl font-medium text-white">B站动态</CardTitle>
       </CardHeader>
