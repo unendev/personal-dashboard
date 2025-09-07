@@ -319,15 +319,15 @@ const TimerZone: React.FC<TimerZoneProps> = ({
           onDrop={(e) => handleDrop(e, task.id)}
         >
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <h3 className="font-medium text-gray-800 truncate">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full flex-shrink-0"></div>
+                  <h3 className="font-medium text-gray-800 break-words">
                     {task.name}
                   </h3>
                 </div>
-                <p className="text-sm text-gray-500 mt-1 truncate">
+                <p className="text-sm text-gray-500 mt-1 break-words">
                   {task.categoryPath}
                 </p>
                 <div className="text-lg font-mono text-blue-600 mt-2">
@@ -338,7 +338,7 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                 </div>
               </div>
               
-              <div className="flex gap-2 ml-4">
+              <div className="flex gap-2 sm:ml-4 flex-shrink-0">
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 

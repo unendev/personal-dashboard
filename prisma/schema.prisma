@@ -159,7 +159,11 @@ model Todo {
   category    String?
   userId      String
   date        String   // ISO date string
+  parentId    String?  // 父任务ID，支持嵌套
+  order       Int      @default(0) // 排序字段
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Todo?    @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Todo[]   @relation("TodoHierarchy")
   createdAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
         date
       },
       orderBy: [
+        { order: 'asc' },
         { priority: 'desc' },
         { createdAtUnix: 'desc' }
       ]
@@ -36,11 +37,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, text, priority = 'medium', category, date } = body;
+    const { userId, text, priority = 'medium', category, date, parentId } = body;
 
     if (!userId || !text) {
       return NextResponse.json({ error: 'userId and text are required' }, { status: 400 });
     }
+
+    // 获取当前最大order值
+    const maxOrder = await prisma.todo.findFirst({
+      where: {
+        userId,
+        date: date || new Date().toISOString().split('T')[0],
+        parentId: parentId || null
+      },
+      orderBy: { order: 'desc' },
+      select: { order: true }
+    });
 
     const todo = await prisma.todo.create({
       data: {
@@ -49,6 +61,8 @@ export async function POST(request: NextRequest) {
         priority,
         category,
         date: date || new Date().toISOString().split('T')[0],
+        parentId: parentId || null,
+        order: (maxOrder?.order || 0) + 1,
         createdAtUnix: Math.floor(Date.now() / 1000)
       }
     });
@@ -105,5 +119,32 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error deleting todo:', error);
     return NextResponse.json({ error: 'Failed to delete todo' }, { status: 500 });
+  }
+}
+
+// PATCH /api/todos - 更新任务排序
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { todos } = body;
+
+    if (!Array.isArray(todos)) {
+      return NextResponse.json({ error: 'todos array is required' }, { status: 400 });
+    }
+
+    // 批量更新排序
+    const updatePromises = todos.map((todo: { id: string; order: number }) =>
+      prisma.todo.update({
+        where: { id: todo.id },
+        data: { order: todo.order }
+      })
+    );
+
+    await Promise.all(updatePromises);
+
+    return NextResponse.json({ message: 'Todos reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering todos:', error);
+    return NextResponse.json({ error: 'Failed to reorder todos' }, { status: 500 });
   }
 }

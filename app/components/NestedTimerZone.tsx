@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -60,6 +60,44 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const [newChildName, setNewChildName] = useState('');
   const [newChildCategory, setNewChildCategory] = useState('');
   const [newChildInitialTime, setNewChildInitialTime] = useState('');
+  const [collapsedTasks, setCollapsedTasks] = useState<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // 保存滚动位置
+  const saveScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current) {
+      setScrollPosition(scrollContainerRef.current.scrollTop);
+    }
+  }, []);
+
+  // 恢复滚动位置
+  const restoreScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current && scrollPosition > 0) {
+      scrollContainerRef.current.scrollTop = scrollPosition;
+    }
+  }, [scrollPosition]);
+
+  // 在组件更新后恢复滚动位置
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      restoreScrollPosition();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [tasks, restoreScrollPosition]);
+
+  // 切换任务收缩状态
+  const toggleTaskCollapse = (taskId: string) => {
+    setCollapsedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
 
   // 拖拽传感器配置
   const sensors = useSensors(
@@ -75,20 +113,20 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   // 拖拽开始处理函数
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('拖拽开始:', event.active.id);
+    // console.log('拖拽开始:', event.active.id);
   };
 
   // 拖拽结束处理函数
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
+    // console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
 
     if (active.id !== over?.id && over) {
       const oldIndex = tasks.findIndex((task) => task.id === active.id);
       const newIndex = tasks.findIndex((task) => task.id === over.id);
 
-      console.log('任务重排序:', { oldIndex, newIndex, taskName: tasks[oldIndex]?.name });
+      // console.log('任务重排序:', { oldIndex, newIndex, taskName: tasks[oldIndex]?.name });
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
@@ -107,22 +145,22 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     if (task.isRunning && !task.isPaused && task.startTime) {
       const elapsed = Math.floor((Date.now() / 1000 - task.startTime));
       displayTime = task.elapsedTime + elapsed;
-      console.log(`${task.name} 运行中时间计算:`, {
-        isRunning: task.isRunning,
-        isPaused: task.isPaused,
-        startTime: task.startTime,
-        elapsedTime: task.elapsedTime,
-        currentElapsed: elapsed,
-        displayTime
-      });
+      // console.log(`${task.name} 运行中时间计算:`, {
+      //   isRunning: task.isRunning,
+      //   isPaused: task.isPaused,
+      //   startTime: task.startTime,
+      //   elapsedTime: task.elapsedTime,
+      //   currentElapsed: elapsed,
+      //   displayTime
+      // });
     } else {
       displayTime = task.elapsedTime;
-      console.log(`${task.name} 非运行状态时间:`, {
-        isRunning: task.isRunning,
-        isPaused: task.isPaused,
-        elapsedTime: task.elapsedTime,
-        displayTime
-      });
+      // console.log(`${task.name} 非运行状态时间:`, {
+      //   isRunning: task.isRunning,
+      //   isPaused: task.isPaused,
+      //   elapsedTime: task.elapsedTime,
+      //   displayTime
+      // });
     }
     return displayTime;
   };
@@ -236,7 +274,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const task = findTask(tasks);
     if (!task || !task.startTime) {
-      console.log('暂停失败：未找到任务或任务没有开始时间', { taskId, task });
+      // console.log('暂停失败：未找到任务或任务没有开始时间', { taskId, task });
       return;
     }
 
@@ -245,24 +283,24 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const runningTime = currentTime - task.startTime;
     const newElapsedTime = task.elapsedTime + runningTime;
 
-    console.log('暂停计时器计算:', {
-      taskName: task.name,
-      currentTime,
-      startTime: task.startTime,
-      runningTime,
-      originalElapsedTime: task.elapsedTime,
-      newElapsedTime
-    });
+    // console.log('暂停计时器计算:', {
+    //   taskName: task.name,
+    //   currentTime,
+    //   startTime: task.startTime,
+    //   runningTime,
+    //   originalElapsedTime: task.elapsedTime,
+    //   newElapsedTime
+    // });
 
     // 立即更新前端状态
     const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
       return taskList.map(task => {
         if (task.id === taskId && task.isRunning) {
-          console.log('更新任务状态:', { 
-            taskName: task.name, 
-            oldElapsedTime: task.elapsedTime, 
-            newElapsedTime 
-          });
+          // console.log('更新任务状态:', { 
+          //   taskName: task.name, 
+          //   oldElapsedTime: task.elapsedTime, 
+          //   newElapsedTime 
+          // });
           return {
             ...task,
             elapsedTime: newElapsedTime,
@@ -308,7 +346,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         const errorText = await response.text();
         console.error('Database error details:', errorText);
       } else {
-        console.log('成功更新数据库 - 暂停任务:', { taskId, newElapsedTime });
+        // console.log('成功更新数据库 - 暂停任务:', { taskId, newElapsedTime });
       }
     } catch (error) {
       console.error('Failed to pause timer in database:', error);
@@ -329,27 +367,27 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const task = findTask(tasks);
     if (!task || !task.isPaused) {
-      console.log('恢复失败：未找到任务或任务未暂停', { taskId, task });
+      // console.log('恢复失败：未找到任务或任务未暂停', { taskId, task });
       return;
     }
 
     // 立即更新前端状态
     const currentTime = Math.floor(Date.now() / 1000);
 
-    console.log('恢复计时器:', {
-      taskName: task.name,
-      currentTime,
-      elapsedTime: task.elapsedTime,
-      wasPaused: task.isPaused
-    });
+    // console.log('恢复计时器:', {
+    //   taskName: task.name,
+    //   currentTime,
+    //   elapsedTime: task.elapsedTime,
+    //   wasPaused: task.isPaused
+    // });
 
     const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
       return taskList.map(task => {
         if (task.id === taskId && task.isPaused) {
-          console.log('恢复任务状态:', { 
-            taskName: task.name, 
-            elapsedTime: task.elapsedTime 
-          });
+          // console.log('恢复任务状态:', { 
+          //   taskName: task.name, 
+          //   elapsedTime: task.elapsedTime 
+          // });
           return {
             ...task,
             isRunning: true,
@@ -393,7 +431,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         const errorText = await response.text();
         console.error('Database error details:', errorText);
       } else {
-        console.log('成功更新数据库 - 恢复任务:', { taskId });
+        // console.log('成功更新数据库 - 恢复任务:', { taskId });
       }
     } catch (error) {
       console.error('Failed to resume timer in database:', error);
@@ -524,12 +562,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     
     total += childrenTotal;
     
-    console.log(`${task.name} 总时间计算:`, {
-      ownTime: getCurrentDisplayTime(task),
-      childrenCount: task.children?.length || 0,
-      childrenTotal,
-      total
-    });
+    // console.log(`${task.name} 总时间计算:`, {
+    //   ownTime: getCurrentDisplayTime(task),
+    //   childrenCount: task.children?.length || 0,
+    //   childrenTotal,
+    //   total
+    // });
     
     return total;
   };
@@ -576,6 +614,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const totalTime = calculateTotalTime(task);
     const hasChildren = task.children && task.children.length > 0;
+    const isCollapsed = collapsedTasks.has(task.id);
     const indentStyle = { marginLeft: `${level * 20}px` };
 
     return (
@@ -592,25 +631,39 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           title="拖拽重新排序"
         >
           <CardContent className="p-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  {hasChildren && (
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCollapse(task.id);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-6 w-6 text-green-400 hover:text-green-300 hover:bg-green-400/20 flex-shrink-0"
+                      title={isCollapsed ? "展开子任务" : "收缩子任务"}
+                    >
+                      {isCollapsed ? "▶" : "▼"}
+                    </Button>
+                  )}
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                     hasChildren ? 'bg-green-400' : 'bg-gray-400'
                   }`}></div>
-                  <h3 className="font-medium text-white truncate">
+                  <h3 className="font-medium text-white break-words min-w-0 flex-1">
                     {task.name}
                     {hasChildren && (
-                      <span className="text-xs text-green-400 ml-2">
+                      <span className="text-xs text-green-400 ml-2 whitespace-nowrap">
                         ({task.children!.length}个子任务)
                       </span>
                     )}
                   </h3>
                 </div>
-                <p className="text-sm text-gray-300 mt-1 truncate">
+                <p className="text-sm text-gray-300 break-words">
                   {task.categoryPath}
                 </p>
-                <div className="text-lg font-mono text-blue-400 mt-2">
+                <div className="text-lg font-mono text-blue-400 mt-1">
                   {formatDisplayTime(getCurrentDisplayTime(task))}
                   {task.initialTime > 0 && task.elapsedTime === task.initialTime && (
                     <span className="text-xs text-gray-400 ml-2">(预设时间)</span>
@@ -624,7 +677,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               </div>
               
               <div 
-                className="flex gap-2 ml-4 flex-shrink-0 flex-wrap" 
+                className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end" 
                 style={{ zIndex: 10 }}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -680,7 +733,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         </Card>
 
         {/* 递归渲染子任务 */}
-        {hasChildren && (
+        {hasChildren && !isCollapsed && (
           <NestedTimerZone
             tasks={task.children!}
             onTasksChange={(updatedChildren) => {
@@ -739,7 +792,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="space-y-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area">
+      <div 
+        ref={scrollContainerRef}
+        className="space-y-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area"
+        onScroll={saveScrollPosition}
+      >
         <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
             <SortableTaskItem key={task.id} task={task} />

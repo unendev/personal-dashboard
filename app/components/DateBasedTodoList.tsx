@@ -81,22 +81,92 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
 
     if (active.id !== over?.id && over) {
-      const oldIndex = todos.findIndex((todo) => todo.id === active.id);
-      const newIndex = todos.findIndex((todo) => todo.id === over.id);
+      // 找到被拖拽的任务
+      const draggedTodo = findTodoRecursive(todos, active.id as string);
+      const targetTodo = findTodoRecursive(todos, over.id as string);
+      
+      if (!draggedTodo || !targetTodo) return;
 
-      console.log('拖拽索引:', { oldIndex, newIndex });
+      // 如果拖拽的是子任务，需要特殊处理
+      if (draggedTodo.parentId && targetTodo.parentId === draggedTodo.parentId) {
+        // 同级子任务之间的拖拽
+        const parentTodo = findTodoRecursive(todos, draggedTodo.parentId);
+        if (parentTodo && parentTodo.children) {
+          const oldIndex = parentTodo.children.findIndex(child => child.id === active.id);
+          const newIndex = parentTodo.children.findIndex(child => child.id === over.id);
+          
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const reorderedChildren = arrayMove(parentTodo.children, oldIndex, newIndex);
+            const updatedChildren = reorderedChildren.map((child, index) => ({
+              ...child,
+              order: index
+            }));
+            
+            // 更新父任务的子任务列表
+            const updateParentRecursive = (todoList: TodoItem[]): TodoItem[] => {
+              return todoList.map(todo => {
+                if (todo.id === draggedTodo.parentId) {
+                  return { ...todo, children: updatedChildren };
+                }
+                if (todo.children) {
+                  return { ...todo, children: updateParentRecursive(todo.children) };
+                }
+                return todo;
+              });
+            };
+            
+            setTodos(prevTodos => updateParentRecursive(prevTodos));
+            
+            // 保存到数据库
+            saveOrderToDatabase(updatedChildren);
+          }
+        }
+      } else if (!draggedTodo.parentId && !targetTodo.parentId) {
+        // 根级任务之间的拖拽
+        const oldIndex = todos.findIndex((todo) => todo.id === active.id);
+        const newIndex = todos.findIndex((todo) => todo.id === over.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedTodos = arrayMove(todos, oldIndex, newIndex);
-        const updatedTodos = reorderedTodos.map((todo, index) => ({
-          ...todo,
-          order: index
-        }));
-        
-        console.log('拖拽成功，新顺序:', updatedTodos.map(t => t.text));
-        
-        setTodos(updatedTodos);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reorderedTodos = arrayMove(todos, oldIndex, newIndex);
+          const updatedTodos = reorderedTodos.map((todo, index) => ({
+            ...todo,
+            order: index
+          }));
+          
+          setTodos(updatedTodos);
+          
+          // 保存到数据库
+          saveOrderToDatabase(updatedTodos);
+        }
       }
+    }
+  };
+
+  // 保存排序到数据库
+  const saveOrderToDatabase = async (todosToSave: TodoItem[]) => {
+    try {
+      const response = await fetch('/api/todos', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          todos: todosToSave.map(todo => ({
+            id: todo.id,
+            order: todo.order || 0
+          }))
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('保存排序失败');
+        // 重新获取数据以恢复正确状态
+        fetchTodos();
+      }
+    } catch (error) {
+      console.error('保存排序失败:', error);
+      // 重新获取数据以恢复正确状态
+      fetchTodos();
     }
   };
 
@@ -142,7 +212,17 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       }
     });
 
-    return rootTodos;
+    // 第三遍：对每个层级的任务进行排序
+    const sortTodos = (todoList: TodoItem[]): TodoItem[] => {
+      return todoList
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(todo => ({
+          ...todo,
+          children: todo.children ? sortTodos(todo.children) : []
+        }));
+    };
+
+    return sortTodos(rootTodos);
   };
 
   useEffect(() => {
@@ -602,31 +682,39 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
                 <option value="medium">中</option>
                 <option value="high">高</option>
               </select>
-                             <Button
-                 variant="outline"
-                 size="xs"
-                 onClick={() => setShowAddSubtaskDialog(todo.id)}
-                 className="text-xs p-1 h-6 w-12"
-               >
-                 ➕
-               </Button>
-               <Button
-                 variant="outline"
-                 size="xs"
-                 onClick={() => deleteTodo(todo.id)}
-                 className="p-1 h-6 w-6"
-               >
-                 ×
-               </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => setShowAddSubtaskDialog(todo.id)}
+                className="text-xs p-1 h-6 w-12"
+              >
+                ➕
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => deleteTodo(todo.id)}
+                className="p-1 h-6 w-6"
+              >
+                ×
+              </Button>
             </div>
           </div>
           
-          {/* 递归渲染子任务 */}
+          {/* 递归渲染子任务 - 为子任务创建独立的拖拽上下文 */}
           {todo.children && todo.children.length > 0 && (
             <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 pl-3">
-              {todo.children.map(child => (
-                <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={todo.children.map(child => child.id)} strategy={verticalListSortingStrategy}>
+                  {todo.children.map(child => (
+                    <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           )}
         </div>
@@ -702,12 +790,20 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           </div>
         </div>
         
-        {/* 递归渲染子任务 */}
+        {/* 递归渲染子任务 - 为子任务创建独立的拖拽上下文 */}
         {todo.children && todo.children.length > 0 && (
           <div className="ml-8 mt-2 space-y-2 border-l-2 border-gray-200 pl-4">
-            {todo.children.map(child => (
-              <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={todo.children.map(child => child.id)} strategy={verticalListSortingStrategy}>
+                {todo.children.map(child => (
+                  <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         )}
       </div>
