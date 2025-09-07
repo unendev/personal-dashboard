@@ -17,10 +17,11 @@ export const TimerDB = {
           children: {
             include: {
               children: true // 递归包含子任务
-            }
+            },
+            orderBy: { order: 'asc' }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { order: 'asc' }
       });
 
       // 只返回顶级任务（没有父任务的任务）
@@ -43,10 +44,11 @@ export const TimerDB = {
           children: {
             include: {
               children: true // 递归包含子任务
-            }
+            },
+            orderBy: { order: 'asc' }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { order: 'asc' }
       });
 
       // 只返回顶级任务（没有父任务的任务）
@@ -347,6 +349,24 @@ export const TimerDB = {
       });
     } catch (error) {
       console.error('Failed to stop all running tasks:', error);
+      throw error;
+    }
+  },
+
+  // 更新任务排序
+  updateTaskOrder: async (taskOrders: { id: string; order: number }[]): Promise<void> => {
+    try {
+      // 批量更新任务排序
+      const updatePromises = taskOrders.map(({ id, order }) =>
+        prisma.timerTask.update({
+          where: { id },
+          data: { order }
+        })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('Failed to update task order:', error);
       throw error;
     }
   },

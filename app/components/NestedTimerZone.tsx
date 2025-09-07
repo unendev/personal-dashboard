@@ -117,7 +117,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   };
 
   // 拖拽结束处理函数
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     // console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
@@ -130,10 +130,39 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
+        
+        // 更新本地状态
         onTasksChange(reorderedTasks);
 
-        if (onOperationRecord) {
-          onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
+        // 保存排序到数据库
+        try {
+          const taskOrders = reorderedTasks.map((task, index) => ({
+            id: task.id,
+            order: index
+          }));
+
+          const response = await fetch('/api/timer-tasks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'updateOrder',
+              taskOrders
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save task order');
+          }
+
+          if (onOperationRecord) {
+            onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
+          }
+        } catch (error) {
+          console.error('Failed to save task order:', error);
+          // 如果保存失败，可以选择恢复原来的顺序
+          // onTasksChange(tasks);
         }
       }
     }

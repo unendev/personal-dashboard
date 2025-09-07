@@ -26,10 +26,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/timer-tasks - 创建新任务
+// POST /api/timer-tasks - 创建新任务或更新排序
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // 检查是否是更新排序请求
+    if (body.action === 'updateOrder' && body.taskOrders) {
+      await TimerDB.updateTaskOrder(body.taskOrders);
+      return NextResponse.json({ success: true });
+    }
+    
     const { 
       userId = 'user-1', // 默认用户ID
       name, 
@@ -42,7 +49,8 @@ export async function POST(request: NextRequest) {
       pausedTime, 
       completedAt, 
       date,
-      parentId // 新增：父任务ID
+      parentId, // 新增：父任务ID
+      order = 0 // 新增：排序字段
     } = body;
 
     if (!name || !categoryPath || !date) {
@@ -61,7 +69,8 @@ export async function POST(request: NextRequest) {
       pausedTime: pausedTime || 0,
       completedAt: completedAt || null,
       date,
-      parentId: parentId || null // 支持父任务ID
+      parentId: parentId || null, // 支持父任务ID
+      order: order || 0 // 支持排序
     });
 
     return NextResponse.json(newTask, { status: 201 });
