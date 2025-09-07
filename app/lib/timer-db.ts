@@ -106,13 +106,15 @@ export const TimerDB = {
         for (const child of children) {
           await deleteChildrenRecursively(child.id);
         }
-        
-        await prisma.timerTask.delete({
-          where: { id: parentId }
-        });
       };
 
+      // 删除所有子任务
       await deleteChildrenRecursively(taskId);
+      
+      // 最后删除父任务
+      await prisma.timerTask.delete({
+        where: { id: taskId }
+      });
     } catch (error) {
       console.error('Failed to delete timer task:', error);
       throw error;

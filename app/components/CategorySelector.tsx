@@ -41,21 +41,22 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     const load = async () => {
       setIsCategoriesLoading(true);
       try {
-        // 首先尝试从缓存获取
-        if (CategoryCache.isReady()) {
-          const cachedData = CategoryCache.getCategories();
-          setCategories(cachedData);
-          setIsCategoriesLoading(false);
-          console.log('从缓存加载分类数据');
-          return;
+        // 清除缓存，强制重新加载
+        CategoryCache.clear();
+        
+        // 直接从API加载数据
+        const response = await fetch('/api/log-categories');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('API返回的分类数据:', data);
+          setCategories(Array.isArray(data) ? data : []);
+        } else {
+          console.error('API请求失败:', response.status);
+          setCategories([]);
         }
-
-        // 如果缓存未准备好，等待缓存准备完成
-        const data = await CategoryCache.preload();
-        setCategories(data);
-        console.log('从API加载分类数据');
       } catch (e) {
         console.error('加载分类失败', e);
+        setCategories([]);
       } finally {
         setIsCategoriesLoading(false);
       }
@@ -112,9 +113,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       
       if (response.ok) {
         const result = await response.json();
-        setCategories(result.categories);
+        const newCategories = Array.isArray(result.categories) ? result.categories : [];
+        setCategories(newCategories);
         // 更新全局缓存
-        CategoryCache.updateCategories(result.categories);
+        CategoryCache.updateCategories(newCategories);
         setShowCreateDialog(false);
         setNewCategoryName('');
         setCreateParentPath('');
@@ -141,9 +143,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       
       if (response.ok) {
         const result = await response.json();
-        setCategories(result.categories);
+        const newCategories = Array.isArray(result.categories) ? result.categories : [];
+        setCategories(newCategories);
         // 更新全局缓存
-        CategoryCache.updateCategories(result.categories);
+        CategoryCache.updateCategories(newCategories);
         setShowDeleteConfirm(false);
         setDeleteTarget(null);
       } else {
@@ -263,8 +266,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     );
   }
 
-  // 如果没有分类，显示空状态
-  if (categories.length === 0) {
+  // 如果没有分类或分类不是数组，显示空状态
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
     return (
       <div className="space-y-4">
         <div className="text-center py-8">
@@ -283,153 +286,139 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   return (
     <div className={className}>
-      {/* 创建顶级分类按钮 */}
-      <div className="mb-6 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-800">分类管理</h3>
-        <Button
-          onClick={() => handleCreateCategory('top')}
-          variant="category"
-          size="sm"
-        >
-          ➕ 创建顶级分类
-        </Button>
-      </div>
-      
-      {/* 4个大类卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* 分类网格布局 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {categories.map((topCategory) => (
-          <Card key={topCategory.name} className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-              <CardTitle className="text-lg font-bold text-gray-800 flex justify-between items-center">
-                <div className="flex items-center gap-2">
+          <Card key={topCategory.name} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="relative overflow-hidden">
+              {/* 背景装饰 */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              
+              <CardTitle className="relative text-lg font-bold text-gray-800 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                    {topCategory.name.charAt(0)}
+                  </div>
                   <span>{topCategory.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    onClick={() => handleTimeHoleCreate(topCategory.name, '', '')}
-                    title="时间黑洞 - 直接创建"
-                  >
-                    🕳️
-                  </Button>
                 </div>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full w-8 h-8 p-0"
                     onClick={() => handleCreateCategory('mid', topCategory.name)}
+                    title="添加子分类"
                   >
                     +
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 p-0"
                     onClick={() => handleDeleteCategory('top', '', topCategory.name)}
+                    title="删除分类"
                   >
-                    删除
+                    ×
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4 space-y-3 overflow-hidden">
               {/* 中类卡片 */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-3">
                 {topCategory.children?.map((midCategory) => (
-                  <Card key={midCategory.name} className="border border-gray-200 hover:border-blue-300 transition-colors">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold text-gray-700 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span>{midCategory.name}</span>
+                  <div key={midCategory.name} className="bg-gray-50/50 rounded-xl p-2 md:p-3 hover:bg-gray-100/50 transition-colors overflow-hidden">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">{midCategory.name}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full w-6 h-6 p-0 text-xs"
+                          onClick={() => handleCreateCategory('sub', `${topCategory.name}/${midCategory.name}`)}
+                          title="添加子分类"
+                        >
+                          +
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full w-6 h-6 p-0 text-xs"
+                          onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
+                          title="删除"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                    {/* 子类按钮 */}
+                    <div className="flex flex-wrap gap-1 md:gap-2 overflow-x-auto">
+                      {midCategory.children?.map((subCategory) => (
+                        <div key={subCategory.name} className="relative group flex-shrink-0">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs"
-                            onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
-                            title="时间黑洞 - 直接创建"
+                            className={`text-xs hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg min-w-0 ${
+                              topCategory.name === '时间黑洞' ? 'pr-8 md:pr-10' : 'pr-6 md:pr-8'
+                            }`}
+                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
                           >
-                            🕳️
+                            <span className="truncate">{subCategory.name}</span>
                           </Button>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs"
-                            onClick={() => handleCreateCategory('sub', `${topCategory.name}/${midCategory.name}`)}
-                          >
-                            +
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
-                            onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
-                          >
-                            删除
-                          </Button>
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      {/* 子类按钮 */}
-                      <div className="flex flex-wrap gap-2">
-                        {midCategory.children?.map((subCategory) => (
-                          <div key={subCategory.name} className="relative group">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs hover:bg-blue-50 hover:border-blue-300 pr-16"
-                              onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
-                            >
-                              {subCategory.name}
-                            </Button>
-                            {/* 时间黑洞按钮 */}
+                          {/* 只在时间黑洞分类的第三层级显示时间黑洞按钮 */}
+                          {topCategory.name === '时间黑洞' && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="absolute right-6 top-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-xs opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-5 h-5 md:w-6 md:h-6 p-0 z-10 touch-manipulation"
                               onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, subCategory.name)}
-                              title="时间黑洞 - 直接创建"
+                              title="时间黑洞"
                             >
                               🕳️
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleDeleteCategory('sub', `${topCategory.name}/${midCategory.name}`, subCategory.name)}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))}
-                        {/* 如果中类没有子类，显示通用按钮和时间黑洞按钮 */}
-                        {(!midCategory.children || midCategory.children.length === 0) && (
-                          <div className="flex gap-2">
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-xs opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-5 h-5 md:w-6 md:h-6 p-0 z-10 touch-manipulation ${
+                              topCategory.name === '时间黑洞' ? 'right-6 md:right-8' : 'right-1'
+                            }`}
+                            onClick={() => handleDeleteCategory('sub', `${topCategory.name}/${midCategory.name}`, subCategory.name)}
+                            title="删除"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                      {/* 如果中类没有子类，显示通用按钮 */}
+                      {(!midCategory.children || midCategory.children.length === 0) && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs hover:bg-blue-50 hover:border-blue-300 rounded-lg"
+                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
+                          >
+                            创建任务
+                          </Button>
+                          {/* 只在时间黑洞分类显示时间黑洞按钮 */}
+                          {topCategory.name === '时间黑洞' && (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs hover:bg-blue-50 hover:border-blue-300"
-                              onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
-                            >
-                              直接创建任务
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs hover:bg-purple-50 hover:border-purple-300 text-purple-600"
+                              className="text-xs hover:bg-purple-50 hover:border-purple-300 text-purple-600 rounded-lg"
                               onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
-                              title="时间黑洞 - 直接创建"
+                              title="时间黑洞"
                             >
                               🕳️ 时间黑洞
                             </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -439,30 +428,37 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
       {/* 输入任务名称和时间的弹框 */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle>快速记录</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm">⚡</span>
+              </div>
+              快速创建任务
+            </DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-sm text-gray-600">
-              在 <span className="font-medium text-blue-600">{selectedPath}</span> 下记录活动
-            </p>
+          <div className="py-6 space-y-6">
+            <div className="bg-blue-50 rounded-xl p-4">
+              <p className="text-sm text-blue-700 font-medium mb-2">分类路径</p>
+              <p className="text-blue-600 font-semibold">{selectedPath}</p>
+            </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
                 任务名称
               </label>
               <Input
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入具体事物名称..."
+                placeholder="输入具体任务名称..."
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
                 autoFocus
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
                 时间消耗 (可选)
               </label>
               <Input
@@ -470,14 +466,24 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 onChange={handleDurationChange}
                 onKeyDown={handleKeyDown}
                 placeholder="如: 45m, 1h20m, 2h (为空则使用计时器)"
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
+          <DialogFooter className="gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDialog(false)}
+              className="rounded-xl"
+            >
               取消
             </Button>
-            <Button variant="timer" onClick={handleSubmitWithFormat} disabled={!taskName.trim()}>
+            <Button 
+              variant="default" 
+              onClick={handleSubmitWithFormat} 
+              disabled={!taskName.trim()}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-6"
+            >
               ⏱️ 添加到计时器
             </Button>
           </DialogFooter>
@@ -486,23 +492,37 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
       {/* 删除确认对话框 */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
+        <DialogContent className="max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm">⚠️</span>
+              </div>
+              确认删除
+            </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-600">
-              确定要删除分类 <span className="font-medium text-red-600">{deleteTarget?.name}</span> 吗？
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              删除后无法恢复，请谨慎操作。
-            </p>
+          <div className="py-6">
+            <div className="bg-red-50 rounded-xl p-4">
+              <p className="text-sm text-red-700 font-medium mb-2">即将删除</p>
+              <p className="text-red-600 font-semibold">{deleteTarget?.name}</p>
+              <p className="text-xs text-red-500 mt-2">
+                删除后无法恢复，请谨慎操作。
+              </p>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+          <DialogFooter className="gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirm(false)}
+              className="rounded-xl"
+            >
               取消
             </Button>
-            <Button variant="delete" onClick={confirmDelete}>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-xl px-6"
+            >
               🗑️ 确认删除
             </Button>
           </DialogFooter>
@@ -511,33 +531,49 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
       {/* 创建分类对话框 */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle>创建新分类</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-green-600 flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm">➕</span>
+              </div>
+              创建新分类
+            </DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="py-6 space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
                 分类名称
               </label>
               <Input
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="输入分类名称..."
+                className="border-gray-200 focus:border-green-400 focus:ring-green-400 rounded-xl"
                 autoFocus
               />
             </div>
             {createType !== 'top' && (
-              <p className="text-sm text-gray-600">
-                将在 <span className="font-medium text-blue-600">{createParentPath}</span> 下创建新分类
-              </p>
+              <div className="bg-green-50 rounded-xl p-4">
+                <p className="text-sm text-green-700 font-medium mb-2">父级分类</p>
+                <p className="text-green-600 font-semibold">{createParentPath}</p>
+              </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+          <DialogFooter className="gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateDialog(false)}
+              className="rounded-xl"
+            >
               取消
             </Button>
-            <Button variant="category" onClick={confirmCreate} disabled={!newCategoryName.trim()}>
+            <Button 
+              variant="default" 
+              onClick={confirmCreate} 
+              disabled={!newCategoryName.trim()}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl px-6"
+            >
               ➕ 创建分类
             </Button>
           </DialogFooter>

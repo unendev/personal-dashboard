@@ -462,7 +462,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete task');
+        const errorText = await response.text();
+        console.error('Delete API error:', response.status, errorText);
+        throw new Error(`Failed to delete task: ${response.status} ${errorText}`);
       }
 
       const removeTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
@@ -483,7 +485,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete timer:', error);
-      alert('删除失败，请重试');
+      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 
