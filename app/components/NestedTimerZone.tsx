@@ -62,21 +62,34 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const [newChildInitialTime, setNewChildInitialTime] = useState('');
   const [collapsedTasks, setCollapsedTasks] = useState<Set<string>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
+  
+  // 使用 useRef 存储滚动位置，避免不必要的重新渲染
+  const scrollPositionRef = useRef(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 保存滚动位置
   const saveScrollPosition = useCallback(() => {
     if (scrollContainerRef.current) {
-      setScrollPosition(scrollContainerRef.current.scrollTop);
+      // 清除之前的定时器
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // 设置新的定时器，在滚动停止后更新位置
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+        }
+      }, 100); // 100ms 延迟
     }
   }, []);
 
   // 恢复滚动位置
   const restoreScrollPosition = useCallback(() => {
-    if (scrollContainerRef.current && scrollPosition > 0) {
-      scrollContainerRef.current.scrollTop = scrollPosition;
+    if (scrollContainerRef.current && scrollPositionRef.current > 0) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
     }
-  }, [scrollPosition]);
+  }, []);
 
   // 在组件更新后恢复滚动位置
   useEffect(() => {
@@ -134,35 +147,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         // 更新本地状态
         onTasksChange(reorderedTasks);
 
-        // 保存排序到数据库
-        try {
-          const taskOrders = reorderedTasks.map((task, index) => ({
-            id: task.id,
-            order: index
-          }));
-
-          const response = await fetch('/api/timer-tasks', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'updateOrder',
-              taskOrders
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to save task order');
-          }
-
-          if (onOperationRecord) {
-            onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
-          }
-        } catch (error) {
-          console.error('Failed to save task order:', error);
-          // 如果保存失败，可以选择恢复原来的顺序
-          // onTasksChange(tasks);
+        // 暂时禁用排序保存功能，等待数据库迁移完成
+        // TODO: 重新启用排序保存功能
+        console.log('任务排序已更新（本地）:', reorderedTasks.map(t => t.name));
+        
+        if (onOperationRecord) {
+          onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
         }
       }
     }
@@ -660,6 +650,22 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-md'
           }`}
           title="拖拽重新排序"
+          onClick={(e) => {
+            // 阻止默认的点击行为，避免页面滚动
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // 阻止任何可能导致页面滚动的行为
+            if (e.target === e.currentTarget) {
+              // 如果点击的是卡片本身（而不是内部的按钮），什么都不做
+              return;
+            }
+          }}
+          onMouseDown={(e) => {
+            // 在鼠标按下时就阻止默认行为
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
