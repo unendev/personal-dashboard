@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -37,7 +37,7 @@ interface TodoItem {
   userId: string;
   parentId?: string | null; // 父任务ID
   children?: TodoItem[]; // 子任务数组
-  order?: number; // 用于拖拽排序
+  order?: number; // 排序字段
 }
 
 interface DateBasedTodoListProps {
@@ -59,6 +59,11 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const [showAddSubtaskDialog, setShowAddSubtaskDialog] = useState<string | null>(null);
   const [newSubtaskText, setNewSubtaskText] = useState('');
   const [newSubtaskCategory, setNewSubtaskCategory] = useState('');
+  
+  // 滚动位置管理
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 拖拽传感器配置
   const sensors = useSensors(
@@ -157,9 +162,13 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       });
 
       if (!response.ok) {
-        console.error('保存排序失败');
+        const errorText = await response.text();
+        console.error('保存排序失败:', response.status, errorText);
         // 重新获取数据以恢复正确状态
         fetchTodos();
+      } else {
+        console.log('排序保存成功');
+        // 排序成功时不需要重新获取数据，避免滚动位置重置
       }
     } catch (error) {
       console.error('保存排序失败:', error);
@@ -185,6 +194,38 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       setLoading(false);
     }
   }, [userId]);
+
+  // 保存滚动位置
+  const saveScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current) {
+      // 清除之前的定时器
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // 设置新的定时器，在滚动停止后更新位置
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+        }
+      }, 100); // 100ms 延迟
+    }
+  }, []);
+
+  // 恢复滚动位置
+  const restoreScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current && scrollPositionRef.current > 0) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, []);
+
+  // 在组件更新后恢复滚动位置 - 只在任务数量变化时恢复
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      restoreScrollPosition();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [todos.length, restoreScrollPosition]);
 
   // 构建嵌套结构的工具函数
   const buildNestedStructure = (flatTodos: TodoItem[]): TodoItem[] => {
@@ -883,7 +924,11 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area">
+            <div 
+              ref={scrollContainerRef}
+              className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area"
+              onScroll={saveScrollPosition}
+            >
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mx-auto"></div>
@@ -1036,7 +1081,11 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="space-y-3 max-h-[500px] overflow-y-auto timer-scroll-area">
+            <div 
+              ref={scrollContainerRef}
+              className="space-y-3 max-h-[500px] overflow-y-auto timer-scroll-area"
+              onScroll={saveScrollPosition}
+            >
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>

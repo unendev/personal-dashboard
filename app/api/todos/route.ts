@@ -129,6 +129,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'todos array is required' }, { status: 400 });
     }
 
+    // 验证数据格式
+    for (const todo of todos) {
+      if (!todo.id || typeof todo.order !== 'number') {
+        return NextResponse.json({ 
+          error: 'Invalid todo format. Each todo must have id and order fields' 
+        }, { status: 400 });
+      }
+    }
+
     // 批量更新排序
     const updatePromises = todos.map((todo: { id: string; order: number }) =>
       prisma.todo.update({
@@ -142,6 +151,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ message: 'Todos reordered successfully' });
   } catch (error) {
     console.error('Error reordering todos:', error);
-    return NextResponse.json({ error: 'Failed to reorder todos' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to reorder todos', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }
