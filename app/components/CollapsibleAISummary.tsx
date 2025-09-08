@@ -20,7 +20,7 @@ interface CollapsibleAISummaryProps {
 
 const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({ 
   userId = 'user-1', 
-  date = new Date().toISOString().split('T')[0]
+  date = typeof window !== 'undefined' ? new Date().toISOString().split('T')[0] : '2024-01-01'
 }) => {
   const [summary, setSummary] = useState<AISummary | null>(null);
   const [loading, setLoading] = useState(false);

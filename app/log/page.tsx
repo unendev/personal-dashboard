@@ -318,7 +318,6 @@ export default function LogPage() {
           {/* 任务清单 */}
           <DateBasedTodoList 
             userId={userId}
-            date={selectedDate}
             compact={true}
           />
 

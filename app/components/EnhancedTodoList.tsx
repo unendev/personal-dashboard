@@ -18,7 +18,6 @@ interface TodoItem {
 
 interface EnhancedTodoListProps {
   userId: string;
-  selectedDate: string;
   onTodoCompleted?: (todo: TodoItem) => void;
   onTodoAdded?: (todo: TodoItem) => void;
   className?: string;
@@ -26,7 +25,6 @@ interface EnhancedTodoListProps {
 
 const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({ 
   userId, 
-  selectedDate, 
   onTodoCompleted, 
   onTodoAdded,
   className = ''
@@ -41,7 +39,7 @@ const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({
   const loadTodos = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/todos?userId=${userId}&date=${selectedDate}`);
+      const response = await fetch(`/api/todos?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setTodos(data);
@@ -55,7 +53,7 @@ const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [userId, selectedDate]);
+  }, [userId]);
 
   // 从数据库加载数据
   useEffect(() => {
@@ -72,7 +70,7 @@ const EnhancedTodoList: React.FC<EnhancedTodoListProps> = ({
       priority: 'medium',
       category: newCategory.trim() || undefined,
       userId,
-      date: selectedDate
+      date: new Date().toISOString().split('T')[0] // 使用当前日期作为创建日期
     };
 
     try {

@@ -42,13 +42,11 @@ interface TodoItem {
 
 interface DateBasedTodoListProps {
   userId: string;
-  date: string;
   compact?: boolean;
 }
 
 const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({ 
   userId, 
-  date, 
   compact = false 
 }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -174,7 +172,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const fetchTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/todos?userId=${userId}&date=${date}`);
+      const response = await fetch(`/api/todos?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         // 构建嵌套结构
@@ -186,7 +184,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [userId, date]);
+  }, [userId]);
 
   // 构建嵌套结构的工具函数
   const buildNestedStructure = (flatTodos: TodoItem[]): TodoItem[] => {
@@ -250,7 +248,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       createdAtUnix: Date.now(),
       priority: 'medium' as const,
       category: newCategory.trim() || undefined,
-      date,
+      date: new Date().toISOString().split('T')[0], // 使用当前日期作为创建日期
       userId,
       parentId: null,
       children: [],
@@ -272,7 +270,6 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           userId,
           text: optimisticTodo.text,
           category: optimisticTodo.category,
-          date,
           parentId: null
         }),
       });
@@ -318,7 +315,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       createdAtUnix: Date.now(),
       priority: 'medium' as const,
       category: newSubtaskCategory.trim() || undefined,
-      date,
+      date: new Date().toISOString().split('T')[0], // 使用当前日期作为创建日期
       userId,
       parentId: parentId,
       children: [],
@@ -357,7 +354,6 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           userId,
           text: optimisticSubtask.text,
           category: optimisticSubtask.category,
-          date,
           parentId: parentId
         }),
       });

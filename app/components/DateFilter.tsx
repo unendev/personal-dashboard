@@ -9,7 +9,7 @@ interface DateFilterProps {
 }
 
 const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = typeof window !== 'undefined' ? new Date().toISOString().split('T')[0] : selectedDate;
   
   const goToPreviousDay = () => {
     const date = new Date(selectedDate);

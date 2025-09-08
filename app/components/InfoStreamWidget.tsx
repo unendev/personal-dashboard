@@ -92,7 +92,7 @@ const InfoStreamWidget = () => {
                     author={feed.author}
                     title={feed.title}
                     summary={feed.summary}
-                    timestamp={new Date(feed.timestamp).toLocaleString()}
+                    timestamp={typeof window !== 'undefined' ? new Date(feed.timestamp).toLocaleString() : feed.timestamp}
                   />
                 </a>
               ))}

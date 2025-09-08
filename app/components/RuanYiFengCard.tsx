@@ -21,6 +21,10 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 const RuanYiFengCard: React.FC = () => {
   const { data: feeds, error } = useSWR<FeedItem[]>('/api/ruanyifeng-feeds', fetcher, { revalidateOnFocus: false });
 
+  // 调试信息
+  console.log('阮一峰数据:', feeds);
+  console.log('错误:', error);
+
   if (error) return <div className="p-6 h-full flex items-center justify-center text-red-400">加载阮一峰周刊失败</div>;
   if (!feeds || !Array.isArray(feeds)) return <div className="p-6 h-full flex items-center justify-center text-white/60">加载阮一峰周刊中...</div>;
 

@@ -59,7 +59,7 @@ const LogDisplayTable: React.FC = () => {
                   {log.content}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(log.timestamp).toLocaleString()}
+                  {typeof window !== 'undefined' ? new Date(log.timestamp).toLocaleString() : log.timestamp}
                 </td>
               </tr>
             ))}

@@ -6,6 +6,8 @@ import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
 import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
+import EternalReturnCard from './EternalReturnCard';
+import YouTubeLikedCard from './YouTubeLikedCard';
 
 interface InfoSource {
   id: string;
@@ -73,16 +75,9 @@ const ScrollableLayout = () => {
     },
     {
       id: 'youtube',
-      title: 'YouTube 历史',
-      icon: '📺',
-      component: (
-        <div className="p-6">
-          <div className="text-center text-white/60 py-8">
-            <p>YouTube API 集成待实现</p>
-            <p className="text-sm mt-2">将显示观看历史和推荐</p>
-          </div>
-        </div>
-      ),
+      title: 'YouTube 我喜欢',
+      icon: '❤️',
+      component: <YouTubeLikedCard />,
       category: 'social',
       priority: 5
     },

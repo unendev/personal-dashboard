@@ -6,6 +6,8 @@ import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
 import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
+import EternalReturnCard from './EternalReturnCard';
+import YouTubeLikedCard from './YouTubeLikedCard';
 
 type TabType = 'overview' | 'social' | 'development' | 'ai';
 
@@ -46,12 +48,18 @@ const HomePage = () => {
       </div>
 
       {/* 信息流区域 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="module-card rounded-2xl hover-lift">
           <RuanYiFengCard />
         </div>
         <div className="module-card rounded-2xl hover-lift">
           <BilibiliCard />
+        </div>
+        <div className="module-card rounded-2xl hover-lift">
+          <EternalReturnCard />
+        </div>
+        <div className="module-card rounded-2xl hover-lift">
+          <YouTubeLikedCard />
         </div>
       </div>
     </div>
@@ -77,13 +85,10 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* YouTube 历史记录 */}
-      <div className="module-card rounded-2xl hover-lift p-6">
-        <h3 className="text-xl font-semibold text-white mb-4">📺 YouTube 观看历史</h3>
-        <div className="text-center text-white/60 py-8">
-          <p>YouTube API 集成待实现</p>
-        </div>
-      </div>
+       {/* YouTube 我喜欢 */}
+       <div className="module-card rounded-2xl hover-lift">
+         <YouTubeLikedCard />
+       </div>
     </div>
   );
 

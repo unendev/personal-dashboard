@@ -3,12 +3,11 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET /api/todos - 获取指定日期的任务列表
+// GET /api/todos - 获取用户的所有任务列表（不按日期过滤）
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -16,8 +15,7 @@ export async function GET(request: NextRequest) {
 
     const todos = await prisma.todo.findMany({
       where: {
-        userId,
-        date
+        userId
       },
       orderBy: [
         { order: 'asc' },
@@ -37,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, text, priority = 'medium', category, date, parentId } = body;
+    const { userId, text, priority = 'medium', category, parentId } = body;
 
     if (!userId || !text) {
       return NextResponse.json({ error: 'userId and text are required' }, { status: 400 });
@@ -47,7 +45,6 @@ export async function POST(request: NextRequest) {
     const maxOrder = await prisma.todo.findFirst({
       where: {
         userId,
-        date: date || new Date().toISOString().split('T')[0],
         parentId: parentId || null
       },
       orderBy: { order: 'desc' },
@@ -60,7 +57,7 @@ export async function POST(request: NextRequest) {
         text,
         priority,
         category,
-        date: date || new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // 保留date字段用于记录创建日期，但不用于过滤
         parentId: parentId || null,
         order: (maxOrder?.order || 0) + 1,
         createdAtUnix: Math.floor(Date.now() / 1000)

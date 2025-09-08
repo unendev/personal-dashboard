@@ -6,6 +6,8 @@ import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
 import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
+import EternalReturnCard from './EternalReturnCard';
+import YouTubeLikedCard from './YouTubeLikedCard';
 
 const DashboardLayout = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -18,7 +20,8 @@ const DashboardLayout = () => {
       description: '核心信息和快速访问',
       components: [
         { id: 'music', component: <MusicWidget />, title: '音乐播放', icon: '🎵' },
-        { id: 'linuxdo', component: <LinuxDoWidget />, title: 'Linux.do 报告', icon: '🐧' }
+        { id: 'linuxdo', component: <LinuxDoWidget />, title: 'Linux.do 报告', icon: '🐧' },
+        { id: 'eternal-return', component: <EternalReturnCard />, title: 'Eternal Return', icon: '🎮' }
       ]
     },
     {
@@ -55,16 +58,9 @@ const DashboardLayout = () => {
         },
         { 
           id: 'youtube', 
-          component: (
-            <div className="p-6">
-              <div className="text-center text-white/60 py-8">
-                <p>YouTube API 集成待实现</p>
-                <p className="text-sm mt-2">将显示观看历史和推荐</p>
-              </div>
-            </div>
-          ), 
-          title: 'YouTube 历史', 
-          icon: '📺' 
+          component: <YouTubeLikedCard />, 
+          title: 'YouTube 我喜欢', 
+          icon: '❤️' 
         }
       ]
     },
