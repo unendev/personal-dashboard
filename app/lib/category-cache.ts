@@ -11,7 +11,7 @@ let cachePromise: Promise<CategoryNode[]> | null = null;
 
 const CACHE_KEY = 'category_cache';
 const CACHE_TIMESTAMP_KEY = 'category_cache_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时缓存（分类数据变化很少）
 
 export const CategoryCache = {
   // 从本地存储加载缓存
@@ -28,9 +28,15 @@ export const CategoryCache = {
           const data = JSON.parse(cached) as CategoryNode[];
           categoriesCache = data;
           isCacheReady = true;
-          console.log('从本地存储加载分类缓存');
+          console.log('从本地存储加载分类缓存，数据量:', data.length);
           return data;
+        } else {
+          console.log('本地缓存已过期，清除缓存');
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(CACHE_TIMESTAMP_KEY);
         }
+      } else {
+        console.log('没有找到本地缓存');
       }
     } catch (error) {
       console.error('加载本地缓存失败:', error);

@@ -39,21 +39,24 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   useEffect(() => {
     const load = async () => {
+      // 首先尝试从本地存储加载缓存
+      const cachedData = CategoryCache.loadFromStorage();
+      if (cachedData && cachedData.length > 0) {
+        console.log('使用本地存储的分类数据:', cachedData);
+        setCategories(cachedData);
+        setIsCategoriesLoading(false);
+        
+        // 异步检查更新（不阻塞UI）
+        checkForUpdates();
+        return;
+      }
+
+      // 如果没有本地缓存，显示加载状态并从API加载
       setIsCategoriesLoading(true);
       try {
-        // 清除缓存，强制重新加载
-        CategoryCache.clear();
-        
-        // 直接从API加载数据
-        const response = await fetch('/api/log-categories');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('API返回的分类数据:', data);
-          setCategories(Array.isArray(data) ? data : []);
-        } else {
-          console.error('API请求失败:', response.status);
-          setCategories([]);
-        }
+        const data = await CategoryCache.preload();
+        console.log('从API加载的分类数据:', data);
+        setCategories(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('加载分类失败', e);
         setCategories([]);
@@ -61,6 +64,32 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
         setIsCategoriesLoading(false);
       }
     };
+
+    // 异步检查更新的函数
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch('/api/log-categories');
+        if (response.ok) {
+          const newData = await response.json();
+          const currentData = CategoryCache.getCategories();
+          
+          // 简单比较数据是否有变化（比较长度和第一个分类名）
+          const hasChanges = !currentData || 
+            currentData.length !== newData.length ||
+            (currentData.length > 0 && newData.length > 0 && 
+             currentData[0].name !== newData[0].name);
+          
+          if (hasChanges) {
+            console.log('检测到分类数据更新，静默更新缓存');
+            CategoryCache.updateCategories(newData);
+            setCategories(newData);
+          }
+        }
+      } catch (error) {
+        console.log('检查分类更新失败（不影响用户体验）:', error);
+      }
+    };
+
     load();
   }, []);
 
@@ -286,8 +315,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   return (
     <div className={className}>
-      {/* 分类网格布局 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      {/* 分类网格布局 - 更宽松的排列 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
         {categories.map((topCategory) => (
           <Card key={topCategory.name} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="relative overflow-hidden">
@@ -353,15 +382,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                         </Button>
                       </div>
                     </div>
-                    {/* 子类按钮 */}
-                    <div className="flex flex-wrap gap-1 md:gap-2 overflow-x-auto">
+                    {/* 子类按钮 - 更宽松的间距 */}
+                    <div className="flex flex-wrap gap-2 md:gap-3 overflow-x-auto">
                       {midCategory.children?.map((subCategory) => (
                         <div key={subCategory.name} className="relative group flex-shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
-                            className={`text-xs hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg min-w-0 ${
-                              topCategory.name === '时间黑洞' ? 'pr-8 md:pr-10' : 'pr-6 md:pr-8'
+                            className={`text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg px-3 py-2 min-w-0 ${
+                              topCategory.name === '时间黑洞' ? 'pr-10 md:pr-12' : 'pr-8 md:pr-10'
                             }`}
                             onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
                           >
@@ -372,7 +401,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-xs opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-5 h-5 md:w-6 md:h-6 p-0 z-10 touch-manipulation"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation"
                               onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, subCategory.name)}
                               title="时间黑洞"
                             >
@@ -382,8 +411,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-xs opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-5 h-5 md:w-6 md:h-6 p-0 z-10 touch-manipulation ${
-                              topCategory.name === '时间黑洞' ? 'right-6 md:right-8' : 'right-1'
+                            className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation ${
+                              topCategory.name === '时间黑洞' ? 'right-8 md:right-10' : 'right-2'
                             }`}
                             onClick={() => handleDeleteCategory('sub', `${topCategory.name}/${midCategory.name}`, subCategory.name)}
                             title="删除"
@@ -394,11 +423,11 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                       ))}
                       {/* 如果中类没有子类，显示通用按钮 */}
                       {(!midCategory.children || midCategory.children.length === 0) && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs hover:bg-blue-50 hover:border-blue-300 rounded-lg"
+                            className="text-sm hover:bg-blue-50 hover:border-blue-300 rounded-lg px-3 py-2"
                             onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
                           >
                             创建任务
@@ -408,7 +437,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs hover:bg-purple-50 hover:border-purple-300 text-purple-600 rounded-lg"
+                              className="text-sm hover:bg-purple-50 hover:border-purple-300 text-purple-600 rounded-lg px-3 py-2"
                               onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
                               title="时间黑洞"
                             >
