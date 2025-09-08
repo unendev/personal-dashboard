@@ -48,19 +48,68 @@ interface NestedTimerZoneProps {
   onTasksChange: (tasks: TimerTask[]) => void;
   onOperationRecord?: (action: string, taskName: string, details?: string) => void;
   level?: number;
+  parentId?: string; // 添加父级ID用于区分不同层级的弹框
+  collapsedTasks?: Set<string>; // 传递收缩状态
+  onToggleCollapse?: (taskId: string) => void; // 传递收缩切换函数
+  // 弹框状态管理
+  showAddChildDialog?: string | null; // 当前显示的弹框对应的任务ID
+  onShowAddChildDialog?: (taskId: string | null) => void; // 显示/隐藏弹框
+  newChildName?: string; // 子任务名称
+  onNewChildNameChange?: (name: string) => void; // 更新子任务名称
+  newChildCategory?: string; // 子任务分类
+  onNewChildCategoryChange?: (category: string) => void; // 更新子任务分类
+  newChildInitialTime?: string; // 子任务初始时间
+  onNewChildInitialTimeChange?: (time: string) => void; // 更新子任务初始时间
 }
 
 const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({ 
   tasks, 
   onTasksChange, 
   onOperationRecord,
-  level = 0
+  level = 0,
+  parentId,
+  collapsedTasks: externalCollapsedTasks,
+  onToggleCollapse: externalOnToggleCollapse,
+  // 弹框状态
+  showAddChildDialog: externalShowAddChildDialog,
+  onShowAddChildDialog: externalOnShowAddChildDialog,
+  newChildName: externalNewChildName,
+  onNewChildNameChange: externalOnNewChildNameChange,
+  newChildCategory: externalNewChildCategory,
+  onNewChildCategoryChange: externalOnNewChildCategoryChange,
+  newChildInitialTime: externalNewChildInitialTime,
+  onNewChildInitialTimeChange: externalOnNewChildInitialTimeChange
 }) => {
-  const [showAddChildDialog, setShowAddChildDialog] = useState<string | null>(null);
-  const [newChildName, setNewChildName] = useState('');
-  const [newChildCategory, setNewChildCategory] = useState('');
-  const [newChildInitialTime, setNewChildInitialTime] = useState('');
-  const [collapsedTasks, setCollapsedTasks] = useState<Set<string>>(new Set());
+  // 本地状态作为后备
+  const [localShowAddChildDialog, setLocalShowAddChildDialog] = useState<string | null>(null);
+  const [localNewChildName, setLocalNewChildName] = useState('');
+  const [localNewChildCategory, setLocalNewChildCategory] = useState('');
+  const [localNewChildInitialTime, setLocalNewChildInitialTime] = useState('');
+  const [localCollapsedTasks, setLocalCollapsedTasks] = useState<Set<string>>(new Set());
+  
+  // 使用外部状态或本地状态
+  const showAddChildDialog = externalShowAddChildDialog !== undefined ? externalShowAddChildDialog : localShowAddChildDialog;
+  const setShowAddChildDialog = externalOnShowAddChildDialog || setLocalShowAddChildDialog;
+  const newChildName = externalNewChildName !== undefined ? externalNewChildName : localNewChildName;
+  const setNewChildName = externalOnNewChildNameChange || setLocalNewChildName;
+  const newChildCategory = externalNewChildCategory !== undefined ? externalNewChildCategory : localNewChildCategory;
+  const setNewChildCategory = externalOnNewChildCategoryChange || setLocalNewChildCategory;
+  const newChildInitialTime = externalNewChildInitialTime !== undefined ? externalNewChildInitialTime : localNewChildInitialTime;
+  const setNewChildInitialTime = externalOnNewChildInitialTimeChange || setLocalNewChildInitialTime;
+  
+  // 使用外部传入的收缩状态，如果没有则使用本地状态
+  const collapsedTasks = externalCollapsedTasks || localCollapsedTasks;
+  const onToggleCollapse = externalOnToggleCollapse || ((taskId: string) => {
+    setLocalCollapsedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // 使用 useRef 存储滚动位置，避免不必要的重新渲染
@@ -91,26 +140,15 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   }, []);
 
-  // 在组件更新后恢复滚动位置
+  // 在组件更新后恢复滚动位置 - 只在任务数量变化时恢复
   useEffect(() => {
     const timer = setTimeout(() => {
       restoreScrollPosition();
     }, 0);
     return () => clearTimeout(timer);
-  }, [tasks, restoreScrollPosition]);
+  }, [tasks.length, restoreScrollPosition]); // 只在任务数量变化时恢复滚动位置
 
-  // 切换任务收缩状态
-  const toggleTaskCollapse = (taskId: string) => {
-    setCollapsedTasks(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
+  // 切换任务收缩状态函数已移到上面，使用传入的函数或本地函数
 
   // 拖拽传感器配置
   const sensors = useSensors(
@@ -516,6 +554,54 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const initialTimeInSeconds = newChildInitialTime ? parseInt(newChildInitialTime, 10) * 60 : 0;
 
+    // 创建临时任务对象用于乐观更新
+    const tempTask: TimerTask = {
+      id: `temp-${Date.now()}`, // 临时ID
+      name: newChildName.trim(),
+      categoryPath: newChildCategory.trim() || '未分类',
+      elapsedTime: initialTimeInSeconds,
+      initialTime: initialTimeInSeconds,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      parentId: parentId,
+      children: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // 立即更新UI（乐观更新）
+    const addChildRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      return taskList.map(task => {
+        if (task.id === parentId) {
+          return {
+            ...task,
+            children: [...(task.children || []), tempTask]
+          };
+        }
+        if (task.children) {
+          return { ...task, children: addChildRecursive(task.children) };
+        }
+        return task;
+      });
+    };
+
+    const updatedTasks = addChildRecursive(tasks);
+    onTasksChange(updatedTasks);
+    
+    // 重置表单
+    setNewChildName('');
+    setNewChildCategory('');
+    setNewChildInitialTime('');
+    setShowAddChildDialog(null);
+    
+    // 记录操作
+    if (onOperationRecord) {
+      onOperationRecord('创建子任务', newChildName.trim());
+    }
+
+    // 异步处理数据库操作
     try {
       const response = await fetch('/api/timer-tasks', {
         method: 'POST',
@@ -538,34 +624,50 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
       const newTask = await response.json();
 
-      const addChildRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      // 用真实的任务数据替换临时任务
+      const replaceTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
         return taskList.map(task => {
           if (task.id === parentId) {
             return {
               ...task,
-              children: [...(task.children || []), newTask]
+              children: task.children?.map(child => 
+                child.id === tempTask.id ? newTask : child
+              ) || []
             };
           }
           if (task.children) {
-            return { ...task, children: addChildRecursive(task.children) };
+            return { ...task, children: replaceTempTaskRecursive(task.children) };
           }
           return task;
         });
       };
 
-      const updatedTasks = addChildRecursive(tasks);
-      onTasksChange(updatedTasks);
+      const finalTasks = replaceTempTaskRecursive(updatedTasks);
+      onTasksChange(finalTasks);
       
-      setNewChildName('');
-      setNewChildCategory('');
-      setNewChildInitialTime('');
-      setShowAddChildDialog(null);
-      
-      if (onOperationRecord) {
-        onOperationRecord('创建子任务', newChildName.trim());
-      }
+      console.log('子任务创建成功:', newTask.name);
     } catch (error) {
       console.error('Failed to add child task:', error);
+      
+      // 如果数据库操作失败，回滚UI状态
+      const removeTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
+        return taskList.map(task => {
+          if (task.id === parentId) {
+            return {
+              ...task,
+              children: task.children?.filter(child => child.id !== tempTask.id) || []
+            };
+          }
+          if (task.children) {
+            return { ...task, children: removeTempTaskRecursive(task.children) };
+          }
+          return task;
+        });
+      };
+
+      const rolledBackTasks = removeTempTaskRecursive(updatedTasks);
+      onTasksChange(rolledBackTasks);
+      
       alert('创建失败，请重试');
     }
   };
@@ -675,7 +777,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleTaskCollapse(task.id);
+                        onToggleCollapse(task.id);
                       }}
                       variant="ghost"
                       size="sm"
@@ -789,6 +891,18 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             }}
             onOperationRecord={onOperationRecord}
             level={level + 1}
+            parentId={task.id}
+            collapsedTasks={collapsedTasks}
+            onToggleCollapse={onToggleCollapse}
+            // 传递弹框状态
+            showAddChildDialog={showAddChildDialog}
+            onShowAddChildDialog={setShowAddChildDialog}
+            newChildName={newChildName}
+            onNewChildNameChange={setNewChildName}
+            newChildCategory={newChildCategory}
+            onNewChildCategoryChange={setNewChildCategory}
+            newChildInitialTime={newChildInitialTime}
+            onNewChildInitialTimeChange={setNewChildInitialTime}
           />
         )}
       </div>
@@ -840,56 +954,58 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           ))}
         </SortableContext>
 
-        {/* 添加子任务弹框 */}
-        <Dialog open={!!showAddChildDialog} onOpenChange={(open) => !open && setShowAddChildDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>添加子任务</DialogTitle>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  任务名称
-                </label>
-                <Input
-                  value={newChildName}
-                  onChange={(e) => setNewChildName(e.target.value)}
-                  placeholder="输入子任务名称..."
-                  autoFocus
-                />
+        {/* 添加子任务弹框 - 只在顶级层级显示 */}
+        {level === 0 && (
+          <Dialog open={!!showAddChildDialog} onOpenChange={(open) => !open && setShowAddChildDialog(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>添加子任务</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    任务名称
+                  </label>
+                  <Input
+                    value={newChildName}
+                    onChange={(e) => setNewChildName(e.target.value)}
+                    placeholder="输入子任务名称..."
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    分类 (可选)
+                  </label>
+                  <Input
+                    value={newChildCategory}
+                    onChange={(e) => setNewChildCategory(e.target.value)}
+                    placeholder="输入分类..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    初始时间 (分钟, 可选)
+                  </label>
+                  <Input
+                    type="number"
+                    value={newChildInitialTime}
+                    onChange={(e) => setNewChildInitialTime(e.target.value)}
+                    placeholder="例如: 30"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  分类 (可选)
-                </label>
-                <Input
-                  value={newChildCategory}
-                  onChange={(e) => setNewChildCategory(e.target.value)}
-                  placeholder="输入分类..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  初始时间 (分钟, 可选)
-                </label>
-                <Input
-                  type="number"
-                  value={newChildInitialTime}
-                  onChange={(e) => setNewChildInitialTime(e.target.value)}
-                  placeholder="例如: 30"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddChildDialog(null)}>
-                取消
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
-                ➕ 添加子任务
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddChildDialog(null)}>
+                  取消
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => showAddChildDialog && addChildTask(showAddChildDialog)}>
+                  ➕ 添加子任务
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DndContext>
   );

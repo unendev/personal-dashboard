@@ -148,6 +148,29 @@ export default function LogPage() {
   };
 
   const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
+    // 创建临时任务对象用于乐观更新
+    const tempTask = {
+      id: `temp-${Date.now()}`, // 临时ID
+      name: taskName,
+      categoryPath: categoryPath,
+      elapsedTime: initialTime,
+      initialTime: initialTime,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // 立即更新UI（乐观更新）
+    setTimerTasks([tempTask, ...timerTasks]);
+    recordOperation('添加任务', taskName, `初始时间: ${initialTime}秒`);
+    // 关闭模态框
+    setIsCreateLogModalOpen(false);
+    console.log('新任务已添加到列表前面:', tempTask.name);
+
+    // 异步处理数据库操作
     try {
       const newTask = {
         name: taskName,
@@ -172,15 +195,27 @@ export default function LogPage() {
 
       if (response.ok) {
         const createdTask = await response.json();
-        // 将新任务添加到列表最前面
-        setTimerTasks([createdTask, ...timerTasks]);
-        recordOperation('添加任务', taskName, `初始时间: ${initialTime}秒`);
-        // 关闭模态框
-        setIsCreateLogModalOpen(false);
-        console.log('新任务已添加到列表前面:', createdTask.name);
+        
+        // 用真实的任务数据替换临时任务
+        setTimerTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === tempTask.id ? createdTask : task
+          )
+        );
+        
+        console.log('任务创建成功:', createdTask.name);
+      } else {
+        throw new Error('Failed to create task');
       }
     } catch (error) {
       console.error('Failed to add task:', error);
+      
+      // 如果数据库操作失败，回滚UI状态
+      setTimerTasks(prevTasks => 
+        prevTasks.filter(task => task.id !== tempTask.id)
+      );
+      
+      alert('创建失败，请重试');
     }
   };
 
