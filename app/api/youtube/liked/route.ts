@@ -242,7 +242,7 @@ function formatViewCount(count: string): string {
 
 export const revalidate = 600; // 10分钟缓存
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const videos = await getRecommendedVideos();
     

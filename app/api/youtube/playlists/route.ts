@@ -60,7 +60,7 @@ async function getPopularPlaylists(): Promise<YouTubePlaylist[]> {
     }
     
     // 获取播放列表详细信息
-    const playlistIds = searchData.items.map((item: any) => item.id.playlistId).join(',');
+    const playlistIds = searchData.items.map((item: { id: { playlistId: string } }) => item.id.playlistId).join(',');
     const playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistIds}&key=${apiKey}`;
     
     const playlistResponse = await fetch(playlistUrl);
@@ -88,7 +88,7 @@ async function getPopularPlaylists(): Promise<YouTubePlaylist[]> {
 
 export const revalidate = 600; // 10分钟缓存
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const playlists = await getPopularPlaylists();
     

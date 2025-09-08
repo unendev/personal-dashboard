@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, ReactNode } from 'react';
+import React, { useEffect, useRef, useState, useCallback, ReactNode } from 'react';
 
 interface WaterfallGridProps {
   children: ReactNode;
@@ -16,19 +16,19 @@ const WaterfallGrid: React.FC<WaterfallGridProps> = ({
   const gridRef = useRef<HTMLDivElement>(null);
   const [columnCount, setColumnCount] = useState(1);
 
-  const calculateColumnCount = () => {
+  const calculateColumnCount = useCallback(() => {
     if (gridRef.current) {
       const containerWidth = gridRef.current.offsetWidth;
       const newColumnCount = Math.max(1, Math.floor((containerWidth + gap) / (minColumnWidth + gap)));
       setColumnCount(newColumnCount);
     }
-  };
+  }, [minColumnWidth, gap]);
 
   useEffect(() => {
     calculateColumnCount();
     window.addEventListener('resize', calculateColumnCount);
     return () => window.removeEventListener('resize', calculateColumnCount);
-  }, [minColumnWidth, gap]);
+  }, [minColumnWidth, gap, calculateColumnCount]);
 
   const columns: ReactNode[][] = Array.from({ length: columnCount }, () => []);
   const columnHeights: number[] = Array.from({ length: columnCount }, () => 0);

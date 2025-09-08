@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Suspense } from 'react';
 import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
 import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
-import EternalReturnCard from './EternalReturnCard';
+// import EternalReturnCard from './EternalReturnCard';
 import YouTubeLikedCard from './YouTubeLikedCard';
 
 interface InfoSource {

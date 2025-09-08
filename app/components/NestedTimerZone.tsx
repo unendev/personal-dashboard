@@ -125,7 +125,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   );
 
   // 拖拽开始处理函数
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = (_event: DragStartEvent) => {
     // console.log('拖拽开始:', event.active.id);
   };
 

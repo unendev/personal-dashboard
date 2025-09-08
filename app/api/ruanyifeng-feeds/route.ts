@@ -32,26 +32,26 @@ const RUANYIFENG_FEED = {
   avatar: 'https://www.ruanyifeng.com/blog/images/person2_s.jpg',
 };
 
-// 修复编码问题
-function fixEncoding(text: string): string {
-  if (!text) return '';
-  
-  try {
-    // 使用Buffer来处理编码转换
-    const buffer = Buffer.from(text, 'latin1');
-    const utf8Text = buffer.toString('utf8');
-    
-    // 如果转换后的文本包含乱码，则使用原始文本
-    if (utf8Text.includes('�') || utf8Text.length !== text.length) {
-      return text;
-    }
-    
-    return utf8Text;
-  } catch (error) {
-    console.error('Encoding fix error:', error);
-    return text;
-  }
-}
+// 修复编码问题 - 暂时注释掉未使用的函数
+// function fixEncoding(text: string): string {
+//   if (!text) return '';
+//   
+//   try {
+//     // 使用Buffer来处理编码转换
+//     const buffer = Buffer.from(text, 'latin1');
+//     const utf8Text = buffer.toString('utf8');
+//     
+//     // 如果转换后的文本包含乱码，则使用原始文本
+//     if (utf8Text.includes('�') || utf8Text.length !== text.length) {
+//       return text;
+//     }
+//     
+//     return utf8Text;
+//   } catch (error) {
+//     console.error('Encoding fix error:', error);
+//     return text;
+//   }
+// }
 
 // 清理摘要中的冗余广告语
 function cleanSummary(summary: string): string {

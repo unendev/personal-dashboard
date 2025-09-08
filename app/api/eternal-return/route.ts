@@ -293,7 +293,7 @@ async function getChineseL10n(): Promise<Record<string, string> | null> {
       cache.characterMeta.timestamp > 0 && 
       (now - cache.characterMeta.timestamp) < CACHE_DURATION.CHARACTER_META) {
     console.log('使用缓存的中文语言包');
-    return (cache.characterMeta.data as any).l10nData || null;
+    return (cache.characterMeta.data as { l10nData?: Record<string, string> }).l10nData || null;
   }
 
   try {
@@ -432,7 +432,7 @@ async function getItemMeta(): Promise<Record<number, { name: string; iconUrl: st
     const itemMap: Record<number, { name: string; iconUrl: string }> = {};
     
     if (data && data.data && Array.isArray(data.data)) {
-      data.data.forEach((item: any) => {
+      data.data.forEach((item: { code: number; name: string; iconUrl?: string }) => {
         if (item.code && item.name) {
           itemMap[item.code] = {
             name: item.name,
@@ -484,7 +484,7 @@ async function getTraitMeta(): Promise<Record<number, { name: string; iconUrl: s
     const traitMap: Record<number, { name: string; iconUrl: string }> = {};
     
     if (data && data.data && Array.isArray(data.data)) {
-      data.data.forEach((trait: any) => {
+      data.data.forEach((trait: { code: number; name: string; iconUrl?: string }) => {
         if (trait.code && trait.name) {
           traitMap[trait.code] = {
             name: trait.name,

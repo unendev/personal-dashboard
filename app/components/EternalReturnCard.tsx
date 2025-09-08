@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Gamepad2, Trophy, Sword, Users, Clock, AlertCircle, Shield, Target, TrendingUp, MapPin, Package, Zap } from 'lucide-react';
+import { Gamepad2, Trophy, Sword, Users, Clock, AlertCircle, Target, TrendingUp, MapPin, Package, Zap } from 'lucide-react';
 
 interface ERGameData {
   characterNum: number;
@@ -42,19 +42,19 @@ interface ERGameData {
   lastPlayed: string;
 }
 
-interface ERError {
-  error: string;
-  message: string;
-}
+// interface ERError {
+//   error: string;
+//   message: string;
+// }
 
 const EternalReturnCard = () => {
   const [gameData, setGameData] = useState<ERGameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  // const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    // setIsClient(true);
     fetchGameData();
   }, []);
 
