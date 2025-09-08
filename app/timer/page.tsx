@@ -56,17 +56,8 @@ export default function TimerPage() {
           id: task.id
         })));
         
-        // 确保按创建时间降序排序（新任务在前）
-        const sortedData = [...data].sort((a: TimerTask, b: TimerTask) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        
-        console.log('排序后的任务:', sortedData.map((task: TimerTask) => ({
-          name: task.name,
-          createdAt: task.createdAt
-        })));
-        
-        setTasks(sortedData);
+        // 数据库已经按 createdAt 降序返回，无需再次排序
+        setTasks(data);
       }
     } catch (error) {
       console.error('Failed to load tasks:', error);

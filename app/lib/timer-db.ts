@@ -18,10 +18,10 @@ export const TimerDB = {
             include: {
               children: true // 递归包含子任务
             },
-            orderBy: { order: 'asc' }
+            orderBy: { createdAt: 'desc' }
           }
         },
-        orderBy: { order: 'asc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       // 只返回顶级任务（没有父任务的任务）
@@ -45,10 +45,10 @@ export const TimerDB = {
             include: {
               children: true // 递归包含子任务
             },
-            orderBy: { order: 'asc' }
+            orderBy: { createdAt: 'desc' }
           }
         },
-        orderBy: { order: 'asc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       // 只返回顶级任务（没有父任务的任务）
