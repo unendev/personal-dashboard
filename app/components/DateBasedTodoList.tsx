@@ -53,7 +53,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const [newTodo, setNewTodo] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
   
   // 子任务相关状态
   const [showAddSubtaskDialog, setShowAddSubtaskDialog] = useState<string | null>(null);

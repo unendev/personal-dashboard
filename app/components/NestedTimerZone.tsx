@@ -142,13 +142,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   }, []);
 
-  // 在组件更新后恢复滚动位置 - 只在任务数量变化时恢复
+  // 在组件更新后恢复滚动位置 - 监听任务状态变化
   useEffect(() => {
     const timer = setTimeout(() => {
       restoreScrollPosition();
     }, 0);
     return () => clearTimeout(timer);
-  }, [tasks.length, restoreScrollPosition]); // 只在任务数量变化时恢复滚动位置
+  }, [tasks, restoreScrollPosition]); // 监听整个 tasks 数组变化
 
   // 切换任务收缩状态函数已移到上面，使用传入的函数或本地函数
 
@@ -306,7 +306,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     };
 
     if (hasRunningTask(tasks)) {
-      const interval = setInterval(triggerUpdate, 1000);
+      const interval = setInterval(() => {
+        // 只在有运行中任务时才触发更新
+        if (hasRunningTask(tasks)) {
+          triggerUpdate();
+        }
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [tasks, triggerUpdate]);
