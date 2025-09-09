@@ -914,7 +914,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => {
                   e.stopPropagation();
-                  e.preventDefault(); // 防止按钮区域的触摸触发拖拽
+                  // 注意：不能在这里调用 preventDefault()，因为事件监听器是 passive 的
+                  // 拖拽库会自动处理触摸事件
                 }}
               >
                 {task.isRunning ? (
