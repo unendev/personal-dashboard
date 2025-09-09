@@ -194,12 +194,18 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
         
+        // 更新任务数组，同时更新每个任务的 order 字段
+        const updatedTasks = reorderedTasks.map((task, index) => ({
+          ...task,
+          order: index
+        }));
+
         // 更新本地状态
-        onTasksChange(reorderedTasks);
+        onTasksChange(updatedTasks);
 
         // 保存排序到数据库
         try {
-          const taskOrders = reorderedTasks.map((task, index) => ({
+          const taskOrders = updatedTasks.map((task, index) => ({
             id: task.id,
             order: index
           }));
@@ -216,9 +222,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           });
 
           if (response.ok) {
-            console.log('任务排序已保存到数据库:', reorderedTasks.map(t => t.name));
+            console.log('任务排序已保存到数据库');
           } else {
-            console.error('保存排序失败:', response.status);
+            const errorText = await response.text();
+            console.error('保存排序失败:', response.status, errorText);
           }
         } catch (error) {
           console.error('保存排序时出错:', error);
@@ -233,21 +240,23 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   // 对任务进行排序：优先使用order字段，如果没有则使用createdAt
   const sortedTasks = React.useMemo(() => {
-    return [...tasks].sort((a, b) => {
-      // 如果两个任务都有order字段且不为0，按order排序
-      if (a.order !== undefined && b.order !== undefined && a.order !== 0 && b.order !== 0) {
+    const sorted = [...tasks].sort((a, b) => {
+      // 如果两个任务都有order字段，按order排序
+      if (a.order !== undefined && b.order !== undefined) {
         return a.order - b.order;
       }
       // 如果只有一个有order字段，有order的排在前面
-      if (a.order !== undefined && a.order !== 0 && (b.order === undefined || b.order === 0)) {
+      if (a.order !== undefined && b.order === undefined) {
         return -1;
       }
-      if (b.order !== undefined && b.order !== 0 && (a.order === undefined || a.order === 0)) {
+      if (b.order !== undefined && a.order === undefined) {
         return 1;
       }
-      // 如果都没有order字段或都为0，按创建时间降序排序
+      // 如果都没有order字段，按创建时间降序排序
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+    
+    return sorted;
   }, [tasks]);
 
   // 计算任务的当前显示时间（不修改原始数据）
@@ -1050,8 +1059,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         }}
       >
         <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-          {sortedTasks.map(task => (
-            <SortableTaskItem key={task.id} task={task} />
+          {sortedTasks.map((task, index) => (
+            <SortableTaskItem key={`${task.id}-${index}`} task={task} />
           ))}
         </SortableContext>
 

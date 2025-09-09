@@ -33,8 +33,13 @@ export async function POST(request: NextRequest) {
     
     // 检查是否是更新排序请求
     if (body.action === 'updateOrder' && body.taskOrders) {
-      await TimerDB.updateTaskOrder(body.taskOrders);
-      return NextResponse.json({ success: true });
+      try {
+        await TimerDB.updateTaskOrder(body.taskOrders);
+        return NextResponse.json({ success: true });
+      } catch (error) {
+        console.error('排序更新失败:', error);
+        return NextResponse.json({ error: 'Failed to update task order' }, { status: 500 });
+      }
     }
     
     const { 
