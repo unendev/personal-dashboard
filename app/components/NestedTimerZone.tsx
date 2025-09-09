@@ -1059,8 +1059,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         }}
       >
         <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-          {sortedTasks.map((task, index) => (
-            <SortableTaskItem key={`${task.id}-${index}`} task={task} />
+          {sortedTasks.map((task) => (
+            <SortableTaskItem key={task.id} task={task} />
           ))}
         </SortableContext>
 

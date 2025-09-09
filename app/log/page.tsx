@@ -350,14 +350,8 @@ export default function LogPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* 任务清单 */}
-          <DateBasedTodoList 
-            userId={userId}
-            compact={true}
-          />
-
-          {/* 计时器 */}
-          <Card className="hover:shadow-lg transition-shadow duration-200">
+          {/* 计时器 - 在手机端显示在前面 */}
+          <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span className="text-xl">⏱️</span>
@@ -372,6 +366,14 @@ export default function LogPage() {
               />
             </CardContent>
           </Card>
+
+          {/* 任务清单 - 在手机端显示在后面 */}
+          <div className="order-2 lg:order-1">
+            <DateBasedTodoList 
+              userId={userId}
+              compact={true}
+            />
+          </div>
         </div>
 
         {/* 时间统计 */}
