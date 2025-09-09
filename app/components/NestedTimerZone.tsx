@@ -10,6 +10,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -39,6 +40,7 @@ interface TimerTask {
   parentId?: string | null;
   children?: TimerTask[];
   totalTime?: number; // 包含子任务的总时间
+  order?: number; // 排序字段
   createdAt: string;
   updatedAt: string;
 }
@@ -150,11 +152,17 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   // 切换任务收缩状态函数已移到上面，使用传入的函数或本地函数
 
-  // 拖拽传感器配置
+  // 拖拽传感器配置 - 优化移动端支持
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 移动8px后才开始拖拽
+        distance: 3, // 减少到3px，更容易在手机端触发
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 50, // 减少延迟到50ms，提高响应速度
+        tolerance: 8, // 增加容差到8px，更容易触发拖拽
       },
     }),
     useSensor(KeyboardSensor, {
@@ -163,7 +171,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   );
 
   // 拖拽开始处理函数
-  const handleDragStart = (_event: DragStartEvent) => {
+  const handleDragStart = (event: DragStartEvent) => {
+    // 在移动端提供触觉反馈
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50); // 轻微震动反馈
+    }
     // console.log('拖拽开始:', event.active.id);
   };
 
@@ -185,9 +197,32 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         // 更新本地状态
         onTasksChange(reorderedTasks);
 
-        // 暂时禁用排序保存功能，等待数据库迁移完成
-        // TODO: 重新启用排序保存功能
-        console.log('任务排序已更新（本地）:', reorderedTasks.map(t => t.name));
+        // 保存排序到数据库
+        try {
+          const taskOrders = reorderedTasks.map((task, index) => ({
+            id: task.id,
+            order: index
+          }));
+
+          const response = await fetch('/api/timer-tasks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'updateOrder',
+              taskOrders: taskOrders
+            }),
+          });
+
+          if (response.ok) {
+            console.log('任务排序已保存到数据库:', reorderedTasks.map(t => t.name));
+          } else {
+            console.error('保存排序失败:', response.status);
+          }
+        } catch (error) {
+          console.error('保存排序时出错:', error);
+        }
         
         if (onOperationRecord) {
           onOperationRecord('移动任务', `${tasks[oldIndex]?.name} 移动到位置 ${newIndex + 1}`);
@@ -195,6 +230,25 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       }
     }
   };
+
+  // 对任务进行排序：优先使用order字段，如果没有则使用createdAt
+  const sortedTasks = React.useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      // 如果两个任务都有order字段且不为0，按order排序
+      if (a.order !== undefined && b.order !== undefined && a.order !== 0 && b.order !== 0) {
+        return a.order - b.order;
+      }
+      // 如果只有一个有order字段，有order的排在前面
+      if (a.order !== undefined && a.order !== 0 && (b.order === undefined || b.order === 0)) {
+        return -1;
+      }
+      if (b.order !== undefined && b.order !== 0 && (a.order === undefined || a.order === 0)) {
+        return 1;
+      }
+      // 如果都没有order字段或都为0，按创建时间降序排序
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [tasks]);
 
   // 计算任务的当前显示时间（不修改原始数据）
   const getCurrentDisplayTime = (task: TimerTask): number => {
@@ -751,21 +805,44 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           } ${
             isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-md'
           }`}
-          title="拖拽重新排序"
+          style={{
+            // 移动端优化：改善触摸体验
+            touchAction: 'none', // 防止默认触摸行为干扰拖拽
+            userSelect: 'none', // 防止文本选择
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            // 确保拖拽区域有足够的触摸目标
+            minHeight: '44px', // iOS 推荐的最小触摸目标
+            // 改善拖拽体验
+            WebkitTapHighlightColor: 'transparent',
+            // 确保拖拽时不会触发其他手势
+            overscrollBehavior: 'none'
+          }}
+          title="长按并拖拽重新排序"
           onClick={(e) => {
-            // 阻止默认的点击行为，避免页面滚动
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // 阻止任何可能导致页面滚动的行为
-            if (e.target === e.currentTarget) {
-              // 如果点击的是卡片本身（而不是内部的按钮），什么都不做
-              return;
+            // 只在非拖拽状态下阻止默认行为
+            if (!isDragging) {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // 阻止任何可能导致页面滚动的行为
+              if (e.target === e.currentTarget) {
+                // 如果点击的是卡片本身（而不是内部的按钮），什么都不做
+                return;
+              }
             }
           }}
           onMouseDown={(e) => {
-            // 在鼠标按下时就阻止默认行为
-            e.preventDefault();
+            // 只在非拖拽状态下阻止默认行为
+            if (!isDragging) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+          onTouchStart={(e) => {
+            // 允许触摸事件正常传播，不阻止拖拽
+            // 确保触摸事件能够被拖拽传感器正确处理
             e.stopPropagation();
           }}
         >
@@ -817,9 +894,19 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               
               <div 
                 className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end" 
-                style={{ zIndex: 10 }}
+                style={{ 
+                  zIndex: 10,
+                  // 确保按钮区域不会干扰拖拽
+                  touchAction: 'manipulation',
+                  // 防止按钮区域触发拖拽
+                  pointerEvents: 'auto'
+                }}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault(); // 防止按钮区域的触摸触发拖拽
+                }}
               >
                 {task.isRunning ? (
                   task.isPaused ? (
@@ -927,9 +1014,16 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             <ol className="text-xs text-yellow-700 mt-1 ml-4 list-decimal">
               <li>点击右上角&ldquo;添加顶级任务&rdquo;按钮</li>
               <li>输入任务名称创建任务</li>
-                              <li>在任务卡片右侧找到绿色&ldquo;➕ 添加子任务&rdquo;按钮</li>
+              <li>在任务卡片右侧找到绿色&ldquo;➕ 添加子任务&rdquo;按钮</li>
               <li>点击即可创建子任务，实现无限嵌套</li>
+              <li>长按任务卡片可拖拽重新排序</li>
             </ol>
+          </div>
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800 font-medium">📱 手机端拖拽提示：</p>
+            <p className="text-xs text-green-700 mt-1">
+              在手机上，长按任务卡片约0.5秒后即可开始拖拽重新排序。拖拽时会有轻微震动反馈。
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -947,9 +1041,16 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         ref={scrollContainerRef}
         className="space-y-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area"
         onScroll={saveScrollPosition}
+        style={{
+          // 移动端优化：防止拖拽时的滚动冲突
+          touchAction: 'pan-y',
+          WebkitOverflowScrolling: 'touch',
+          // 确保滚动容器不会干扰拖拽
+          overscrollBehavior: 'contain'
+        }}
       >
-        <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map(task => (
+        <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+          {sortedTasks.map(task => (
             <SortableTaskItem key={task.id} task={task} />
           ))}
         </SortableContext>
