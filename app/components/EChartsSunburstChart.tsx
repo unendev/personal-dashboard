@@ -85,11 +85,12 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({ tasks }) =>
       '#ea7ccc', '#ff9f7f', '#ffdb5c', '#37a2da'
     ];
 
-    categoryMap.forEach((value, category, index) => {
+    let colorIndex = 0;
+    categoryMap.forEach((value, category) => {
       const categoryParts = category.split('/');
       let currentLevel = root;
       
-      categoryParts.forEach((part, partIndex) => {
+      categoryParts.forEach((part) => {
         const existingChild = currentLevel.children?.find(child => child.name === part);
         if (existingChild) {
           currentLevel = existingChild;
@@ -99,11 +100,12 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({ tasks }) =>
             value: Math.max(value.time, 0),
             children: [],
             itemStyle: {
-              color: colors[index % colors.length]
+              color: colors[colorIndex % colors.length]
             }
           };
           currentLevel.children.push(newChild);
           currentLevel = newChild;
+          colorIndex++;
         }
       });
     });
@@ -145,7 +147,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({ tasks }) =>
         },
         label: {
           show: true,
-          formatter: function (params: any) {
+          formatter: function (params: { data: { children?: unknown[] }; name: string }) {
             // 只显示叶子节点的标签
             if (params.data.children && params.data.children.length > 0) {
               return '';
@@ -203,7 +205,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({ tasks }) =>
     ],
     tooltip: {
       trigger: 'item',
-      formatter: function (params: any) {
+      formatter: function (params: { data: { name: string; value: number } }) {
         const data = params.data;
         const time = formatTime(data.value);
         return `${data.name}<br/>时间: ${time}`;
@@ -212,7 +214,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({ tasks }) =>
     animation: true,
     animationType: 'scale',
     animationEasing: 'elasticOut',
-    animationDelay: function (idx: number) {
+    animationDelay: function () {
       return Math.random() * 200;
     }
   };
