@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
 
 interface InstanceTag {
   id: string;
@@ -37,15 +38,50 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
     const loadInstanceTags = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/instance-tags?userId=${userId}`);
-        if (response.ok) {
-          const tags = await response.json();
-          setAvailableTags(tags);
+        // 首先尝试从缓存加载
+        const cachedData = InstanceTagCache.loadFromStorage();
+        if (cachedData && cachedData.length > 0) {
+          console.log('使用本地缓存的事务项数据:', cachedData.length);
+          setAvailableTags(cachedData);
+          setIsLoading(false);
+          
+          // 异步检查更新（不阻塞UI）
+          checkForUpdates();
+          return;
         }
+
+        // 如果没有本地缓存，从API加载
+        const tags = await InstanceTagCache.preload(userId);
+        setAvailableTags(tags);
       } catch (error) {
         console.error('加载事务项失败:', error);
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    // 异步检查更新的函数
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch(`/api/instance-tags?userId=${userId}`);
+        if (response.ok) {
+          const newData = await response.json();
+          const currentData = InstanceTagCache.getInstanceTags();
+          
+          // 简单比较数据是否有变化（比较长度和第一个事务项名）
+          const hasChanges = !currentData || 
+            currentData.length !== newData.length ||
+            (currentData.length > 0 && newData.length > 0 && 
+             currentData[0].name !== newData[0].name);
+          
+          if (hasChanges) {
+            console.log('检测到事务项数据更新，静默更新缓存');
+            InstanceTagCache.updateInstanceTags(newData);
+            setAvailableTags(newData);
+          }
+        }
+      } catch (error) {
+        console.log('检查事务项更新失败（不影响用户体验）:', error);
       }
     };
 
@@ -78,6 +114,10 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
       if (response.ok) {
         const newTag = await response.json();
         setAvailableTags(prev => [...prev, newTag]);
+        
+        // 更新缓存
+        InstanceTagCache.addInstanceTag(newTag);
+        
         setNewTagName('');
         setShowCreateDialog(false);
         

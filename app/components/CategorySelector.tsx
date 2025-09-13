@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { createLog } from '@/app/actions';
 import { getBeijingTime } from '@/lib/utils';
 import { CategoryCache } from '@/app/lib/category-cache';
+import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
 import InstanceTagSelector from './InstanceTagSelector';
 
 type CategoryNode = {
@@ -56,9 +57,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       // 如果没有本地缓存，显示加载状态并从API加载
       setIsCategoriesLoading(true);
       try {
-        const data = await CategoryCache.preload();
-        console.log('从API加载的分类数据:', data);
-        setCategories(Array.isArray(data) ? data : []);
+        // 并行预加载分类和事务项数据
+        const [categoryData, instanceTagData] = await Promise.all([
+          CategoryCache.preload(),
+          InstanceTagCache.preload('user-1')
+        ]);
+        
+        console.log('从API加载的分类数据:', categoryData);
+        console.log('从API加载的事务项数据:', instanceTagData.length);
+        setCategories(Array.isArray(categoryData) ? categoryData : []);
       } catch (e) {
         console.error('加载分类失败', e);
         setCategories([]);

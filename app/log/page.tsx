@@ -10,6 +10,7 @@ import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
 import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
+import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
 
 export default function LogPage() {
   const [isPageReady, setIsPageReady] = useState(false);
@@ -47,18 +48,22 @@ export default function LogPage() {
   // 用于点击外部区域关闭折叠栏的ref
   const operationHistoryRef = useRef<HTMLDivElement>(null);
 
-  // 预加载分类数据
+  // 预加载分类和事务项数据
   useEffect(() => {
-    const preloadCategories = async () => {
+    const preloadData = async () => {
       try {
-        await CategoryCache.preload();
-        console.log('分类数据预加载完成');
+        // 并行预加载分类和事务项数据
+        await Promise.all([
+          CategoryCache.preload(),
+          InstanceTagCache.preload('user-1')
+        ]);
+        console.log('分类和事务项数据预加载完成');
       } catch (error) {
-        console.error('预加载分类失败:', error);
+        console.error('预加载数据失败:', error);
       }
     };
 
-    preloadCategories();
+    preloadData();
   }, []);
 
   // 从数据库加载任务

@@ -156,13 +156,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // 减少到3px，更容易在手机端触发
+        distance: 5, // 适中的距离，避免误触发
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 50, // 减少延迟到50ms，提高响应速度
-        tolerance: 8, // 增加容差到8px，更容易触发拖拽
+        delay: 100, // 稍微增加延迟，确保用户意图明确
+        tolerance: 5, // 适中的容差
       },
     }),
     useSensor(KeyboardSensor, {
@@ -174,14 +174,33 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     // 在移动端提供触觉反馈
     if ('vibrate' in navigator) {
-      navigator.vibrate(50); // 轻微震动反馈
+      navigator.vibrate(30); // 轻微震动反馈
     }
+    
+    // 添加视觉反馈：高亮拖拽手柄
+    const activeElement = document.querySelector(`[data-rbd-draggable-id="${event.active.id}"]`);
+    if (activeElement) {
+      const dragHandle = activeElement.querySelector('[data-drag-handle]');
+      if (dragHandle) {
+        dragHandle.classList.add('bg-gray-700');
+      }
+    }
+    
     // console.log('拖拽开始:', event.active.id);
   };
 
   // 拖拽结束处理函数
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    // 清理视觉反馈
+    const activeElement = document.querySelector(`[data-rbd-draggable-id="${active.id}"]`);
+    if (activeElement) {
+      const dragHandle = activeElement.querySelector('[data-drag-handle]');
+      if (dragHandle) {
+        dragHandle.classList.remove('bg-gray-700');
+      }
+    }
     
     // console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
 
@@ -811,8 +830,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     return (
       <div ref={setNodeRef} style={{ ...style, ...indentStyle }} {...attributes}>
         <Card 
-          {...listeners} // 整个卡片可拖拽
-          className={`transition-all duration-200 mb-3 cursor-grab active:cursor-grabbing bg-gray-900 text-white ${
+          className={`transition-all duration-200 mb-3 bg-gray-900 text-white ${
             task.isRunning ? 'border-blue-300' : 'border-gray-600'
           } ${
             hasChildren ? 'border-l-4 border-l-green-400' : ''
@@ -821,7 +839,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           }`}
           style={{
             // 移动端优化：改善触摸体验
-            touchAction: 'none', // 防止默认触摸行为干扰拖拽
             userSelect: 'none', // 防止文本选择
             WebkitUserSelect: 'none',
             MozUserSelect: 'none',
@@ -833,35 +850,61 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             // 确保拖拽时不会触发其他手势
             overscrollBehavior: 'none'
           }}
-          title="长按并拖拽重新排序"
-          onClick={(e) => {
-            // 只在非拖拽状态下阻止默认行为
-            if (!isDragging) {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              // 阻止任何可能导致页面滚动的行为
-              if (e.target === e.currentTarget) {
-                // 如果点击的是卡片本身（而不是内部的按钮），什么都不做
-                return;
-              }
-            }
-          }}
-          onMouseDown={(e) => {
-            // 只在非拖拽状态下阻止默认行为
-            if (!isDragging) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-          onTouchStart={(e) => {
-            // 允许触摸事件正常传播，不阻止拖拽
-            // 确保触摸事件能够被拖拽传感器正确处理
-            e.stopPropagation();
-          }}
         >
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* 移动端拖拽手柄 - 顶部居中 */}
+              <div className="flex justify-center mb-3 sm:hidden">
+                <div 
+                  {...listeners}
+                  data-drag-handle
+                  className="cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 flex items-center justify-center"
+                  style={{
+                    // 移动端优化：确保触摸目标足够大
+                    minWidth: '44px',
+                    minHeight: '44px',
+                    touchAction: 'none', // 防止默认触摸行为干扰拖拽
+                    // 确保拖拽手柄区域不会触发其他手势
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                  title="拖拽重新排序"
+                >
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 桌面端拖拽手柄 - 左侧 */}
+              <div 
+                {...listeners}
+                data-drag-handle
+                className="hidden sm:flex flex-shrink-0 cursor-grab active:cursor-grabbing p-2 -m-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 items-center justify-center"
+                style={{
+                  // 移动端优化：确保触摸目标足够大
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  touchAction: 'none', // 防止默认触摸行为干扰拖拽
+                  // 确保拖拽手柄区域不会触发其他手势
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+                title="拖拽重新排序"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+              </div>
+
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                   {hasChildren && (
@@ -1031,13 +1074,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               <li>输入任务名称创建任务</li>
               <li>在任务卡片右侧找到绿色&ldquo;➕ 添加子任务&rdquo;按钮</li>
               <li>点击即可创建子任务，实现无限嵌套</li>
-              <li>长按任务卡片可拖拽重新排序</li>
+              <li>长按拖拽手柄可重新排序（手机端在顶部，桌面端在左侧）</li>
             </ol>
           </div>
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-800 font-medium">📱 手机端拖拽提示：</p>
             <p className="text-xs text-green-700 mt-1">
-              在手机上，长按任务卡片约0.5秒后即可开始拖拽重新排序。拖拽时会有轻微震动反馈。
+              在手机上，长按任务卡片顶部的拖拽手柄（六个小圆点）约0.1秒后即可开始拖拽重新排序。拖拽时会有轻微震动反馈。
             </p>
           </div>
         </CardContent>
