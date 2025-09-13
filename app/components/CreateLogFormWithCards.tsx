@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number) => void;
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => void;
 }
 
 export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
@@ -58,7 +58,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         />
         <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-100 rounded-lg p-3">
           <span className="text-lg">💡</span>
-          <span>点击分类按钮创建任务，或点击🕳️按钮直接创建时间黑洞</span>
+          <span>点击分类按钮快速创建任务（默认使用分类名），或点击🕳️按钮直接创建时间黑洞</span>
         </div>
       </div>
 

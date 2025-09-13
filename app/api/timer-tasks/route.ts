@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       userId = 'user-1', // 默认用户ID
       name, 
       categoryPath, 
+      instanceTag, // 保留：向后兼容的实例标签字段
+      instanceTagNames, // 新增：事务项名称数组
       elapsedTime, 
       initialTime, 
       isRunning, 
@@ -66,6 +68,8 @@ export async function POST(request: NextRequest) {
       userId,
       name,
       categoryPath,
+      instanceTag: instanceTag || null, // 保留：向后兼容的实例标签字段
+      instanceTagNames: instanceTagNames || [], // 新增：事务项名称数组
       elapsedTime: elapsedTime || 0,
       initialTime: initialTime || 0,
       isRunning: isRunning || false,

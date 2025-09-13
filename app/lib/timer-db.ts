@@ -60,18 +60,171 @@ export const TimerDB = {
   },
 
   // 添加新任务
-  addTask: async (task: Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children'>): Promise<TimerTask> => {
+  addTask: async (task: Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children'> & { instanceTagNames?: string[] }): Promise<TimerTask> => {
     try {
+      const { instanceTagNames, ...taskData } = task;
+      
+      // 创建任务
       const newTask = await prisma.timerTask.create({
-        data: task,
+        data: taskData,
         include: {
-          children: true
+          children: true,
+          instanceTags: {
+            include: {
+              instanceTag: true
+            }
+          }
         }
       });
+
+      // 如果有事务项，创建关联
+      if (instanceTagNames && instanceTagNames.length > 0) {
+        for (const tagName of instanceTagNames) {
+          // 查找或创建事务项
+          let instanceTag = await prisma.instanceTag.findFirst({
+            where: {
+              name: tagName,
+              userId: taskData.userId
+            }
+          });
+
+          if (!instanceTag) {
+            instanceTag = await prisma.instanceTag.create({
+              data: {
+                name: tagName,
+                userId: taskData.userId
+              }
+            });
+          }
+
+          // 创建关联
+          await prisma.timerTaskInstanceTag.create({
+            data: {
+              timerTaskId: newTask.id,
+              instanceTagId: instanceTag.id
+            }
+          });
+        }
+
+        // 重新获取任务以包含新的事务项关联
+        const updatedTask = await prisma.timerTask.findUnique({
+          where: { id: newTask.id },
+          include: {
+            children: true,
+            instanceTags: {
+              include: {
+                instanceTag: true
+              }
+            }
+          }
+        });
+
+        return updatedTask || newTask;
+      }
+
       return newTask;
     } catch (error) {
       console.error('Failed to add timer task:', error);
       throw error;
+    }
+  },
+
+  // 更新任务的实例标签
+  updateInstanceTag: async (taskId: string, instanceTag: string | null): Promise<TimerTask> => {
+    try {
+      const updatedTask = await prisma.timerTask.update({
+        where: { id: taskId },
+        data: { instanceTag },
+        include: {
+          children: {
+            include: {
+              children: true
+            }
+          }
+        }
+      });
+      return updatedTask;
+    } catch (error) {
+      console.error('Failed to update instance tag:', error);
+      throw error;
+    }
+  },
+
+  // 获取实例标签统计
+  getInstanceStats: async (userId: string, startDate?: string, endDate?: string): Promise<{
+    instanceTag: string;
+    totalTime: number;
+    taskCount: number;
+  }[]> => {
+    try {
+      const whereClause: { userId: string; instanceTag?: { not: null } } = { 
+        userId,
+        instanceTag: { not: null }
+      };
+
+      if (startDate && endDate) {
+        (whereClause as any).date = {
+          gte: startDate,
+          lte: endDate
+        };
+      }
+
+      const tasks = await prisma.timerTask.findMany({
+        where: whereClause,
+        select: {
+          instanceTag: true,
+          elapsedTime: true
+        }
+      });
+
+      // 按实例标签聚合数据
+      const statsMap = new Map<string, { totalTime: number; taskCount: number }>();
+      
+      tasks.forEach(task => {
+        if (task.instanceTag) {
+          const current = statsMap.get(task.instanceTag) || { totalTime: 0, taskCount: 0 };
+          statsMap.set(task.instanceTag, {
+            totalTime: current.totalTime + task.elapsedTime,
+            taskCount: current.taskCount + 1
+          });
+        }
+      });
+
+      // 转换为数组并按总时间排序
+      return Array.from(statsMap.entries())
+        .map(([instanceTag, stats]) => ({
+          instanceTag,
+          totalTime: stats.totalTime,
+          taskCount: stats.taskCount
+        }))
+        .sort((a, b) => b.totalTime - a.totalTime);
+    } catch (error) {
+      console.error('Failed to get instance stats:', error);
+      return [];
+    }
+  },
+
+  // 获取所有使用过的实例标签（用于自动完成）
+  getInstanceTags: async (userId: string): Promise<string[]> => {
+    try {
+      const tasks = await prisma.timerTask.findMany({
+        where: {
+          userId,
+          instanceTag: { not: null }
+        },
+        select: {
+          instanceTag: true
+        },
+        distinct: ['instanceTag']
+      });
+
+      return tasks
+        .map(task => task.instanceTag)
+        .filter((tag): tag is string => tag !== null)
+        .sort();
+    } catch (error) {
+      console.error('Failed to get instance tags:', error);
+      return [];
     }
   },
 

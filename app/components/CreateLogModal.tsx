@@ -8,7 +8,7 @@ interface CreateLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number) => void;
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => void;
 }
 
 const CreateLogModal: React.FC<CreateLogModalProps> = ({ 

@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
+import InstanceTagSwitcher from './InstanceTagSwitcher';
 
 interface TimerTask {
   id: string;
   name: string;
   categoryPath: string;
+  instanceTag?: string | null;
   elapsedTime: number;
   initialTime: number; // 初始时间（秒）
   isRunning: boolean;
@@ -214,6 +216,40 @@ const TimerZone: React.FC<TimerZoneProps> = ({
     }
   };
 
+  const updateInstanceTag = async (taskId: string, newInstanceTag: string | null) => {
+    try {
+      const response = await fetch(`/api/timer-tasks/${taskId}/instance`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ instanceTag: newInstanceTag }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update instance tag');
+      }
+
+      // 更新本地状态
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, instanceTag: newInstanceTag };
+        }
+        return task;
+      });
+      onTasksChange(updatedTasks);
+
+      // 记录操作
+      const task = tasks.find(t => t.id === taskId);
+      if (task && onOperationRecord) {
+        onOperationRecord('更新实例标签', task.name, `新标签: ${newInstanceTag || '无'}`);
+      }
+    } catch (error) {
+      console.error('Failed to update instance tag:', error);
+      alert('更新实例标签失败，请重试');
+    }
+  };
+
   const deleteTimer = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
@@ -330,6 +366,13 @@ const TimerZone: React.FC<TimerZoneProps> = ({
                 <p className="text-sm text-gray-500 mt-1 break-words">
                   {task.categoryPath}
                 </p>
+                <div className="mt-2">
+                  <InstanceTagSwitcher
+                    currentInstanceTag={task.instanceTag}
+                    onUpdate={(newInstanceTag) => updateInstanceTag(task.id, newInstanceTag)}
+                    disabled={task.isRunning}
+                  />
+                </div>
                 <div className="text-lg font-mono text-blue-600 mt-2">
                   {formatDisplayTime(task.elapsedTime)}
                   {task.initialTime > 0 && task.elapsedTime === task.initialTime && (

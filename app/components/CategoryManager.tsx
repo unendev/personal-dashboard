@@ -335,8 +335,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
       
       {/* 分类卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {categories.map((topCategory) => (
-          <Card key={topCategory.name} className="shadow-lg hover:shadow-xl transition-shadow">
+        {categories.map((topCategory, index) => (
+          <Card key={`${topCategory.id}-${index}`} className="shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
               <CardTitle className="text-lg font-bold text-gray-800 flex justify-between items-center">
                 {topCategory.name}
@@ -362,8 +362,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
             </CardHeader>
             <CardContent className="p-4">
               <div className="grid grid-cols-1 gap-3">
-                {topCategory.children?.map((midCategory) => (
-                  <Card key={midCategory.name} className="border border-gray-200 hover:border-blue-300 transition-colors">
+                {topCategory.children?.map((midCategory, midIndex) => (
+                  <Card key={`${midCategory.id}-${midIndex}`} className="border border-gray-200 hover:border-blue-300 transition-colors">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-semibold text-gray-700 flex justify-between items-center">
                         {midCategory.name}
@@ -389,8 +389,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex flex-wrap gap-2">
-                        {midCategory.children?.map((subCategory) => (
-                          <div key={subCategory.name} className="relative group">
+                        {midCategory.children?.map((subCategory, subIndex) => (
+                          <div key={`${subCategory.id}-${subIndex}`} className="relative group">
                             <Button
                               variant="outline"
                               size="sm"

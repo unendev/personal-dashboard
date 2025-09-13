@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import SkillCard from '@/app/components/SkillCard'
 import CreateSkillForm from '@/app/components/CreateSkillForm'
+import InstanceStatsView from '@/app/components/InstanceStatsView'
 import { levelUpSkill } from '@/app/actions'
 import type { Skill } from '@prisma/client'
 import Link from 'next/link'
@@ -52,6 +53,11 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">技能树</h1>
           <p className="text-gray-600">追踪你的技能成长和经验积累</p>
+        </div>
+
+        {/* 实例统计视图 */}
+        <div key="instance-stats" className="mb-8">
+          <InstanceStatsView />
         </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

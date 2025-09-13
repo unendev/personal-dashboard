@@ -147,12 +147,13 @@ export default function LogPage() {
     }
   };
 
-  const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
+  const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0, instanceTagNames?: string) => {
     // 创建临时任务对象用于乐观更新
     const tempTask = {
       id: `temp-${Date.now()}`, // 临时ID
       name: taskName,
       categoryPath: categoryPath,
+      instanceTag: instanceTagNames || null,
       elapsedTime: initialTime,
       initialTime: initialTime,
       isRunning: false,
@@ -175,6 +176,8 @@ export default function LogPage() {
       const newTask = {
         name: taskName,
         categoryPath: categoryPath,
+        instanceTag: instanceTagNames || null,
+        instanceTagNames: instanceTagNames ? instanceTagNames.split(',') : [],
         elapsedTime: initialTime,
         initialTime: initialTime,
         isRunning: false,

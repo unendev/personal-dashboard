@@ -61,16 +61,13 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
       const category = task.categoryPath || '未分类';
       const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
       
-      // 根据分类层级决定统计到哪个级别
+      // 新的两层分类体系：直接使用两级分类
       const categoryParts = category.split('/');
       let targetCategory: string;
       
-      // 如果有三级分类，统计到第二级（父类）
-      if (categoryParts.length >= 3) {
+      if (categoryParts.length >= 2) {
+        // 使用完整的两级分类路径
         targetCategory = categoryParts.slice(0, 2).join('/');
-      } else if (categoryParts.length === 2) {
-        // 如果有两级分类，统计到第一级
-        targetCategory = categoryParts[0];
       } else {
         // 如果只有一级分类，直接统计
         targetCategory = category;
@@ -137,16 +134,13 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
       const category = task.categoryPath || '未分类';
       const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
       
-      // 根据分类层级决定统计到哪个级别
+      // 新的两层分类体系：直接使用两级分类
       const categoryParts = category.split('/');
       let targetCategory: string;
       
-      // 如果有三级分类，统计到第二级（父类）
-      if (categoryParts.length >= 3) {
+      if (categoryParts.length >= 2) {
+        // 使用完整的两级分类路径
         targetCategory = categoryParts.slice(0, 2).join('/');
-      } else if (categoryParts.length === 2) {
-        // 如果有两级分类，统计到第一级
-        targetCategory = categoryParts[0];
       } else {
         // 如果只有一级分类，直接统计
         targetCategory = category;
@@ -219,16 +213,13 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
       const category = task.categoryPath || '未分类';
       const taskTotalTime = calculateTotalTime(task); // 这个已经包含了子任务的时间
       
-      // 根据分类层级决定统计到哪个级别
+      // 新的两层分类体系：直接使用两级分类
       const categoryParts = category.split('/');
       let targetCategory: string;
       
-      // 如果有三级分类，统计到第二级（父类）
-      if (categoryParts.length >= 3) {
+      if (categoryParts.length >= 2) {
+        // 使用完整的两级分类路径
         targetCategory = categoryParts.slice(0, 2).join('/');
-      } else if (categoryParts.length === 2) {
-        // 如果有两级分类，统计到第一级
-        targetCategory = categoryParts[0];
       } else {
         // 如果只有一级分类，直接统计
         targetCategory = category;

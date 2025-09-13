@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { createLog } from '@/app/actions';
 import { getBeijingTime } from '@/lib/utils';
 import { CategoryCache } from '@/app/lib/category-cache';
+import InstanceTagSelector from './InstanceTagSelector';
 
 type CategoryNode = {
   id: string;
@@ -19,7 +20,7 @@ interface CategorySelectorProps {
   className?: string;
   onLogSaved?: () => void;
   onSelected?: (path: string, taskName: string) => void; // 新增的回调
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number) => void; // 新增：添加到计时器的回调
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => void; // 新增：添加到计时器的回调
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSaved, onSelected, onAddToTimer }) => {
@@ -28,11 +29,12 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState('');
+  const [instanceTags, setInstanceTags] = useState<string[]>([]);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{type: string, path: string, name: string} | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [createType, setCreateType] = useState<'top' | 'mid' | 'sub'>('top');
+  const [createType, setCreateType] = useState<'top' | 'mid'>('top');
   const [createParentPath, setCreateParentPath] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
@@ -93,17 +95,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     load();
   }, []);
 
-  const handleSubCategoryClick = (topName: string, midName: string, subName: string) => {
-    const path = `${topName}/${midName}/${subName}`;
+  const handleSubCategoryClick = (topName: string, midName: string, subName?: string) => {
+    // 新的两层分类体系：只使用顶级分类和子分类
+    const path = subName ? `${topName}/${midName}` : `${topName}/${midName}`;
     setSelectedPath(path);
-    // 任务名称默认为空，让用户手动输入
-    setTaskName('');
+    // 默认使用子分类名作为任务名，符合重构文档的要求
+    setTaskName(midName);
     setShowDialog(true);
   };
 
   // 时间黑洞直接创建功能 - 使用分类名作为任务名
-  const handleTimeHoleCreate = async (topName: string, midName: string, subName: string) => {
-    const path = `${topName}/${midName}/${subName}`;
+  const handleTimeHoleCreate = async (topName: string, midName: string, subName?: string) => {
+    // 新的两层分类体系：只使用顶级分类和子分类
+    const path = `${topName}/${midName}`;
     const taskName = subName || midName || topName; // 使用最具体的分类名作为任务名
     
     // 直接创建时间黑洞任务，不需要用户输入
@@ -115,7 +119,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     setShowDeleteConfirm(true);
   };
 
-  const handleCreateCategory = (type: 'top' | 'mid' | 'sub', parentPath: string = '') => {
+  const handleCreateCategory = (type: 'top' | 'mid', parentPath: string = '') => {
     setCreateType(type);
     setCreateParentPath(parentPath);
     setShowCreateDialog(true);
@@ -188,10 +192,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   };
 
   // 乐观更新：立即添加到计时器，然后异步处理数据库操作
-  const handleOptimisticAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0) => {
+  const handleOptimisticAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0, instanceTags?: string[]) => {
     // 立即调用回调，给用户即时反馈
     if (onAddToTimer) {
-      onAddToTimer(taskName, categoryPath, initialTime);
+      onAddToTimer(taskName, categoryPath, initialTime, instanceTags?.join(','));
     }
 
     // 如果提供了选择回调，也立即调用
@@ -202,6 +206,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     // 重置表单
     setTaskName('');
     setDuration('');
+    setInstanceTags([]);
     setShowDialog(false);
     
     // 调用保存回调
@@ -214,14 +219,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
     // 后台异步处理数据库操作
     try {
-      // 构建分类数据
+      // 构建分类数据 - 新的两层分类体系
       const pathParts = categoryPath.split('/');
       const categories = [{
         name: pathParts[0] || '',
         subCategories: [{
           name: pathParts[1] || '',
           activities: [{
-            name: pathParts[2] || taskName,
+            name: taskName, // 直接使用任务名称
             duration: initialTime ? `${Math.floor(initialTime / 60)}m` : '0m'
           }]
         }]
@@ -264,16 +269,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   // 在提交时转换时间格式 - 使用乐观更新
   const handleSubmitWithFormat = async () => {
-    if (!taskName.trim()) {
-      alert('请输入任务名称');
-      return;
-    }
+    // 如果没有输入任务名称，使用分类路径的最后一部分作为任务名
+    const finalTaskName = taskName.trim() || selectedPath.split('/').pop() || '未命名任务';
 
     // 解析时间输入并转换为秒数
     const initialTimeSeconds = parseTimeToSeconds(duration);
 
     // 使用乐观更新：立即添加到计时器，然后异步处理数据库操作
-    await handleOptimisticAddToTimer(taskName.trim(), selectedPath, initialTimeSeconds);
+    await handleOptimisticAddToTimer(finalTaskName, selectedPath, initialTimeSeconds, instanceTags);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -317,8 +320,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
     <div className={className}>
       {/* 分类网格布局 - 更宽松的排列 */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-        {categories.map((topCategory) => (
-          <Card key={topCategory.name} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+        {categories.map((topCategory, index) => (
+          <Card key={`${topCategory.id}-${index}`} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="relative overflow-hidden">
               {/* 背景装饰 */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -353,102 +356,55 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 md:p-4 space-y-3 overflow-hidden">
-              {/* 中类卡片 */}
-              <div className="space-y-3">
-                {topCategory.children?.map((midCategory) => (
-                  <div key={midCategory.name} className="bg-gray-50/50 rounded-xl p-2 md:p-3 hover:bg-gray-100/50 transition-colors overflow-hidden">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-700">{midCategory.name}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full w-6 h-6 p-0 text-xs"
-                          onClick={() => handleCreateCategory('sub', `${topCategory.name}/${midCategory.name}`)}
-                          title="添加子分类"
-                        >
-                          +
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full w-6 h-6 p-0 text-xs"
-                          onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
-                          title="删除"
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    </div>
-                    {/* 子类按钮 - 更宽松的间距 */}
-                    <div className="flex flex-wrap gap-2 md:gap-3 overflow-x-auto">
-                      {midCategory.children?.map((subCategory) => (
-                        <div key={subCategory.name} className="relative group flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={`text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg px-3 py-2 min-w-0 ${
-                              topCategory.name === '时间黑洞' ? 'pr-10 md:pr-12' : 'pr-8 md:pr-10'
-                            }`}
-                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, subCategory.name)}
-                          >
-                            <span className="truncate">{subCategory.name}</span>
-                          </Button>
-                          {/* 只在时间黑洞分类的第三层级显示时间黑洞按钮 */}
-                          {topCategory.name === '时间黑洞' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation"
-                              onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, subCategory.name)}
-                              title="时间黑洞"
-                            >
-                              🕳️
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation ${
-                              topCategory.name === '时间黑洞' ? 'right-8 md:right-10' : 'right-2'
-                            }`}
-                            onClick={() => handleDeleteCategory('sub', `${topCategory.name}/${midCategory.name}`, subCategory.name)}
-                            title="删除"
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ))}
-                      {/* 如果中类没有子类，显示通用按钮 */}
-                      {(!midCategory.children || midCategory.children.length === 0) && (
-                        <div className="flex gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-sm hover:bg-blue-50 hover:border-blue-300 rounded-lg px-3 py-2"
-                            onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name, '')}
-                          >
-                            创建任务
-                          </Button>
-                          {/* 只在时间黑洞分类显示时间黑洞按钮 */}
-                          {topCategory.name === '时间黑洞' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-sm hover:bg-purple-50 hover:border-purple-300 text-purple-600 rounded-lg px-3 py-2"
-                              onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name, '')}
-                              title="时间黑洞"
-                            >
-                              🕳️ 时间黑洞
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+              {/* 子分类按钮 - 新的两层分类体系 */}
+              <div className="flex flex-wrap gap-2 md:gap-3 overflow-x-auto">
+                {topCategory.children?.map((midCategory, midIndex) => (
+                  <div key={`${midCategory.id}-${midIndex}`} className="relative group flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg px-3 py-2 min-w-0 ${
+                        topCategory.name === '时间黑洞' ? 'pr-10 md:pr-12' : 'pr-8 md:pr-10'
+                      }`}
+                      onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name)}
+                    >
+                      <span className="truncate">{midCategory.name}</span>
+                    </Button>
+                    {/* 只在时间黑洞分类显示时间黑洞按钮 */}
+                    {topCategory.name === '时间黑洞' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation"
+                        onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name)}
+                        title="时间黑洞"
+                      >
+                        🕳️
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation ${
+                        topCategory.name === '时间黑洞' ? 'right-8 md:right-10' : 'right-2'
+                      }`}
+                      onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
+                      title="删除"
+                    >
+                      ×
+                    </Button>
                   </div>
                 ))}
+                {/* 添加子分类按钮 */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-sm hover:bg-green-50 hover:border-green-300 text-green-600 rounded-lg px-3 py-2"
+                  onClick={() => handleCreateCategory('mid', topCategory.name)}
+                  title="添加子分类"
+                >
+                  + 添加子分类
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -474,13 +430,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
-                任务名称
+                任务名称 <span className="text-gray-500 font-normal">(可选，默认为分类名)</span>
               </label>
               <Input
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入具体任务名称..."
+                placeholder="可修改任务名称，或直接使用分类名..."
                 className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
                 autoFocus
               />
@@ -498,6 +454,12 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
               />
             </div>
+
+            <InstanceTagSelector
+              selectedTags={instanceTags}
+              onTagsChange={setInstanceTags}
+              userId="user-1"
+            />
           </div>
           <DialogFooter className="gap-3">
             <Button 
@@ -510,7 +472,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             <Button 
               variant="default" 
               onClick={handleSubmitWithFormat} 
-              disabled={!taskName.trim()}
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-6"
             >
               ⏱️ 添加到计时器
