@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'userId and text are required' }, { status: 400 });
     }
 
-    // 获取当前最大order值
-    const maxOrder = await prisma.todo.findFirst({
+    // 获取当前最小order值，让新任务排在最前面
+    const minOrder = await prisma.todo.findFirst({
       where: {
         userId,
         parentId: parentId || null
       },
-      orderBy: { order: 'desc' },
+      orderBy: { order: 'asc' },
       select: { order: true }
     });
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         category,
         date: new Date().toISOString().split('T')[0], // 保留date字段用于记录创建日期，但不用于过滤
         parentId: parentId || null,
-        order: (maxOrder?.order || 0) + 1,
+        order: Math.max(0, (minOrder?.order || 0) - 1), // 新任务获得更小的order值，排在最前面
         createdAtUnix: Math.floor(Date.now() / 1000)
       }
     });

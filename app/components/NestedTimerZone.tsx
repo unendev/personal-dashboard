@@ -260,18 +260,22 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   // 对任务进行排序：优先使用order字段，如果没有则使用createdAt
   const sortedTasks = React.useMemo(() => {
     const sorted = [...tasks].sort((a, b) => {
-      // 如果两个任务都有order字段，按order排序
-      if (a.order !== undefined && b.order !== undefined) {
+      // 如果两个任务都有order字段且order >= 0，按order排序
+      if (a.order !== undefined && b.order !== undefined && a.order >= 0 && b.order >= 0) {
+        // 如果order相同，按createdAt降序排序（新任务在前）
+        if (a.order === b.order) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
         return a.order - b.order;
       }
-      // 如果只有一个有order字段，有order的排在前面
-      if (a.order !== undefined && b.order === undefined) {
+      // 如果只有一个有有效的order字段，有order的排在前面
+      if (a.order !== undefined && a.order >= 0 && (b.order === undefined || b.order < 0)) {
         return -1;
       }
-      if (b.order !== undefined && a.order === undefined) {
+      if (b.order !== undefined && b.order >= 0 && (a.order === undefined || a.order < 0)) {
         return 1;
       }
-      // 如果都没有order字段，按创建时间降序排序
+      // 如果都没有有效的order字段，按创建时间降序排序（新任务在前）
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     
@@ -641,6 +645,27 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const initialTimeInSeconds = newChildInitialTime ? parseInt(newChildInitialTime, 10) * 60 : 0;
 
+    // 找到父任务，获取其子任务数量来确定新任务的order
+    const findParentTask = (taskList: TimerTask[]): TimerTask | null => {
+      for (const task of taskList) {
+        if (task.id === parentId) return task;
+        if (task.children) {
+          const found = findParentTask(task.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const parentTask = findParentTask(tasks);
+    const existingChildrenCount = parentTask?.children?.length || 0;
+    
+    // 计算新任务的order值：现有子任务的最大order值 + 1，如果没有子任务则为0
+    const maxOrder = parentTask?.children && parentTask.children.length > 0 
+      ? Math.max(...parentTask.children.map(child => child.order || 0))
+      : -1;
+    const newOrder = maxOrder + 1;
+    
     // 创建临时任务对象用于乐观更新
     const tempTask: TimerTask = {
       id: `temp-${Date.now()}`, // 临时ID
@@ -654,6 +679,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       pausedTime: 0,
       parentId: parentId,
       children: [],
+      order: newOrder, // 设置为正确的order值，确保新任务显示在最下面
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -701,7 +727,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           parentId: parentId,
           date: new Date().toISOString().split('T')[0],
           initialTime: initialTimeInSeconds,
-          elapsedTime: initialTimeInSeconds
+          elapsedTime: initialTimeInSeconds,
+          order: newOrder // 使用计算出的正确order值
         }),
       });
 

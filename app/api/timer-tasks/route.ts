@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       completedAt, 
       date,
       parentId, // 新增：父任务ID
-      order = 0 // 新增：排序字段
+      order = 0 // 新增：排序字段，默认0确保新任务显示在最下面
     } = body;
 
     if (!name || !categoryPath || !date) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       completedAt: completedAt || null,
       date,
       parentId: parentId || null, // 支持父任务ID
-      order: order || 0 // 支持排序
+      order: order !== undefined ? order : 0 // 支持排序，默认0确保新任务显示在最下面
     });
 
     return NextResponse.json(newTask, { status: 201 });

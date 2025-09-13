@@ -261,10 +261,21 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       }
     });
 
-    // 第三遍：对每个层级的任务进行排序
+    // 第三遍：对每个层级的任务进行排序 - 与计时器区域保持一致
     const sortTodos = (todoList: TodoItem[]): TodoItem[] => {
       return todoList
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .sort((a, b) => {
+          // 优先按order字段排序
+          const orderA = a.order || 0;
+          const orderB = b.order || 0;
+          
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          
+          // 如果order相同，按创建时间降序排序（新任务在前）
+          return b.createdAtUnix - a.createdAtUnix;
+        })
         .map(todo => ({
           ...todo,
           children: todo.children ? sortTodos(todo.children) : []

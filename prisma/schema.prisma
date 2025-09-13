@@ -18,6 +18,7 @@ model User {
   spotifyAccessTokenExpiresAt DateTime?         @map("spotify_access_token_expires_at")
   spotifyRefreshToken         String?           @map("spotify_refresh_token")
   aiSummaries                 AISummary[]
+  instanceTags                InstanceTag[]
   logs                        Log[]
   operationRecords            OperationRecord[]
   quests                      Quest[]
@@ -25,8 +26,6 @@ model User {
   timerTasks                  TimerTask[]
   todos                       Todo[]
   layout                      UserLayout?
-  // 新增：事务项关联
-  instanceTags                InstanceTag[]
 
   @@map("users")
 }
@@ -120,28 +119,25 @@ model LogCategory {
   @@map("log_categories")
 }
 
-// 新增：事务项模型
 model InstanceTag {
-  id        String   @id @default(cuid())
-  name      String   @unique // 事务项名称，如 "#个人门户", "#修Bug"
-  userId    String   // 用户ID，支持多用户
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // 关联到TimerTask
+  id         String                 @id @default(cuid())
+  name       String                 @unique
+  userId     String
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   timerTasks TimerTaskInstanceTag[]
 
   @@map("instance_tags")
 }
 
-// 新增：TimerTask和InstanceTag的多对多关联表
 model TimerTaskInstanceTag {
-  id           String     @id @default(cuid())
-  timerTaskId  String
+  id            String      @id @default(cuid())
+  timerTaskId   String
   instanceTagId String
-  createdAt    DateTime   @default(now())
-  timerTask    TimerTask  @relation(fields: [timerTaskId], references: [id], onDelete: Cascade)
-  instanceTag  InstanceTag @relation(fields: [instanceTagId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  instanceTag   InstanceTag @relation(fields: [instanceTagId], references: [id], onDelete: Cascade)
+  timerTask     TimerTask   @relation(fields: [timerTaskId], references: [id], onDelete: Cascade)
 
   @@unique([timerTaskId, instanceTagId])
   @@map("timer_task_instance_tags")
@@ -157,28 +153,27 @@ model UserLayout {
 }
 
 model TimerTask {
-  id           String      @id @default(cuid())
+  id           String                 @id @default(cuid())
   name         String
   categoryPath String
-  instanceTag  String?     // 新增：实例标签字段，用于存储特定实例名称（如 @OnePieceManga）
-  elapsedTime  Int         @default(0)
-  initialTime  Int         @default(0)
-  isRunning    Boolean     @default(false)
+  elapsedTime  Int                    @default(0)
+  initialTime  Int                    @default(0)
+  isRunning    Boolean                @default(false)
   startTime    Int?
-  isPaused     Boolean     @default(false)
-  pausedTime   Int         @default(0)
+  isPaused     Boolean                @default(false)
+  pausedTime   Int                    @default(0)
   completedAt  Int?
   date         String
   userId       String
   parentId     String?
-  order        Int         @default(0)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  parent       TimerTask?  @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children     TimerTask[] @relation("TaskHierarchy")
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // 新增：事务项关联
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  order        Int                    @default(0)
+  instanceTag  String?
   instanceTags TimerTaskInstanceTag[]
+  parent       TimerTask?             @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     TimerTask[]            @relation("TaskHierarchy")
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("timer_tasks")
 }
@@ -230,6 +225,17 @@ model AISummary {
 
   @@unique([userId, date])
   @@map("ai_summaries")
+}
+
+model posts {
+  id               String    @id
+  title            String
+  url              String
+  core_issue       String?
+  key_info         Json?
+  post_type        String?
+  value_assessment String?
+  timestamp        DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 enum QuestStatus {
