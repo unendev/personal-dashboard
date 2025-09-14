@@ -31,6 +31,7 @@ interface TimerTask {
   id: string;
   name: string;
   categoryPath: string;
+  instanceTag?: string | null; // 事物项标签
   elapsedTime: number;
   initialTime: number;
   isRunning: boolean;
@@ -852,17 +853,29 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const totalTime = calculateTotalTime(task);
     const hasChildren = task.children && task.children.length > 0;
     const isCollapsed = collapsedTasks.has(task.id);
+    const hasInstanceTag = task.instanceTag && task.instanceTag.trim() !== '';
     const indentStyle = { marginLeft: `${level * 20}px` };
 
     return (
       <div ref={setNodeRef} style={{ ...style, ...indentStyle }} {...attributes}>
         <Card 
-          className={`transition-all duration-200 mb-3 bg-gray-900 text-white ${
-            task.isRunning ? 'border-blue-300' : 'border-gray-600'
+          className={`transition-all duration-200 mb-3 text-white ${
+            // 基础背景色 - 使用明确的颜色值避免DarkReader问题
+            hasInstanceTag ? 'bg-slate-800' : 'bg-gray-900'
           } ${
-            hasChildren ? 'border-l-4 border-l-green-400' : ''
+            // 边框颜色
+            task.isRunning 
+              ? (hasInstanceTag ? 'border-orange-400' : 'border-blue-300')
+              : (hasInstanceTag ? 'border-orange-600' : 'border-gray-600')
           } ${
+            // 子任务左边框
+            hasChildren ? (hasInstanceTag ? 'border-l-4 border-l-orange-400' : 'border-l-4 border-l-green-400') : ''
+          } ${
+            // 拖拽效果
             isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-md'
+          } ${
+            // 事物项特殊效果
+            hasInstanceTag ? 'shadow-orange-500/30 shadow-lg' : ''
           }`}
           style={{
             // 移动端优化：改善触摸体验
@@ -942,19 +955,33 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       }}
                       variant="ghost"
                       size="sm"
-                      className="p-1 h-6 w-6 text-green-400 hover:text-green-300 hover:bg-green-400/20 flex-shrink-0"
+                      className={`p-1 h-6 w-6 flex-shrink-0 ${
+                        hasInstanceTag 
+                          ? "text-orange-400 hover:text-orange-300 hover:bg-orange-400/20" 
+                          : "text-green-400 hover:text-green-300 hover:bg-green-400/20"
+                      }`}
                       title={isCollapsed ? "展开子任务" : "收缩子任务"}
                     >
                       {isCollapsed ? "▶" : "▼"}
                     </Button>
                   )}
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    hasChildren ? 'bg-green-400' : 'bg-gray-400'
+                    hasChildren 
+                      ? (hasInstanceTag ? 'bg-orange-400' : 'bg-green-400')
+                      : (hasInstanceTag ? 'bg-orange-300' : 'bg-gray-400')
                   }`}></div>
                   <h3 className="font-medium text-white break-words min-w-0 flex-1">
-                    {task.name}
+                    {/* 有事物项时显示事物项名称，否则显示任务名称 */}
+                    {hasInstanceTag ? task.instanceTag : task.name}
+                    {hasInstanceTag && (
+                      <span className="text-xs text-orange-300 ml-2 whitespace-nowrap">
+                        🏷️ {task.name}
+                      </span>
+                    )}
                     {hasChildren && (
-                      <span className="text-xs text-green-400 ml-2 whitespace-nowrap">
+                      <span className={`text-xs ml-2 whitespace-nowrap ${
+                        hasInstanceTag ? 'text-orange-300' : 'text-green-400'
+                      }`}>
                         ({task.children!.length}个子任务)
                       </span>
                     )}
@@ -963,14 +990,18 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 <p className="text-sm text-gray-300 break-words">
                   {task.categoryPath}
                 </p>
-                <div className="text-lg font-mono text-blue-400 mt-1">
+                <div className={`text-lg font-mono mt-1 ${
+                  hasInstanceTag ? 'text-orange-300' : 'text-blue-400'
+                }`}>
                   {formatDisplayTime(getCurrentDisplayTime(task))}
                   {task.initialTime > 0 && task.elapsedTime === task.initialTime && (
                     <span className="text-xs text-gray-400 ml-2">(预设时间)</span>
                   )}
                 </div>
                 {hasChildren && (
-                  <div className="text-sm text-green-400 mt-1">
+                  <div className={`text-sm mt-1 ${
+                    hasInstanceTag ? 'text-orange-300' : 'text-green-400'
+                  }`}>
                     总计: {formatTime(totalTime)}
                   </div>
                 )}
@@ -998,7 +1029,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                     <Button 
                       onClick={() => resumeTimer(task.id)}
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className={hasInstanceTag 
+                        ? "bg-orange-600 hover:bg-orange-700 text-white" 
+                        : "bg-green-600 hover:bg-green-700"
+                      }
                     >
                       继续
                     </Button>
@@ -1007,6 +1041,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       onClick={() => pauseTimer(task.id)}
                       variant="outline"
                       size="sm"
+                      className={hasInstanceTag 
+                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                        : ""
+                      }
                     >
                       暂停
                     </Button>
@@ -1015,7 +1053,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   <Button 
                     onClick={() => startTimer(task.id)}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className={hasInstanceTag 
+                      ? "bg-orange-600 hover:bg-orange-700 text-white" 
+                      : "bg-blue-600 hover:bg-blue-700"
+                    }
                   >
                     开始
                   </Button>
@@ -1026,6 +1067,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   variant="outline"
                   size="sm"
                   title="添加子任务"
+                  className={hasInstanceTag 
+                    ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                    : ""
+                  }
                 >
                   ➕
                 </Button>
@@ -1034,7 +1079,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   onClick={() => deleteTimer(task.id)}
                   variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className={hasInstanceTag 
+                    ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
+                    : "text-red-600 hover:text-red-700"
+                  }
                 >
                   删除
                 </Button>
