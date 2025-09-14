@@ -91,18 +91,18 @@ export class AIService {
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
-    // 按计时状态分类（这是一个纯计时系统，没有传统意义上的"完成"状态）
-    const activeTasks = tasks.filter(task => task.isRunning && !task.isPaused); // 正在运行的任务
-    const pausedTasks = tasks.filter(task => task.isPaused); // 暂停的任务
-    const stoppedTasks = tasks.filter(task => !task.isRunning && !task.isPaused); // 停止的任务
+    // 简化状态统计：只关注有计时时间的任务
+    // 过滤掉没有计时时间的任务（elapsedTime = 0）
+    const tasksWithTime = tasks.filter(task => task.elapsedTime > 0);
+    const tasksWithoutTime = tasks.filter(task => task.elapsedTime === 0);
 
     return {
       totalTime,
       taskCount,
       categories,
-      completedTasks: stoppedTasks.length, // 将停止的任务视为"完成"状态
-      runningTasks: activeTasks.length,
-      pausedTasks: pausedTasks.length,
+      completedTasks: tasksWithTime.length, // 有计时时间的任务
+      runningTasks: 0, // 不再统计运行状态
+      pausedTasks: tasksWithoutTime.length, // 没有计时时间的任务
       tasks: tasks.map(task => ({
         id: task.id,
         name: task.name,
@@ -128,18 +128,16 @@ export class AIService {
     const systemPrompt = `你是一个专业的时间管理和效率分析助手。请根据用户的计时数据生成详细的分析总结。
 
 重要说明：
-这是一个纯计时系统，任务没有传统的"完成"状态概念。任务只有三种状态：
-- 正在运行：当前正在计时中
-- 暂停：计时暂停但任务未结束
-- 停止：计时结束（相当于传统意义上的"完成"）
+这是一个纯计时系统，重点关注时间投入而非任务状态。请忽略任务的状态信息（运行/暂停/停止），只关注实际的时间投入情况。
 
 分析要求：
-1. 提供简洁明了的总体总结
+1. 提供简洁明了的总体总结，重点关注时间分配
 2. 识别时间分配模式和计时习惯
-3. 分析任务的计时状态分布
+3. 分析各类别的时间投入情况
 4. 给出具体的时间管理改进建议
 5. 使用中文回复
-6. 重点关注时间投入而非任务完成情况
+6. 重点关注时间投入而非任务完成状态
+7. 不要提及任务状态分布，只分析时长数据
 
 请以以下格式回复：
 {
@@ -152,9 +150,7 @@ export class AIService {
 日期：${date}
 总计时时间：${Math.floor(data.totalTime / 3600)}小时${Math.floor((data.totalTime % 3600) / 60)}分钟
 任务总数：${data.taskCount}个
-停止计时：${data.completedTasks}个（计时结束的任务）
-正在计时：${data.runningTasks}个（当前正在计时中）
-暂停计时：${data.pausedTasks}个（计时暂停中）
+有效计时任务：${data.completedTasks}个（有计时时间的任务）
 
 时间分配：
 ${Object.entries(data.categories).map(([category, time]) => 
@@ -162,8 +158,8 @@ ${Object.entries(data.categories).map(([category, time]) =>
 ).join('\n')}
 
 任务详情：
-${data.tasks.map(task => 
-  `- ${task.name} (${task.categoryPath}): ${Math.floor(task.elapsedTime / 3600)}小时${Math.floor((task.elapsedTime % 3600) / 60)}分钟 ${task.isRunning && !task.isPaused ? '⏱️正在计时' : task.isPaused ? '⏸️暂停中' : '⏹️计时结束'}`
+${data.tasks.filter(task => task.elapsedTime > 0).map(task => 
+  `- ${task.name} (${task.categoryPath}): ${Math.floor(task.elapsedTime / 3600)}小时${Math.floor((task.elapsedTime % 3600) / 60)}分钟`
 ).join('\n')}`;
 
     const response = await fetch(this.DEEPSEEK_API_URL, {
@@ -252,9 +248,9 @@ ${data.tasks.map(task =>
       insights.push(`在"${topCategory[0]}"类别上投入了最多时间，占总时间的${Math.round(topCategory[1] / totalTime * 100)}%。`);
     }
 
-    const stoppedTasks = tasks.filter(task => !task.isRunning && !task.isPaused);
-    if (stoppedTasks.length > 0) {
-      insights.push(`结束了${stoppedTasks.length}个任务的计时，时间管理良好！`);
+    const tasksWithTime = tasks.filter(task => task.elapsedTime > 0);
+    if (tasksWithTime.length > 0) {
+      insights.push(`完成了${tasksWithTime.length}个任务的时间投入，时间管理良好！`);
     }
 
     const summary = `今天总共计时了${Math.floor(totalTime / 3600)}小时${Math.floor((totalTime % 3600) / 60)}分钟，涉及${taskCount}个任务。${insights.join(' ')}`;
