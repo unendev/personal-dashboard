@@ -46,6 +46,17 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   const [taskDetails, setTaskDetails] = React.useState<TaskDetail[]>([]);
   const [showTaskList, setShowTaskList] = React.useState(true); // 默认显示任务列表
 
+  // 递归计算任务的总时间（包括子任务）
+  const calculateTotalTime = React.useCallback((task: TimerTask): number => {
+    let total = task.elapsedTime;
+    if (task.children) {
+      task.children.forEach(child => {
+        total += calculateTotalTime(child);
+      });
+    }
+    return total;
+  }, []);
+
   // 初始化时设置默认的任务详情数据 - 显示所有任务按耗时时长排序
   React.useEffect(() => {
     if (tasks.length > 0) {
@@ -65,18 +76,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       setTaskDetails(sortedTasks);
       setSelectedCategory('所有任务');
     }
-  }, [tasks]);
-
-  // 递归计算任务的总时间（包括子任务）
-  const calculateTotalTime = (task: TimerTask): number => {
-    let total = task.elapsedTime;
-    if (task.children) {
-      task.children.forEach(child => {
-        total += calculateTotalTime(child);
-      });
-    }
-    return total;
-  };
+  }, [tasks, calculateTotalTime]);
 
   // 获取指定分类下的具体事物项（按两级分类匹配）
   const getTasksByCategory = (categoryPath: string): TaskDetail[] => {
@@ -100,7 +100,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   };
 
   // 构建 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持“其他”聚合）
-  const buildEChartsSunburstData = () => {
+  const buildEChartsSunburstData = React.useCallback(() => {
     // 预聚合成两级分类结构：First -> Second -> TaskDetail[]
     const firstLevelMap = new Map<string, Map<string, TaskDetail[]>>();
     tasks.forEach(task => {
@@ -221,7 +221,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     root.value = root.children.reduce((s, c) => s + c.value, 0);
     if (root.value <= 0) root.value = 1;
     return root;
-  };
+  }, [tasks, detailTopN, detailMinPercent, minLeafSeconds, showAllLeaf, calculateTotalTime]);
 
   const formatTime = React.useCallback((seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -232,13 +232,13 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return `${minutes}分钟`;
   }, []);
 
-  const sunburstData = React.useMemo(() => buildEChartsSunburstData(), [tasks, detailTopN, detailMinPercent, minLeafSeconds, showAllLeaf]);
+  const sunburstData = React.useMemo(() => buildEChartsSunburstData(), [buildEChartsSunburstData]);
   const totalSecondsAllTasks = React.useMemo(() => {
     return tasks.reduce((sum, task) => sum + calculateTotalTime(task), 0);
-  }, [tasks]);
+  }, [tasks, calculateTotalTime]);
 
   // 处理点击事件
-  const handleChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string }; treePathInfo?: Array<{ name?: string }> }) => {
+  const handleChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
     const clickedData = params?.data;
 
     // 仅在我们定义的叶子（任务项）点击时触发
@@ -247,11 +247,11 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         || (Array.isArray(params?.treePathInfo)
           ? params.treePathInfo
               .map((p: { name?: string }) => p?.name)
-              .filter((n: string) => !!n && n !== '总时间')
+              .filter((n: string | undefined) => !!n && n !== '总时间')
               .slice(0, 2)
               .join('/')
           : null)
-        || findCategoryPathForTask(clickedData.fullName || params.name);
+        || findCategoryPathForTask(clickedData.fullName || params.name || '');
 
       if (categoryPath) {
         const tasks = getTasksByCategory(categoryPath);
@@ -362,7 +362,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   }), [sunburstData, formatTime]);
 
   // 添加点击事件处理
-  const onChartClick = (params: any) => {
+  const onChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
     handleChartClick(params);
   };
 

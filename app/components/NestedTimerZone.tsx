@@ -674,7 +674,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     };
 
     const parentTask = findParentTask(tasks);
-    const existingChildrenCount = parentTask?.children?.length || 0;
+    // const existingChildrenCount = parentTask?.children?.length || 0;
     
     // 计算新任务的order值：现有子任务的最大order值 + 1，如果没有子任务则为0
     const maxOrder = parentTask?.children && parentTask.children.length > 0 

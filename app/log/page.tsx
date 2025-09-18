@@ -260,20 +260,239 @@ export default function LogPage() {
     );
   }
 
-  // 如果未登录，重定向到登录页面
+  // Mock 数据用于访客演示
+  const mockTimerTasks = [
+    {
+      id: "mock-1",
+      name: "学习 React Hooks",
+      categoryPath: "学习/前端开发",
+      instanceTag: "编程",
+      elapsedTime: 3600, // 1小时
+      initialTime: 0,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      order: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "mock-2",
+      name: "阅读技术文档",
+      categoryPath: "学习/技术研究",
+      instanceTag: "学习",
+      elapsedTime: 1800, // 30分钟
+      initialTime: 0,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      order: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "mock-3",
+      name: "项目代码审查",
+      categoryPath: "工作/代码质量",
+      instanceTag: "工作",
+      elapsedTime: 2700, // 45分钟
+      initialTime: 0,
+      isRunning: false,
+      startTime: null,
+      isPaused: false,
+      pausedTime: 0,
+      order: 2,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ];
+
+  const mockOperationHistory = [
+    {
+      id: "op-1",
+      action: "开始计时",
+      taskName: "学习 React Hooks",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
+      details: "开始学习 React Hooks 相关概念"
+    },
+    {
+      id: "op-2",
+      action: "暂停计时",
+      taskName: "阅读技术文档",
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1小时前
+      details: "休息一下，喝杯咖啡"
+    },
+    {
+      id: "op-3",
+      action: "添加任务",
+      taskName: "项目代码审查",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30分钟前
+      details: "新增代码审查任务"
+    }
+  ];
+
+  // 如果未登录，显示访客演示页面
   if (status === "unauthenticated") {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🔐</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">需要登录</h2>
-          <p className="text-gray-600 mb-6">请先登录以访问日志页面</p>
-          <Link
-            href="/auth/signin"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-          >
-            前往登录
-          </Link>
+      <div className="log-page-layout">
+        {/* 访客提示栏 */}
+        <div className="fixed top-4 left-4 right-4 z-40">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
+            {/* 左侧：返回按钮 */}
+            <Link
+              href="/"
+              className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+            >
+              <span className="text-gray-600 font-medium text-lg">←</span>
+            </Link>
+
+            {/* 右侧：访客提示和登录按钮 */}
+            <div className="flex items-center gap-3">
+              {/* 访客提示 */}
+              <div className="flex items-center gap-2 bg-yellow-50/90 backdrop-blur-sm border border-yellow-200 rounded-full px-3 py-2 shadow-sm">
+                <span className="text-sm font-medium text-yellow-700">
+                  👀 访客模式
+                </span>
+              </div>
+              
+              {/* 登录按钮 */}
+              <Link
+                href="/auth/signin"
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <span className="text-sm font-medium">登录</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* 页面导航 */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex space-x-6">
+            <a href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</a>
+            <a href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
+            <a href="/log" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">📝 每日日志</a>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-8">
+          {/* 访客欢迎信息 */}
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎯</div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">欢迎体验个人门户系统</h1>
+                <p className="text-gray-600 mb-4">
+                  这是一个演示页面，展示了时间管理、任务跟踪和数据分析功能。
+                  登录后可以创建和管理您自己的数据。
+                </p>
+                <div className="flex gap-3">
+                  <Link
+                    href="/auth/signin"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                  >
+                    立即登录
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 日期过滤器 */}
+          <div className="mb-8">
+            <DateFilter 
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* 计时器 - 在手机端显示在前面 */}
+            <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl">⏱️</span>
+                  计时器 (演示数据)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NestedTimerZone
+                  tasks={mockTimerTasks}
+                  onTasksChange={() => {}} // 访客模式下不允许修改
+                  onOperationRecord={() => {}} // 访客模式下不允许记录操作
+                />
+              </CardContent>
+            </Card>
+
+            {/* 任务清单 - 在手机端显示在后面 */}
+            <div className="order-2 lg:order-1">
+              <Card className="hover:shadow-lg transition-shadow duration-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">📋</span>
+                    任务清单 (演示数据)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {mockTimerTasks.map((task) => (
+                      <div key={task.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-800">{task.name}</h4>
+                          <p className="text-sm text-gray-600">{task.categoryPath}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-blue-600">
+                            {Math.floor(task.elapsedTime / 3600)}h {Math.floor((task.elapsedTime % 3600) / 60)}m
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* 时间统计 */}
+          <div className="mb-8">
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl">📊</span>
+                  时间统计 (演示数据)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TimeStatsChart tasks={mockTimerTasks} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI总结 */}
+          <div className="mb-8">
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl">🤖</span>
+                  AI总结 (演示数据)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                  <h3 className="font-semibold text-gray-800 mb-2">今日学习总结</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
+                    总共投入了 2.25 小时的学习时间，其中 React Hooks 学习占用了 1 小时，
+                    技术文档阅读 30 分钟，代码审查 45 分钟。学习效率较高，
+                    建议继续保持这种学习节奏。
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );

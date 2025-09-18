@@ -24,7 +24,7 @@ export default function TestLinuxDoExpansion() {
             </div>
             <div className="flex items-start gap-2">
               <span className="text-blue-400 mt-1">•</span>
-              <span>添加了"展开/收起"按钮，可以控制内容的显示状态</span>
+              <span>添加了&quot;展开/收起&quot;按钮，可以控制内容的显示状态</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-blue-400 mt-1">•</span>

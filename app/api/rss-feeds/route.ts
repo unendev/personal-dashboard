@@ -36,7 +36,7 @@ export async function GET() {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           },
-          timeout: 10000
+          timeout: 15000 // 增加超时时间到15秒
         });
 
         const feed = await parser.parseString(response.data);

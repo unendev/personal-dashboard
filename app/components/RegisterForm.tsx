@@ -60,7 +60,7 @@ export default function RegisterForm() {
         const data = await response.json()
         setError(data.error || "注册失败")
       }
-    } catch (error) {
+    } catch (_error) {
       setError("注册失败，请重试")
     } finally {
       setIsLoading(false)

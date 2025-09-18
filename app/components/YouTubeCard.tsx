@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface YouTubeVideo {
   id: string;
@@ -122,9 +123,11 @@ const YouTubeCard: React.FC = () => {
         className="block group"
       >
         <div className="relative overflow-hidden rounded-xl mb-4 hover:scale-[1.02] transition-transform duration-300">
-          <img
+          <Image
             src={video.thumbnail}
             alt={video.title}
+            width={400}
+            height={192}
             className="w-full h-48 object-cover"
             loading="lazy"
           />

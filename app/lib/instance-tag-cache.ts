@@ -61,7 +61,7 @@ export const InstanceTagCache = {
 
   // 预加载事务项数据
   async preload(userId: string = 'user-1'): Promise<InstanceTag[]> {
-    const cacheKey = `${CACHE_KEY}_${userId}`;
+    // const cacheKey = `${CACHE_KEY}_${userId}`;
     
     if (cachePromise) {
       return cachePromise;

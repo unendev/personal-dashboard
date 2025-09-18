@@ -53,7 +53,6 @@ export async function GET(request: Request) {
 
     // 生成报告元数据
     const reportDate = targetDate.toISOString().split('T')[0];
-    const highValueCount = posts.filter(post => post.value_assessment === '高').length;
     
     // 按类型统计
     const typeStats = posts.reduce((acc, post) => {
@@ -63,7 +62,7 @@ export async function GET(request: Request) {
     }, {} as Record<string, number>);
 
     // 生成摘要信息
-    const summary = generateSummary(posts, typeStats);
+    const summary = generateSummary(posts);
 
     const report = {
       meta: {
@@ -89,7 +88,7 @@ export async function GET(request: Request) {
 }
 
 // 生成摘要信息的辅助函数
-function generateSummary(posts: Array<{ value_assessment?: string; post_type?: string }>, typeStats: Record<string, number>) {
+function generateSummary(posts: Array<{ value_assessment?: string | null; post_type?: string | null; title: string }>) {
   const highValuePosts = posts.filter(post => post.value_assessment === '高');
   const techPosts = posts.filter(post => 
     post.post_type === '技术问答' || 

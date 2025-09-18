@@ -25,7 +25,7 @@ const InstanceStatsView: React.FC = () => {
   const [periodLabel, setPeriodLabel] = useState('今天');
 
   // 获取时间范围
-  const getDateRange = (period: string) => {
+  const getDateRange = React.useCallback((period: string) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     
@@ -50,10 +50,10 @@ const InstanceStatsView: React.FC = () => {
       default:
         return { startDate: todayStr, endDate: todayStr };
     }
-  };
+  }, []);
 
   // 获取实例统计
-  const fetchInstanceStats = async (period: string) => {
+  const fetchInstanceStats = React.useCallback(async (period: string) => {
     setLoading(true);
     setError(null);
     
@@ -83,7 +83,7 @@ const InstanceStatsView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getDateRange]);
 
   // 格式化时间显示
   const formatTime = (seconds: number) => {

@@ -1,4 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+
+// 带超时的 fetch 包装器
+async function fetchWithTimeout(url: string, timeoutMs: number = 15000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
 
 // YouTube 喜欢视频类型定义
 interface YouTubeLikedVideo {
@@ -65,7 +85,7 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
       try {
         const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=relevance&maxResults=1&q=${encodeURIComponent(topic)}&key=${apiKey}`;
         
-        const searchResponse = await fetch(searchUrl);
+        const searchResponse = await fetchWithTimeout(searchUrl, 15000);
         if (!searchResponse.ok) {
           console.error(`Search failed for topic: ${topic}`);
           continue;
@@ -82,7 +102,7 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
         // 获取视频详细信息
         const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${apiKey}`;
         
-        const videoResponse = await fetch(videoUrl);
+        const videoResponse = await fetchWithTimeout(videoUrl, 15000);
         if (!videoResponse.ok) {
           continue;
         }
@@ -242,7 +262,7 @@ function formatViewCount(count: string): string {
 
 export const revalidate = 600; // 10分钟缓存
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const videos = await getRecommendedVideos();
     

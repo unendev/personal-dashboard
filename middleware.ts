@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath) {
     try {
       // 获取客户端IP地址
-      const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? '127.0.0.1'
+      const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? '127.0.0.1'
       
       // 检查速率限制
       const { allowed, remaining, resetTime } = rateLimit.isAllowed(ip)

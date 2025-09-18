@@ -1,4 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+
+// 带超时的 fetch 包装器
+async function fetchWithTimeout(url: string, timeoutMs: number = 15000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
 
 // YouTube 播放列表类型定义
 interface YouTubePlaylist {
@@ -46,7 +66,7 @@ async function getPopularPlaylists(): Promise<YouTubePlaylist[]> {
     // 搜索编程相关的播放列表
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=playlist&order=relevance&maxResults=3&q=programming&key=${apiKey}`;
     
-    const searchResponse = await fetch(searchUrl);
+    const searchResponse = await fetchWithTimeout(searchUrl, 15000);
     if (!searchResponse.ok) {
       const errorData = await searchResponse.json();
       console.error('YouTube Playlist Search API error:', errorData);
@@ -63,7 +83,7 @@ async function getPopularPlaylists(): Promise<YouTubePlaylist[]> {
     const playlistIds = searchData.items.map((item: { id: { playlistId: string } }) => item.id.playlistId).join(',');
     const playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistIds}&key=${apiKey}`;
     
-    const playlistResponse = await fetch(playlistUrl);
+    const playlistResponse = await fetchWithTimeout(playlistUrl, 15000);
     if (!playlistResponse.ok) {
       throw new Error(`YouTube Playlist API error: ${playlistResponse.status}`);
     }
@@ -88,7 +108,7 @@ async function getPopularPlaylists(): Promise<YouTubePlaylist[]> {
 
 export const revalidate = 600; // 10分钟缓存
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const playlists = await getPopularPlaylists();
     

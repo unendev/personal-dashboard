@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface YouTubeLikedVideo {
   id: string;
@@ -131,9 +132,11 @@ const YouTubeLikedCard: React.FC = () => {
           >
             <div className="flex gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02]">
               <div className="relative overflow-hidden rounded-lg flex-shrink-0">
-                <img
+                <Image
                   src={video.thumbnail}
                   alt={video.title}
+                  width={128}
+                  height={80}
                   className="w-32 h-20 object-cover"
                   loading="lazy"
                 />
