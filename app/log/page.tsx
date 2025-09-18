@@ -12,6 +12,7 @@ import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
+import { fetchWithRetry } from '@/lib/utils'
 
 export default function LogPage() {
   const { data: session, status } = useSession();
@@ -233,6 +234,11 @@ export default function LogPage() {
         });
         
         console.log('任务创建成功:', createdTask.name);
+        
+        // 自动开始计时
+        setTimeout(() => {
+          handleStartTimer(createdTask.id);
+        }, 100); // 短暂延迟确保状态更新完成
       } else {
         throw new Error('Failed to create task');
       }
@@ -245,6 +251,56 @@ export default function LogPage() {
       );
       
       alert('创建失败，请重试');
+    }
+  };
+
+  // 开始计时函数
+  const handleStartTimer = async (taskId: string) => {
+    const task = timerTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // 立即更新前端状态，避免延迟
+    const currentTime = Math.floor(Date.now() / 1000);
+    setTimerTasks(prevTasks => 
+      prevTasks.map(t => 
+        t.id === taskId 
+          ? {
+              ...t,
+              isRunning: true,
+              isPaused: false,
+              startTime: currentTime,
+              pausedTime: 0
+            }
+          : t
+      )
+    );
+    
+    // 记录操作
+    recordOperation('开始计时', task.name, task.initialTime > 0 ? ` (从 ${Math.floor(task.initialTime / 60)}分钟 开始)` : '');
+
+    // 异步更新数据库（带重试机制）
+    try {
+      const response = await fetchWithRetry('/api/timer-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: taskId,
+          isRunning: true,
+          isPaused: false,
+          startTime: currentTime,
+          pausedTime: 0
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update database for start timer after retries');
+        // 不显示错误提示，因为前端状态已经更新
+      }
+    } catch (error) {
+      console.error('Failed to start timer in database after all retries:', error);
+      // 不显示错误提示，因为前端状态已经更新
     }
   };
 
