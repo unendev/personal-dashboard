@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+/* 平滑展开动画 */
+.expandable-content {
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.expandable-content.collapsed {
+  max-height: 4rem; /* 约64px，显示2-3行 */
+  opacity: 0.8;
+}
+
+.expandable-content.expanded {
+  max-height: 2000px; /* 足够大的值 */
+  opacity: 1;
+}
+
+/* 帖子列表的特殊动画 */
+.expandable-content.space-y-2.collapsed {
+  max-height: 12rem; /* 约192px，显示3个帖子 */
+}
+
+.expandable-content.space-y-2.expanded {
+  max-height: 3000px; /* 足够大的值 */
+}
+
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);

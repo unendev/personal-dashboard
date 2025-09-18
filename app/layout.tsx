@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
+import AuthProvider from "./components/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Project Nexus",
@@ -29,7 +30,9 @@ export default function RootLayout({
 
             {/* 主要内容 */}
             <div className="relative z-10">
-              {children}
+              <AuthProvider>
+                {children}
+              </AuthProvider>
             </div>
           </div>
         </div>

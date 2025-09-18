@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import CreateLogModal from '@/app/components/CreateLogModal'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
@@ -13,22 +14,25 @@ import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
 
 export default function LogPage() {
+  const { data: session, status } = useSession();
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
     categoryPath: string;
+    instanceTag?: string | null;
     elapsedTime: number;
     initialTime: number; // 初始时间（秒）
     isRunning: boolean;
     startTime: number | null;
     isPaused: boolean;
     pausedTime: number;
+    order?: number; // 排序字段（数值越小越靠前）
     createdAt: string;
     updatedAt: string;
   }[]>([]);
-  const [userId] = useState('user-1'); // 临时用户ID
+  const userId = session?.user?.id || 'user-1'; // 使用真实用户ID或回退到临时ID
   
   // 操作历史记录
   const [operationHistory, setOperationHistory] = useState<{
@@ -153,6 +157,10 @@ export default function LogPage() {
   };
 
   const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0, instanceTagNames?: string) => {
+    // 始终使用非负的 order，确保被排序逻辑视为“有效”，并与现有最前元素并列
+    // 同序时按 createdAt 降序，新建项天然在最前，达到“立即置顶”的效果
+    const newOrder = 0;
+
     // 创建临时任务对象用于乐观更新
     const tempTask = {
       id: `temp-${Date.now()}`, // 临时ID
@@ -165,6 +173,7 @@ export default function LogPage() {
       startTime: null,
       isPaused: false,
       pausedTime: 0,
+      order: newOrder,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -189,6 +198,7 @@ export default function LogPage() {
         startTime: null,
         isPaused: false,
         pausedTime: 0,
+        order: newOrder,
         date: new Date().toISOString().split('T')[0],
         userId: userId
       };
@@ -204,12 +214,23 @@ export default function LogPage() {
       if (response.ok) {
         const createdTask = await response.json();
         
-        // 用真实的任务数据替换临时任务
-        setTimerTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === tempTask.id ? createdTask : task
-          )
-        );
+        // 用真实的任务数据替换临时任务，但保留本地计时状态与排序，避免计时被重置
+        setTimerTasks(prevTasks => {
+          return prevTasks.map(task => {
+            if (task.id !== tempTask.id) return task;
+            return {
+              ...createdTask,
+              // 保留当前本地的运行状态与时间，确保计时不中断
+              isRunning: task.isRunning,
+              isPaused: task.isPaused,
+              startTime: task.startTime,
+              elapsedTime: task.elapsedTime,
+              // 确保顺序与标签不丢失
+              order: task.order ?? (createdTask as { order?: number }).order,
+              instanceTag: task.instanceTag ?? (createdTask as { instanceTag?: string | null }).instanceTag
+            };
+          });
+        });
         
         console.log('任务创建成功:', createdTask.name);
       } else {
@@ -226,6 +247,37 @@ export default function LogPage() {
       alert('创建失败，请重试');
     }
   };
+
+  // 如果正在加载身份验证状态，显示加载状态
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <div className="text-gray-400">验证身份中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果未登录，重定向到登录页面
+  if (status === "unauthenticated") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔐</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">需要登录</h2>
+          <p className="text-gray-600 mb-6">请先登录以访问日志页面</p>
+          <Link
+            href="/auth/signin"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            前往登录
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // 如果页面还没准备好，显示加载状态
   if (!isPageReady) {
@@ -254,6 +306,20 @@ export default function LogPage() {
 
           {/* 右侧：操作按钮组 */}
           <div className="flex items-center gap-3">
+            {/* 用户信息 */}
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-2 shadow-sm">
+              <span className="text-sm font-medium text-gray-700">
+                {session?.user?.name || session?.user?.email || '用户'}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="text-gray-500 hover:text-gray-700 text-sm"
+                title="登出"
+              >
+                登出
+              </button>
+            </div>
+
             {/* 创建事物按钮 */}
             <button
               onClick={() => setIsCreateLogModalOpen(true)}

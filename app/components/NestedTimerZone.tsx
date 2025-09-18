@@ -136,6 +136,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   }, []);
 
+  // 立即保存滚动位置（无延迟），用于操作前锁定当前位置
+  const saveScrollPositionNow = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  }, []);
+
   // 恢复滚动位置
   const restoreScrollPosition = useCallback(() => {
     if (scrollContainerRef.current && scrollPositionRef.current > 0) {
@@ -341,6 +348,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   }, [tasks, triggerUpdate]);
 
   const startTimer = async (taskId: string) => {
+    // 操作前保存当前位置，避免UI更新导致回到顶部
+    saveScrollPositionNow();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -410,6 +419,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   };
 
   const pauseTimer = async (taskId: string) => {
+    // 操作前保存当前位置
+    saveScrollPositionNow();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -503,6 +514,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   };
 
   const resumeTimer = async (taskId: string) => {
+    // 操作前保存当前位置
+    saveScrollPositionNow();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -588,6 +601,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   };
 
   const deleteTimer = async (taskId: string) => {
+    // 操作前保存当前位置
+    saveScrollPositionNow();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
