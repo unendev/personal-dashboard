@@ -5,6 +5,7 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
+import { fetchWithRetry } from '@/lib/utils';
 import {
   DndContext,
   closestCenter,
@@ -230,14 +231,14 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         // 更新本地状态
         onTasksChange(updatedTasks);
 
-        // 保存排序到数据库
+        // 保存排序到数据库（带重试机制）
         try {
           const taskOrders = updatedTasks.map((task, index) => ({
             id: task.id,
             order: index
           }));
 
-          const response = await fetch('/api/timer-tasks', {
+          const response = await fetchWithRetry('/api/timer-tasks', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -252,10 +253,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             console.log('任务排序已保存到数据库');
           } else {
             const errorText = await response.text();
-            console.error('保存排序失败:', response.status, errorText);
+            console.error('保存排序失败 after retries:', response.status, errorText);
           }
         } catch (error) {
-          console.error('保存排序时出错:', error);
+          console.error('保存排序时出错 after all retries:', error);
         }
         
         if (onOperationRecord) {
@@ -392,9 +393,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('开始计时', task.name, timeText);
     }
 
-    // 异步更新数据库
+    // 异步更新数据库（带重试机制）
     try {
-      const response = await fetch('/api/timer-tasks', {
+      const response = await fetchWithRetry('/api/timer-tasks', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -409,11 +410,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        console.error('Failed to update database for start timer');
+        console.error('Failed to update database for start timer after retries');
         // 不显示错误提示，因为前端状态已经更新
       }
     } catch (error) {
-      console.error('Failed to start timer in database:', error);
+      console.error('Failed to start timer in database after all retries:', error);
       // 不显示错误提示，因为前端状态已经更新
     }
   };
@@ -484,9 +485,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('暂停计时', task.name);
     }
 
-    // 异步更新数据库
+    // 异步更新数据库（带重试机制）
     try {
-      const response = await fetch('/api/timer-tasks', {
+      const response = await fetchWithRetry('/api/timer-tasks', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -502,7 +503,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        console.error('Failed to update database for pause timer');
+        console.error('Failed to update database for pause timer after retries');
         const errorText = await response.text();
         console.error('Database error details:', errorText);
       } else {
@@ -572,9 +573,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('继续计时', task.name);
     }
 
-    // 异步更新数据库
+    // 异步更新数据库（带重试机制）
     try {
-      const response = await fetch('/api/timer-tasks', {
+      const response = await fetchWithRetry('/api/timer-tasks', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -589,7 +590,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        console.error('Failed to update database for resume timer');
+        console.error('Failed to update database for resume timer after retries');
         const errorText = await response.text();
         console.error('Database error details:', errorText);
       } else {
@@ -621,13 +622,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     if (!isConfirmed) return;
 
     try {
-      const response = await fetch(`/api/timer-tasks?id=${taskId}`, {
+      const response = await fetchWithRetry(`/api/timer-tasks?id=${taskId}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Delete API error:', response.status, errorText);
+        console.error('Delete API error after retries:', response.status, errorText);
         throw new Error(`Failed to delete task: ${response.status} ${errorText}`);
       }
 
@@ -730,9 +731,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('创建子任务', newChildName.trim());
     }
 
-    // 异步处理数据库操作
+    // 异步处理数据库操作（带重试机制）
     try {
-      const response = await fetch('/api/timer-tasks', {
+      const response = await fetchWithRetry('/api/timer-tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -749,7 +750,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add child task');
+        throw new Error('Failed to add child task after retries');
       }
 
       const newTask = await response.json();
