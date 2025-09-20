@@ -50,6 +50,7 @@ export default function LogPage() {
   
   // 创建事物模态框状态
   const [isCreateLogModalOpen, setIsCreateLogModalOpen] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   // 用于点击外部区域关闭折叠栏的ref
   const operationHistoryRef = useRef<HTMLDivElement>(null);
@@ -159,8 +160,16 @@ export default function LogPage() {
   };
 
   const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0, instanceTagNames?: string) => {
-    // 始终使用非负的 order，确保被排序逻辑视为“有效”，并与现有最前元素并列
-    // 同序时按 createdAt 降序，新建项天然在最前，达到“立即置顶”的效果
+    // 防止重复创建
+    if (isCreatingTask) {
+      console.log('任务正在创建中，请稍候...');
+      return;
+    }
+
+    setIsCreatingTask(true);
+    
+    // 始终使用非负的 order，确保被排序逻辑视为"有效"，并与现有最前元素并列
+    // 同序时按 createdAt 降序，新建项天然在最前，达到"立即置顶"的效果
     const newOrder = 0;
 
     // 创建临时任务对象用于乐观更新
@@ -171,8 +180,8 @@ export default function LogPage() {
       instanceTag: instanceTagNames || null,
       elapsedTime: initialTime,
       initialTime: initialTime,
-      isRunning: false,
-      startTime: null,
+      isRunning: true, // 临时任务也显示为运行状态，与数据库状态一致
+      startTime: Math.floor(Date.now() / 1000), // 立即设置开始时间
       isPaused: false,
       pausedTime: 0,
       order: newOrder,
@@ -196,8 +205,8 @@ export default function LogPage() {
         instanceTagNames: instanceTagNames ? instanceTagNames.split(',') : [],
         elapsedTime: initialTime,
         initialTime: initialTime,
-        isRunning: false,
-        startTime: null,
+        isRunning: true, // 直接设置为运行状态，避免时序问题
+        startTime: Math.floor(Date.now() / 1000), // 立即设置开始时间
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
@@ -216,67 +225,25 @@ export default function LogPage() {
       if (response.ok) {
         const createdTask = await response.json();
         
-        // 用真实的任务数据替换临时任务，但保留本地计时状态与排序，避免计时被重置
+        // 用真实的任务数据替换临时任务，确保状态一致
         setTimerTasks(prevTasks => {
           return prevTasks.map(task => {
             if (task.id !== tempTask.id) return task;
             return {
               ...createdTask,
-              // 保留当前本地的运行状态与时间，确保计时不中断
-              isRunning: task.isRunning,
-              isPaused: task.isPaused,
-              startTime: task.startTime,
-              elapsedTime: task.elapsedTime,
-              // 确保顺序与标签不丢失
-              order: task.order ?? (createdTask as { order?: number }).order,
-              instanceTag: task.instanceTag ?? (createdTask as { instanceTag?: string | null }).instanceTag
+              // 确保状态与数据库一致
+              isRunning: createdTask.isRunning,
+              isPaused: createdTask.isPaused,
+              startTime: createdTask.startTime,
+              elapsedTime: createdTask.elapsedTime,
+              order: createdTask.order ?? task.order,
+              instanceTag: createdTask.instanceTag ?? task.instanceTag
             };
           });
         });
         
-        console.log('任务创建成功:', createdTask.name);
-        
-        // 自动开始计时
-        setTimeout(() => {
-          // 找到新创建的任务并开始计时
-          const taskToStart = createdTask;
-          if (taskToStart) {
-            // 更新任务状态为运行中
-            const currentTime = Math.floor(Date.now() / 1000);
-            setTimerTasks(prevTasks => 
-              prevTasks.map(task => 
-                task.id === createdTask.id 
-                  ? {
-                      ...task,
-                      isRunning: true,
-                      isPaused: false,
-                      startTime: currentTime,
-                      pausedTime: 0
-                    }
-                  : task
-              )
-            );
-            
-            // 异步更新数据库
-            fetchWithRetry('/api/timer-tasks', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: createdTask.id,
-                isRunning: true,
-                isPaused: false,
-                startTime: currentTime,
-                pausedTime: 0
-              }),
-            }).catch(error => {
-              console.error('自动开始计时失败:', error);
-            });
-            
-            recordOperation('开始计时', createdTask.name, '自动开始');
-          }
-        }, 100); // 短暂延迟确保状态更新完成
+        console.log('任务创建成功并自动开始:', createdTask.name);
+        recordOperation('开始计时', createdTask.name, '自动开始');
       } else {
         throw new Error('Failed to create task');
       }
@@ -288,7 +255,15 @@ export default function LogPage() {
         prevTasks.filter(task => task.id !== tempTask.id)
       );
       
-      alert('创建失败，请重试');
+      // 记录失败的操作
+      recordOperation('创建失败', taskName, `错误: ${error instanceof Error ? error.message : '未知错误'}`);
+      
+      // 显示更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`任务创建失败: ${errorMessage}\n\n请检查网络连接后重试`);
+    } finally {
+      // 无论成功还是失败，都要重置加载状态
+      setIsCreatingTask(false);
     }
   };
 
