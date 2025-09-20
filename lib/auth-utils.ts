@@ -112,7 +112,7 @@ export async function getUserId(request: NextRequest): Promise<string> {
     throw new Error(authResult.message);
   }
 
-  return authResult.user.id;
+  return authResult.user!.id;
 }
 
 /**

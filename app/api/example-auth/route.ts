@@ -38,6 +38,14 @@ export async function GET(request: NextRequest) {
     const user = authResult.user;
     const isSuper = await isSuperAdmin(request);
 
+    // 确保 user 存在（requireAuth 已经检查过了）
+    if (!user) {
+      return NextResponse.json(
+        { error: '用户信息不存在' }, 
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json({
       user: {
         id: user.id,

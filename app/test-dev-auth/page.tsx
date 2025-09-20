@@ -1,11 +1,11 @@
 'use client'
 
 import { useDevSession } from '@/app/hooks/useDevSession'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function TestDevAuthPage() {
   const { data: session, status } = useDevSession()
-  const [apiTestResult, setApiTestResult] = useState<any>(null)
+  const [apiTestResult, setApiTestResult] = useState<{ status?: number; data?: unknown; error?: string } | null>(null)
   const [loading, setLoading] = useState(false)
 
   const testAPI = async () => {

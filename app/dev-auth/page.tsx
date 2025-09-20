@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export default function DevAuthPage() {
   const [authMethod, setAuthMethod] = useState<'session' | 'super-admin' | 'api-key'>('session');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ status?: number; data?: unknown; error?: string; authMethod?: string; method?: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testAuth = async () => {
@@ -12,8 +12,8 @@ export default function DevAuthPage() {
     setResult(null);
 
     try {
-      let headers: Record<string, string> = {};
-      let url = '/api/example-auth';
+      const headers: Record<string, string> = {};
+      const url = '/api/example-auth';
 
       switch (authMethod) {
         case 'super-admin':
@@ -56,8 +56,8 @@ export default function DevAuthPage() {
     setResult(null);
 
     try {
-      let headers: Record<string, string> = {};
-      let url = '/api/example-auth';
+      const headers: Record<string, string> = {};
+      const url = '/api/example-auth';
 
       switch (authMethod) {
         case 'super-admin':
@@ -125,7 +125,7 @@ export default function DevAuthPage() {
             </label>
             <select
               value={authMethod}
-              onChange={(e) => setAuthMethod(e.target.value as any)}
+              onChange={(e) => setAuthMethod(e.target.value as 'session' | 'super-admin' | 'api-key')}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="session">NextAuth.js 会话认证</option>

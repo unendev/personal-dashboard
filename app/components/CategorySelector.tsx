@@ -325,64 +325,66 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   return (
     <div className={className}>
-      {/* 分类网格布局 - 更宽松的排列 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      {/* 分类网格布局 - 响应式设计 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {categories.map((topCategory, index) => (
-          <Card key={`${topCategory.id}-${index}`} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+          <Card key={`${topCategory.id}-${index}`} className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-200/20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm relative overflow-hidden">
             <CardHeader className="relative overflow-hidden">
-              {/* 背景装饰 */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* 动态背景装饰 */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/8 to-indigo-500/10 dark:from-blue-400/15 dark:via-purple-400/12 dark:to-indigo-400/15 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+              {/* 顶部装饰线 */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               
-              <CardTitle className="relative text-lg font-bold text-gray-800 flex justify-between items-center">
+              <CardTitle className="relative text-lg font-bold text-gray-800 dark:text-gray-200 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
                     {topCategory.name.charAt(0)}
                   </div>
-                  <span>{topCategory.name}</span>
+                  <span className="group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">{topCategory.name}</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full w-8 h-8 p-0"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full w-8 h-8 p-0 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
                     onClick={() => handleCreateCategory('mid', topCategory.name)}
                     title="添加子分类"
                   >
-                    +
+                    <span className="text-lg">+</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 p-0"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 p-0 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
                     onClick={() => handleDeleteCategory('top', '', topCategory.name)}
                     title="删除分类"
                   >
-                    ×
+                    <span className="text-lg">×</span>
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 md:p-4 space-y-3 overflow-hidden">
+            <CardContent className="p-3 space-y-3 overflow-hidden">
               {/* 子分类按钮 - 新的两层分类体系 */}
-              <div className="flex flex-wrap gap-2 md:gap-3">
+              <div className="flex flex-wrap gap-2 overflow-x-auto">
                 {topCategory.children?.map((midCategory, midIndex) => (
                   <div key={`${midCategory.id}-${midIndex}`} className="relative group flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-lg px-3 py-2 min-w-0 ${
-                        topCategory.name === '时间黑洞' ? 'pr-10 md:pr-12' : 'pr-8 md:pr-10'
+                      className={`text-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md hover:scale-105 transition-all duration-200 rounded-xl px-3 py-2 min-w-0 border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm ${
+                        topCategory.name === '时间黑洞' ? 'pr-10' : 'pr-8'
                       }`}
                       onClick={() => handleSubCategoryClick(topCategory.name, midCategory.name)}
                     >
-                      <span className="truncate">{midCategory.name}</span>
+                      <span className="truncate font-medium text-gray-700 dark:text-gray-300">{midCategory.name}</span>
                     </Button>
                     {/* 只在时间黑洞分类显示时间黑洞按钮 */}
                     {topCategory.name === '时间黑洞' && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 active:bg-purple-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all duration-200 rounded-full w-6 h-6 p-0 z-10 touch-manipulation hover:scale-110 shadow-sm hover:shadow-md"
                         onClick={() => handleTimeHoleCreate(topCategory.name, midCategory.name)}
                         title="时间黑洞"
                       >
@@ -392,8 +394,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 md:group-hover:opacity-100 transition-opacity rounded-full w-6 h-6 md:w-7 md:h-7 p-0 z-10 touch-manipulation ${
-                        topCategory.name === '时间黑洞' ? 'right-8 md:right-10' : 'right-2'
+                      className={`absolute top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 text-sm opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all duration-200 rounded-full w-6 h-6 p-0 z-10 touch-manipulation hover:scale-110 shadow-sm hover:shadow-md ${
+                        topCategory.name === '时间黑洞' ? 'right-8' : 'right-2'
                       }`}
                       onClick={() => handleDeleteCategory('mid', topCategory.name, midCategory.name)}
                       title="删除"
@@ -406,11 +408,12 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-sm hover:bg-green-50 hover:border-green-300 text-green-600 rounded-lg px-3 py-2"
+                  className="text-sm hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 hover:border-green-300 dark:hover:border-green-600 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 rounded-xl px-3 py-2 hover:shadow-md hover:scale-105 transition-all duration-200 border-green-200 dark:border-green-600 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm font-medium"
                   onClick={() => handleCreateCategory('mid', topCategory.name)}
                   title="添加子分类"
                 >
-                  + 添加子分类
+                  <span className="text-lg mr-1">+</span>
+                  添加子分类
                 </Button>
               </div>
             </CardContent>

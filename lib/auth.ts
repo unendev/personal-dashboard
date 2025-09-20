@@ -24,13 +24,13 @@ export const authOptions: NextAuthOptions = {
           }
         })
 
-        if (!user || !(user as any).password) {
+        if (!user || !('password' in user) || !user.password) {
           return null
         }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          (user as any).password
+          user.password
         )
 
         if (!isPasswordValid) {
@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         // 开发环境下添加特殊标记
         if (process.env.NODE_ENV === 'development') {
-          (session as any).isDev = token.isDev
+          (session as { isDev?: boolean }).isDev = token.isDev as boolean
         }
       }
       return session
