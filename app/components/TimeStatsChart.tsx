@@ -3,11 +3,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import EChartsSunburstChart from './EChartsSunburstChart';
+import InstanceTagStatsChart from './InstanceTagStatsChart';
 
 interface TimerTask {
   id: string;
   name: string;
   categoryPath: string;
+  // 可选：事务项标签
+  instanceTag?: string | null;
   elapsedTime: number;
   initialTime: number;
   isRunning: boolean;
@@ -213,6 +216,19 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         </CardHeader>
         <CardContent>
           <EChartsSunburstChart tasks={tasks} />
+        </CardContent>
+      </Card>
+
+      {/* 事务项统计 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="text-xl">🏷️</span>
+            可用事务项统计（按耗时）
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InstanceTagStatsChart tasks={tasks} />
         </CardContent>
       </Card>
     </div>
