@@ -24,13 +24,13 @@ export const authOptions: NextAuthOptions = {
           }
         })
 
-        if (!user || !user.password) {
+        if (!user || !(user as any).password) {
           return null
         }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          user.password
+          (user as any).password
         )
 
         if (!isPasswordValid) {
@@ -47,17 +47,31 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    // 开发环境下延长会话时间，减少重新登录的麻烦
+    maxAge: process.env.NODE_ENV === 'development' ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60, // 开发环境30天，生产环境7天
+  },
+  jwt: {
+    // JWT配置优化
+    maxAge: process.env.NODE_ENV === 'development' ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        // 开发环境下添加特殊标记
+        if (process.env.NODE_ENV === 'development') {
+          token.isDev = true
+        }
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
+        // 开发环境下添加特殊标记
+        if (process.env.NODE_ENV === 'development') {
+          (session as any).isDev = token.isDev
+        }
       }
       return session
     },
@@ -65,4 +79,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
   },
+  // 开发环境下的调试配置
+  debug: process.env.NODE_ENV === 'development',
 }

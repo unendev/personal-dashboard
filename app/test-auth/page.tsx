@@ -1,9 +1,10 @@
 'use client'
 
-import { useSession, signIn, signOut } from 'next-auth/react'
+import { signIn, signOut } from 'next-auth/react'
+import { useDevSession } from '@/app/hooks/useDevSession'
 
 export default function TestAuthPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useDevSession()
 
   if (status === "loading") {
     return <div className="p-8">加载中...</div>

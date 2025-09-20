@@ -326,7 +326,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
   return (
     <div className={className}>
       {/* 分类网格布局 - 更宽松的排列 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {categories.map((topCategory, index) => (
           <Card key={`${topCategory.id}-${index}`} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="relative overflow-hidden">
@@ -364,7 +364,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             </CardHeader>
             <CardContent className="p-3 md:p-4 space-y-3 overflow-hidden">
               {/* 子分类按钮 - 新的两层分类体系 */}
-              <div className="flex flex-wrap gap-2 md:gap-3 overflow-x-auto">
+              <div className="flex flex-wrap gap-2 md:gap-3">
                 {topCategory.children?.map((midCategory, midIndex) => (
                   <div key={`${midCategory.id}-${midIndex}`} className="relative group flex-shrink-0">
                     <Button

@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getUserId } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
 // GET /api/todos - 获取用户的所有任务列表（不按日期过滤）
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
+    // 使用新的认证系统获取用户ID
+    const userId = await getUserId(request);
 
     const todos = await prisma.todo.findMany({
       where: {
@@ -35,11 +32,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, text, priority = 'medium', category, parentId } = body;
+    const { text, priority = 'medium', category, parentId } = body;
 
-    if (!userId || !text) {
-      return NextResponse.json({ error: 'userId and text are required' }, { status: 400 });
+    if (!text) {
+      return NextResponse.json({ error: 'text is required' }, { status: 400 });
     }
+
+    // 使用新的认证系统获取用户ID
+    const userId = await getUserId(request);
 
     // 获取当前最小order值，让新任务排在最前面
     const minOrder = await prisma.todo.findFirst({

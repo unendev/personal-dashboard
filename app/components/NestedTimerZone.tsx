@@ -777,6 +777,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onTasksChange(finalTasks);
       
       console.log('子任务创建成功:', newTask.name);
+      
+      // 自动开始计时
+      setTimeout(() => {
+        startTimer(newTask.id);
+      }, 100); // 短暂延迟确保状态更新完成
     } catch (error) {
       console.error('Failed to add child task:', error);
       
