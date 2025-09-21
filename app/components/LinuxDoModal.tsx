@@ -253,7 +253,7 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
               <h3 className="text-lg font-bold text-purple-400 mb-3 flex items-center gap-2">
                 💭 社区感悟
               </h3>
-              <p className="text-white/80 text-lg italic leading-relaxed">"{report.summary.conclusion}"</p>
+              <p className="text-white/80 text-lg italic leading-relaxed">&ldquo;{report.summary.conclusion}&rdquo;</p>
             </div>
           </div>
         )}

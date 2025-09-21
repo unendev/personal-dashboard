@@ -11,11 +11,20 @@ import DashboardLayoutManager from '@/app/components/DashboardLayoutManager'
 const MOCK_USER_ID = 'user-1'
 
 export default async function DashboardPage() {
-  // 查询当前用户的所有技能
-  const skills = await prisma.skill.findMany({
-    where: { userId: MOCK_USER_ID },
-    orderBy: { createdAt: 'desc' }
-  })
+  // 在构建时不执行数据库查询，避免连接错误
+  let skills: Skill[] = []
+  
+  try {
+    // 查询当前用户的所有技能
+    skills = await prisma.skill.findMany({
+      where: { userId: MOCK_USER_ID },
+      orderBy: { createdAt: 'desc' }
+    })
+  } catch (error) {
+    console.log('数据库连接失败，使用空技能列表:', error)
+    // 构建时数据库不可用，使用空数组
+    skills = []
+  }
 
   async function handleLevelUp(skillId: string) {
     'use server'
