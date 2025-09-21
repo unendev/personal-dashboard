@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Suspense } from 'react';
 import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
+import LinuxDoModal from './LinuxDoModal';
 import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
 // import EternalReturnCard from './EternalReturnCard';
@@ -20,6 +21,7 @@ interface InfoSource {
 
 const ScrollableLayout = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [isLinuxDoModalOpen, setIsLinuxDoModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 信息源配置
@@ -59,12 +61,59 @@ const ScrollableLayout = () => {
       priority: 3
     },
     {
+      id: 'discord',
+      title: 'Discord 思考',
+      icon: '💭',
+      component: (
+        <div className="p-6">
+          <div className="text-center text-white/60 py-8">
+            <p>Discord API 集成待实现</p>
+            <p className="text-sm mt-2">将显示最新的思考和讨论</p>
+          </div>
+        </div>
+      ),
+      category: 'social',
+      priority: 4
+    },
+    {
       id: 'youtube',
       title: 'YouTube 我喜欢',
       icon: '❤️',
       component: <YouTubeLikedCard />,
       category: 'social',
-      priority: 4
+      priority: 5
+    },
+    
+    // 开发类
+    {
+      id: 'github',
+      title: 'GitHub 活动',
+      icon: '🐙',
+      component: (
+        <div className="p-6">
+          <div className="text-center text-white/60 py-8">
+            <p>GitHub API 集成待实现</p>
+            <p className="text-sm mt-2">将显示提交、PR、Issues等</p>
+          </div>
+        </div>
+      ),
+      category: 'development',
+      priority: 6
+    },
+    {
+      id: 'projects',
+      title: '在线项目',
+      icon: '🚀',
+      component: (
+        <div className="p-6">
+          <div className="text-center text-white/60 py-8">
+            <p>项目展示待实现</p>
+            <p className="text-sm mt-2">将展示正在运行的项目</p>
+          </div>
+        </div>
+      ),
+      category: 'development',
+      priority: 7
     },
     
     // AI类
@@ -74,7 +123,7 @@ const ScrollableLayout = () => {
       icon: '📚',
       component: <RuanYiFengCard />,
       category: 'ai',
-      priority: 5
+      priority: 8
     },
     {
       id: 'bilibili',
@@ -82,8 +131,38 @@ const ScrollableLayout = () => {
       icon: '📱',
       component: <BilibiliCard />,
       category: 'ai',
-      priority: 6
+      priority: 9
     },
+    {
+      id: 'ai-summary',
+      title: 'AI 智能总结',
+      icon: '🤖',
+      component: (
+        <div className="p-6">
+          <div className="text-center text-white/60 py-8">
+            <p>AI总结功能待实现</p>
+            <p className="text-sm mt-2">将提供智能内容总结</p>
+          </div>
+        </div>
+      ),
+      category: 'ai',
+      priority: 10
+    },
+    {
+      id: 'fitness',
+      title: '运动数据',
+      icon: '🏃',
+      component: (
+        <div className="p-6">
+          <div className="text-center text-white/60 py-8">
+            <p>运动手环数据待集成</p>
+            <p className="text-sm mt-2">将显示健康数据</p>
+          </div>
+        </div>
+      ),
+      category: 'ai',
+      priority: 11
+    }
   ];
 
   const categories = [
@@ -144,11 +223,22 @@ const ScrollableLayout = () => {
           className="scrollable-layout-grid"
         >
           {filteredSources.map((source) => (
-            <div key={source.id} className="module-card rounded-2xl hover-lift">
+            <div 
+              key={source.id} 
+              className={`module-card rounded-2xl hover-lift ${
+                source.id === 'linuxdo' ? 'cursor-pointer' : ''
+              }`}
+              onClick={source.id === 'linuxdo' ? () => setIsLinuxDoModalOpen(true) : undefined}
+            >
               <div className="p-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{source.icon}</span>
                   <h3 className="text-base font-semibold text-white">{source.title}</h3>
+                  {source.id === 'linuxdo' && (
+                    <span className="ml-auto text-xs text-blue-400 opacity-60 hover:opacity-100 transition-opacity">
+                      点击查看详情 →
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="h-full">
@@ -164,6 +254,12 @@ const ScrollableLayout = () => {
           ))}
         </div>
       </div>
+
+      {/* Linux.do 模态框 */}
+      <LinuxDoModal 
+        isOpen={isLinuxDoModalOpen} 
+        onClose={() => setIsLinuxDoModalOpen(false)} 
+      />
     </main>
   );
 };

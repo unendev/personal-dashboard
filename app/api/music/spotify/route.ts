@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { readSpotifyCache, writeSpotifyCache } from '@/app/lib/spotify-cache';
+
+export const runtime = 'nodejs';
 
 // Spotify API 数据类型
 interface SpotifyArtist {
@@ -28,7 +31,7 @@ type MusicData = {
   source: string;
   isFromCache?: boolean;
   cachedAt?: string;
-};
+} | { message: string; isFromCache?: boolean; cachedAt?: string };
 
 let inMemoryCache: MusicData | null = null;
 let inMemoryCacheUpdatedAt = 0;
@@ -46,7 +49,7 @@ function readFileCache(): MusicData | null {
   }
 }
 
-function writeFileCache(data: MusicData): void {
+function writeFileCache(data: Exclude<MusicData, { message: string }>): void {
   try {
     const payload: MusicData = { ...data, isFromCache: true, cachedAt: new Date().toISOString() };
     fs.mkdirSync(path.dirname(CACHE_FILE_PATH), { recursive: true });
@@ -99,6 +102,14 @@ export async function GET(request: NextRequest) {
 
   // 没有 refresh token：直接回退到文件缓存（不返回 401，避免前端提示登录）
   if (!refreshToken) {
+    // 先查 DB 缓存
+    const dbCached = await readSpotifyCache();
+    if (dbCached) {
+      const responseData: MusicData = { ...dbCached, isFromCache: true } as MusicData;
+      setInMemoryCache(responseData);
+      return NextResponse.json(responseData);
+    }
+    // 再查文件缓存
     const cached = readFileCache();
     if (cached) {
       const responseData: MusicData = { ...cached, isFromCache: true };
@@ -151,7 +162,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ message: '暂无最近播放数据' });
       }
 
-      const formattedData: MusicData = {
+      const formattedData = {
         isPlaying: false,
         trackName: track.name,
         artist: track.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
@@ -160,6 +171,7 @@ export async function GET(request: NextRequest) {
         source: 'Spotify',
       };
       // 写缓存并返回
+      await writeSpotifyCache({ ...formattedData, isFromCache: true, cachedAt: new Date().toISOString() });
       writeFileCache(formattedData);
       setInMemoryCache(formattedData);
       return NextResponse.json(formattedData);
@@ -177,7 +189,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isPlaying: false, message: '暂无正在播放数据' });
     }
 
-    const formattedData: MusicData = {
+    const formattedData = {
       isPlaying: song.is_playing,
       trackName: song.item.name,
       artist: song.item.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
@@ -186,12 +198,19 @@ export async function GET(request: NextRequest) {
       source: 'Spotify',
     };
     // 写缓存并返回
+    await writeSpotifyCache({ ...formattedData, isFromCache: true, cachedAt: new Date().toISOString() });
     writeFileCache(formattedData);
     setInMemoryCache(formattedData);
     return NextResponse.json(formattedData);
 
   } catch (error: unknown) {
     // 出错时回退到缓存
+    const dbCached = await readSpotifyCache();
+    if (dbCached) {
+      const responseData: MusicData = { ...dbCached, isFromCache: true } as MusicData;
+      setInMemoryCache(responseData);
+      return NextResponse.json(responseData);
+    }
     const cached = readFileCache();
     if (cached) {
       const responseData: MusicData = { ...cached, isFromCache: true };
