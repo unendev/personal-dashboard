@@ -48,12 +48,8 @@ const MusicWidget = () => {
     // 配置 SWR 在出错时自动重试 3 次
     shouldRetryOnError: true,
     errorRetryCount: 3,
-    // 60 秒后自动重新验证（刷新）数据（因为现在有缓存，可以减少刷新频率）
-    refreshInterval: 60000,
-    // 启用错误重试，但不要过于频繁
-    errorRetryInterval: 10000,
-    // 保持数据新鲜度
-    dedupingInterval: 5000,
+    // 30 秒后自动重新验证（刷新）数据
+    refreshInterval: 30000,
   });
 
   const renderContent = () => {
@@ -62,66 +58,16 @@ const MusicWidget = () => {
     }
 
     if (error) {
-      // 如果是服务不可用错误（503），显示友好的提示
-      if (error.status === 503) {
-        return (
-          <div className="text-center">
-            <div className="text-blue-500 mb-2">🎵</div>
-            <p className="text-sm text-gray-600 mb-2">
-              音乐服务暂时不可用
-            </p>
-            <p className="text-xs text-gray-500">
-              请稍后再试，或检查网络连接
-            </p>
-          </div>
-        );
-      }
-      
-      // 如果是我们定义的 401 未授权错误，显示配置提示
-      if (error.status === 401) {
-        return (
-          <div className="text-center">
-            <div className="text-yellow-600 mb-2">⚠️</div>
-            <p className="text-sm text-gray-600 mb-2">
-              Spotify配置未完成
-            </p>
-            <p className="text-xs text-gray-500">
-              请在环境变量中设置 SPOTIFY_REFRESH_TOKEN
-            </p>
-          </div>
-        );
-      }
-      // 其他错误
-      return <div className="text-center text-red-500">Error: {error.info?.error || error.message}</div>;
+      // 后端已做缓存回退，前端不再提示登录要求
+      return <div className="text-center text-gray-400">Spotify 暂不可用，正在使用缓存或稍后重试...</div>;
     }
 
     if (data) {
       // 如果 API 返回了 message，说明没有找到最近播放的歌曲
+      // 兼容 message 占位返回场景
       if (data.message) {
         return <div className="text-center text-gray-400">{data.message}</div>;
       }
-      
-      // 检查是否是占位数据
-      if (data.trackName === "音乐服务暂不可用" || 
-          data.trackName === "暂无最近播放记录" || 
-          data.trackName === "暂无播放信息") {
-        return (
-          <div className="text-center">
-            <div className="text-gray-500 mb-2">🎵</div>
-            <p className="text-sm text-gray-600 mb-2">{data.trackName}</p>
-            <p className="text-xs text-gray-500">{data.artist}</p>
-            <div className="mt-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={data.albumArtUrl} 
-                alt="音乐占位图" 
-                className="w-16 h-16 mx-auto rounded-md opacity-50" 
-              />
-            </div>
-          </div>
-        );
-      }
-      
       return <MusicCard {...data} />;
     }
 

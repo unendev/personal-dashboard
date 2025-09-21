@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spotifyCache } from '@/app/lib/spotify-cache';
+import fs from 'fs';
+import path from 'path';
 
 // Spotify API 数据类型
 interface SpotifyArtist {
@@ -13,6 +14,54 @@ const BASIC_AUTH = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64
 const TOKEN_ENDPOINT = `https://accounts.spotify.com/api/token`;
 const CURRENTLY_PLAYING_ENDPOINT = `https://api.spotify.com/v1/me/player/currently-playing`;
 const RECENTLY_PLAYED_ENDPOINT = `https://api.spotify.com/v1/me/player/recently-played`;
+
+// 缓存设置：文件与内存双层缓存
+const CACHE_FILE_PATH = path.join(process.cwd(), 'data', 'spotify-cache.json');
+const IN_MEMORY_TTL_MS = 60 * 1000; // 内存缓存 60 秒，降低外部请求频率
+
+type MusicData = {
+  isPlaying: boolean;
+  trackName: string;
+  artist: string;
+  album: string;
+  albumArtUrl?: string;
+  source: string;
+  isFromCache?: boolean;
+  cachedAt?: string;
+};
+
+let inMemoryCache: MusicData | null = null;
+let inMemoryCacheUpdatedAt = 0;
+
+function readFileCache(): MusicData | null {
+  try {
+    if (!fs.existsSync(CACHE_FILE_PATH)) return null;
+    const raw = fs.readFileSync(CACHE_FILE_PATH, 'utf8');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as MusicData;
+    return parsed;
+  } catch (error) {
+    console.error('读取 Spotify 缓存失败:', error);
+    return null;
+  }
+}
+
+function writeFileCache(data: MusicData): void {
+  try {
+    const payload: MusicData = { ...data, isFromCache: true, cachedAt: new Date().toISOString() };
+    fs.mkdirSync(path.dirname(CACHE_FILE_PATH), { recursive: true });
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (error) {
+    console.error('写入 Spotify 缓存失败:', error);
+  }
+}
+
+function setInMemoryCache(data: MusicData): void {
+  inMemoryCache = data;
+  inMemoryCacheUpdatedAt = Date.now();
+}
+
+export const revalidate = 60; // 尝试让路由层具备 60 秒再验证（实际以平台为准）
 
 // 这是一个辅助函数，用于通过 refresh_token 获取新的 access_token
 async function getAccessToken(refreshToken: string) {
@@ -40,48 +89,38 @@ async function getAccessToken(refreshToken: string) {
 
 // API 路由的主处理函数
 export async function GET(request: NextRequest) {
-  // 1. 首先检查缓存数据
-  const cachedData = spotifyCache.getCachedData();
-  if (cachedData) {
-    console.log('返回缓存的Spotify数据:', cachedData.trackName);
-    // 返回缓存数据，但不包含缓存元数据
-    const { cachedAt, expiresAt, ...musicData } = cachedData;
-    return NextResponse.json(musicData);
+  // 1) 优先返回内存缓存（命中后直接响应，避免频繁外部请求）
+  if (inMemoryCache && Date.now() - inMemoryCacheUpdatedAt < IN_MEMORY_TTL_MS) {
+    return NextResponse.json(inMemoryCache);
   }
 
-  // 2. 如果没有缓存数据，尝试从Spotify API获取
+  // 2) 从环境变量或 cookie 中读取 refresh_token（优先使用环境变量）
   const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN || request.cookies.get('spotify_refresh_token')?.value;
 
+  // 没有 refresh token：直接回退到文件缓存（不返回 401，避免前端提示登录）
   if (!refreshToken) {
-    // 如果没有配置token，返回一个默认的占位数据
-    const fallbackData = {
-      isPlaying: false,
-      trackName: "音乐服务暂不可用",
-      artist: "请稍后再试",
-      album: "个人音乐展示",
-      albumArtUrl: "https://via.placeholder.com/300x300/1db954/ffffff?text=♪",
-      source: 'Spotify',
-    };
-    
-    // 缓存这个占位数据，避免频繁请求
-    spotifyCache.updateCache(fallbackData);
-    return NextResponse.json(fallbackData);
+    const cached = readFileCache();
+    if (cached) {
+      const responseData: MusicData = { ...cached, isFromCache: true };
+      setInMemoryCache(responseData);
+      return NextResponse.json(responseData);
+    }
+    // 没有缓存则返回占位消息
+    return NextResponse.json({ message: '暂无 Spotify 数据' });
   }
 
   try {
-    // 3. 获取最新的 access_token
+    // 3) 获取 access token
     const accessToken = await getAccessToken(refreshToken);
 
-    // 4. 调用 Spotify API 获取最近播放的歌曲
+    // 4) 获取当前播放
     const response = await fetch(CURRENTLY_PLAYING_ENDPOINT, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
     });
 
-    let formattedData;
-
-    // 如果没有歌曲在播放，Spotify 会返回 204 No Content
+    // 4.1) 当前未播放或接口错误，回退到最近播放
     if (response.status === 204 || response.status > 400) {
       const recentlyPlayedResponse = await fetch(RECENTLY_PLAYED_ENDPOINT, {
         headers: {
@@ -90,73 +129,75 @@ export async function GET(request: NextRequest) {
       });
 
       if (!recentlyPlayedResponse.ok) {
-        // 如果获取最近播放失败，使用占位数据
-        formattedData = {
-          isPlaying: false,
-          trackName: "暂无最近播放记录",
-          artist: "请稍后再试",
-          album: "个人音乐展示",
-          albumArtUrl: "https://via.placeholder.com/300x300/1db954/ffffff?text=♪",
-          source: 'Spotify',
-        };
-      } else {
-        const recentlyPlayed = await recentlyPlayedResponse.json();
-        const track = recentlyPlayed.items[0].track;
+        // 再次回退到文件缓存
+        const cached = readFileCache();
+        if (cached) {
+          const responseData: MusicData = { ...cached, isFromCache: true };
+          setInMemoryCache(responseData);
+          return NextResponse.json(responseData);
+        }
+        return NextResponse.json({ message: '暂无最近播放数据' });
+      }
 
-        formattedData = {
-          isPlaying: false,
-          trackName: track.name,
-          artist: track.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
-          album: track.album.name,
-          albumArtUrl: track.album.images[0]?.url,
-          source: 'Spotify',
-        };
+      const recentlyPlayed = await recentlyPlayedResponse.json();
+      const track = recentlyPlayed?.items?.[0]?.track;
+      if (!track) {
+        const cached = readFileCache();
+        if (cached) {
+          const responseData: MusicData = { ...cached, isFromCache: true };
+          setInMemoryCache(responseData);
+          return NextResponse.json(responseData);
+        }
+        return NextResponse.json({ message: '暂无最近播放数据' });
       }
-    } else {
-      const song = await response.json();
-      
-      // 确保返回的数据结构是有效的
-      if (!song || !song.item) {
-        formattedData = {
-          isPlaying: false,
-          trackName: "暂无播放信息",
-          artist: "请稍后再试",
-          album: "个人音乐展示",
-          albumArtUrl: "https://via.placeholder.com/300x300/1db954/ffffff?text=♪",
-          source: 'Spotify',
-        };
-      } else {
-        formattedData = {
-          isPlaying: song.is_playing,
-          trackName: song.item.name,
-          artist: song.item.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
-          album: song.item.album.name,
-          albumArtUrl: song.item.album.images[0]?.url,
-          source: 'Spotify',
-        };
-      }
+
+      const formattedData: MusicData = {
+        isPlaying: false,
+        trackName: track.name,
+        artist: track.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
+        album: track.album.name,
+        albumArtUrl: track.album.images?.[0]?.url,
+        source: 'Spotify',
+      };
+      // 写缓存并返回
+      writeFileCache(formattedData);
+      setInMemoryCache(formattedData);
+      return NextResponse.json(formattedData);
     }
 
-    // 5. 更新缓存
-    spotifyCache.updateCache(formattedData);
+    // 4.2) 有当前播放
+    const song = await response.json();
+    if (!song || !song.item) {
+      const cached = readFileCache();
+      if (cached) {
+        const responseData: MusicData = { ...cached, isFromCache: true };
+        setInMemoryCache(responseData);
+        return NextResponse.json(responseData);
+      }
+      return NextResponse.json({ isPlaying: false, message: '暂无正在播放数据' });
+    }
 
+    const formattedData: MusicData = {
+      isPlaying: song.is_playing,
+      trackName: song.item.name,
+      artist: song.item.artists.map((_artist: SpotifyArtist) => _artist.name).join(', '),
+      album: song.item.album.name,
+      albumArtUrl: song.item.album.images?.[0]?.url,
+      source: 'Spotify',
+    };
+    // 写缓存并返回
+    writeFileCache(formattedData);
+    setInMemoryCache(formattedData);
     return NextResponse.json(formattedData);
 
   } catch (error: unknown) {
-    console.error('Spotify API 错误:', error);
-    
-    // 如果API调用失败，尝试返回缓存数据（如果有的话）
-    const staleCache = spotifyCache.getCachedData();
-    if (staleCache) {
-      console.log('API失败，返回过期缓存数据');
-      const { cachedAt, expiresAt, ...musicData } = staleCache;
-      return NextResponse.json(musicData);
+    // 出错时回退到缓存
+    const cached = readFileCache();
+    if (cached) {
+      const responseData: MusicData = { ...cached, isFromCache: true };
+      setInMemoryCache(responseData);
+      return NextResponse.json(responseData);
     }
-
-    // 如果没有任何缓存数据，返回错误信息
-    return NextResponse.json({ 
-      error: 'Spotify服务暂时不可用，请稍后再试',
-      message: '无法获取音乐信息'
-    }, { status: 503 });
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Spotify 暂不可用' });
   }
 }
