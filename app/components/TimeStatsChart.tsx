@@ -3,7 +3,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import EChartsSunburstChart from './EChartsSunburstChart';
-import InstanceTagStatsChart from './InstanceTagStatsChart';
 
 interface TimerTask {
   id: string;
@@ -25,9 +24,10 @@ interface TimerTask {
 
 interface TimeStatsChartProps {
   tasks: TimerTask[];
+  userId?: string;
 }
 
-const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
+const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
   // 递归计算任务的总时间（包括子任务）
   const calculateTotalTime = (task: TimerTask): number => {
     let total = task.elapsedTime;
@@ -206,7 +206,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
         </CardContent>
       </Card>
 
-      {/* ECharts 旭日图 */}
+      {/* ECharts 旭日图（内置切换：分类 / 事务项总时长） */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -215,20 +215,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <EChartsSunburstChart tasks={tasks} />
-        </CardContent>
-      </Card>
-
-      {/* 事务项统计 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">🏷️</span>
-            可用事务项统计（按耗时）
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InstanceTagStatsChart tasks={tasks} />
+          <EChartsSunburstChart tasks={tasks} userId={userId} />
         </CardContent>
       </Card>
     </div>

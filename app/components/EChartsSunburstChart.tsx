@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import InstanceTagSelector from './InstanceTagSelector';
 
 interface TimerTask {
   id: string;
@@ -26,6 +27,7 @@ interface EChartsSunburstChartProps {
   detailMinPercent?: number;     // 每个二级分类展示占比 >= 此阈值的任务（0-1）
   minLeafSeconds?: number;       // 每个二级分类展示时长 >= 此秒数的任务
   showAllLeaf?: boolean;         // 是否强制展示所有叶子（为 true 时忽略聚合）
+  userId?: string;               // 用户ID（用于事务项总时长统计）
 }
 
 interface TaskDetail {
@@ -40,8 +42,11 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   detailTopN = 5,
   detailMinPercent = 0.1,
   minLeafSeconds = 600,
-  showAllLeaf = false
+  showAllLeaf = false,
+  userId = 'user-1'
 }) => {
+  // 视图模式：按分类（使用传入 tasks），或按事务项（全量总时长）
+  const [viewMode, setViewMode] = React.useState<'category' | 'instance'>('category');
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [taskDetails, setTaskDetails] = React.useState<TaskDetail[]>([]);
   const [showTaskList, setShowTaskList] = React.useState(true); // 默认显示任务列表
@@ -57,7 +62,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return total;
   }, []);
 
-  // 初始化时设置默认的任务详情数据 - 显示所有任务按耗时时长排序
+  // 初始化时设置默认的任务详情数据 - 显示所有任务按耗时时长排序（分类模式）
   React.useEffect(() => {
     if (tasks.length > 0) {
       // 获取所有任务并按耗时时长排序
@@ -99,8 +104,8 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return tasksInCategory.sort((a, b) => b.elapsedTime - a.elapsedTime);
   };
 
-  // 构建 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持“其他”聚合）
-  const buildEChartsSunburstData = React.useCallback(() => {
+  // 构建 分类 模式的 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持“其他”聚合）
+  const buildCategorySunburstData = React.useCallback(() => {
     // 预聚合成两级分类结构：First -> Second -> TaskDetail[]
     const firstLevelMap = new Map<string, Map<string, TaskDetail[]>>();
     tasks.forEach(task => {
@@ -223,6 +228,53 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return root;
   }, [tasks, detailTopN, detailMinPercent, minLeafSeconds, showAllLeaf, calculateTotalTime]);
 
+  // 事务项（总时长）统计
+  interface InstanceStat { instanceTag: string; totalTime: number; taskCount: number }
+  const [instanceStats, setInstanceStats] = React.useState<InstanceStat[]>([]);
+  const [loadingInstance, setLoadingInstance] = React.useState(false);
+  const [instanceError, setInstanceError] = React.useState<string | null>(null);
+  const [selectedInstanceTags, setSelectedInstanceTags] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (viewMode !== 'instance') return;
+    let aborted = false;
+    (async () => {
+      try {
+        setLoadingInstance(true);
+        setInstanceError(null);
+        const res = await fetch(`/api/timer-tasks/stats/by-instance?userId=${encodeURIComponent(userId)}`);
+        if (!res.ok) throw new Error('failed');
+        const json = await res.json();
+        if (!aborted) {
+          setInstanceStats(Array.isArray(json.stats) ? json.stats : []);
+        }
+      } catch {
+        if (!aborted) setInstanceError('加载事务项统计失败');
+      } finally {
+        if (!aborted) setLoadingInstance(false);
+      }
+    })();
+    return () => { aborted = true };
+  }, [viewMode, userId]);
+
+  // 构建 事务项 模式的 ECharts 旭日图数据（根 → 叶：各事务项），支持选择过滤
+  const buildInstanceSunburstData = React.useCallback(() => {
+    interface SunburstNode { name: string; value: number; children: SunburstNode[] }
+    const root: SunburstNode = { name: '总时间', value: 0, children: [] };
+    const filtered = selectedInstanceTags.length > 0
+      ? instanceStats.filter(it => selectedInstanceTags.includes(it.instanceTag))
+      : instanceStats;
+
+    const children: SunburstNode[] = filtered.map((it) => ({
+      name: it.instanceTag,
+      value: it.totalTime,
+      children: [],
+    }));
+    root.children = children;
+    root.value = children.reduce((s, c) => s + c.value, 0) || 1;
+    return root;
+  }, [instanceStats, selectedInstanceTags]);
+
   const formatTime = React.useCallback((seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -232,32 +284,41 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return `${minutes}分钟`;
   }, []);
 
-  const sunburstData = React.useMemo(() => buildEChartsSunburstData(), [buildEChartsSunburstData]);
+  const sunburstData = React.useMemo(() => {
+    return viewMode === 'category' ? buildCategorySunburstData() : buildInstanceSunburstData();
+  }, [viewMode, buildCategorySunburstData, buildInstanceSunburstData]);
   const totalSecondsAllTasks = React.useMemo(() => {
-    return tasks.reduce((sum, task) => sum + calculateTotalTime(task), 0);
-  }, [tasks, calculateTotalTime]);
+    if (viewMode === 'category') {
+      return tasks.reduce((sum, task) => sum + calculateTotalTime(task), 0);
+    }
+    const filtered = selectedInstanceTags.length > 0
+      ? instanceStats.filter(it => selectedInstanceTags.includes(it.instanceTag))
+      : instanceStats;
+    return filtered.reduce((s, it) => s + it.totalTime, 0);
+  }, [viewMode, tasks, calculateTotalTime, instanceStats, selectedInstanceTags]);
 
   // 处理点击事件
   const handleChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
     const clickedData = params?.data;
+    if (viewMode === 'category') {
+      // 仅在我们定义的叶子（任务项）点击时触发
+      if (clickedData && clickedData.isLeaf === true) {
+        const categoryPath = clickedData.categoryPath
+          || (Array.isArray(params?.treePathInfo)
+            ? params.treePathInfo
+                .map((p: { name?: string }) => p?.name)
+                .filter((n: string | undefined) => !!n && n !== '总时间')
+                .slice(0, 2)
+                .join('/')
+            : null)
+          || findCategoryPathForTask(clickedData.fullName || params.name || '');
 
-    // 仅在我们定义的叶子（任务项）点击时触发
-    if (clickedData && clickedData.isLeaf === true) {
-      const categoryPath = clickedData.categoryPath
-        || (Array.isArray(params?.treePathInfo)
-          ? params.treePathInfo
-              .map((p: { name?: string }) => p?.name)
-              .filter((n: string | undefined) => !!n && n !== '总时间')
-              .slice(0, 2)
-              .join('/')
-          : null)
-        || findCategoryPathForTask(clickedData.fullName || params.name || '');
-
-      if (categoryPath) {
-        const tasks = getTasksByCategory(categoryPath);
-        setTaskDetails(tasks);
-        setSelectedCategory(categoryPath);
-        setShowTaskList(true);
+        if (categoryPath) {
+          const tasks = getTasksByCategory(categoryPath);
+          setTaskDetails(tasks);
+          setSelectedCategory(categoryPath);
+          setShowTaskList(true);
+        }
       }
     }
   };
@@ -289,7 +350,6 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         label: {
           show: true,
           formatter: function (params: { data: { children?: unknown[] }; name: string }) {
-            // 只显示叶子节点的标签
             if (params.data.children && params.data.children.length > 0) {
               return '';
             }
@@ -308,7 +368,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
             shadowColor: 'rgba(0, 0, 0, 0.5)'
           }
         },
-        levels: [
+        levels: viewMode === 'category' ? [
           {
             r0: '0%',
             r: '35%',
@@ -341,12 +401,19 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
               silent: false
             }
           }
+        ] : [
+          {
+            r0: '0%',
+            r: '90%',
+            itemStyle: { borderWidth: 2 },
+            label: { rotate: 'tangential' }
+          }
         ]
       }
     ],
     tooltip: {
       trigger: 'item',
-      formatter: function (params: { data?: { fullName?: string; name?: string; value?: number } }) {
+      formatter: (params: { data?: { fullName?: string; name?: string; value?: number } }) => {
         const data = params?.data || {};
         const displayName = data.fullName || data.name || '';
         const time = formatTime(data.value || 0);
@@ -359,7 +426,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     animationDelay: function () {
       return Math.random() * 200;
     }
-  }), [sunburstData, formatTime]);
+  }), [sunburstData, formatTime, viewMode]);
 
   // 添加点击事件处理
   const onChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
@@ -380,6 +447,38 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
 
   return (
     <div className="w-full">
+      {/* 模式切换：分类 / 事务项（总时长） */}
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <button
+          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'category' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+          onClick={() => setViewMode('category')}
+        >
+          按分类
+        </button>
+        <button
+          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'instance' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+          onClick={() => setViewMode('instance')}
+        >
+          按事务项（总时长）
+        </button>
+      </div>
+
+      {viewMode === 'instance' && (
+        <div className="mb-3">
+          <InstanceTagSelector
+            selectedTags={selectedInstanceTags}
+            onTagsChange={setSelectedInstanceTags}
+            userId={userId}
+          />
+        </div>
+      )}
+
+      {viewMode === 'instance' && loadingInstance && (
+        <div className="text-center text-sm text-gray-500 mb-2">加载事务项统计...</div>
+      )}
+      {viewMode === 'instance' && instanceError && (
+        <div className="text-center text-sm text-red-500 mb-2">{instanceError}</div>
+      )}
       <ReactECharts 
         option={option} 
         style={{ height: '500px', width: '100%' }}
@@ -394,7 +493,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       </div>
 
       {/* 任务详情显示 */}
-      {showTaskList && (
+      {viewMode === 'category' && showTaskList && (
         <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">

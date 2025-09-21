@@ -29,7 +29,7 @@ export default function LoginForm() {
         // 登录成功，重定向到日志页面
         router.push('/log')
       }
-    } catch (_error) {
+    } catch {
       setError("登录失败，请重试")
     } finally {
       setIsLoading(false)

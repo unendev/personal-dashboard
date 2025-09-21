@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
-import { useDevSession } from '@/app/hooks/useDevSession';
+import { useDevSession } from '../hooks/useDevSession';
 import CreateLogModal from '@/app/components/CreateLogModal'
 import NestedTimerZone from '@/app/components/NestedTimerZone'
 import TimeStatsChart from '@/app/components/TimeStatsChart'
@@ -13,7 +13,6 @@ import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
-import { fetchWithRetry } from '@/lib/utils'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -328,29 +327,29 @@ export default function LogPage() {
     }
   ];
 
-  const mockOperationHistory = [
-    {
-      id: "op-1",
-      action: "开始计时",
-      taskName: "学习 React Hooks",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
-      details: "开始学习 React Hooks 相关概念"
-    },
-    {
-      id: "op-2",
-      action: "暂停计时",
-      taskName: "阅读技术文档",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1小时前
-      details: "休息一下，喝杯咖啡"
-    },
-    {
-      id: "op-3",
-      action: "添加任务",
-      taskName: "项目代码审查",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30分钟前
-      details: "新增代码审查任务"
-    }
-  ];
+  // const mockOperationHistory = [
+  //   {
+  //     id: "op-1",
+  //     action: "开始计时",
+  //     taskName: "学习 React Hooks",
+  //     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
+  //     details: "开始学习 React Hooks 相关概念"
+  //   },
+  //   {
+  //     id: "op-2",
+  //     action: "暂停计时",
+  //     taskName: "阅读技术文档",
+  //     timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1小时前
+  //     details: "休息一下，喝杯咖啡"
+  //   },
+  //   {
+  //     id: "op-3",
+  //     action: "添加任务",
+  //     taskName: "项目代码审查",
+  //     timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30分钟前
+  //     details: "新增代码审查任务"
+  //   }
+  // ];
 
   // 如果未登录，显示访客演示页面（开发环境下跳过此检查）
   if (status === "unauthenticated" && process.env.NODE_ENV !== 'development') {
@@ -485,7 +484,7 @@ export default function LogPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TimeStatsChart tasks={mockTimerTasks} />
+              <TimeStatsChart tasks={mockTimerTasks} userId={userId} />
               </CardContent>
             </Card>
           </div>
@@ -698,7 +697,7 @@ export default function LogPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <TimeStatsChart tasks={timerTasks} />
+              <TimeStatsChart tasks={timerTasks} userId={userId} />
             </CardContent>
           </Card>
         </div>

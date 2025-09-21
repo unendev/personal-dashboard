@@ -71,7 +71,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   onTasksChange, 
   onOperationRecord,
   level = 0,
-  parentId,
   collapsedTasks: externalCollapsedTasks,
   onToggleCollapse: externalOnToggleCollapse,
   // 弹框状态

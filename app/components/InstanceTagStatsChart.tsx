@@ -4,6 +4,14 @@ import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
 
+interface InstanceTag {
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TimerTask {
   id: string;
   name: string;
@@ -46,13 +54,13 @@ const InstanceTagStatsChart: React.FC<InstanceTagStatsChartProps> = ({ tasks, to
     // 优先读取内存缓存
     const inMemory = InstanceTagCache.getInstanceTags?.() || [];
     if (Array.isArray(inMemory) && inMemory.length > 0) {
-      setAvailableTags(inMemory.map(t => ({ id: (t as any).id, name: (t as any).name })));
+      setAvailableTags(inMemory.map((t: InstanceTag) => ({ id: t.id, name: t.name })));
       return;
     }
     // 尝试从本地存储读取
     const fromStorage = InstanceTagCache.loadFromStorage?.();
     if (Array.isArray(fromStorage) && fromStorage.length > 0) {
-      setAvailableTags(fromStorage.map(t => ({ id: (t as any).id, name: (t as any).name })));
+      setAvailableTags(fromStorage.map((t: InstanceTag) => ({ id: t.id, name: t.name })));
     }
   }, []);
 
@@ -154,9 +162,9 @@ const InstanceTagStatsChart: React.FC<InstanceTagStatsChartProps> = ({ tasks, to
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
+      formatter: (params: echarts.TooltipComponentFormatterCallbackParams) => {
         const p = Array.isArray(params) ? params[0] : params;
-        return `${p.name}<br/>时间：${formatTime(p.value)}`;
+        return `${p.name}<br/>时间：${formatTime(Number(p.value) || 0)}`;
       }
     },
     series: [
@@ -169,7 +177,7 @@ const InstanceTagStatsChart: React.FC<InstanceTagStatsChartProps> = ({ tasks, to
         label: {
           show: true,
           position: 'right',
-          formatter: (p: any) => formatTime(p.value),
+          formatter: (p: { value: number }) => formatTime(p.value),
           color: '#374151'
         }
       }

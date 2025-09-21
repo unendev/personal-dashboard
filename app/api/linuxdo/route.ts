@@ -55,11 +55,11 @@ export async function GET(request: Request) {
     const reportDate = targetDate.toISOString().split('T')[0];
     
     // 按类型统计
-    const typeStats = posts.reduce((acc, post) => {
-      const type = post.post_type || '未知';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    // const typeStats = posts.reduce((acc, post) => {
+    //   const type = post.post_type || '未知';
+    //   acc[type] = (acc[type] || 0) + 1;
+    //   return acc;
+    // }, {} as Record<string, number>);
 
     // 生成摘要信息
     const summary = generateSummary(posts);
