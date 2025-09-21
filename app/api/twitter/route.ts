@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         } else if (parsedError.title) {
           errorMessage = parsedError.title;
         }
-      } catch (e) {
+      } catch {
         // 如果无法解析JSON，使用原始错误数据
         errorMessage = errorData || response.statusText;
       }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         } else if (parsedError.title) {
           errorMessage = parsedError.title;
         }
-      } catch (e) {
+      } catch {
         // 如果无法解析JSON，使用原始错误数据
         errorMessage = errorData || response.statusText;
       }

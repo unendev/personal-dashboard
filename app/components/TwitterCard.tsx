@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 
 interface Tweet {
   id: string;
@@ -36,7 +37,7 @@ const TwitterCard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState('elonmusk'); // 默认用户名
 
-  const fetchTweets = async (targetUsername?: string) => {
+  const fetchTweets = useCallback(async (targetUsername?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -108,7 +109,7 @@ const TwitterCard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username]);
 
   // 模拟数据函数
   const getMockTweets = (): Tweet[] => [
@@ -161,7 +162,7 @@ const TwitterCard: React.FC = () => {
 
   useEffect(() => {
     fetchTweets();
-  }, []);
+  }, [fetchTweets]);
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUsername(e.target.value);
@@ -265,9 +266,11 @@ const TwitterCard: React.FC = () => {
                 {/* 用户信息 */}
                 {user && (
                   <div className="flex items-center gap-2 mb-2">
-                    <img
-                      src={user.profile_image_url}
+                    <Image
+                      src={user.profile_image_url || '/default-avatar.png'}
                       alt={user.name}
+                      width={24}
+                      height={24}
                       className="w-6 h-6 rounded-full hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();

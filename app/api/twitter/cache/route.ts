@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TwitterCacheService } from '@/app/lib/twitter-cache';
 
 // 获取缓存统计信息
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const stats = await TwitterCacheService.getCacheStats();
     

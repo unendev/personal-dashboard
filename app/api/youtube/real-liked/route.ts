@@ -61,7 +61,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number = 30000) {
 }
 
 // 获取用户真实的喜欢视频
-async function getUserLikedVideos(accessToken: string): Promise<YouTubeLikedVideo[]> {
+async function getUserLikedVideos(_accessToken: string): Promise<YouTubeLikedVideo[]> {
   try {
     console.log('[YouTube API] Fetching user liked videos with access token');
     
@@ -83,7 +83,7 @@ async function getUserLikedVideos(accessToken: string): Promise<YouTubeLikedVide
     }
     
     // 获取视频详细信息
-    const videoIds = likedData.items.map((item: any) => item.id).join(',');
+    const videoIds = likedData.items.map((item: { id: string }) => item.id).join(',');
     const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`;
     
     const videoResponse = await fetchWithTimeout(videoDetailsUrl, 30000);
@@ -203,8 +203,92 @@ export async function GET() {
       likedAt: video.likedAt ? new Date(video.likedAt).toLocaleString('zh-CN') : undefined
     }));
     
-    // 缓存到数据库（可选）
-    // 这里可以添加缓存逻辑，将视频数据存储到数据库中
+    // 缓存到数据库
+    try {
+      // 清除过期的缓存
+      await prisma.youTubeVideoCache.deleteMany({
+        where: {
+          userId: session.user.id,
+          expiresAt: {
+            lt: new Date()
+          }
+        }
+      });
+
+      // 检查是否有有效的缓存
+      const cachedVideos = await prisma.youTubeVideoCache.findMany({
+        where: {
+          userId: session.user.id,
+          expiresAt: {
+            gt: new Date()
+          }
+        },
+        orderBy: {
+          likedAt: 'desc'
+        }
+      });
+
+      if (cachedVideos.length > 0) {
+        console.log(`[YouTube Cache] Found ${cachedVideos.length} cached videos`);
+        
+        const cachedFormattedVideos = cachedVideos.map(video => ({
+          id: video.videoId,
+          title: video.title,
+          description: video.description || '',
+          thumbnail: video.thumbnail,
+          channelTitle: video.channelTitle,
+          publishedAt: video.publishedAt.toLocaleString('zh-CN'),
+          duration: formatDuration(video.duration),
+          viewCount: formatViewCount(video.viewCount),
+          url: video.url,
+          likedAt: video.likedAt?.toLocaleString('zh-CN')
+        }));
+
+        return NextResponse.json({
+          success: true,
+          data: cachedFormattedVideos,
+          message: '从缓存获取您的喜欢视频',
+          cached: true
+        });
+      }
+
+      // 如果没有缓存，获取新数据并缓存
+      console.log('[YouTube Cache] No valid cache found, fetching fresh data');
+      
+      // 清除旧缓存
+      await prisma.youTubeVideoCache.deleteMany({
+        where: {
+          userId: session.user.id
+        }
+      });
+
+      // 缓存新数据
+      const cacheExpiry = new Date();
+      cacheExpiry.setHours(cacheExpiry.getHours() + 1); // 1小时后过期
+
+      await prisma.youTubeVideoCache.createMany({
+        data: videos.map(video => ({
+          videoId: video.id,
+          title: video.title,
+          description: video.description,
+          thumbnail: video.thumbnail,
+          channelTitle: video.channelTitle,
+          publishedAt: new Date(video.publishedAt),
+          duration: video.duration,
+          viewCount: video.viewCount,
+          url: video.url,
+          likedAt: video.likedAt ? new Date(video.likedAt) : null,
+          userId: session.user.id,
+          expiresAt: cacheExpiry
+        }))
+      });
+
+      console.log(`[YouTube Cache] Cached ${videos.length} videos until ${cacheExpiry.toISOString()}`);
+
+    } catch (cacheError) {
+      console.error('[YouTube Cache] Error caching videos:', cacheError);
+      // 即使缓存失败，也返回数据
+    }
     
     return NextResponse.json({
       success: true,

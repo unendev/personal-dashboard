@@ -32,6 +32,7 @@ model User {
   accounts                    Account[]
   sessions                    Session[]
   twitterUsers                TwitterUser[]
+  youtubeVideoCache           YouTubeVideoCache[]
 
   @@map("users")
 }
@@ -311,6 +312,26 @@ model TwitterTweet {
   expiresAt         DateTime
 
   @@map("twitter_tweets")
+}
+
+model YouTubeVideoCache {
+  id                String   @id @default(cuid())
+  videoId           String   @unique
+  title             String
+  description       String?
+  thumbnail         String
+  channelTitle      String
+  publishedAt       DateTime
+  duration          String
+  viewCount         String
+  url               String
+  likedAt           DateTime?
+  userId            String
+  cachedAt          DateTime @default(now())
+  expiresAt         DateTime
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("youtube_video_cache")
 }
 
 enum QuestStatus {

@@ -4,7 +4,12 @@ import React, { useState } from 'react';
 import TwitterCard from '@/app/components/TwitterCard';
 
 const TwitterTestPage = () => {
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<{
+    name: string;
+    success: boolean;
+    message: string;
+    data?: unknown;
+  }[]>([]);
 
   const runTests = async () => {
     const tests = [
@@ -43,13 +48,14 @@ const TwitterTestPage = () => {
         results.push({
           name: test.name,
           success: true,
-          result: result
+          message: '测试成功',
+          data: result
         });
       } catch (error) {
         results.push({
           name: test.name,
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          message: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
@@ -92,11 +98,11 @@ const TwitterTestPage = () => {
                   </div>
                   {test.success ? (
                     <pre className="mt-2 text-xs opacity-80 overflow-x-auto">
-                      {JSON.stringify(test.result, null, 2)}
+                      {JSON.stringify(test.data, null, 2)}
                     </pre>
                   ) : (
                     <div className="mt-2 text-sm opacity-80">
-                      错误: {test.error}
+                      错误: {test.message}
                     </div>
                   )}
                 </div>
@@ -123,7 +129,7 @@ const TwitterTestPage = () => {
                 <li>点击推文卡片 → 跳转到Twitter查看完整推文</li>
                 <li>点击用户头像 → 跳转到用户Twitter主页</li>
                 <li>点击用户名 → 跳转到用户Twitter主页</li>
-                <li>点击"在Twitter中查看"按钮 → 跳转到用户主页</li>
+                <li>点击&ldquo;在Twitter中查看&rdquo;按钮 → 跳转到用户主页</li>
               </ul>
             </div>
             <div>
@@ -132,7 +138,7 @@ const TwitterTestPage = () => {
                 <li>悬停时卡片背景变亮</li>
                 <li>悬停时用户名变蓝色</li>
                 <li>悬停时显示链接图标</li>
-                <li>悬停时显示"在Twitter中查看"提示</li>
+                <li>悬停时显示&ldquo;在Twitter中查看&rdquo;提示</li>
                 <li>头像悬停时显示蓝色边框</li>
               </ul>
             </div>

@@ -5,7 +5,12 @@ export interface TwitterUserData {
   name: string;
   username: string;
   profile_image_url?: string;
-  public_metrics?: any;
+  public_metrics?: {
+    followers_count?: number;
+    following_count?: number;
+    tweet_count?: number;
+    listed_count?: number;
+  };
 }
 
 export interface TwitterTweetData {
@@ -55,7 +60,12 @@ export class TwitterCacheService {
         name: cachedUser.name,
         username: cachedUser.username,
         profile_image_url: cachedUser.profileImageUrl || undefined,
-        public_metrics: cachedUser.publicMetrics as any
+        public_metrics: cachedUser.publicMetrics as {
+          followers_count?: number;
+          following_count?: number;
+          tweet_count?: number;
+          listed_count?: number;
+        }
       };
     } catch (error) {
       console.error('Error getting cached user:', error);
@@ -90,7 +100,12 @@ export class TwitterCacheService {
         id: tweet.twitterId,
         text: tweet.text,
         created_at: tweet.createdAt.toISOString(),
-        public_metrics: tweet.publicMetrics as any,
+        public_metrics: {
+          retweet_count: (tweet.publicMetrics as { retweet_count?: number })?.retweet_count || 0,
+          like_count: (tweet.publicMetrics as { like_count?: number })?.like_count || 0,
+          reply_count: (tweet.publicMetrics as { reply_count?: number })?.reply_count || 0,
+          quote_count: (tweet.publicMetrics as { quote_count?: number })?.quote_count || 0,
+        },
         author_id: tweet.author.twitterId
       }));
     } catch (error) {
@@ -180,7 +195,7 @@ export class TwitterCacheService {
         }
       });
 
-      return user && user.tweets.length > 0;
+      return !!(user && user.tweets.length > 0);
     } catch (error) {
       console.error('Error checking cache validity:', error);
       return false;

@@ -28,7 +28,7 @@ interface YouTubeLikedApiResponse {
 }
 
 const YouTubeLikedCard: React.FC = () => {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [videos, setVideos] = useState<YouTubeLikedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +76,11 @@ const YouTubeLikedCard: React.FC = () => {
 
     fetchLikedVideos();
   }, [session]);
+
+  // 根据认证状态显示不同内容
+  if (authState === 'unauthenticated' || authState === 'needs_google' || authState === 'needs_reauth') {
+    return <YouTubeAuthCard />;
+  }
 
   if (loading) {
     return (

@@ -3,7 +3,11 @@
 import React, { useState } from 'react';
 
 const TwitterAPITest = () => {
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+    data?: unknown;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const runTest = async () => {
@@ -17,8 +21,8 @@ const TwitterAPITest = () => {
     } catch (error) {
       setTestResult({
         success: false,
-        error: 'Test request failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Test request failed',
+        data: error instanceof Error ? error.message : 'Unknown error'
       });
     } finally {
       setLoading(false);
@@ -41,14 +45,14 @@ const TwitterAPITest = () => {
       const data = await response.json();
       setTestResult({
         success: response.ok,
-        status: response.status,
+        message: response.ok ? 'User API test successful' : 'User API test failed',
         data: data
       });
     } catch (error) {
       setTestResult({
         success: false,
-        error: 'User API test failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        message: 'User API test failed',
+        data: error instanceof Error ? error.message : 'Unknown error'
       });
     } finally {
       setLoading(false);
