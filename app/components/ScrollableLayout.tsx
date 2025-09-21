@@ -178,73 +178,67 @@ const ScrollableLayout = () => {
   return (
     <main className="w-full min-h-screen">
       {/* 页面标题区域 */}
-      <div className="relative z-10 px-6 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-              Project Nexus
-            </h1>
-            <p className="text-lg text-white/70 max-w-2xl mx-auto">
-              您的个人数字中心 - 整合所有信息源的智能仪表板
-            </p>
-          </div>
+      <div className="relative z-10 px-4 py-6">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+            Project Nexus
+          </h1>
+          <p className="text-base md:text-lg text-white/70">
+            您的个人数字中心 - 整合所有信息源的智能仪表板
+          </p>
         </div>
       </div>
 
       {/* 分类导航 */}
-      <div className="relative z-10 px-6 mb-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  activeCategory === category.id
-                    ? 'bg-white/20 text-white border border-white/30'
-                    : 'text-white/60 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span className="mr-2">{category.icon}</span>
-                {category.label}
-              </button>
-            ))}
-          </div>
-          
-          {/* 统计信息 */}
-          <div className="text-center text-white/50 text-sm">
-            显示 {filteredSources.length} 个信息源
-          </div>
+      <div className="relative z-10 px-4 mb-6">
+        <div className="flex flex-wrap justify-center gap-2 mb-4">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+                activeCategory === category.id
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span className="mr-2">{category.icon}</span>
+              {category.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* 统计信息 */}
+        <div className="text-center text-white/50 text-sm">
+          显示 {filteredSources.length} 个信息源
         </div>
       </div>
 
-      {/* 可滚动的内容区域 */}
-      <div className="relative z-10 px-6 pb-8">
-        <div className="max-w-7xl mx-auto">
-          <div 
-            ref={scrollRef}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[calc(100vh-300px)] overflow-y-auto"
-          >
-            {filteredSources.map((source) => (
-              <div key={source.id} className="module-card rounded-2xl hover-lift">
-                <div className="p-4 border-b border-white/10">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{source.icon}</span>
-                    <h3 className="text-lg font-semibold text-white">{source.title}</h3>
-                  </div>
-                </div>
-                <div className="h-full">
-                  <Suspense fallback={
-                    <div className="p-6 flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/60"></div>
-                    </div>
-                  }>
-                    {source.component}
-                  </Suspense>
+      {/* 可滚动的内容区域 - 移除盒子限制，充分利用空间 */}
+      <div className="relative z-10 pb-6">
+        <div 
+          ref={scrollRef}
+          className="scrollable-layout-grid"
+        >
+          {filteredSources.map((source) => (
+            <div key={source.id} className="module-card rounded-2xl hover-lift">
+              <div className="p-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{source.icon}</span>
+                  <h3 className="text-base font-semibold text-white">{source.title}</h3>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="h-full">
+                <Suspense fallback={
+                  <div className="p-4 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white/60"></div>
+                  </div>
+                }>
+                  {source.component}
+                </Suspense>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </main>

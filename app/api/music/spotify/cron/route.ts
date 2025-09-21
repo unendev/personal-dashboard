@@ -14,7 +14,7 @@ const TOKEN_ENDPOINT = `https://accounts.spotify.com/api/token`;
 const CURRENTLY_PLAYING_ENDPOINT = `https://api.spotify.com/v1/me/player/currently-playing`;
 const RECENTLY_PLAYED_ENDPOINT = `https://api.spotify.com/v1/me/player/recently-played`;
 
-// 这是一个辅助函数，用于通过 refresh_token 获取新的 access_token
+// 获取 access_token 的辅助函数
 async function getAccessToken(refreshToken: string) {
   const response = await fetch(TOKEN_ENDPOINT, {
     method: 'POST',
@@ -31,30 +31,19 @@ async function getAccessToken(refreshToken: string) {
   const data = await response.json();
 
   if (!response.ok) {
-    // 如果 refresh_token 失效，Spotify 会在这里返回错误
     throw new Error(data.error_description || 'Failed to refresh token');
   }
 
   return data.access_token;
 }
 
-// API 路由的主处理函数
-export async function GET(request: NextRequest) {
-  // 1. 首先检查缓存数据
-  const cachedData = spotifyCache.getCachedData();
-  if (cachedData) {
-    console.log('返回缓存的Spotify数据:', cachedData.trackName);
-    // 返回缓存数据，但不包含缓存元数据
-    const { cachedAt, expiresAt, ...musicData } = cachedData;
-    return NextResponse.json(musicData);
-  }
-
-  // 2. 如果没有缓存数据，尝试从Spotify API获取
-  const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN || request.cookies.get('spotify_refresh_token')?.value;
+// 获取Spotify音乐数据的核心函数
+async function fetchSpotifyData() {
+  const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
 
   if (!refreshToken) {
-    // 如果没有配置token，返回一个默认的占位数据
-    const fallbackData = {
+    console.log('Spotify refresh token 未配置，使用占位数据');
+    return {
       isPlaying: false,
       trackName: "音乐服务暂不可用",
       artist: "请稍后再试",
@@ -62,17 +51,13 @@ export async function GET(request: NextRequest) {
       albumArtUrl: "https://via.placeholder.com/300x300/1db954/ffffff?text=♪",
       source: 'Spotify',
     };
-    
-    // 缓存这个占位数据，避免频繁请求
-    spotifyCache.updateCache(fallbackData);
-    return NextResponse.json(fallbackData);
   }
 
   try {
-    // 3. 获取最新的 access_token
+    // 获取最新的 access_token
     const accessToken = await getAccessToken(refreshToken);
 
-    // 4. 调用 Spotify API 获取最近播放的歌曲
+    // 调用 Spotify API 获取最近播放的歌曲
     const response = await fetch(CURRENTLY_PLAYING_ENDPOINT, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -137,26 +122,87 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5. 更新缓存
-    spotifyCache.updateCache(formattedData);
-
-    return NextResponse.json(formattedData);
+    return formattedData;
 
   } catch (error: unknown) {
     console.error('Spotify API 错误:', error);
+    throw error;
+  }
+}
+
+// POST /api/music/spotify/cron - 定时任务：更新Spotify缓存
+export async function POST(request: NextRequest) {
+  try {
+    // 验证请求来源（可选：添加API密钥验证）
+    const authHeader = request.headers.get('authorization');
+    const expectedToken = process.env.CRON_SECRET_TOKEN;
     
-    // 如果API调用失败，尝试返回缓存数据（如果有的话）
-    const staleCache = spotifyCache.getCachedData();
-    if (staleCache) {
-      console.log('API失败，返回过期缓存数据');
-      const { cachedAt, expiresAt, ...musicData } = staleCache;
-      return NextResponse.json(musicData);
+    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 如果没有任何缓存数据，返回错误信息
-    return NextResponse.json({ 
-      error: 'Spotify服务暂时不可用，请稍后再试',
-      message: '无法获取音乐信息'
-    }, { status: 503 });
+    console.log('开始执行Spotify缓存更新任务...');
+    
+    // 检查是否需要刷新缓存
+    if (!spotifyCache.shouldRefresh()) {
+      const status = spotifyCache.getCacheStatus();
+      console.log('缓存仍然有效，跳过更新:', status);
+      return NextResponse.json({ 
+        message: '缓存仍然有效，跳过更新',
+        cacheStatus: status
+      });
+    }
+
+    // 获取Spotify数据
+    const spotifyData = await fetchSpotifyData();
+    
+    // 更新缓存
+    spotifyCache.updateCache(spotifyData);
+    
+    console.log('Spotify缓存更新成功:', {
+      track: spotifyData.trackName,
+      artist: spotifyData.artist,
+      isPlaying: spotifyData.isPlaying
+    });
+
+    return NextResponse.json({
+      message: 'Spotify缓存更新成功',
+      data: spotifyData,
+      cacheStatus: spotifyCache.getCacheStatus()
+    });
+
+  } catch (error: unknown) {
+    console.error('Spotify缓存更新失败:', error);
+    
+    return NextResponse.json({
+      error: 'Spotify缓存更新失败',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
+
+// GET /api/music/spotify/cron - 获取缓存状态
+export async function GET(request: NextRequest) {
+  try {
+    const cacheStatus = spotifyCache.getCacheStatus();
+    const cachedData = spotifyCache.getCachedData();
+    
+    return NextResponse.json({
+      cacheStatus,
+      cachedData: cachedData ? {
+        trackName: cachedData.trackName,
+        artist: cachedData.artist,
+        album: cachedData.album,
+        isPlaying: cachedData.isPlaying,
+        cachedAt: cachedData.cachedAt,
+        expiresAt: cachedData.expiresAt
+      } : null
+    });
+
+  } catch (error: unknown) {
+    return NextResponse.json({
+      error: '获取缓存状态失败',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
