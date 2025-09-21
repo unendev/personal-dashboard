@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
+import YouTubeAuthCard from './YouTubeAuthCard';
 
 interface YouTubeLikedVideo {
   id: string;
@@ -20,12 +22,17 @@ interface YouTubeLikedApiResponse {
   success: boolean;
   data?: YouTubeLikedVideo[];
   message?: string;
+  requiresAuth?: boolean;
+  requiresGoogleAuth?: boolean;
+  requiresReauth?: boolean;
 }
 
 const YouTubeLikedCard: React.FC = () => {
+  const { data: session, status } = useSession();
   const [videos, setVideos] = useState<YouTubeLikedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<'loading' | 'unauthenticated' | 'authenticated' | 'needs_google' | 'needs_reauth'>('loading');
 
   useEffect(() => {
     const fetchLikedVideos = async () => {
@@ -33,24 +40,42 @@ const YouTubeLikedCard: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('/api/youtube/liked');
+        // 如果用户未登录，直接返回
+        if (!session) {
+          setAuthState('unauthenticated');
+          setLoading(false);
+          return;
+        }
+        
+        const response = await fetch('/api/youtube/real-liked');
         const data: YouTubeLikedApiResponse = await response.json();
+        
+        console.log('YouTube Real Liked API Response:', data);
         
         if (data.success && data.data) {
           setVideos(data.data);
+          setAuthState('authenticated');
+        } else if (data.requiresAuth) {
+          setAuthState('unauthenticated');
+        } else if (data.requiresGoogleAuth) {
+          setAuthState('needs_google');
+        } else if (data.requiresReauth) {
+          setAuthState('needs_reauth');
         } else {
           setError(data.message || '获取喜欢视频失败');
+          setAuthState('authenticated');
         }
       } catch (err) {
         console.error('Failed to fetch liked videos:', err);
         setError('网络请求失败');
+        setAuthState('authenticated');
       } finally {
         setLoading(false);
       }
     };
 
     fetchLikedVideos();
-  }, []);
+  }, [session]);
 
   if (loading) {
     return (
@@ -139,6 +164,11 @@ const YouTubeLikedCard: React.FC = () => {
                   height={80}
                   className="w-32 h-20 object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    // 图片加载失败时使用默认图片
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjgwIiB2aWV3Qm94PSIwIDAgMTI4IDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iODAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI2NCIgeT0iNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+WW91VHViZTwvdGV4dD48L3N2Zz4=';
+                  }}
                 />
                 
                 {/* 播放按钮 */}

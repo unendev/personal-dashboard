@@ -31,6 +31,7 @@ model User {
   layout                      UserLayout?
   accounts                    Account[]
   sessions                    Session[]
+  twitterUsers                TwitterUser[]
 
   @@map("users")
 }
@@ -280,6 +281,36 @@ model posts {
   post_type        String?
   value_assessment String?
   timestamp        DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model TwitterUser {
+  id                String        @id @default(cuid())
+  twitterId         String        @unique
+  username          String        @unique
+  name              String
+  profileImageUrl   String?
+  publicMetrics     Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  tweets            TwitterTweet[]
+  userId            String?
+  user              User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("twitter_users")
+}
+
+model TwitterTweet {
+  id                String      @id @default(cuid())
+  twitterId         String      @unique
+  text              String
+  createdAt         DateTime
+  publicMetrics     Json
+  authorId          String
+  author            TwitterUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  cachedAt          DateTime    @default(now())
+  expiresAt         DateTime
+
+  @@map("twitter_tweets")
 }
 
 enum QuestStatus {

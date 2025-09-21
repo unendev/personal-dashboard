@@ -9,6 +9,7 @@ import RuanYiFengCard from './RuanYiFengCard';
 import BilibiliCard from './BilibiliCard';
 // import EternalReturnCard from './EternalReturnCard';
 import YouTubeLikedCard from './YouTubeLikedCard';
+import TwitterCard from './TwitterCard';
 
 interface InfoSource {
   id: string;
@@ -49,14 +50,7 @@ const ScrollableLayout = () => {
       id: 'twitter',
       title: 'Twitter 动态',
       icon: '🐦',
-      component: (
-        <div className="p-6">
-          <div className="text-center text-white/60 py-8">
-            <p>Twitter API 集成待实现</p>
-            <p className="text-sm mt-2">将显示最新的推文和互动</p>
-          </div>
-        </div>
-      ),
+      component: <TwitterCard />,
       category: 'social',
       priority: 3
     },

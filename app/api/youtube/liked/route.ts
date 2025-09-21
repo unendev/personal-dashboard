@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // 带超时的 fetch 包装器
-async function fetchWithTimeout(url: string, timeoutMs: number = 15000) {
+async function fetchWithTimeout(url: string, timeoutMs: number = 30000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   
@@ -69,6 +69,7 @@ function getYouTubeApiKey(): string {
 async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
   try {
     const apiKey = getYouTubeApiKey();
+    console.log(`[YouTube API] Attempting to fetch videos. API Key loaded: ${apiKey ? 'Yes' : 'No'}`);
     
     // 搜索多个编程相关的主题
     const topics = [
@@ -87,7 +88,11 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
         
         const searchResponse = await fetchWithTimeout(searchUrl, 15000);
         if (!searchResponse.ok) {
-          console.error(`Search failed for topic: ${topic}`);
+          const errorBody = await searchResponse.json();
+          console.error(
+            `[YouTube API] Search failed for topic "${topic}". Status: ${searchResponse.status}`,
+            JSON.stringify(errorBody, null, 2)
+          );
           continue;
         }
         
@@ -104,6 +109,11 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
         
         const videoResponse = await fetchWithTimeout(videoUrl, 15000);
         if (!videoResponse.ok) {
+          const errorBody = await videoResponse.json();
+          console.error(
+            `[YouTube API] Video details failed for ID ${videoId}. Status: ${videoResponse.status}`,
+            JSON.stringify(errorBody, null, 2)
+          );
           continue;
         }
         
@@ -132,7 +142,7 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
       } catch (error) {
-        console.error(`Error fetching videos for topic ${topic}:`, error);
+        console.error(`[YouTube API] Network error while fetching topic "${topic}":`, error);
         continue;
       }
     }
@@ -142,7 +152,7 @@ async function getRealProgrammingVideos(): Promise<YouTubeLikedVideo[]> {
     );
     
   } catch (error) {
-    console.error('Failed to get real programming videos:', error);
+    console.error('[YouTube API] A critical error occurred in getRealProgrammingVideos:', error);
     return [];
   }
 }
@@ -154,7 +164,7 @@ function getMockLikedVideos(): YouTubeLikedVideo[] {
       id: 'mock-liked-1',
       title: '【Vue.js 3.0 完整教程】从入门到精通 - 现代前端开发',
       description: '深入学习Vue.js 3.0框架，包括Composition API、响应式系统、组件开发等核心概念。适合前端开发者学习。',
-      thumbnail: 'https://via.placeholder.com/320x180/667eea/ffffff?text=Vue.js+Tutorial',
+      thumbnail: 'https://picsum.photos/320/180?random=' + Math.floor(Math.random() * 1000),
       channelTitle: '前端开发学院',
       publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2天前
       duration: '25:30',
@@ -166,7 +176,7 @@ function getMockLikedVideos(): YouTubeLikedVideo[] {
       id: 'mock-liked-2',
       title: '【JavaScript 高级特性】ES6+ 新特性详解',
       description: '全面介绍JavaScript ES6+的新特性，包括箭头函数、解构赋值、Promise、async/await等。',
-      thumbnail: 'https://via.placeholder.com/320x180/f093fb/ffffff?text=JavaScript+ES6',
+      thumbnail: 'https://picsum.photos/320/180?random=' + Math.floor(Math.random() * 1000),
       channelTitle: '编程学习频道',
       publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5天前
       duration: '18:45',
@@ -178,7 +188,7 @@ function getMockLikedVideos(): YouTubeLikedVideo[] {
       id: 'mock-liked-3',
       title: '【React Hooks 深度解析】useState、useEffect、useContext',
       description: '深入理解React Hooks的工作原理和使用方法，提升React开发技能。',
-      thumbnail: 'https://via.placeholder.com/320x180/4facfe/ffffff?text=React+Hooks',
+      thumbnail: 'https://picsum.photos/320/180?random=' + Math.floor(Math.random() * 1000),
       channelTitle: 'React 官方频道',
       publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7天前
       duration: '32:15',
@@ -190,7 +200,7 @@ function getMockLikedVideos(): YouTubeLikedVideo[] {
       id: 'mock-liked-4',
       title: '【TypeScript 入门指南】类型系统与高级特性',
       description: '学习TypeScript的类型系统、接口、泛型等高级特性，提升代码质量和开发效率。',
-      thumbnail: 'https://via.placeholder.com/320x180/00d4aa/ffffff?text=TypeScript',
+      thumbnail: 'https://picsum.photos/320/180?random=' + Math.floor(Math.random() * 1000),
       channelTitle: 'TypeScript 学习',
       publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10天前
       duration: '28:20',
@@ -202,7 +212,7 @@ function getMockLikedVideos(): YouTubeLikedVideo[] {
       id: 'mock-liked-5',
       title: '【Next.js 13 新特性】App Router 与 Server Components',
       description: '探索Next.js 13的新特性，包括App Router、Server Components等革命性功能。',
-      thumbnail: 'https://via.placeholder.com/320x180/ff6b6b/ffffff?text=Next.js+13',
+      thumbnail: 'https://picsum.photos/320/180?random=' + Math.floor(Math.random() * 1000),
       channelTitle: 'Next.js 官方',
       publishedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14天前
       duration: '35:45',
