@@ -112,8 +112,18 @@ export async function GET() {
       responseEncoding: 'utf8',
       timeout: 10000
     });
-    const feed = await parser.parseString(response.data);
-    const items: FeedItem[] = feed.items?.slice(0, 1).map(item => ({ // 只获取最新的1条
+    
+    // 确保响应数据是UTF-8编码
+    let xmlData = response.data;
+    if (typeof xmlData === 'string') {
+      // 检查是否有编码声明，如果没有则添加
+      if (!xmlData.includes('encoding=')) {
+        xmlData = xmlData.replace('<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>');
+      }
+    }
+    
+    const feed = await parser.parseString(xmlData);
+    const items: FeedItem[] = feed.items?.slice(0, 3).map(item => ({ // 获取最新的3条
       source: RUANYIFENG_FEED.source,
       avatar: RUANYIFENG_FEED.avatar,
       author: item.creator || feed.title || 'Unknown author',
@@ -123,7 +133,11 @@ export async function GET() {
       url: item.link,
     })) || [];
 
-    return NextResponse.json(items);
+    return NextResponse.json(items, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch Ruan Yi Feng RSS feed:', error);
     // 返回空数组而不是错误对象，确保前端能正常处理

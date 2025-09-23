@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TwitterCacheService } from '@/app/lib/twitter-cache';
+import { SimpleTwitterCache } from '@/app/lib/simple-twitter-cache';
 
 const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAEY14QEAAAAAgRSvzkQdsFffGg3JxfFHgCFqKnc%3Dz1d9S20iXUXNLJI8aaUZJa0sMUpvji0MNIfmvPVRlYAmG4q4eN';
 
@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
 
     // 如果启用缓存，先尝试从缓存获取
     if (useCache) {
-      const cachedTweets = await TwitterCacheService.getCachedTweets(userId, maxResults);
-      if (cachedTweets.length > 0) {
+      const cachedTweets = SimpleTwitterCache.getCachedTweets(userId);
+      if (cachedTweets && cachedTweets.length > 0) {
         console.log(`Returning ${cachedTweets.length} cached tweets for user ${userId}`);
         return NextResponse.json({
           success: true,
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     // 缓存新获取的数据
     if (data.data && data.data.length > 0) {
       try {
-        await TwitterCacheService.cacheTweets(data.data, userId);
+        SimpleTwitterCache.setCachedTweets(userId, data.data);
         console.log(`Cached ${data.data.length} tweets for user ${userId}`);
       } catch (cacheError) {
         console.error('Error caching tweets:', cacheError);
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // 如果启用缓存，先尝试从缓存获取
     if (useCache) {
-      const cachedUser = await TwitterCacheService.getCachedUser(username);
+      const cachedUser = SimpleTwitterCache.getCachedUser(username);
       if (cachedUser) {
         console.log(`Returning cached user: ${username}`);
         return NextResponse.json({
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     // 缓存用户信息
     if (data.data) {
       try {
-        await TwitterCacheService.cacheUser(data.data);
+        SimpleTwitterCache.setCachedUser(username, data.data);
         console.log(`Cached user: ${username}`);
       } catch (cacheError) {
         console.error('Error caching user:', cacheError);

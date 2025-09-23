@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import TwitterCard from '@/app/components/TwitterCard';
+import TwitterDebug from '@/app/components/TwitterDebug';
+import URLTest from '@/app/components/URLTest';
+import RealAPITest from '@/app/components/RealAPITest';
 
 const TwitterTestPage = () => {
   const [testResults, setTestResults] = useState<{
@@ -111,13 +114,37 @@ const TwitterTestPage = () => {
           </div>
         )}
 
-        {/* Twitter卡片组件 */}
-        <div className="bg-white/5 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Twitter卡片组件</h2>
-          <div className="bg-white/5 rounded-lg">
-            <TwitterCard />
-          </div>
-        </div>
+         {/* 状态检查 */}
+         <div className="bg-white/5 rounded-lg p-6 mb-8">
+           <h2 className="text-xl font-semibold text-white mb-4">功能状态</h2>
+           <div className="text-white/60">状态检查功能已移除</div>
+         </div>
+
+         {/* 调试信息 */}
+         <div className="bg-white/5 rounded-lg p-6 mb-8">
+           <h2 className="text-xl font-semibold text-white mb-4">调试信息</h2>
+           <TwitterDebug />
+         </div>
+
+         {/* URL测试 */}
+         <div className="bg-white/5 rounded-lg p-6 mb-8">
+           <h2 className="text-xl font-semibold text-white mb-4">URL生成测试</h2>
+           <URLTest />
+         </div>
+
+         {/* 真实API测试 */}
+         <div className="bg-white/5 rounded-lg p-6 mb-8">
+           <h2 className="text-xl font-semibold text-white mb-4">真实API测试</h2>
+           <RealAPITest />
+         </div>
+
+         {/* Twitter卡片组件 */}
+         <div className="bg-white/5 rounded-lg p-6">
+           <h2 className="text-xl font-semibold text-white mb-4">Twitter卡片组件</h2>
+           <div className="bg-white/5 rounded-lg">
+             <TwitterCard />
+           </div>
+         </div>
 
         {/* 功能说明 */}
         <div className="mt-8 bg-white/5 rounded-lg p-6">

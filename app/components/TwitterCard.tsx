@@ -35,7 +35,8 @@ const TwitterCard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [username, setUsername] = useState('elonmusk'); // 默认用户名
+  const [username, setUsername] = useState('nekomataokayu'); // 默认用户名
+  const [dataSource, setDataSource] = useState<'api' | 'mock' | 'loading'>('loading');
 
   const fetchTweets = useCallback(async (targetUsername?: string) => {
     try {
@@ -57,14 +58,41 @@ const TwitterCard: React.FC = () => {
       console.log('User API response status:', userResponse.status);
 
       if (!userResponse.ok) {
-        const errorData = await userResponse.json();
-        console.error('User API error:', errorData);
+        let errorData = {};
+        try {
+          const responseText = await userResponse.text();
+          if (responseText) {
+            errorData = JSON.parse(responseText);
+          }
+        } catch (parseError) {
+          console.log('Failed to parse error response, using empty object');
+          errorData = { 
+            error: 'API request failed', 
+            status: userResponse.status,
+            statusText: userResponse.statusText 
+          };
+        }
+        
+        console.log('User API error details:', {
+          status: userResponse.status,
+          statusText: userResponse.statusText,
+          errorData: errorData
+        });
         
         // 如果API失败，使用模拟数据
         console.log('API failed, using mock data...');
-        setTweets(getMockTweets());
-        setUsers(getMockUsers());
+        const mockTweets = getMockTweets();
+        const mockUsers = getMockUsers();
+        setTweets(mockTweets);
+        setUsers(mockUsers);
         setError(null); // 清除错误，因为使用了模拟数据
+        setDataSource('mock'); // 标记数据来源
+        
+        // 调试模拟数据
+        console.log('Mock data set:', {
+          tweets: mockTweets,
+          users: mockUsers
+        });
         return;
       }
 
@@ -84,14 +112,41 @@ const TwitterCard: React.FC = () => {
       console.log('Tweets API response status:', tweetsResponse.status);
 
       if (!tweetsResponse.ok) {
-        const errorData = await tweetsResponse.json();
-        console.error('Tweets API error:', errorData);
+        let errorData = {};
+        try {
+          const responseText = await tweetsResponse.text();
+          if (responseText) {
+            errorData = JSON.parse(responseText);
+          }
+        } catch (parseError) {
+          console.log('Failed to parse tweets error response, using empty object');
+          errorData = { 
+            error: 'Tweets API request failed', 
+            status: tweetsResponse.status,
+            statusText: tweetsResponse.statusText 
+          };
+        }
+        
+        console.log('Tweets API error details:', {
+          status: tweetsResponse.status,
+          statusText: tweetsResponse.statusText,
+          errorData: errorData
+        });
         
         // 如果推文API失败，使用模拟数据
         console.log('Tweets API failed, using mock data...');
-        setTweets(getMockTweets());
-        setUsers(getMockUsers());
+        const mockTweets = getMockTweets();
+        const mockUsers = getMockUsers();
+        setTweets(mockTweets);
+        setUsers(mockUsers);
         setError(null); // 清除错误，因为使用了模拟数据
+        setDataSource('mock'); // 标记数据来源
+        
+        // 调试模拟数据
+        console.log('Mock data set:', {
+          tweets: mockTweets,
+          users: mockUsers
+        });
         return;
       }
 
@@ -100,12 +155,22 @@ const TwitterCard: React.FC = () => {
       
       setTweets(tweetsData.data || []);
       setUsers(tweetsData.includes?.users || []);
+      setDataSource('api'); // 标记数据来源为API
     } catch (err) {
       console.error('Error fetching tweets:', err);
       console.log('Using mock data due to error...');
-      setTweets(getMockTweets());
-      setUsers(getMockUsers());
+      const mockTweets = getMockTweets();
+      const mockUsers = getMockUsers();
+      setTweets(mockTweets);
+      setUsers(mockUsers);
       setError(null); // 清除错误，因为使用了模拟数据
+      setDataSource('mock'); // 标记数据来源
+      
+      // 调试模拟数据
+      console.log('Mock data set due to error:', {
+        tweets: mockTweets,
+        users: mockUsers
+      });
     } finally {
       setLoading(false);
     }
@@ -114,49 +179,49 @@ const TwitterCard: React.FC = () => {
   // 模拟数据函数
   const getMockTweets = (): Tweet[] => [
     {
-      id: '1',
-      text: '🚀 Exciting times ahead! Working on some amazing projects that will change the world.',
+      id: '1234567890123456789', // 真实的Twitter ID格式
+      text: '🎮 今天玩了一些有趣的游戏，发现了很多新的玩法！',
       created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
       public_metrics: {
-        retweet_count: 1250,
-        like_count: 8900,
-        reply_count: 340,
-        quote_count: 120
+        retweet_count: 125,
+        like_count: 890,
+        reply_count: 34,
+        quote_count: 12
       },
-      author_id: 'mock-user-1'
+      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
     },
     {
-      id: '2',
-      text: '💡 Innovation is the key to solving tomorrow\'s problems today. What are you building?',
+      id: '1234567890123456790', // 真实的Twitter ID格式
+      text: '💭 思考一些关于技术和创意的问题，生活总是充满惊喜',
       created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5小时前
       public_metrics: {
-        retweet_count: 890,
-        like_count: 5600,
-        reply_count: 210,
-        quote_count: 85
+        retweet_count: 89,
+        like_count: 560,
+        reply_count: 21,
+        quote_count: 8
       },
-      author_id: 'mock-user-1'
+      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
     },
     {
-      id: '3',
-      text: '🌍 The future is bright when we work together. Collaboration drives progress!',
+      id: '1234567890123456791', // 真实的Twitter ID格式
+      text: '🌟 每一天都是新的开始，保持好奇心和创造力！',
       created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8小时前
       public_metrics: {
-        retweet_count: 2100,
-        like_count: 12000,
-        reply_count: 450,
-        quote_count: 200
+        retweet_count: 210,
+        like_count: 1200,
+        reply_count: 45,
+        quote_count: 20
       },
-      author_id: 'mock-user-1'
+      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
     }
   ];
 
   const getMockUsers = (): User[] => [
     {
-      id: 'mock-user-1',
-      name: 'Elon Musk',
-      username: 'elonmusk',
-      profile_image_url: 'https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg'
+      id: '1234567890', // nekomataokayu的模拟Twitter ID
+      name: 'nekomataokayu',
+      username: 'nekomataokayu',
+      profile_image_url: 'https://pbs.twimg.com/profile_images/default_profile_400x400.png'
     }
   ];
 
@@ -197,7 +262,13 @@ const TwitterCard: React.FC = () => {
   };
 
   const getUserInfo = (authorId: string) => {
-    return users.find(user => user.id === authorId);
+    const foundUser = users.find(user => user.id === authorId);
+    console.log('getUserInfo:', {
+      authorId,
+      users: users,
+      foundUser: foundUser
+    });
+    return foundUser;
   };
 
   if (loading) {
@@ -226,6 +297,26 @@ const TwitterCard: React.FC = () => {
 
   return (
     <div className="p-4">
+      {/* 数据来源指示器 */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-1 rounded ${
+            dataSource === 'api' ? 'bg-green-500/20 text-green-400' :
+            dataSource === 'mock' ? 'bg-yellow-500/20 text-yellow-400' :
+            'bg-gray-500/20 text-gray-400'
+          }`}>
+            {dataSource === 'api' ? '🟢 真实数据' :
+             dataSource === 'mock' ? '🟡 模拟数据' :
+             '⚪ 加载中'}
+          </span>
+          {dataSource === 'mock' && (
+            <span className="text-xs text-yellow-400">
+              (API不可用，使用模拟数据)
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* 搜索框 */}
       <div className="mb-4">
         <div className="flex gap-2">
@@ -256,6 +347,14 @@ const TwitterCard: React.FC = () => {
             const user = getUserInfo(tweet.author_id);
             const tweetUrl = `https://twitter.com/${user?.username || 'elonmusk'}/status/${tweet.id}`;
             
+            // 调试信息
+            console.log('Tweet data:', {
+              tweetId: tweet.id,
+              authorId: tweet.author_id,
+              user: user,
+              tweetUrl: tweetUrl
+            });
+            
             return (
               <div 
                 key={tweet.id} 
@@ -266,18 +365,29 @@ const TwitterCard: React.FC = () => {
                 {/* 用户信息 */}
                 {user && (
                   <div className="flex items-center gap-2 mb-2">
-                    <Image
-                      src={user.profile_image_url || '/default-avatar.png'}
-                      alt={user.name}
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 rounded-full hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer"
+                    <div 
+                      className="w-6 h-6 rounded-full hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer overflow-hidden"
                       onClick={(e) => {
                         e.stopPropagation();
                         window.open(`https://twitter.com/${user.username}`, '_blank', 'noopener,noreferrer');
                       }}
                       title="点击查看用户主页"
-                    />
+                    >
+                      {user.profile_image_url ? (
+                        <Image
+                          src={user.profile_image_url}
+                          alt={user.name}
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1">
                       <div 
                         className="text-white text-sm font-medium group-hover:text-blue-300 transition-colors cursor-pointer"

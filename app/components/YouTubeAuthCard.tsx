@@ -14,13 +14,11 @@ const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = ({ onAuthSuccess }) => {
   const handleGoogleSignIn = async () => {
     try {
       setIsConnecting(true);
+      // 使用Google提供商进行OAuth登录
       await signIn('google', { 
         callbackUrl: '/',
-        redirect: false 
+        redirect: true  // 改为true以进行重定向
       });
-      if (onAuthSuccess) {
-        onAuthSuccess();
-      }
     } catch (error) {
       console.error('Google sign-in error:', error);
     } finally {
@@ -117,6 +115,26 @@ const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = ({ onAuthSuccess }) => {
         <p className="text-white/60 text-sm mb-4">
           欢迎，{session.user?.name || session.user?.email}
         </p>
+        
+        {/* 检查是否已连接Google账户 */}
+        {session.user?.image ? (
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src={session.user.image} 
+              alt="Google头像" 
+              className="w-8 h-8 rounded-full"
+            />
+            <span className="text-white/80 text-sm">
+              已连接Google账户
+            </span>
+          </div>
+        ) : (
+          <div className="mb-4">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ 请使用Google账户登录以获取YouTube数据
+            </p>
+          </div>
+        )}
         
         <div className="flex gap-3 justify-center">
           <button

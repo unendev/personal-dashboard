@@ -267,54 +267,57 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
             
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {report.posts.map((post, index) => (
                 <a
                   key={post.id}
                   href={post.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-6 bg-white/5 rounded-xl hover:bg-white/10 modal-card-hover group border border-white/10 hover:border-white/20"
+                  className="block p-4 bg-white/5 rounded-xl hover:bg-white/10 modal-card-hover group border border-white/10 hover:border-white/20 h-full flex flex-col"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
-                          #{index + 1}
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPostTypeColor(post.analysis.post_type)}`}>
-                          {post.analysis.post_type}
-                        </span>
-                        <span className={`text-sm font-medium ${getValueAssessmentColor(post.analysis.value_assessment)}`}>
-                          {post.analysis.value_assessment}价值
-                        </span>
-                      </div>
-                      <h4 className="text-lg font-semibold text-white group-hover:text-white/90 mb-3 leading-relaxed">
-                        {post.title}
-                      </h4>
-                      {post.analysis.core_issue && (
-                        <p className="text-white/70 mb-3 leading-relaxed">
-                          {post.analysis.core_issue}
-                        </p>
-                      )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
+                        #{index + 1}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPostTypeColor(post.analysis.post_type)}`}>
+                        {post.analysis.post_type}
+                      </span>
+                      <span className={`text-xs font-medium ${getValueAssessmentColor(post.analysis.value_assessment)}`}>
+                        {post.analysis.value_assessment}价值
+                      </span>
                     </div>
+                    <h4 className="text-base font-semibold text-white group-hover:text-white/90 mb-3 leading-relaxed line-clamp-2">
+                      {post.title}
+                    </h4>
+                    {post.analysis.core_issue && (
+                      <p className="text-white/70 mb-3 leading-relaxed text-sm line-clamp-3">
+                        {post.analysis.core_issue}
+                      </p>
+                    )}
                   </div>
                   
                   {post.analysis.key_info && post.analysis.key_info.length > 0 && (
-                    <div className="mt-4">
-                      <h5 className="text-sm font-semibold text-white/80 mb-2">关键信息点：</h5>
+                    <div className="mt-3">
+                      <h5 className="text-xs font-semibold text-white/80 mb-2">关键信息：</h5>
                       <ul className="space-y-1">
-                        {post.analysis.key_info.map((info, infoIndex) => (
-                          <li key={infoIndex} className="text-white/60 text-sm flex items-start gap-2">
-                            <span className="text-blue-400 mt-1">•</span>
-                            <span className="leading-relaxed">{info}</span>
+                        {post.analysis.key_info.slice(0, 2).map((info, infoIndex) => (
+                          <li key={infoIndex} className="text-white/60 text-xs flex items-start gap-2">
+                            <span className="text-blue-400 mt-0.5">•</span>
+                            <span className="leading-relaxed line-clamp-1">{info}</span>
                           </li>
                         ))}
+                        {post.analysis.key_info.length > 2 && (
+                          <li className="text-white/40 text-xs">
+                            +{post.analysis.key_info.length - 2} 更多...
+                          </li>
+                        )}
                       </ul>
                     </div>
                   )}
                   
-                  <div className="mt-4 pt-3 border-t border-white/10">
+                  <div className="mt-3 pt-3 border-t border-white/10">
                     <div className="text-xs text-white/40 group-hover:text-white/60 transition-colors">
                       点击查看原帖 →
                     </div>

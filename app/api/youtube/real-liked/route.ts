@@ -172,8 +172,7 @@ export async function GET() {
       }, { status: 401 });
     }
 
-    // 获取用户的访问令牌（这里需要从数据库中获取）
-    // 注意：这需要修改Prisma schema来存储访问令牌
+    // 获取用户的访问令牌
     const googleAccount = user.accounts.find(account => account.provider === 'google');
     if (!googleAccount?.access_token) {
       return NextResponse.json({
@@ -182,6 +181,8 @@ export async function GET() {
         requiresReauth: true
       }, { status: 401 });
     }
+
+    console.log('[YouTube API] Found Google account with access token');
 
     // 获取真实的喜欢视频
     const videos = await getUserLikedVideos(googleAccount.access_token);
