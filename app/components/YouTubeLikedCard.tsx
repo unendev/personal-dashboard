@@ -57,37 +57,21 @@ const YouTubeLikedCard: React.FC = () => {
         const response = await fetch('/api/youtube/real-liked');
         const data: YouTubeLikedApiResponse = await response.json();
         
-        console.log('YouTube Real Liked API Response:', data);
-        console.log('Response status:', response.status);
         
         if (data.success && data.data) {
           setVideos(data.data);
           setAuthState('authenticated');
-        } else if (data.requiresAuth) {
-          // 已登录不应出现此分支，保险处理
-          setAuthState('unauthenticated');
-          // 回退公开缓存
-          const res = await fetch('/api/youtube/liked-public');
-          const fallback = await res.json();
-          if (fallback.success && fallback.data && fallback.data.length > 0) {
-            setVideos(fallback.data);
-            setAuthState('authenticated'); // 有缓存数据就显示为已认证
-          }
-        } else if (data.requiresGoogleAuth || data.requiresReauth) {
-          // 即使需要 Google 认证，如果有缓存数据就显示
-          const res = await fetch('/api/youtube/liked-public');
-          const fallback = await res.json();
-          if (fallback.success && fallback.data && fallback.data.length > 0) {
-            setVideos(fallback.data);
-            setAuthState('authenticated'); // 有数据就显示为已认证状态
-            console.log('Using cached data despite auth requirement, videos count:', fallback.data.length);
-          } else {
-            setAuthState('needs_google'); // 没有缓存数据才显示认证卡片
-            console.log('No cached data available, showing auth card');
-          }
         } else {
-          setError(data.message || '获取喜欢视频失败');
-          setAuthState('authenticated');
+          // API 失败，尝试获取缓存数据
+          const res = await fetch('/api/youtube/liked-public');
+          const fallback = await res.json();
+          if (fallback.success && fallback.data && fallback.data.length > 0) {
+            setVideos(fallback.data);
+            setAuthState('authenticated');
+          } else {
+            setError(data.message || '获取喜欢视频失败，且无可用缓存');
+            setAuthState('authenticated'); // 即使失败也显示为已认证，避免显示认证卡片
+          }
         }
       } catch (err) {
         console.error('Failed to fetch liked videos:', err);
@@ -112,7 +96,6 @@ const YouTubeLikedCard: React.FC = () => {
 
   // 根据认证状态显示不同内容
   if (authState === 'unauthenticated' || authState === 'needs_google' || authState === 'needs_reauth') {
-    console.log('Rendering YouTubeAuthCard, authState:', authState, 'videos count:', videos.length);
     return <YouTubeAuthCard />;
   }
 
