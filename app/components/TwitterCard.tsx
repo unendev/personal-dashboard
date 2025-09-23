@@ -48,8 +48,8 @@ const TwitterCard: React.FC = () => {
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [username, setUsername] = useState('nekomataokayu'); // 默认用户名
-  const [dataSource, setDataSource] = useState<'api' | 'mock' | 'loading'>('loading');
+  const [username, setUsername] = useState('NakuruAitsuki'); // 默认用户名
+  const [dataSource, setDataSource] = useState<'api' | 'loading'>('loading');
 
   const fetchTweets = useCallback(async (targetUsername?: string) => {
     try {
@@ -86,89 +86,13 @@ const TwitterCard: React.FC = () => {
 
     } catch (err) {
       console.error('Error fetching tweets:', err);
-      console.log('Using mock data due to error...');
-      
-      const mockTweets = getMockTweets();
-      const mockUsers = getMockUsers();
-      const mockMedia = getMockMedia();
-      setTweets(mockTweets);
-      setUsers(mockUsers);
-      setMedia(mockMedia);
-      setError(null); // 清除错误，因为使用了模拟数据
-      setDataSource('mock'); // 标记数据来源
-      
-      // 调试模拟数据
-      console.log('Mock data set due to error:', {
-        tweets: mockTweets,
-        users: mockUsers
-      });
+      setError(err instanceof Error ? err.message : 'Failed to fetch tweets');
+      setDataSource('loading'); // 重置数据来源状态
     } finally {
       setLoading(false);
     }
   }, [username]);
 
-  // 模拟数据函数
-  const getMockTweets = (): Tweet[] => [
-    {
-      id: '1234567890123456789', // 真实的Twitter ID格式
-      text: '🎮 今天玩了一些有趣的游戏，发现了很多新的玩法！',
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
-      public_metrics: {
-        retweet_count: 125,
-        like_count: 890,
-        reply_count: 34,
-        quote_count: 12
-      },
-      author_id: '1234567890', // nekomataokayu的模拟Twitter ID
-      attachments: {
-        media_keys: ['13_12345']
-      }
-    },
-    {
-      id: '1234567890123456790', // 真实的Twitter ID格式
-      text: '💭 思考一些关于技术和创意的问题，生活总是充满惊喜',
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5小时前
-      public_metrics: {
-        retweet_count: 89,
-        like_count: 560,
-        reply_count: 21,
-        quote_count: 8
-      },
-      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
-    },
-    {
-      id: '1234567890123456791', // 真实的Twitter ID格式
-      text: '🌟 每一天都是新的开始，保持好奇心和创造力！',
-      created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8小时前
-      public_metrics: {
-        retweet_count: 210,
-        like_count: 1200,
-        reply_count: 45,
-        quote_count: 20
-      },
-      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
-    }
-  ];
-
-  const getMockUsers = (): User[] => [
-    {
-      id: '1234567890', // nekomataokayu的模拟Twitter ID
-      name: 'nekomataokayu',
-      username: 'nekomataokayu',
-      profile_image_url: 'https://pbs.twimg.com/profile_images/default_profile_400x400.png'
-    }
-  ];
-
-  const getMockMedia = (): Media[] => [
-    {
-      media_key: '13_12345',
-      type: 'photo',
-      url: 'https://pbs.twimg.com/media/GOQx2gEXAAAPurl?format=jpg&name=large',
-      width: 1920,
-      height: 1080,
-      alt_text: 'A vibrant and colorful abstract painting.'
-    }
-  ];
 
   useEffect(() => {
     fetchTweets();
@@ -247,18 +171,10 @@ const TwitterCard: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-1 rounded ${
             dataSource === 'api' ? 'bg-green-500/20 text-green-400' :
-            dataSource === 'mock' ? 'bg-yellow-500/20 text-yellow-400' :
             'bg-gray-500/20 text-gray-400'
           }`}>
-            {dataSource === 'api' ? '🟢 真实数据' :
-             dataSource === 'mock' ? '🟡 模拟数据' :
-             '⚪ 加载中'}
+            {dataSource === 'api' ? '🟢 缓存数据' : '⚪ 加载中'}
           </span>
-          {dataSource === 'mock' && (
-            <span className="text-xs text-yellow-400">
-              (API不可用，使用模拟数据)
-            </span>
-          )}
         </div>
       </div>
 

@@ -85,7 +85,7 @@ export class TwitterDbCache {
   /**
    * 从数据库获取缓存的推文数据
    */
-  static async getCachedData(username: string): Promise<TwitterData | null> {
+  static async getCachedData(username: string, allowExpired: boolean = false): Promise<TwitterData | null> {
     try {
       const user = await prisma.twitterUser.findUnique({
         where: { username },
@@ -104,8 +104,8 @@ export class TwitterDbCache {
       // 检查缓存是否过期
       if (user && user.tweets.length > 0) {
         const firstTweet = user.tweets[0];
-        if (firstTweet.expiresAt > new Date()) {
-          console.log(`[DB Cache] Hit for user: ${username}`);
+        if (allowExpired || firstTweet.expiresAt > new Date()) {
+          console.log(`[DB Cache] Hit for user: ${username}${allowExpired ? ' (expired allowed)' : ''}`);
           return formatDataForFrontend(user as UserWithTweets);
         }
         console.log(`[DB Cache] Expired for user: ${username}`);

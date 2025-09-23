@@ -86,6 +86,11 @@ export async function POST(request: NextRequest) {
     // 2. 缓存未命中，从 API 获取用户信息
     const userApiResult = await fetchUserFromApi(username);
     if (!userApiResult || !userApiResult.data) {
+      // API 失败，再次尝试从缓存获取（可能有过期但可用的数据）
+      const expiredCachedData = await TwitterDbCache.getCachedData(username, true); // 允许获取过期数据
+      if (expiredCachedData) {
+        return NextResponse.json({ ...expiredCachedData, meta: { cached: true, expired: true } });
+      }
       return NextResponse.json({ error: 'User not found or API error' }, { status: 404 });
     }
     const userId = userApiResult.data.id;
@@ -93,6 +98,11 @@ export async function POST(request: NextRequest) {
     // 3. 使用用户 ID 获取推文
     const tweetsApiResult = await fetchTweetsFromApi(userId, 5);
     if (!tweetsApiResult) {
+      // 推文 API 失败，再次尝试从缓存获取（可能有过期但可用的数据）
+      const expiredCachedData = await TwitterDbCache.getCachedData(username, true); // 允许获取过期数据
+      if (expiredCachedData) {
+        return NextResponse.json({ ...expiredCachedData, meta: { cached: true, expired: true } });
+      }
       return NextResponse.json({ error: 'Failed to fetch tweets' }, { status: 500 });
     }
     
