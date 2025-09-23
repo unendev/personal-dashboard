@@ -4,7 +4,7 @@ import { signIn, getProviders } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 export default function OAuthTestPage() {
-  const [providers, setProviders] = useState<Record<string, { name: string; id: string }> | null>(null);
+  const [providers, setProviders] = useState<any>(null);
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -31,7 +31,7 @@ export default function OAuthTestPage() {
           <h2 className="text-lg font-semibold mb-2">可用的认证提供商：</h2>
           <div className="bg-gray-800 p-4 rounded">
             {providers ? (
-              Object.values(providers).map((provider: { name: string; id: string }) => (
+              Object.values(providers).map((provider: any) => (
                 <div key={provider.name} className="mb-2">
                   <p>{provider.name}: {provider.id}</p>
                 </div>

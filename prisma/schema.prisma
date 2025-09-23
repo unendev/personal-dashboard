@@ -8,30 +8,30 @@ datasource db {
 }
 
 model User {
-  id                          String            @id @default(cuid())
-  email                       String            @unique
+  id                          String              @id @default(cuid())
+  email                       String              @unique
   name                        String?
-  password                    String?            // 添加密码字段用于凭据登录
-  emailVerified               DateTime?         @map("email_verified")
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+  spotifyId                   String?             @unique
+  spotifyAccessToken          String?             @map("spotify_access_token")
+  spotifyAccessTokenExpiresAt DateTime?           @map("spotify_access_token_expires_at")
+  spotifyRefreshToken         String?             @map("spotify_refresh_token")
+  emailVerified               DateTime?           @map("email_verified")
   image                       String?
-  createdAt                   DateTime          @default(now())
-  updatedAt                   DateTime          @updatedAt
-  spotifyId                   String?           @unique
-  spotifyAccessToken          String?           @map("spotify_access_token")
-  spotifyAccessTokenExpiresAt DateTime?         @map("spotify_access_token_expires_at")
-  spotifyRefreshToken         String?           @map("spotify_refresh_token")
+  password                    String?
+  accounts                    Account[]
   aiSummaries                 AISummary[]
   instanceTags                InstanceTag[]
   logs                        Log[]
   operationRecords            OperationRecord[]
   quests                      Quest[]
+  sessions                    Session[]
   skills                      Skill[]
   timerTasks                  TimerTask[]
   todos                       Todo[]
-  layout                      UserLayout?
-  accounts                    Account[]
-  sessions                    Session[]
   twitterUsers                TwitterUser[]
+  layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
 
   @@map("users")
@@ -43,15 +43,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -285,53 +284,76 @@ model posts {
 }
 
 model TwitterUser {
-  id                String        @id @default(cuid())
-  twitterId         String        @unique
-  username          String        @unique
-  name              String
-  profileImageUrl   String?
-  publicMetrics     Json?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  tweets            TwitterTweet[]
-  userId            String?
-  user              User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  twitterId       String         @unique
+  username        String         @unique
+  name            String
+  profileImageUrl String?
+  publicMetrics   Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  userId          String?
+  tweets          TwitterTweet[]
+  user            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("twitter_users")
 }
 
 model TwitterTweet {
-  id                String      @id @default(cuid())
-  twitterId         String      @unique
-  text              String
-  createdAt         DateTime
-  publicMetrics     Json
-  authorId          String
-  author            TwitterUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  cachedAt          DateTime    @default(now())
-  expiresAt         DateTime
+  id            String         @id @default(cuid())
+  twitterId     String         @unique
+  text          String
+  createdAt     DateTime
+  publicMetrics Json
+  authorId      String
+  cachedAt      DateTime       @default(now())
+  expiresAt     DateTime
+  attachments   Json?
+  media         TwitterMedia[]
+  author        TwitterUser    @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("twitter_tweets")
 }
 
+model TwitterMedia {
+  id              String       @id @default(cuid())
+  mediaKey        String       @unique @map("media_key")
+  tweetId         String
+  type            String
+  url             String?
+  previewImageUrl String?      @map("preview_image_url")
+  width           Int?
+  height          Int?
+  altText         String?      @map("alt_text")
+  tweet           TwitterTweet @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@map("twitter_media")
+}
+
 model YouTubeVideoCache {
-  id                String   @id @default(cuid())
-  videoId           String   @unique
-  title             String
-  description       String?
-  thumbnail         String
-  channelTitle      String
-  publishedAt       DateTime
-  duration          String
-  viewCount         String
-  url               String
-  likedAt           DateTime?
-  userId            String
-  cachedAt          DateTime @default(now())
-  expiresAt         DateTime
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  videoId      String    @unique
+  title        String
+  description  String?
+  thumbnail    String
+  channelTitle String
+  publishedAt  DateTime
+  duration     String
+  viewCount    String
+  url          String
+  likedAt      DateTime?
+  userId       String
+  cachedAt     DateTime  @default(now())
+  expiresAt    DateTime
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("youtube_video_cache")
+}
+
+model spotify_cache {
+  user_id    String   @id
+  payload    Json
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
 }
 
 enum QuestStatus {

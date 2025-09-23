@@ -57,12 +57,12 @@ const TwitterCard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      setDataSource('loading'); // 开始加载时设置为loading
 
       const searchUsername = targetUsername || username;
       console.log('Searching for user:', searchUsername);
 
-      // 首先获取用户ID
-      const userResponse = await fetch('/api/twitter', {
+      const response = await fetch('/api/twitter', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,115 +70,26 @@ const TwitterCard: React.FC = () => {
         body: JSON.stringify({ username: searchUsername }),
       });
 
-      console.log('User API response status:', userResponse.status);
+      console.log('API response status:', response.status);
 
-      if (!userResponse.ok) {
-        let errorData = {};
-        try {
-          const responseText = await userResponse.text();
-          if (responseText) {
-            errorData = JSON.parse(responseText);
-          }
-        } catch (parseError) {
-          console.log('Failed to parse error response, using empty object');
-          errorData = { 
-            error: 'API request failed', 
-            status: userResponse.status,
-            statusText: userResponse.statusText 
-          };
-        }
-        
-        console.log('User API error details:', {
-          status: userResponse.status,
-          statusText: userResponse.statusText,
-          errorData: errorData
-        });
-        
-        // 如果API失败，使用模拟数据
-        console.log('API failed, using mock data...');
-        const mockTweets = getMockTweets();
-        const mockUsers = getMockUsers();
-        const mockMedia = getMockMedia();
-        setTweets(mockTweets);
-        setUsers(mockUsers);
-        setMedia(mockMedia);
-        setError(null); // 清除错误，因为使用了模拟数据
-        setDataSource('mock'); // 标记数据来源
-        
-        // 调试模拟数据
-        console.log('Mock data set:', {
-          tweets: mockTweets,
-          users: mockUsers
-        });
-        return;
+      if (!response.ok) {
+        // API请求失败，直接使用模拟数据
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
-      const userData = await userResponse.json();
-      console.log('User data:', userData);
+      const result: TwitterData & { meta?: { cached: boolean } } = await response.json();
+      console.log('API data:', result);
       
-      if (!userData.user || !userData.user.id) {
-        throw new Error('User not found or invalid response');
-      }
-
-      const userId = userData.user.id;
-      console.log('User ID:', userId);
-
-      // 然后获取推文
-      const tweetsResponse = await fetch(`/api/twitter?userId=${userId}&maxResults=5`);
-      
-      console.log('Tweets API response status:', tweetsResponse.status);
-
-      if (!tweetsResponse.ok) {
-        let errorData = {};
-        try {
-          const responseText = await tweetsResponse.text();
-          if (responseText) {
-            errorData = JSON.parse(responseText);
-          }
-        } catch (parseError) {
-          console.log('Failed to parse tweets error response, using empty object');
-          errorData = { 
-            error: 'Tweets API request failed', 
-            status: tweetsResponse.status,
-            statusText: tweetsResponse.statusText 
-          };
-        }
-        
-        console.log('Tweets API error details:', {
-          status: tweetsResponse.status,
-          statusText: tweetsResponse.statusText,
-          errorData: errorData
-        });
-        
-        // 如果推文API失败，使用模拟数据
-        console.log('Tweets API failed, using mock data...');
-        const mockTweets = getMockTweets();
-        const mockUsers = getMockUsers();
-        const mockMedia = getMockMedia();
-        setTweets(mockTweets);
-        setUsers(mockUsers);
-        setMedia(mockMedia);
-        setError(null); // 清除错误，因为使用了模拟数据
-        setDataSource('mock'); // 标记数据来源
-        
-        // 调试模拟数据
-        console.log('Mock data set:', {
-          tweets: mockTweets,
-          users: mockUsers
-        });
-        return;
-      }
-
-      const tweetsData: TwitterData = await tweetsResponse.json();
-      console.log('Tweets data:', tweetsData);
-      
-      setTweets(tweetsData.data || []);
-      setUsers(tweetsData.includes?.users || []);
-      setMedia(tweetsData.includes?.media || []);
+      setTweets(result.data || []);
+      setUsers(result.includes?.users || []);
+      setMedia(result.includes?.media || []);
       setDataSource('api'); // 标记数据来源为API
+      console.log(`Data source: ${result.meta?.cached ? 'Cache' : 'API'}`);
+
     } catch (err) {
       console.error('Error fetching tweets:', err);
       console.log('Using mock data due to error...');
+      
       const mockTweets = getMockTweets();
       const mockUsers = getMockUsers();
       const mockMedia = getMockMedia();
