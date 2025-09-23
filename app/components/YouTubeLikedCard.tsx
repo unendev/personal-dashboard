@@ -57,21 +57,31 @@ const YouTubeLikedCard: React.FC = () => {
         const response = await fetch('/api/youtube/real-liked');
         const data: YouTubeLikedApiResponse = await response.json();
         
+        console.log('YouTube Real Liked API Response:', data);
         
         if (data.success && data.data) {
           setVideos(data.data);
           setAuthState('authenticated');
-        } else {
-          // API 失败，尝试获取缓存数据
+        } else if (data.requiresAuth) {
+          // 已登录不应出现此分支，保险处理
+          setAuthState('unauthenticated');
+          // 回退公开缓存
           const res = await fetch('/api/youtube/liked-public');
           const fallback = await res.json();
-          if (fallback.success && fallback.data && fallback.data.length > 0) {
+          if (fallback.success && fallback.data) {
             setVideos(fallback.data);
-            setAuthState('authenticated');
-          } else {
-            setError(data.message || '获取喜欢视频失败，且无可用缓存');
-            setAuthState('authenticated'); // 即使失败也显示为已认证，避免显示认证卡片
           }
+        } else if (data.requiresGoogleAuth || data.requiresReauth) {
+          setAuthState('needs_google');
+          // 同样回退公开缓存
+          const res = await fetch('/api/youtube/liked-public');
+          const fallback = await res.json();
+          if (fallback.success && fallback.data) {
+            setVideos(fallback.data);
+          }
+        } else {
+          setError(data.message || '获取喜欢视频失败');
+          setAuthState('authenticated');
         }
       } catch (err) {
         console.error('Failed to fetch liked videos:', err);
@@ -81,9 +91,8 @@ const YouTubeLikedCard: React.FC = () => {
         try {
           const res = await fetch('/api/youtube/liked-public');
           const fallback = await res.json();
-          if (fallback.success && fallback.data && fallback.data.length > 0) {
+          if (fallback.success && fallback.data) {
             setVideos(fallback.data);
-            setAuthState('authenticated'); // 有缓存数据就显示为已认证
           }
         } catch {}
       } finally {
@@ -92,7 +101,7 @@ const YouTubeLikedCard: React.FC = () => {
     };
 
     fetchLikedVideos();
-  }, [session?.user?.id]); // 只依赖用户ID，避免不必要的重新渲染
+  }, [session]);
 
   // 根据认证状态显示不同内容
   if (authState === 'unauthenticated' || authState === 'needs_google' || authState === 'needs_reauth') {

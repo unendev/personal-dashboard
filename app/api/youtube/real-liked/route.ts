@@ -186,15 +186,7 @@ export async function GET() {
 
     // 尝试刷新访问令牌（如果存在 refresh_token）
     let accessToken = googleAccount.access_token;
-    console.log('[YouTube API] Has refresh_token:', !!googleAccount.refresh_token);
-    console.log('[YouTube API] Token expires_at:', googleAccount.expires_at);
-    console.log('[YouTube API] Current time:', Math.floor(Date.now() / 1000));
-    
-    // 检查令牌是否过期
-    const isTokenExpired = googleAccount.expires_at && googleAccount.expires_at < Math.floor(Date.now() / 1000);
-    console.log('[YouTube API] Token expired:', isTokenExpired);
-    
-    if (googleAccount.refresh_token && isTokenExpired) {
+    if (googleAccount.refresh_token) {
       try {
         console.log('[YouTube API] Attempting to refresh access token');
         const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -225,9 +217,7 @@ export async function GET() {
           
           console.log('[YouTube API] Successfully refreshed access token');
         } else {
-          const errorData = await refreshResponse.json();
-          console.warn('[YouTube API] Failed to refresh token:', errorData);
-          console.warn('[YouTube API] Using existing token, status:', refreshResponse.status);
+          console.warn('[YouTube API] Failed to refresh token, using existing token');
         }
       } catch (error) {
         console.warn('[YouTube API] Token refresh failed:', error);
