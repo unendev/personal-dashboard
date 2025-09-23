@@ -58,6 +58,7 @@ const YouTubeLikedCard: React.FC = () => {
         const data: YouTubeLikedApiResponse = await response.json();
         
         console.log('YouTube Real Liked API Response:', data);
+        console.log('Response status:', response.status);
         
         if (data.success && data.data) {
           setVideos(data.data);
@@ -68,18 +69,21 @@ const YouTubeLikedCard: React.FC = () => {
           // 回退公开缓存
           const res = await fetch('/api/youtube/liked-public');
           const fallback = await res.json();
-          if (fallback.success && fallback.data) {
+          if (fallback.success && fallback.data && fallback.data.length > 0) {
             setVideos(fallback.data);
+            setAuthState('authenticated'); // 有缓存数据就显示为已认证
           }
         } else if (data.requiresGoogleAuth || data.requiresReauth) {
           // 即使需要 Google 认证，如果有缓存数据就显示
           const res = await fetch('/api/youtube/liked-public');
           const fallback = await res.json();
-          if (fallback.success && fallback.data) {
+          if (fallback.success && fallback.data && fallback.data.length > 0) {
             setVideos(fallback.data);
             setAuthState('authenticated'); // 有数据就显示为已认证状态
+            console.log('Using cached data despite auth requirement, videos count:', fallback.data.length);
           } else {
             setAuthState('needs_google'); // 没有缓存数据才显示认证卡片
+            console.log('No cached data available, showing auth card');
           }
         } else {
           setError(data.message || '获取喜欢视频失败');
@@ -93,8 +97,9 @@ const YouTubeLikedCard: React.FC = () => {
         try {
           const res = await fetch('/api/youtube/liked-public');
           const fallback = await res.json();
-          if (fallback.success && fallback.data) {
+          if (fallback.success && fallback.data && fallback.data.length > 0) {
             setVideos(fallback.data);
+            setAuthState('authenticated'); // 有缓存数据就显示为已认证
           }
         } catch {}
       } finally {
@@ -107,6 +112,7 @@ const YouTubeLikedCard: React.FC = () => {
 
   // 根据认证状态显示不同内容
   if (authState === 'unauthenticated' || authState === 'needs_google' || authState === 'needs_reauth') {
+    console.log('Rendering YouTubeAuthCard, authState:', authState, 'videos count:', videos.length);
     return <YouTubeAuthCard />;
   }
 
