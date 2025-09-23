@@ -184,8 +184,97 @@ export async function GET() {
 
     console.log('[YouTube API] Found Google account with access token');
 
+    // 尝试刷新访问令牌（如果存在 refresh_token）
+    let accessToken = googleAccount.access_token;
+    if (googleAccount.refresh_token) {
+      try {
+        console.log('[YouTube API] Attempting to refresh access token');
+        const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            client_id: process.env.GOOGLE_CLIENT_ID!,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+            refresh_token: googleAccount.refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          accessToken = refreshData.access_token;
+          
+          // 更新数据库中的访问令牌
+          await prisma.account.update({
+            where: { id: googleAccount.id },
+            data: { 
+              access_token: refreshData.access_token,
+              expires_at: Math.floor(Date.now() / 1000) + (refreshData.expires_in || 3600)
+            }
+          });
+          
+          console.log('[YouTube API] Successfully refreshed access token');
+        } else {
+          console.warn('[YouTube API] Failed to refresh token, using existing token');
+        }
+      } catch (error) {
+        console.warn('[YouTube API] Token refresh failed:', error);
+      }
+    }
+
     // 获取真实的喜欢视频
-    const videos = await getUserLikedVideos(googleAccount.access_token);
+    let videos: YouTubeLikedVideo[] = [];
+    try {
+      videos = await getUserLikedVideos(accessToken);
+    } catch (error) {
+      console.error('[YouTube API] Failed to fetch videos with refreshed token:', error);
+      
+      // 如果仍然失败，回退到缓存
+      const cachedVideos = await prisma.youTubeVideoCache.findMany({
+        where: {
+          userId: session.user.id,
+          expiresAt: {
+            gt: new Date()
+          }
+        },
+        orderBy: {
+          likedAt: 'desc'
+        },
+        take: 20
+      });
+
+      if (cachedVideos.length > 0) {
+        console.log(`[YouTube API] Falling back to ${cachedVideos.length} cached videos`);
+        
+        const cachedFormattedVideos = cachedVideos.map(video => ({
+          id: video.videoId,
+          title: video.title,
+          description: video.description || '',
+          thumbnail: video.thumbnail,
+          channelTitle: video.channelTitle,
+          publishedAt: video.publishedAt.toLocaleString('zh-CN'),
+          duration: formatDuration(video.duration),
+          viewCount: formatViewCount(video.viewCount),
+          url: video.url,
+          likedAt: video.likedAt?.toLocaleString('zh-CN')
+        }));
+
+        return NextResponse.json({
+          success: true,
+          data: cachedFormattedVideos,
+          message: '使用缓存数据（API访问失败）',
+          cached: true
+        });
+      }
+      
+      return NextResponse.json({
+        success: false,
+        message: 'YouTube API访问失败，且无可用缓存',
+        requiresReauth: true
+      }, { status: 401 });
+    }
     
     if (videos.length === 0) {
       return NextResponse.json({
