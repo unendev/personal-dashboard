@@ -40,7 +40,7 @@ interface YouTubeVideoApiResponse {
 }
 
 // 带超时的 fetch 包装器
-async function fetchWithTimeout(url: string, timeoutMs: number = 30000) {
+async function fetchWithTimeout(url: string, accessToken: string, timeoutMs: number = 30000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   
@@ -49,7 +49,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number = 30000) {
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Authorization': `Bearer ${process.env.YOUTUBE_ACCESS_TOKEN}` // 这里需要从用户会话中获取
+        'Authorization': `Bearer ${accessToken}` // 使用传入的访问令牌
       }
     });
     clearTimeout(timeoutId);
@@ -61,14 +61,14 @@ async function fetchWithTimeout(url: string, timeoutMs: number = 30000) {
 }
 
 // 获取用户真实的喜欢视频
-async function getUserLikedVideos(_accessToken: string): Promise<YouTubeLikedVideo[]> {
+async function getUserLikedVideos(accessToken: string): Promise<YouTubeLikedVideo[]> {
   try {
     console.log('[YouTube API] Fetching user liked videos with access token');
     
     // 首先获取用户喜欢的视频ID列表
-    const likedVideosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&myRating=like&maxResults=25&key=${process.env.YOUTUBE_API_KEY}`;
+    const likedVideosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&myRating=like&maxResults=25`;
     
-    const likedResponse = await fetchWithTimeout(likedVideosUrl, 30000);
+    const likedResponse = await fetchWithTimeout(likedVideosUrl, accessToken, 30000);
     if (!likedResponse.ok) {
       const errorBody = await likedResponse.json();
       console.error('[YouTube API] Failed to get liked videos:', JSON.stringify(errorBody, null, 2));
@@ -84,9 +84,9 @@ async function getUserLikedVideos(_accessToken: string): Promise<YouTubeLikedVid
     
     // 获取视频详细信息
     const videoIds = likedData.items.map((item: { id: string }) => item.id).join(',');
-    const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`;
+    const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}`;
     
-    const videoResponse = await fetchWithTimeout(videoDetailsUrl, 30000);
+    const videoResponse = await fetchWithTimeout(videoDetailsUrl, accessToken, 30000);
     if (!videoResponse.ok) {
       const errorBody = await videoResponse.json();
       console.error('[YouTube API] Failed to get video details:', JSON.stringify(errorBody, null, 2));

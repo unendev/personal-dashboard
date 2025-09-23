@@ -1,13 +1,42 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { TwitterData } from '@/app/components/TwitterCard'; // 复用前端的类型
 
 const prisma = new PrismaClient();
 const CACHE_DURATION_HOURS = 1;
 
+// 定义数据库查询结果的类型
+interface UserWithTweets {
+  twitterId: string;
+  name: string;
+  username: string;
+  profileImageUrl: string | null;
+  tweets: Array<{
+    twitterId: string;
+    text: string;
+    createdAt: Date;
+    publicMetrics: {
+      retweet_count?: number;
+      like_count?: number;
+      reply_count?: number;
+      quote_count?: number;
+    };
+    attachments: Record<string, unknown> | null;
+    media: Array<{
+      mediaKey: string;
+      type: string;
+      url: string | null;
+      previewImageUrl: string | null;
+      width: number | null;
+      height: number | null;
+      altText: string | null;
+    }>;
+  }>;
+}
+
 /**
  * 格式化从数据库取出的数据，使其符合前端 TwitterData 接口的形状
  */
-function formatDataForFrontend(userWithTweets: any): TwitterData {
+function formatDataForFrontend(userWithTweets: UserWithTweets | null): TwitterData {
   if (!userWithTweets) {
     return { data: [], includes: { users: [], media: [] } };
   }
@@ -21,17 +50,17 @@ function formatDataForFrontend(userWithTweets: any): TwitterData {
     },
   ];
 
-  const tweets = userWithTweets.tweets.map((tweet: any) => ({
+  const tweets = userWithTweets.tweets.map((tweet) => ({
     id: tweet.twitterId,
     text: tweet.text,
     created_at: tweet.createdAt.toISOString(),
-    public_metrics: tweet.publicMetrics as any,
+    public_metrics: tweet.publicMetrics,
     author_id: userWithTweets.twitterId,
-    attachments: tweet.attachments as any,
+    attachments: tweet.attachments,
   }));
 
-  const media = userWithTweets.tweets.flatMap((tweet: any) =>
-    tweet.media.map((m: any) => ({
+  const media = userWithTweets.tweets.flatMap((tweet) =>
+    tweet.media.map((m) => ({
       media_key: m.mediaKey,
       type: m.type,
       url: m.url,
@@ -77,7 +106,7 @@ export class TwitterDbCache {
         const firstTweet = user.tweets[0];
         if (firstTweet.expiresAt > new Date()) {
           console.log(`[DB Cache] Hit for user: ${username}`);
-          return formatDataForFrontend(user);
+          return formatDataForFrontend(user as UserWithTweets);
         }
         console.log(`[DB Cache] Expired for user: ${username}`);
       }
@@ -136,15 +165,15 @@ export class TwitterDbCache {
               twitterId: tweet.id,
               text: tweet.text,
               createdAt: new Date(tweet.created_at),
-              publicMetrics: tweet.public_metrics as any,
-              attachments: tweet.attachments as any,
+              publicMetrics: tweet.public_metrics as Prisma.InputJsonValue,
+              attachments: tweet.attachments as Prisma.InputJsonValue,
               authorId: user.id,
               expiresAt,
             },
           });
 
-          if (tweet.attachments?.media_keys && includes.media) {
-            for (const key of tweet.attachments.media_keys) {
+          if ((tweet.attachments as { media_keys?: string[] })?.media_keys && includes.media) {
+            for (const key of (tweet.attachments as { media_keys: string[] }).media_keys) {
               const media = includes.media.find(m => m.media_key === key);
               if (media) {
                 await tx.twitterMedia.create({

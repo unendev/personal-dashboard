@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAEY14QEAAAAAgRSvzkQdsFffGg3JxfFHgCFqKnc%3Dz1d9S20iXUXNLJI8aaUZJa0sMUpvji0MNIfmvPVRlYAmG4q4eN';
 
 // 测试Twitter API连接和Bearer Token
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     console.log('Testing Twitter API connection...');
     

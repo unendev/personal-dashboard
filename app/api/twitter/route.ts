@@ -35,7 +35,7 @@ async function fetchTweetsFromApi(userId: string, maxResults: number): Promise<T
   return await response.json();
 }
 
-async function fetchUserFromApi(username: string): Promise<{ data: any } | null> {
+async function fetchUserFromApi(username: string): Promise<{ data: { id: string; name: string; username: string; profile_image_url: string; public_metrics: Record<string, unknown> } } | null> {
   const userParams = new URLSearchParams({
     'user.fields': 'id,name,username,profile_image_url,public_metrics',
   });
@@ -62,7 +62,7 @@ async function fetchUserFromApi(username: string): Promise<{ data: any } | null>
   return await response.json();
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // GET logic remains the same, but it's part of the POST flow now.
   // This endpoint can be simplified or deprecated if not used directly.
   return NextResponse.json({ message: "Please use POST to fetch Twitter data." });

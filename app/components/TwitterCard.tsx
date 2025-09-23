@@ -8,15 +8,13 @@ interface Tweet {
   text: string;
   created_at: string;
   public_metrics: {
-    retweet_count: number;
-    like_count: number;
-    reply_count: number;
-    quote_count: number;
+    retweet_count?: number;
+    like_count?: number;
+    reply_count?: number;
+    quote_count?: number;
   };
   author_id: string;
-  attachments?: {
-    media_keys: string[];
-  };
+  attachments?: Record<string, unknown> | null;
 }
 
 interface User {
@@ -28,15 +26,15 @@ interface User {
 
 interface Media {
   media_key: string;
-  type: 'photo' | 'video' | 'animated_gif';
-  url?: string;
-  preview_image_url?: string;
-  width: number;
-  height: number;
-  alt_text?: string;
+  type: string;
+  url?: string | null;
+  preview_image_url?: string | null;
+  width?: number | null;
+  height?: number | null;
+  alt_text?: string | null;
 }
 
-interface TwitterData {
+export interface TwitterData {
   data: Tweet[];
   includes: {
     users: User[];
@@ -293,7 +291,7 @@ const TwitterCard: React.FC = () => {
           tweets.map((tweet) => {
             const user = getUserInfo(tweet.author_id);
             const tweetUrl = `https://twitter.com/${user?.username || 'elonmusk'}/status/${tweet.id}`;
-            const tweetMedia = tweet.attachments?.media_keys
+            const tweetMedia = (tweet.attachments as { media_keys?: string[] })?.media_keys
               ?.map(key => media.find(m => m.media_key === key))
               .filter((m): m is Media => !!m);
 
@@ -382,10 +380,10 @@ const TwitterCard: React.FC = () => {
                         return (
                           <div key={m.media_key} className="overflow-hidden rounded-lg border border-white/10">
                             <Image
-                              src={m.url}
+                              src={m.url || ''}
                               alt={m.alt_text || 'Tweet image'}
-                              width={m.width}
-                              height={m.height}
+                              width={m.width || 400}
+                              height={m.height || 300}
                               className="w-full h-auto object-cover"
                               unoptimized
                             />
@@ -401,19 +399,19 @@ const TwitterCard: React.FC = () => {
                 <div className="flex gap-4 text-white/60 text-xs mt-3">
                   <div className="flex items-center gap-1">
                     <span>💬</span>
-                    <span>{formatNumber(tweet.public_metrics.reply_count)}</span>
+                    <span>{formatNumber(tweet.public_metrics.reply_count || 0)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span>🔄</span>
-                    <span>{formatNumber(tweet.public_metrics.retweet_count)}</span>
+                    <span>{formatNumber(tweet.public_metrics.retweet_count || 0)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span>❤️</span>
-                    <span>{formatNumber(tweet.public_metrics.like_count)}</span>
+                    <span>{formatNumber(tweet.public_metrics.like_count || 0)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span>💬</span>
-                    <span>{formatNumber(tweet.public_metrics.quote_count)}</span>
+                    <span>{formatNumber(tweet.public_metrics.quote_count || 0)}</span>
                   </div>
                   <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-blue-400">在Twitter中查看 →</span>

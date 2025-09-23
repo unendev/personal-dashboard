@@ -7,7 +7,7 @@ interface YouTubeAuthCardProps {
   onAuthSuccess?: () => void;
 }
 
-const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = ({ onAuthSuccess }) => {
+const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = () => {
   const { data: session, status } = useSession();
   const [isConnecting, setIsConnecting] = useState(false);
 
