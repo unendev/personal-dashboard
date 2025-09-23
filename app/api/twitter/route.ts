@@ -32,9 +32,10 @@ export async function GET(request: NextRequest) {
     
     const tweetParams = new URLSearchParams({
       'max_results': maxResults.toString(),
-      'tweet.fields': 'created_at,public_metrics,author_id',
-      'expansions': 'author_id',
-      'user.fields': 'name,username,profile_image_url'
+      'tweet.fields': 'created_at,public_metrics,author_id,attachments',
+      'expansions': 'author_id,attachments.media_keys',
+      'user.fields': 'name,username,profile_image_url',
+      'media.fields': 'url,preview_image_url,type,width,height,alt_text'
     });
 
     const response = await fetch(

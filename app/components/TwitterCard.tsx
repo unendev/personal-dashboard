@@ -14,6 +14,9 @@ interface Tweet {
     quote_count: number;
   };
   author_id: string;
+  attachments?: {
+    media_keys: string[];
+  };
 }
 
 interface User {
@@ -23,16 +26,28 @@ interface User {
   profile_image_url: string;
 }
 
+interface Media {
+  media_key: string;
+  type: 'photo' | 'video' | 'animated_gif';
+  url?: string;
+  preview_image_url?: string;
+  width: number;
+  height: number;
+  alt_text?: string;
+}
+
 interface TwitterData {
   data: Tweet[];
   includes: {
     users: User[];
+    media?: Media[];
   };
 }
 
 const TwitterCard: React.FC = () => {
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState('nekomataokayu'); // 默认用户名
@@ -83,8 +98,10 @@ const TwitterCard: React.FC = () => {
         console.log('API failed, using mock data...');
         const mockTweets = getMockTweets();
         const mockUsers = getMockUsers();
+        const mockMedia = getMockMedia();
         setTweets(mockTweets);
         setUsers(mockUsers);
+        setMedia(mockMedia);
         setError(null); // 清除错误，因为使用了模拟数据
         setDataSource('mock'); // 标记数据来源
         
@@ -137,8 +154,10 @@ const TwitterCard: React.FC = () => {
         console.log('Tweets API failed, using mock data...');
         const mockTweets = getMockTweets();
         const mockUsers = getMockUsers();
+        const mockMedia = getMockMedia();
         setTweets(mockTweets);
         setUsers(mockUsers);
+        setMedia(mockMedia);
         setError(null); // 清除错误，因为使用了模拟数据
         setDataSource('mock'); // 标记数据来源
         
@@ -155,14 +174,17 @@ const TwitterCard: React.FC = () => {
       
       setTweets(tweetsData.data || []);
       setUsers(tweetsData.includes?.users || []);
+      setMedia(tweetsData.includes?.media || []);
       setDataSource('api'); // 标记数据来源为API
     } catch (err) {
       console.error('Error fetching tweets:', err);
       console.log('Using mock data due to error...');
       const mockTweets = getMockTweets();
       const mockUsers = getMockUsers();
+      const mockMedia = getMockMedia();
       setTweets(mockTweets);
       setUsers(mockUsers);
+      setMedia(mockMedia);
       setError(null); // 清除错误，因为使用了模拟数据
       setDataSource('mock'); // 标记数据来源
       
@@ -188,7 +210,10 @@ const TwitterCard: React.FC = () => {
         reply_count: 34,
         quote_count: 12
       },
-      author_id: '1234567890' // nekomataokayu的模拟Twitter ID
+      author_id: '1234567890', // nekomataokayu的模拟Twitter ID
+      attachments: {
+        media_keys: ['13_12345']
+      }
     },
     {
       id: '1234567890123456790', // 真实的Twitter ID格式
@@ -222,6 +247,17 @@ const TwitterCard: React.FC = () => {
       name: 'nekomataokayu',
       username: 'nekomataokayu',
       profile_image_url: 'https://pbs.twimg.com/profile_images/default_profile_400x400.png'
+    }
+  ];
+
+  const getMockMedia = (): Media[] => [
+    {
+      media_key: '13_12345',
+      type: 'photo',
+      url: 'https://pbs.twimg.com/media/GOQx2gEXAAAPurl?format=jpg&name=large',
+      width: 1920,
+      height: 1080,
+      alt_text: 'A vibrant and colorful abstract painting.'
     }
   ];
 
@@ -346,7 +382,10 @@ const TwitterCard: React.FC = () => {
           tweets.map((tweet) => {
             const user = getUserInfo(tweet.author_id);
             const tweetUrl = `https://twitter.com/${user?.username || 'elonmusk'}/status/${tweet.id}`;
-            
+            const tweetMedia = tweet.attachments?.media_keys
+              ?.map(key => media.find(m => m.media_key === key))
+              .filter((m): m is Media => !!m);
+
             // 调试信息
             console.log('Tweet data:', {
               tweetId: tweet.id,
@@ -424,8 +463,31 @@ const TwitterCard: React.FC = () => {
                   {tweet.text}
                 </div>
 
+                {/* 推文图片 */}
+                {tweetMedia && tweetMedia.length > 0 && (
+                  <div className="mt-2.5">
+                    {tweetMedia.map(m => {
+                      if (m.type === 'photo' && m.url) {
+                        return (
+                          <div key={m.media_key} className="overflow-hidden rounded-lg border border-white/10">
+                            <Image
+                              src={m.url}
+                              alt={m.alt_text || 'Tweet image'}
+                              width={m.width}
+                              height={m.height}
+                              className="w-full h-auto object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
+
                 {/* 互动数据 */}
-                <div className="flex gap-4 text-white/60 text-xs">
+                <div className="flex gap-4 text-white/60 text-xs mt-3">
                   <div className="flex items-center gap-1">
                     <span>💬</span>
                     <span>{formatNumber(tweet.public_metrics.reply_count)}</span>
