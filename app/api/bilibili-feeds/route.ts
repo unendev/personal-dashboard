@@ -99,8 +99,8 @@ export async function GET() {
           allItems.push(...userItems);
         }
 
-        // 添加短暂延迟避免请求过于频繁
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 添加更长延迟避免请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
         
       } catch (error) {
         console.error(`Failed to fetch videos for user ${user.name} (${user.uid}):`, error);

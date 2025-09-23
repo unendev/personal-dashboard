@@ -40,9 +40,16 @@ const YouTubeLikedCard: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // 如果用户未登录，直接返回
+        // 如果用户未登录，回退到公开缓存接口
         if (!session) {
-          setAuthState('unauthenticated');
+          const res = await fetch('/api/youtube/liked-public');
+          const data: YouTubeLikedApiResponse = await res.json();
+          if (data.success && data.data) {
+            setVideos(data.data);
+            setAuthState('unauthenticated');
+          } else {
+            setAuthState('unauthenticated');
+          }
           setLoading(false);
           return;
         }
@@ -56,11 +63,22 @@ const YouTubeLikedCard: React.FC = () => {
           setVideos(data.data);
           setAuthState('authenticated');
         } else if (data.requiresAuth) {
+          // 已登录不应出现此分支，保险处理
           setAuthState('unauthenticated');
-        } else if (data.requiresGoogleAuth) {
+          // 回退公开缓存
+          const res = await fetch('/api/youtube/liked-public');
+          const fallback = await res.json();
+          if (fallback.success && fallback.data) {
+            setVideos(fallback.data);
+          }
+        } else if (data.requiresGoogleAuth || data.requiresReauth) {
           setAuthState('needs_google');
-        } else if (data.requiresReauth) {
-          setAuthState('needs_reauth');
+          // 同样回退公开缓存
+          const res = await fetch('/api/youtube/liked-public');
+          const fallback = await res.json();
+          if (fallback.success && fallback.data) {
+            setVideos(fallback.data);
+          }
         } else {
           setError(data.message || '获取喜欢视频失败');
           setAuthState('authenticated');
@@ -69,6 +87,14 @@ const YouTubeLikedCard: React.FC = () => {
         console.error('Failed to fetch liked videos:', err);
         setError('网络请求失败');
         setAuthState('authenticated');
+        // 出错时也回退公开缓存
+        try {
+          const res = await fetch('/api/youtube/liked-public');
+          const fallback = await res.json();
+          if (fallback.success && fallback.data) {
+            setVideos(fallback.data);
+          }
+        } catch {}
       } finally {
         setLoading(false);
       }
