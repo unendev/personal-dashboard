@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateUploadSignature } from '../../../../lib/oss-config';
+import { generateUploadSignature } from '@/lib/oss-config';
 
 // POST /api/upload/oss/signature - 获取阿里云 OSS 直传签名
 export async function POST(request: NextRequest) {

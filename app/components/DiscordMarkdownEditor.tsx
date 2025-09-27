@@ -11,8 +11,7 @@ import {
   Code, 
   Quote, 
   Image as ImageIcon,
-  Send,
-  X
+  Send
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 

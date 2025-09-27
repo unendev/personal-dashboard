@@ -566,6 +566,15 @@ export default function LogPage() {
               <span className="text-sm font-medium text-gray-700">记录</span>
             </button>
 
+            {/* 藏宝阁按钮 */}
+            <Link
+              href="/treasure-pavilion"
+              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            >
+              <span className="text-lg">💎</span>
+              <span className="text-sm font-medium text-gray-700">藏宝阁</span>
+            </Link>
+
             {/* 操作记录按钮 */}
             <div className="relative" ref={operationHistoryRef}>
               <button

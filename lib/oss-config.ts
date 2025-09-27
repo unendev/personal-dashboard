@@ -20,15 +20,15 @@ export async function generateUploadSignature(filename: string, contentType: str
     const ext = filename.split('.').pop();
     const objectName = `treasures/${timestamp}-${randomStr}.${ext}`;
 
-    // 设置上传策略
-    const policy = {
-      expiration: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1小时过期
-      conditions: [
-        ['content-length-range', 0, 10 * 1024 * 1024], // 最大10MB
-        ['starts-with', '$key', 'treasures/'],
-        ['eq', '$Content-Type', contentType],
-      ],
-    };
+    // 设置上传策略（暂时注释掉，因为当前实现不需要）
+    // const policy = {
+    //   expiration: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1小时过期
+    //   conditions: [
+    //     ['content-length-range', 0, 10 * 1024 * 1024], // 最大10MB
+    //     ['starts-with', '$key', 'treasures/'],
+    //     ['eq', '$Content-Type', contentType],
+    //   ],
+    // };
 
     // 生成签名
     const signature = client.signatureUrl(objectName, {

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag');
     const type = searchParams.get('type');
 
-    const where: any = { userId };
+    const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC' } = { userId };
     
     // 标签筛选
     if (tag) {
@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     }
     
     // 类型筛选
-    if (type) {
-      where.type = type;
+    if (type && ['TEXT', 'IMAGE', 'MUSIC'].includes(type)) {
+      where.type = type as 'TEXT' | 'IMAGE' | 'MUSIC';
     }
 
     const treasures = await prisma.treasure.findMany({
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         musicAlbum,
         musicUrl,
         images: {
-          create: images.map((img: any) => ({
+          create: images.map((img: { url: string; alt?: string; width?: number; height?: number; size?: number }) => ({
             url: img.url,
             alt: img.alt,
             width: img.width,

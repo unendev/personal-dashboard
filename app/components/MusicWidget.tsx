@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import MusicCard from './MusicCard';
+import { MusicCard } from './MusicCard';
 
 // 定义 fetcher 函数，SWR 会用它来请求数据
 const fetcher = async (url: string) => {

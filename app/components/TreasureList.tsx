@@ -72,7 +72,11 @@ export function TreasureList({ className }: TreasureListProps) {
       const response = await fetch(`/api/treasures?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setTreasures(data)
+        // 确保按创建时间倒序排列（最新的在前面）
+        const sortedData = data.sort((a: Treasure, b: Treasure) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        setTreasures(sortedData)
       }
     } catch (error) {
       console.error('Error fetching treasures:', error)
@@ -97,6 +101,7 @@ export function TreasureList({ className }: TreasureListProps) {
   // 创建宝藏
   const handleCreateTreasure = async (data: CreateTreasureData) => {
     try {
+      console.log('Creating treasure:', data)
       const response = await fetch('/api/treasures', {
         method: 'POST',
         headers: {
@@ -105,12 +110,21 @@ export function TreasureList({ className }: TreasureListProps) {
         body: JSON.stringify(data),
       })
 
+      console.log('Response status:', response.status)
+      
       if (response.ok) {
+        const result = await response.json()
+        console.log('Treasure created successfully:', result)
         await fetchTreasures()
         await fetchTags()
+      } else {
+        const errorText = await response.text()
+        console.error('API Error:', response.status, errorText)
+        alert(`创建失败: ${response.status} ${errorText}`)
       }
     } catch (error) {
       console.error('Error creating treasure:', error)
+      alert(`网络错误: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 

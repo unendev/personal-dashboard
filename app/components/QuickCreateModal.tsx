@@ -14,7 +14,6 @@ import {
   DialogFooter,
 } from './ui/dialog'
 import { X, Upload, Music, FileText, Image } from 'lucide-react'
-import { cn } from '../../lib/utils'
 
 export type TreasureType = 'TEXT' | 'IMAGE' | 'MUSIC'
 
@@ -77,10 +76,13 @@ export function QuickCreateModal({
 
     setIsSubmitting(true)
     try {
+      console.log('Submitting form data:', formData)
       await onSubmit(formData)
+      console.log('Form submitted successfully')
       handleClose()
     } catch (error) {
       console.error('Error creating treasure:', error)
+      alert(`创建失败: ${error instanceof Error ? error.message : '未知错误'}`)
     } finally {
       setIsSubmitting(false)
     }

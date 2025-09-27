@@ -7,11 +7,11 @@ const prisma = new PrismaClient();
 // GET /api/treasures/[id] - 获取特定宝藏
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getUserId(request);
-    const { id } = params;
+    const { id } = await params;
 
     const treasure = await prisma.treasure.findFirst({
       where: { id, userId },
@@ -36,7 +36,7 @@ export async function GET(
 // PUT /api/treasures/[id] - 更新特定宝藏
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
@@ -51,7 +51,7 @@ export async function PUT(
     } = body;
 
     const userId = await getUserId(request);
-    const { id } = params;
+    const { id } = await params;
 
     // 验证宝藏属于当前用户
     const existingTreasure = await prisma.treasure.findFirst({
@@ -88,11 +88,11 @@ export async function PUT(
 // DELETE /api/treasures/[id] - 删除特定宝藏
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getUserId(request);
-    const { id } = params;
+    const { id } = await params;
 
     // 验证宝藏属于当前用户
     const existingTreasure = await prisma.treasure.findFirst({
