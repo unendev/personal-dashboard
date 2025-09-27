@@ -30,10 +30,10 @@ model User {
   skills                      Skill[]
   timerTasks                  TimerTask[]
   todos                       Todo[]
+  treasures                   Treasure[]
   twitterUsers                TwitterUser[]
   layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
-  treasures                   Treasure[]
 
   @@map("users")
 }
@@ -357,6 +357,39 @@ model spotify_cache {
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 }
 
+model Treasure {
+  id          String       @id @default(cuid())
+  title       String
+  content     String?
+  type        TreasureType
+  tags        String[]     @default([])
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  musicTitle  String?
+  musicArtist String?
+  musicAlbum  String?
+  musicUrl    String?
+  images      Image[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("treasures")
+}
+
+model Image {
+  id         String   @id @default(cuid())
+  url        String
+  alt        String?
+  width      Int?
+  height     Int?
+  size       Int?
+  treasureId String
+  createdAt  DateTime @default(now())
+  treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
+
+  @@map("treasure_images")
+}
+
 enum QuestStatus {
   PLANNING
   IN_PROGRESS
@@ -375,43 +408,4 @@ enum TreasureType {
   TEXT
   IMAGE
   MUSIC
-}
-
-model Treasure {
-  id          String       @id @default(cuid())
-  title       String
-  content     String?      // Markdown content for text treasures
-  type        TreasureType
-  tags        String[]     @default([]) // Array of tag strings
-  userId      String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  // Relations
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  images      Image[]      // For image galleries
-  
-  // Music-specific fields (MVP)
-  musicTitle  String?      // Song title
-  musicArtist String?      // Artist name
-  musicAlbum  String?      // Album name
-  musicUrl    String?      // External music URL (Spotify, etc.)
-  
-  @@map("treasures")
-}
-
-model Image {
-  id         String   @id @default(cuid())
-  url        String   // OSS URL
-  alt        String?  // Alt text for accessibility
-  width      Int?
-  height     Int?
-  size       Int?     // File size in bytes
-  treasureId String
-  createdAt  DateTime @default(now())
-  
-  // Relations
-  treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
-  
-  @@map("treasure_images")
 }

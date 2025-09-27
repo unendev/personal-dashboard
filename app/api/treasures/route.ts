@@ -1,0 +1,187 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { getUserId } from '../../../lib/auth-utils';
+
+const prisma = new PrismaClient();
+
+// GET /api/treasures - 获取用户的所有宝藏（按时间倒序）
+export async function GET(request: NextRequest) {
+  try {
+    const userId = await getUserId(request);
+    const { searchParams } = new URL(request.url);
+    const tag = searchParams.get('tag');
+    const type = searchParams.get('type');
+
+    const where: any = { userId };
+    
+    // 标签筛选
+    if (tag) {
+      where.tags = {
+        has: tag
+      };
+    }
+    
+    // 类型筛选
+    if (type) {
+      where.type = type;
+    }
+
+    const treasures = await prisma.treasure.findMany({
+      where,
+      include: {
+        images: {
+          orderBy: { createdAt: 'asc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return NextResponse.json(treasures);
+  } catch (error) {
+    console.error('Error fetching treasures:', error);
+    return NextResponse.json({ error: 'Failed to fetch treasures' }, { status: 500 });
+  }
+}
+
+// POST /api/treasures - 创建新宝藏
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { 
+      title, 
+      content, 
+      type, 
+      tags = [], 
+      musicTitle, 
+      musicArtist, 
+      musicAlbum, 
+      musicUrl,
+      images = []
+    } = body;
+
+    if (!title || !type) {
+      return NextResponse.json({ 
+        error: 'title and type are required' 
+      }, { status: 400 });
+    }
+
+    const userId = await getUserId(request);
+
+    // 创建宝藏
+    const treasure = await prisma.treasure.create({
+      data: {
+        userId,
+        title,
+        content,
+        type,
+        tags,
+        musicTitle,
+        musicArtist,
+        musicAlbum,
+        musicUrl,
+        images: {
+          create: images.map((img: any) => ({
+            url: img.url,
+            alt: img.alt,
+            width: img.width,
+            height: img.height,
+            size: img.size
+          }))
+        }
+      },
+      include: {
+        images: true
+      }
+    });
+
+    return NextResponse.json(treasure, { status: 201 });
+  } catch (error) {
+    console.error('Error creating treasure:', error);
+    return NextResponse.json({ error: 'Failed to create treasure' }, { status: 500 });
+  }
+}
+
+// PUT /api/treasures - 更新宝藏
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { 
+      id, 
+      title, 
+      content, 
+      tags, 
+      musicTitle, 
+      musicArtist, 
+      musicAlbum, 
+      musicUrl 
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const userId = await getUserId(request);
+
+    // 验证宝藏属于当前用户
+    const existingTreasure = await prisma.treasure.findFirst({
+      where: { id, userId }
+    });
+
+    if (!existingTreasure) {
+      return NextResponse.json({ error: 'Treasure not found' }, { status: 404 });
+    }
+
+    const treasure = await prisma.treasure.update({
+      where: { id },
+      data: {
+        title,
+        content,
+        tags,
+        musicTitle,
+        musicArtist,
+        musicAlbum,
+        musicUrl
+      },
+      include: {
+        images: true
+      }
+    });
+
+    return NextResponse.json(treasure);
+  } catch (error) {
+    console.error('Error updating treasure:', error);
+    return NextResponse.json({ error: 'Failed to update treasure' }, { status: 500 });
+  }
+}
+
+// DELETE /api/treasures - 删除宝藏
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const userId = await getUserId(request);
+
+    // 验证宝藏属于当前用户
+    const existingTreasure = await prisma.treasure.findFirst({
+      where: { id, userId }
+    });
+
+    if (!existingTreasure) {
+      return NextResponse.json({ error: 'Treasure not found' }, { status: 404 });
+    }
+
+    await prisma.treasure.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ message: 'Treasure deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting treasure:', error);
+    return NextResponse.json({ error: 'Failed to delete treasure' }, { status: 500 });
+  }
+}

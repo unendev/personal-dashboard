@@ -4,43 +4,38 @@ import { useState } from 'react'
 import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { 
-  Music, 
+  FileText, 
   Calendar, 
   Tag, 
   Edit, 
   Trash2, 
   MoreVertical,
   Heart,
-  Share2,
-  Play,
-  ExternalLink
+  Share2
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-interface MusicCardProps {
+interface TextCardProps {
   treasure: {
     id: string
     title: string
+    content?: string
     tags: string[]
     createdAt: string
     updatedAt: string
-    musicTitle?: string
-    musicArtist?: string
-    musicAlbum?: string
-    musicUrl?: string
   }
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
   className?: string
 }
 
-export function MusicCard({ 
+export function TextCard({ 
   treasure, 
   onEdit, 
   onDelete, 
   className 
-}: MusicCardProps) {
-  const [isPlaying, setIsPlaying] = useState(false)
+}: TextCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const [showActions, setShowActions] = useState(false)
 
   const formatDate = (dateString: string) => {
@@ -53,30 +48,48 @@ export function MusicCard({
     })
   }
 
-  const handlePlay = () => {
-    if (treasure.musicUrl) {
-      window.open(treasure.musicUrl, '_blank')
-    }
-    setIsPlaying(!isPlaying)
-  }
-
-  const getMusicInfo = () => {
-    const title = treasure.musicTitle || treasure.title
-    const artist = treasure.musicArtist || '未知艺术家'
-    const album = treasure.musicAlbum || '未知专辑'
+  const renderContent = () => {
+    if (!treasure.content) return null
     
-    return { title, artist, album }
+    // 简单的 Markdown 渲染
+    const lines = treasure.content.split('\n')
+    return lines.map((line, index) => {
+      if (line.startsWith('**') && line.endsWith('**')) {
+        return <strong key={index}>{line.slice(2, -2)}</strong>
+      }
+      if (line.startsWith('*') && line.endsWith('*')) {
+        return <em key={index}>{line.slice(1, -1)}</em>
+      }
+      if (line.startsWith('> ')) {
+        return (
+          <blockquote key={index} className="border-l-4 border-blue-300 pl-4 italic text-gray-600 my-2">
+            {line.slice(2)}
+          </blockquote>
+        )
+      }
+      if (line.startsWith('- ')) {
+        return <li key={index} className="ml-4">{line.slice(2)}</li>
+      }
+      if (line.startsWith('```')) {
+        return (
+          <pre key={index} className="bg-gray-100 p-3 rounded text-sm overflow-x-auto my-2">
+            {line.slice(3)}
+          </pre>
+        )
+      }
+      return <p key={index} className="mb-2">{line}</p>
+    })
   }
 
-  const { title: musicTitle, artist, album } = getMusicInfo()
+  const shouldTruncate = treasure.content && treasure.content.length > 200
 
   return (
     <Card className={cn("p-6 hover:shadow-lg transition-shadow duration-200", className)}>
       {/* 头部 */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Music className="h-5 w-5 text-purple-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <FileText className="h-5 w-5 text-blue-600" />
           </div>
           <div>
             <h3 className="font-semibold text-lg text-gray-900">{treasure.title}</h3>
@@ -122,47 +135,28 @@ export function MusicCard({
         </div>
       </div>
 
-      {/* 音乐信息卡片 */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mb-4">
-        <div className="flex items-center gap-4">
-          {/* 音乐封面占位符 */}
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center">
-            <Music className="h-8 w-8 text-white" />
+      {/* 内容 */}
+      {treasure.content && (
+        <div className="mb-4">
+          <div className={cn(
+            "prose prose-sm max-w-none",
+            !isExpanded && shouldTruncate && "line-clamp-4"
+          )}>
+            {renderContent()}
           </div>
           
-          {/* 音乐信息 */}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 truncate">{musicTitle}</h4>
-            <p className="text-sm text-gray-600 truncate">{artist}</p>
-            <p className="text-xs text-gray-500 truncate">{album}</p>
-          </div>
-          
-          {/* 播放按钮 */}
-          <div className="flex gap-2">
+          {shouldTruncate && (
             <Button
-              onClick={handlePlay}
-              variant="create"
+              variant="ghost"
               size="sm"
-              className="gap-2"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="mt-2 text-blue-600 hover:text-blue-700"
             >
-              <Play className="h-4 w-4" />
-              播放
+              {isExpanded ? '收起' : '展开'}
             </Button>
-            
-            {treasure.musicUrl && (
-              <Button
-                onClick={() => window.open(treasure.musicUrl, '_blank')}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                打开
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* 标签 */}
       {treasure.tags.length > 0 && (
@@ -170,7 +164,7 @@ export function MusicCard({
           {treasure.tags.map((tag, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
             >
               <Tag className="h-3 w-3" />
               {tag}
