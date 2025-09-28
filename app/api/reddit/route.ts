@@ -1,0 +1,107 @@
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date'); // 可选参数，用于查看往期数据
+    
+    let targetDate: Date;
+    
+    if (date) {
+      // 如果指定了日期，使用该日期
+      targetDate = new Date(date);
+    } else {
+      // 默认使用昨天的日期
+      targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() - 1);
+    }
+    
+    // 查询指定日期的Reddit帖子数据
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const posts = await prisma.posts.findMany({
+      where: {
+        timestamp: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      orderBy: {
+        timestamp: 'desc'
+      }
+    });
+
+    // 转换为组件需要的格式
+    const formattedPosts = posts.map(post => ({
+      id: post.id,
+      title: post.title,
+      url: post.url,
+      analysis: {
+        core_issue: post.core_issue || '',
+        key_info: Array.isArray(post.key_info) ? post.key_info : [],
+        post_type: post.post_type || '未知',
+        value_assessment: post.value_assessment || '中'
+      }
+    }));
+
+    // 生成报告元数据
+    const reportDate = targetDate.toISOString().split('T')[0];
+    
+    // 生成摘要信息
+    const summary = generateRedditSummary(posts);
+
+    const report = {
+      meta: {
+        report_date: reportDate,
+        title: `Reddit 每日热帖报告 (${reportDate})`,
+        source: "Reddit",
+        post_count: posts.length
+      },
+      summary,
+      posts: formattedPosts
+    };
+
+    return NextResponse.json(report);
+  } catch (error) {
+    console.error('Error fetching Reddit data from database:', error);
+    return NextResponse.json(
+      { error: 'Failed to load Reddit report from database' },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// 生成Reddit摘要信息的辅助函数
+function generateRedditSummary(posts: Array<{ value_assessment?: string | null; post_type?: string | null; title: string }>) {
+  const highValuePosts = posts.filter(post => post.value_assessment === '高');
+  const techPosts = posts.filter(post => 
+    post.post_type === '技术讨论' || 
+    post.post_type === '资源分享' || 
+    post.post_type === '新闻资讯'
+  );
+  
+  const overview = `今日Reddit社区共收集到 ${posts.length} 条帖子，其中高价值内容 ${highValuePosts.length} 条。主要围绕技术讨论、资源分享和生活交流展开。`;
+  
+  const highlights = {
+    tech_savvy: techPosts.slice(0, 3).map(post => post.title),
+    resources_deals: highValuePosts.slice(0, 3).map(post => post.title),
+    hot_topics: posts.slice(0, 3).map(post => post.title)
+  };
+  
+  const conclusion = `在技术探索与生活分享的交织中，Reddit社区展现了丰富的讨论内容和活跃的交流氛围。`;
+  
+  return {
+    overview,
+    highlights,
+    conclusion
+  };
+}

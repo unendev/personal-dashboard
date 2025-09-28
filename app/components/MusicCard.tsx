@@ -54,14 +54,18 @@ export function MusicCard({
   }
 
   const handlePlay = () => {
-    if (treasure.musicUrl) {
+    if (treasure?.musicUrl) {
       window.open(treasure.musicUrl, '_blank')
     }
     setIsPlaying(!isPlaying)
   }
 
   const getMusicInfo = () => {
-    const title = treasure.musicTitle || treasure.title
+    if (!treasure) {
+      return { title: '未知音乐', artist: '未知艺术家', album: '未知专辑' }
+    }
+    
+    const title = treasure.musicTitle || treasure.title || '未知音乐'
     const artist = treasure.musicArtist || '未知艺术家'
     const album = treasure.musicAlbum || '未知专辑'
     
@@ -79,10 +83,10 @@ export function MusicCard({
             <Music className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg text-gray-900">{treasure.title}</h3>
+            <h3 className="font-semibold text-lg text-gray-900">{treasure?.title || '未知音乐'}</h3>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="h-4 w-4" />
-              {formatDate(treasure.createdAt)}
+              {treasure?.createdAt ? formatDate(treasure.createdAt) : '未知日期'}
             </div>
           </div>
         </div>
@@ -101,7 +105,7 @@ export function MusicCard({
             <div className="absolute right-0 top-8 bg-white border rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
               {onEdit && (
                 <button
-                  onClick={() => onEdit(treasure.id)}
+                  onClick={() => onEdit(treasure?.id || '')}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                 >
                   <Edit className="h-4 w-4" />
@@ -110,7 +114,7 @@ export function MusicCard({
               )}
               {onDelete && (
                 <button
-                  onClick={() => onDelete(treasure.id)}
+                  onClick={() => onDelete(treasure?.id || '')}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -149,7 +153,7 @@ export function MusicCard({
               播放
             </Button>
             
-            {treasure.musicUrl && (
+            {treasure?.musicUrl && (
               <Button
                 onClick={() => window.open(treasure.musicUrl, '_blank')}
                 variant="outline"
@@ -165,7 +169,7 @@ export function MusicCard({
       </div>
 
       {/* 标签 */}
-      {treasure.tags.length > 0 && (
+      {treasure?.tags && treasure.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {treasure.tags.map((tag, index) => (
             <span
@@ -193,7 +197,7 @@ export function MusicCard({
         </div>
         
         <div className="text-xs text-gray-500">
-          {treasure.updatedAt !== treasure.createdAt && '已编辑'}
+          {treasure?.updatedAt && treasure?.createdAt && treasure.updatedAt !== treasure.createdAt && '已编辑'}
         </div>
       </div>
     </Card>

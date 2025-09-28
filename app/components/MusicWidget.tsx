@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import { MusicCard } from './MusicCard';
+import { SpotifyCard } from './SpotifyCard';
 
 // 定义 fetcher 函数，SWR 会用它来请求数据
 const fetcher = async (url: string) => {
@@ -68,7 +68,7 @@ const MusicWidget = () => {
       if (data.message) {
         return <div className="text-center text-gray-400">{data.message}</div>;
       }
-      return <MusicCard {...data} />;
+      return <SpotifyCard {...data} />;
     }
 
     return null;

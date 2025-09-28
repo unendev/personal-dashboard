@@ -125,20 +125,58 @@ export function QuickCreateModal({
     const files = e.target.files
     if (!files) return
 
-    // TODO: 实现文件上传到 OSS
-    // 这里先模拟上传成功
-    const uploadedImages = Array.from(files).map(file => ({
-      url: URL.createObjectURL(file),
-      alt: file.name,
-      width: 0,
-      height: 0,
-      size: file.size
-    }))
+    try {
+      // 获取 OSS 上传签名
+      const signatureResponse = await fetch('/api/upload/oss/signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: files[0].name,
+          contentType: files[0].type,
+          size: files[0].size
+        }),
+      })
 
-    setFormData(prev => ({
-      ...prev,
-      images: [...(prev.images || []), ...uploadedImages]
-    }))
+      if (!signatureResponse.ok) {
+        throw new Error('获取上传签名失败')
+      }
+
+      const signature = await signatureResponse.json()
+      
+      // 上传文件到 OSS
+      const uploadResponse = await fetch(signature.uploadUrl, {
+        method: 'PUT',
+        body: files[0],
+        headers: {
+          'Content-Type': files[0].type,
+        },
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('文件上传失败')
+      }
+
+      // 添加上传成功的图片
+      const uploadedImage = {
+        url: signature.publicUrl,
+        alt: files[0].name,
+        width: 0,
+        height: 0,
+        size: files[0].size
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), uploadedImage]
+      }))
+
+      console.log('图片上传成功:', signature.publicUrl)
+    } catch (error) {
+      console.error('图片上传失败:', error)
+      alert(`图片上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
   }
 
   const removeImage = (index: number) => {

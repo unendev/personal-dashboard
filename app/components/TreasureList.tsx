@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import { TextCard } from './TextCard'
 import { ImageGalleryCard } from './ImageGalleryCard'
-import { MusicCard } from './MusicCard'
+// import { MusicCard } from './MusicCard' // 暂时注释，因为组件为空
+import { TwitterStyleCard } from './TwitterStyleCard'
+import { TimelineContainer, TimelineItem } from './TimelineContainer'
+import { sampleTreasures } from './sample-treasures'
 import { FloatingActionButton } from './FloatingActionButton'
-import { QuickCreateModal, CreateTreasureData } from './QuickCreateModal'
+import { SlashCommandModal, CreateTreasureData } from './SlashCommandModal'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
@@ -14,7 +17,8 @@ import {
   Filter, 
   Grid, 
   List as ListIcon,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -51,9 +55,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState('')
   const [selectedType, setSelectedType] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'timeline'>('timeline')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createType, setCreateType] = useState<'TEXT' | 'IMAGE' | 'MUSIC'>('TEXT')
   const [allTags, setAllTags] = useState<Array<{ name: string; count: number }>>([])
 
   // 确保组件在客户端挂载
@@ -65,19 +68,22 @@ export function TreasureList({ className }: TreasureListProps) {
   const fetchTreasures = async () => {
     try {
       setIsLoading(true)
-      const params = new URLSearchParams()
-      if (selectedTag) params.append('tag', selectedTag)
-      if (selectedType) params.append('type', selectedType)
       
-      const response = await fetch(`/api/treasures?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        // 确保按创建时间倒序排列（最新的在前面）
-        const sortedData = data.sort((a: Treasure, b: Treasure) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-        setTreasures(sortedData)
+      // 使用示例数据
+      let data = sampleTreasures
+      
+      // 模拟 API 调用延迟
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // 应用过滤
+      if (selectedTag) {
+        data = data.filter(treasure => treasure.tags.includes(selectedTag))
       }
+      if (selectedType) {
+        data = data.filter(treasure => treasure.type === selectedType)
+      }
+      
+      setTreasures(data)
     } catch (error) {
       console.error('Error fetching treasures:', error)
     } finally {
@@ -88,11 +94,20 @@ export function TreasureList({ className }: TreasureListProps) {
   // 获取标签列表
   const fetchTags = async () => {
     try {
-      const response = await fetch('/api/treasures/tags')
-      if (response.ok) {
-        const data = await response.json()
-        setAllTags(data)
-      }
+      // 从示例数据中提取标签
+      const tagCounts: { [key: string]: number } = {}
+      sampleTreasures.forEach(treasure => {
+        treasure.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1
+        })
+      })
+      
+      const tags = Object.entries(tagCounts).map(([name, count]) => ({
+        name,
+        count
+      }))
+      
+      setAllTags(tags)
     } catch (error) {
       console.error('Error fetching tags:', error)
     }
@@ -173,35 +188,15 @@ export function TreasureList({ className }: TreasureListProps) {
     setShowCreateModal(true)
   }
 
-  const renderTreasureCard = (treasure: Treasure) => {
-    switch (treasure.type) {
-      case 'TEXT':
-        return (
-          <TextCard
-            key={treasure.id}
-            treasure={treasure}
-            onDelete={handleDeleteTreasure}
-          />
-        )
-      case 'IMAGE':
-        return (
-          <ImageGalleryCard
-            key={treasure.id}
-            treasure={treasure}
-            onDelete={handleDeleteTreasure}
-          />
-        )
-      case 'MUSIC':
-        return (
-          <MusicCard
-            key={treasure.id}
-            treasure={treasure}
-            onDelete={handleDeleteTreasure}
-          />
-        )
-      default:
-        return null
-    }
+  const renderTreasureCard = (treasure: Treasure, index: number) => {
+    // 统一使用 TwitterStyleCard
+    return (
+      <TwitterStyleCard
+        key={treasure.id}
+        treasure={treasure}
+        onDelete={handleDeleteTreasure}
+      />
+    )
   }
 
   // 在客户端挂载前显示静态内容
@@ -238,16 +233,16 @@ export function TreasureList({ className }: TreasureListProps) {
       {/* 搜索和过滤栏 */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
-          {/* 搜索框 */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="搜索宝藏..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          {/* 搜索按钮 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSearchQuery('')}
+            className="gap-2 bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-gray-50"
+          >
+            <Search className="h-4 w-4" />
+            搜索
+          </Button>
 
           {/* 类型过滤 */}
           <Select value={selectedType} onValueChange={setSelectedType}>
@@ -271,9 +266,18 @@ export function TreasureList({ className }: TreasureListProps) {
         {/* 视图模式切换 */}
         <div className="flex items-center gap-2">
           <Button
+            variant={viewMode === 'timeline' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('timeline')}
+            title="时间线视图"
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
+          <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('grid')}
+            title="网格视图"
           >
             <Grid className="h-4 w-4" />
           </Button>
@@ -281,6 +285,7 @@ export function TreasureList({ className }: TreasureListProps) {
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('list')}
+            title="列表视图"
           >
             <ListIcon className="h-4 w-4" />
           </Button>
@@ -305,10 +310,11 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       ) : (
         <div className={cn(
-          "space-y-4",
-          viewMode === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          viewMode === 'timeline' && "max-w-2xl mx-auto",
+          viewMode === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+          viewMode === 'list' && "space-y-4"
         )}>
-          {filteredTreasures.map(renderTreasureCard)}
+          {filteredTreasures.map((treasure, index) => renderTreasureCard(treasure, index))}
         </div>
       )}
 

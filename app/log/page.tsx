@@ -13,6 +13,8 @@ import DateBasedTodoList from '@/app/components/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
+import { QuickCreateModal, CreateTreasureData } from '@/app/components/QuickCreateModal'
+import { FloatingActionButton } from '@/app/components/FloatingActionButton'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -47,12 +49,48 @@ export default function LogPage() {
   // 操作记录折叠状态
   const [isOperationHistoryExpanded, setIsOperationHistoryExpanded] = useState(false);
   
+  // 操作记录引用
+  const operationHistoryRef = useRef<HTMLDivElement>(null);
+  
   // 创建事物模态框状态
   const [isCreateLogModalOpen, setIsCreateLogModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  
+  // 藏宝阁创建状态
+  const [isTreasureModalOpen, setIsTreasureModalOpen] = useState(false);
+  const [treasureModalType, setTreasureModalType] = useState<'TEXT' | 'IMAGE' | 'MUSIC'>('TEXT');
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
-  // 用于点击外部区域关闭折叠栏的ref
-  const operationHistoryRef = useRef<HTMLDivElement>(null);
+  // 创建宝藏处理函数
+  const handleCreateTreasure = async (data: CreateTreasureData) => {
+    try {
+      const response = await fetch('/api/treasures', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('创建宝藏失败');
+      }
+
+      // 显示成功通知
+      setShowSuccessNotification(true);
+      setTimeout(() => {
+        setShowSuccessNotification(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error creating treasure:', error);
+      throw error;
+    }
+  };
+
+  const handleTreasureTypeSelect = (type: 'TEXT' | 'IMAGE' | 'MUSIC') => {
+    setTreasureModalType(type);
+    setIsTreasureModalOpen(true);
+  };
 
   // 预加载分类和事务项数据
   useEffect(() => {
@@ -567,13 +605,13 @@ export default function LogPage() {
             </button>
 
             {/* 藏宝阁按钮 */}
-            <Link
-              href="/treasure-pavilion"
+            <button
+              onClick={() => handleTreasureTypeSelect('TEXT')}
               className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <span className="text-lg">💎</span>
               <span className="text-sm font-medium text-gray-700">藏宝阁</span>
-            </Link>
+            </button>
 
             {/* 操作记录按钮 */}
             <div className="relative" ref={operationHistoryRef}>
@@ -649,6 +687,15 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
+      {/* 悬浮按钮 - 快速访问藏宝阁 */}
+      <Link
+        href="/treasure-pavilion"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+        title="藏宝阁"
+      >
+        <span className="text-2xl">💎</span>
+      </Link>
+
       {/* 页面导航 */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex space-x-6">
@@ -719,6 +766,37 @@ export default function LogPage() {
           />
         </div>
       </div>
+
+      {/* 藏宝阁创建模态框 */}
+      <QuickCreateModal
+        isOpen={isTreasureModalOpen}
+        onClose={() => setIsTreasureModalOpen(false)}
+        type={treasureModalType}
+        onSubmit={handleCreateTreasure}
+      />
+
+      {/* 成功通知 */}
+      {showSuccessNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300">
+          <span className="text-lg">✅</span>
+          <div>
+            <div className="font-medium">创建成功！</div>
+            <div className="text-sm opacity-90">宝藏已保存到藏宝阁</div>
+          </div>
+          <Link
+            href="/treasure-pavilion"
+            className="ml-2 px-3 py-1 bg-white/20 rounded text-sm hover:bg-white/30 transition-colors"
+          >
+            查看
+          </Link>
+          <button
+            onClick={() => setShowSuccessNotification(false)}
+            className="ml-2 text-white/80 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }

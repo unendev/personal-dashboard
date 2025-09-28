@@ -5,6 +5,8 @@ import { Suspense } from 'react';
 import MusicWidget from './MusicWidget';
 import LinuxDoWidget from './LinuxDoWidget';
 import LinuxDoModal from './LinuxDoModal';
+import RedditWidget from './RedditWidget';
+import RedditModal from './RedditModal';
 import RuanYiFengCard from './RuanYiFengCard';
 // import EternalReturnCard from './EternalReturnCard';
 import YouTubeLikedCard from './YouTubeLikedCard';
@@ -20,6 +22,7 @@ interface InfoSource {
 
 const ScrollableLayout = () => {
   const [isLinuxDoModalOpen, setIsLinuxDoModalOpen] = useState(false);
+  const [isRedditModalOpen, setIsRedditModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 信息源配置
@@ -39,25 +42,32 @@ const ScrollableLayout = () => {
       priority: 2
     },
     {
+      id: 'reddit',
+      title: 'Reddit 热帖',
+      icon: '🔴',
+      component: <RedditWidget />,
+      priority: 3
+    },
+    {
       id: 'twitter',
       title: 'Twitter 动态',
       icon: '🐦',
       component: <TwitterCard />,
-      priority: 3
+      priority: 4
     },
     {
       id: 'youtube',
       title: 'YouTube 我喜欢',
       icon: '❤️',
       component: <YouTubeLikedCard />,
-      priority: 4
+      priority: 5
     },
     {
       id: 'ruanyifeng',
       title: '阮一峰周刊',
       icon: '📚',
       component: <RuanYiFengCard />,
-      priority: 5
+      priority: 6
     }
   ];
 
@@ -85,15 +95,16 @@ const ScrollableLayout = () => {
             <div 
               key={source.id} 
               className={`module-card rounded-2xl hover-lift ${
-                source.id === 'linuxdo' ? 'cursor-pointer' : ''
+                source.id === 'linuxdo' || source.id === 'reddit' ? 'cursor-pointer' : ''
               }`}
-              onClick={source.id === 'linuxdo' ? () => setIsLinuxDoModalOpen(true) : undefined}
+              onClick={source.id === 'linuxdo' ? () => setIsLinuxDoModalOpen(true) : 
+                       source.id === 'reddit' ? () => setIsRedditModalOpen(true) : undefined}
             >
               <div className="p-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{source.icon}</span>
                   <h3 className="text-base font-semibold text-white">{source.title}</h3>
-                  {source.id === 'linuxdo' && (
+                  {(source.id === 'linuxdo' || source.id === 'reddit') && (
                     <span className="ml-auto text-xs text-blue-400 opacity-60 hover:opacity-100 transition-opacity">
                       点击查看详情 →
                     </span>
@@ -118,6 +129,12 @@ const ScrollableLayout = () => {
       <LinuxDoModal 
         isOpen={isLinuxDoModalOpen} 
         onClose={() => setIsLinuxDoModalOpen(false)} 
+      />
+
+      {/* Reddit 模态框 */}
+      <RedditModal 
+        isOpen={isRedditModalOpen} 
+        onClose={() => setIsRedditModalOpen(false)} 
       />
     </main>
   );
