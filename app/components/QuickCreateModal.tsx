@@ -313,7 +313,7 @@ export function QuickCreateModal({
                       <Card key={index} className="relative p-2">
                         <img
                           src={image.url}
-                          alt={image.alt}
+                          alt={image.alt || `图片 ${index + 1}`}
                           className="w-full h-32 object-cover rounded"
                         />
                         <Button

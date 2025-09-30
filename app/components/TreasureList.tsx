@@ -1,11 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { TextCard } from './TextCard'
-import { ImageGalleryCard } from './ImageGalleryCard'
-// import { MusicCard } from './MusicCard' // 暂时注释，因为组件为空
+import { useState, useEffect, useCallback } from 'react'
 import { TwitterStyleCard } from './TwitterStyleCard'
-import { TimelineContainer, TimelineItem } from './TimelineContainer'
 import { sampleTreasures } from './sample-treasures'
 import { FloatingActionButton } from './FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
@@ -46,8 +42,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [treasures, setTreasures] = useState<Treasure[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
-  const [selectedTag, setSelectedTag] = useState('')
-  const [selectedType, setSelectedType] = useState('')
+  const [selectedTag] = useState('')
+  const [selectedType] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   // 确保组件在客户端挂载
@@ -56,7 +52,7 @@ export function TreasureList({ className }: TreasureListProps) {
   }, [])
 
   // 获取宝藏列表
-  const fetchTreasures = async () => {
+  const fetchTreasures = useCallback(async () => {
     try {
       setIsLoading(true)
       
@@ -87,7 +83,7 @@ export function TreasureList({ className }: TreasureListProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [selectedTag, selectedType])
 
 
   // 创建宝藏
@@ -139,13 +135,13 @@ export function TreasureList({ className }: TreasureListProps) {
     if (isMounted) {
       fetchTreasures()
     }
-  }, [isMounted, selectedTag, selectedType])
+  }, [isMounted, fetchTreasures])
 
   const handleCreateClick = () => {
     setShowCreateModal(true)
   }
 
-  const renderTreasureCard = (treasure: Treasure, index: number) => {
+  const renderTreasureCard = (treasure: Treasure) => {
     // 统一使用 TwitterStyleCard
     return (
       <TwitterStyleCard
@@ -202,7 +198,7 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       ) : (
         <div className="max-w-2xl mx-auto space-y-8">
-          {treasures.map((treasure, index) => renderTreasureCard(treasure, index))}
+          {treasures.map((treasure) => renderTreasureCard(treasure))}
         </div>
       )}
 

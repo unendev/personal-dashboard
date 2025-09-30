@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-utils';
+import { generateSignedUrl, extractOssKey } from '../../../../lib/oss-utils';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +27,23 @@ export async function GET(
       return NextResponse.json({ error: 'Treasure not found' }, { status: 404 });
     }
 
-    return NextResponse.json(treasure);
+    // 为每张图片生成签名 URL
+    const treasureWithSignedUrls = {
+      ...treasure,
+      images: treasure.images.map(image => {
+        // 提取 OSS key（去掉完整URL部分）
+        const ossKey = extractOssKey(image.url)
+        // 生成签名 URL（1小时有效期）
+        const signedUrl = generateSignedUrl(ossKey, 3600)
+        
+        return {
+          ...image,
+          url: signedUrl
+        }
+      })
+    };
+
+    return NextResponse.json(treasureWithSignedUrls);
   } catch (error) {
     console.error('Error fetching treasure:', error);
     return NextResponse.json({ error: 'Failed to fetch treasure' }, { status: 500 });

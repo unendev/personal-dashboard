@@ -10,7 +10,7 @@ const OSS_CONFIG = {
   endpoint: process.env.ALIYUN_OSS_ENDPOINT || '',
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 检查配置
     if (!OSS_CONFIG.accessKeyId || !OSS_CONFIG.accessKeySecret || !OSS_CONFIG.bucket) {

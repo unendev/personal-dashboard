@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/QuickCreateModal'
-import { FloatingActionButton } from '@/app/components/FloatingActionButton'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();

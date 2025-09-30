@@ -34,7 +34,7 @@ const RuanYiFengCard: React.FC = () => {
         <div className="flex items-center">
           <img 
             src={feeds[0]?.avatar} 
-            alt={feeds[0]?.source}
+            alt={feeds[0]?.source || '阮一峰周刊'}
             className="w-8 h-8 rounded-full"
             onError={(e) => {
               e.currentTarget.style.display = 'none';

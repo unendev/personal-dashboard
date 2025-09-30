@@ -12,7 +12,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from './ui/dialog'
-import { X, Upload, Music, FileText, Image, Hash, Code, Sparkles } from 'lucide-react'
+import { Music, FileText, Image, Hash, Code, Sparkles } from 'lucide-react'
 
 interface SlashCommandModalProps {
   isOpen: boolean
@@ -165,22 +165,6 @@ export function SlashCommandModal({
       images: []
     })
     onClose()
-  }
-
-  const getTypeIcon = () => {
-    switch (formData.type) {
-      case 'TEXT': return <FileText className="h-5 w-5" />
-      case 'IMAGE': return <Image className="h-5 w-5" />
-      case 'MUSIC': return <Music className="h-5 w-5" />
-    }
-  }
-
-  const getTypeTitle = () => {
-    switch (formData.type) {
-      case 'TEXT': return '创作文本宝藏'
-      case 'IMAGE': return '分享图片宝藏'
-      case 'MUSIC': return '记录音乐宝藏'
-    }
   }
 
   // 在客户端挂载前不渲染模态框

@@ -12,13 +12,11 @@ interface SpotifyCardProps {
 }
 
 export function SpotifyCard({ 
-  isPlaying = false,
   trackName,
   artist,
   album,
   albumArtUrl,
   source = 'Spotify',
-  isFromCache = false,
   className 
 }: SpotifyCardProps) {
   return (

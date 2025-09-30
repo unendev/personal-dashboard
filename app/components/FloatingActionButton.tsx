@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, FileText, Image, Music } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface FloatingActionButtonProps {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button } from './ui/button'
@@ -9,7 +10,6 @@ import {
   MessageCircle, 
   Share2, 
   MoreHorizontal,
-  Calendar,
   Tag,
   Trash2,
   Edit,
@@ -88,14 +88,6 @@ export function TwitterStyleCard({
       case 'TEXT': return <FileText className="h-4 w-4 text-blue-400" />
       case 'IMAGE': return <ImageIcon className="h-4 w-4 text-green-400" />
       case 'MUSIC': return <Music className="h-4 w-4 text-purple-400" />
-    }
-  }
-
-  const getTypeColor = () => {
-    switch (treasure.type) {
-      case 'TEXT': return 'text-blue-400'
-      case 'IMAGE': return 'text-green-400'
-      case 'MUSIC': return 'text-purple-400'
     }
   }
 
@@ -228,10 +220,12 @@ export function TwitterStyleCard({
     if (treasure.type === 'IMAGE' && treasure.images.length > 0) {
       if (treasure.images.length === 1) {
         return (
-          <div className="mt-3 rounded-2xl overflow-hidden border border-white/10">
-            <img
+          <div className="mt-3 rounded-2xl overflow-hidden border border-white/10 relative max-h-96">
+            <Image
               src={treasure.images[0].url}
               alt={treasure.images[0].alt || treasure.title}
+              width={treasure.images[0].width || 800}
+              height={treasure.images[0].height || 600}
               className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -239,32 +233,42 @@ export function TwitterStyleCard({
       } else if (treasure.images.length === 2) {
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            {treasure.images.map((image, index) => (
-              <img
-                key={image.id}
-                src={image.url}
-                alt={image.alt || treasure.title}
-                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-              />
+            {treasure.images.map((image) => (
+              <div key={image.id} className="relative h-48">
+                <Image
+                  src={image.url}
+                  alt={image.alt || treasure.title}
+                  width={image.width || 400}
+                  height={image.height || 300}
+                  className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
             ))}
           </div>
         )
       } else if (treasure.images.length === 3) {
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            <img
-              src={treasure.images[0].url}
-              alt={treasure.images[0].alt || treasure.title}
-              className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-            />
+            <div className="relative h-48">
+              <Image
+                src={treasure.images[0].url}
+                alt={treasure.images[0].alt || treasure.title}
+                width={treasure.images[0].width || 400}
+                height={treasure.images[0].height || 300}
+                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
             <div className="grid grid-rows-2 gap-1">
-              {treasure.images.slice(1).map((image, index) => (
-                <img
-                  key={image.id}
-                  src={image.url}
-                  alt={image.alt || treasure.title}
-                  className="w-full h-24 object-cover hover:scale-105 transition-transform duration-300"
-                />
+              {treasure.images.slice(1).map((image) => (
+                <div key={image.id} className="relative h-24">
+                  <Image
+                    src={image.url}
+                    alt={image.alt || treasure.title}
+                    width={image.width || 200}
+                    height={image.height || 150}
+                    className="w-full h-24 object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -274,14 +278,18 @@ export function TwitterStyleCard({
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
             {treasure.images.slice(0, 4).map((image, index) => (
               <div key={image.id} className="relative">
-                <img
-                  src={image.url}
-                  alt={image.alt || treasure.title}
-                  className={cn(
-                    "w-full object-cover hover:scale-105 transition-transform duration-300",
-                    index === 0 ? "h-48" : "h-24"
-                  )}
-                />
+                <div className={cn(
+                  "relative",
+                  index === 0 ? "h-48" : "h-24"
+                )}>
+                  <Image
+                    src={image.url}
+                    alt={image.alt || treasure.title}
+                    width={image.width || 400}
+                    height={image.height || 300}
+                    className="w-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
                 {index === 3 && treasure.images.length > 4 && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <span className="text-white font-semibold text-lg">
