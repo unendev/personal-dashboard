@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from './ui/button'
 import { 
   Heart, 
@@ -108,87 +110,118 @@ export function TwitterStyleCard({
   const renderContent = () => {
     if (!treasure.content) return null
     
-    const lines = treasure.content.split('\n')
-    const elements: JSX.Element[] = []
-    let inCodeBlock = false
-    let codeBlockContent: string[] = []
-    
-    lines.forEach((line, index) => {
-      // 处理代码块
-      if (line.startsWith('```')) {
-        if (inCodeBlock) {
-          // 结束代码块
-          elements.push(
-            <pre key={`code-${index}`} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 my-2 text-sm overflow-x-auto">
-              <code className="text-white/90">{codeBlockContent.join('\n')}</code>
+    return (
+      <div className="prose prose-sm prose-invert max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+          // 自定义组件样式
+          h1: ({ children }) => (
+            <h1 className="text-xl font-bold text-white mt-4 mb-2">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-lg font-semibold text-white mt-4 mb-2">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-base font-semibold text-white mt-3 mb-2">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-2 text-white/90">
+              {children}
+            </p>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-white">
+              {children}
+            </strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-white/80">
+              {children}
+            </em>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-white/30 pl-3 italic text-white/70 my-2">
+              {children}
+            </blockquote>
+          ),
+          code: ({ children, className }) => {
+            const isInline = !className
+            if (isInline) {
+              return (
+                <code className="bg-white/10 px-1 py-0.5 rounded text-sm text-white/90">
+                  {children}
+                </code>
+              )
+            }
+            return (
+              <code className={cn("text-white/90", className)}>
+                {children}
+              </code>
+            )
+          },
+          pre: ({ children }) => (
+            <pre className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-3 my-2 text-sm overflow-x-auto">
+              {children}
             </pre>
+          ),
+          ul: ({ children }) => (
+            <ul className="ml-4 mb-2 space-y-1 list-disc">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="ml-4 mb-2 space-y-1 list-decimal">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => (
+            <li className="text-white/90">
+              {children}
+            </li>
+          ),
+          a: ({ children, href }) => (
+            <a 
+              href={href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              {children}
+            </a>
+          ),
+          hr: () => (
+            <hr className="border-white/20 my-4" />
+          ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-4">
+              <table className="min-w-full border border-white/20 rounded-lg">
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="border border-white/20 px-3 py-2 bg-white/5 text-white font-semibold text-left">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-white/10 px-3 py-2 text-white/90">
+              {children}
+            </td>
           )
-          codeBlockContent = []
-          inCodeBlock = false
-        } else {
-          // 开始代码块
-          inCodeBlock = true
-        }
-        return
-      }
-      
-      if (inCodeBlock) {
-        codeBlockContent.push(line)
-        return
-      }
-      
-      // 处理普通内容
-      if (line.trim() === '') {
-        elements.push(<br key={`br-${index}`} />)
-        return
-      }
-      
-      if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
-        elements.push(
-          <strong key={index} className="font-semibold text-white">
-            {line.slice(2, -2)}
-          </strong>
-        )
-      } else if (line.startsWith('*') && line.endsWith('*') && line.length > 2 && !line.startsWith('**')) {
-        elements.push(
-          <em key={index} className="italic text-white/80">
-            {line.slice(1, -1)}
-          </em>
-        )
-      } else if (line.startsWith('> ')) {
-        elements.push(
-          <blockquote key={index} className="border-l-2 border-white/30 pl-3 italic text-white/70 my-2">
-            {line.slice(2)}
-          </blockquote>
-        )
-      } else if (line.startsWith('- ')) {
-        elements.push(
-          <li key={index} className="ml-4 text-white/90">
-            {line.slice(2)}
-          </li>
-        )
-      } else if (line.startsWith('## ')) {
-        elements.push(
-          <h2 key={index} className="text-lg font-semibold text-white mt-4 mb-2">
-            {line.slice(3)}
-          </h2>
-        )
-      } else if (line.startsWith('# ')) {
-        elements.push(
-          <h1 key={index} className="text-xl font-bold text-white mt-4 mb-2">
-            {line.slice(2)}
-          </h1>
-        )
-      } else {
-        elements.push(
-          <p key={index} className="mb-2 text-white/90">
-            {line}
-          </p>
-        )
-      }
-    })
-    
-    return elements
+          }}
+        >
+          {treasure.content}
+        </ReactMarkdown>
+      </div>
+    )
   }
 
   const renderMedia = () => {
@@ -297,7 +330,7 @@ export function TwitterStyleCard({
 
   return (
     <article className={cn(
-      "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-4 group",
+      "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
       className
     )}>
       {/* 头部信息 */}

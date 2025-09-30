@@ -22,6 +22,10 @@ interface DiscordMarkdownEditorProps {
   onSubmit?: () => void
   className?: string
   maxLength?: number
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  onPaste?: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
+  onDrop?: (e: React.DragEvent<HTMLTextAreaElement>) => void
+  onDragOver?: (e: React.DragEvent<HTMLTextAreaElement>) => void
 }
 
 export function DiscordMarkdownEditor({
@@ -30,7 +34,11 @@ export function DiscordMarkdownEditor({
   placeholder = "分享你的想法...",
   onSubmit,
   className,
-  maxLength = 2000
+  maxLength = 2000,
+  onKeyDown,
+  onPaste,
+  onDrop,
+  onDragOver
 }: DiscordMarkdownEditorProps) {
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -96,8 +104,11 @@ export function DiscordMarkdownEditor({
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && e.ctrlKey && onSubmit) {
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (onKeyDown) {
+      onKeyDown(e)
+    }
+    if (!e.defaultPrevented && e.key === 'Enter' && e.ctrlKey && onSubmit) {
       e.preventDefault()
       onSubmit()
     }
@@ -218,7 +229,10 @@ export function DiscordMarkdownEditor({
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
+          onKeyDown={handleEditorKeyDown}
+          onPaste={onPaste}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
             placeholder={placeholder}
             className="w-full resize-none border-none outline-none bg-transparent text-sm leading-relaxed"
             style={{ minHeight: '120px' }}

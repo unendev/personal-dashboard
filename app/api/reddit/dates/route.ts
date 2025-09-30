@@ -9,7 +9,7 @@ export async function GET() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const dates = await prisma.posts.findMany({
+    const dates = await prisma.reddit_posts.findMany({
       where: {
         timestamp: {
           gte: thirtyDaysAgo

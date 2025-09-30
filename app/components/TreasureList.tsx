@@ -183,8 +183,7 @@ export function TreasureList({ className }: TreasureListProps) {
     }
   }, [isMounted, selectedTag, selectedType])
 
-  const handleCreateClick = (type: 'TEXT' | 'IMAGE' | 'MUSIC') => {
-    setCreateType(type)
+  const handleCreateClick = () => {
     setShowCreateModal(true)
   }
 
@@ -310,9 +309,9 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       ) : (
         <div className={cn(
-          viewMode === 'timeline' && "max-w-2xl mx-auto",
-          viewMode === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-          viewMode === 'list' && "space-y-4"
+          viewMode === 'timeline' && "max-w-2xl mx-auto space-y-8",
+          viewMode === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+          viewMode === 'list' && "space-y-6"
         )}>
           {filteredTreasures.map((treasure, index) => renderTreasureCard(treasure, index))}
         </div>
@@ -322,10 +321,9 @@ export function TreasureList({ className }: TreasureListProps) {
       <FloatingActionButton onCreateTreasure={handleCreateClick} />
 
       {/* 创建模态框 */}
-      <QuickCreateModal
+      <SlashCommandModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        type={createType}
         onSubmit={handleCreateTreasure}
       />
     </div>

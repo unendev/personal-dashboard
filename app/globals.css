@@ -363,8 +363,153 @@ body {
 /* Log 页面专用布局样式 */
 .log-page-layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  /* 暗色模式配色方案 */
+  --main-bg-color: #181a1b;       /* 页面主背景色 (柔和的炭黑) */
+  --content-bg-color: #202324;   /* 内容/卡片背景色 (比主背景稍亮) */
+  --primary-text-color: #e8e6e3;  /* 主要文字颜色 (柔和的米白) */
+  --secondary-text-color: #a8a8a8;/* 次要/注释文字颜色 (浅灰) */
+  --accent-color: #3391ff;        /* 强调色/链接颜色 (清晰的蓝色) */
+  --accent-color-hover: #67adff;  /* 链接/按钮悬浮颜色 */
+  --border-color: #3c4043;        /* 边框/分割线颜色 */
+  
+  background: var(--main-bg-color);
   background-attachment: fixed;
+  color: var(--primary-text-color);
+}
+
+/* Log 页面组件暗色主题样式 */
+.log-page-layout .w-10,
+.log-page-layout .h-10,
+.log-page-layout .bg-white\/90,
+.log-page-layout .bg-white {
+  background-color: var(--content-bg-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--primary-text-color) !important;
+}
+
+.log-page-layout .text-gray-600,
+.log-page-layout .text-gray-700,
+.log-page-layout .text-gray-800,
+.log-page-layout .text-gray-900 {
+  color: var(--primary-text-color) !important;
+}
+
+.log-page-layout .text-gray-400,
+.log-page-layout .text-gray-500 {
+  color: var(--secondary-text-color) !important;
+}
+
+.log-page-layout .border-gray-200,
+.log-page-layout .border-gray-100 {
+  border-color: var(--border-color) !important;
+}
+
+.log-page-layout .bg-white\/95 {
+  background-color: var(--content-bg-color) !important;
+}
+
+.log-page-layout .bg-gray-50,
+.log-page-layout .bg-gray-100 {
+  background-color: var(--content-bg-color) !important;
+}
+
+.log-page-layout .shadow-sm,
+.log-page-layout .shadow-md {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.log-page-layout .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 访客提示样式 */
+.log-page-layout .bg-yellow-50\/90 {
+  background-color: rgba(51, 145, 255, 0.1) !important;
+}
+
+.log-page-layout .border-yellow-200 {
+  border-color: var(--accent-color) !important;
+}
+
+.log-page-layout .text-yellow-700,
+.log-page-layout .text-yellow-600 {
+  color: var(--accent-color) !important;
+}
+
+.log-page-layout .border-yellow-600 {
+  border-color: var(--accent-color) !important;
+}
+
+/* 卡片样式 */
+.log-page-layout [class*="Card"],
+.log-page-layout .card {
+  background-color: var(--content-bg-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--primary-text-color) !important;
+}
+
+/* 按钮样式 */
+.log-page-layout .bg-blue-600 {
+  background-color: var(--accent-color) !important;
+}
+
+.log-page-layout .hover\:bg-blue-700:hover {
+  background-color: var(--accent-color-hover) !important;
+}
+
+/* 导航栏样式 */
+.log-page-layout .bg-white.border-b {
+  background-color: var(--content-bg-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* 页面标题样式 */
+.log-page-layout h1 {
+  color: var(--primary-text-color) !important;
+}
+
+/* 成功通知样式 */
+.log-page-layout .bg-green-500 {
+  background-color: #10b981 !important;
+}
+
+.log-page-layout .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.log-page-layout .hover\:bg-white\/30:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 模态框暗色主题样式 */
+.log-page-layout .fixed.z-50.bg-black {
+  background-color: rgba(24, 26, 27, 0.8) !important;
+}
+
+.log-page-layout .fixed.z-50 [class*="translate-"] {
+  background-color: var(--content-bg-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--primary-text-color) !important;
+}
+
+.log-page-layout .rounded-sm {
+  border-radius: 0.125rem;
+}
+
+.log-page-layout [data-radix-collection-item] {
+  color: var(--primary-text-color) !important;
+}
+
+.log-page-layout .text-muted-foreground {
+  color: var(--secondary-text-color) !important;
+}
+
+.log-page-layout .bg-background {
+  background-color: var(--content-bg-color) !important;
+}
+
+.log-page-layout .ring-ring {
+  ring-color: var(--accent-color) !important;
 }
 
 /* Timer 页面专用布局样式 */

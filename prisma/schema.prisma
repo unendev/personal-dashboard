@@ -284,6 +284,17 @@ model posts {
   timestamp        DateTime? @default(now()) @db.Timestamptz(6)
 }
 
+model reddit_posts {
+  id               String    @id @map("id")
+  title            String
+  url              String
+  core_issue       String?
+  key_info         Json?
+  post_type        String?
+  value_assessment String?
+  timestamp        DateTime? @default(now()) @db.Timestamptz(6)
+}
+
 model TwitterUser {
   id              String         @id @default(cuid())
   twitterId       String         @unique

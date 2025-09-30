@@ -9,24 +9,27 @@ export async function GET(request: Request) {
     const date = searchParams.get('date'); // 可选参数，用于查看往期数据
     
     let targetDate: Date;
+    let actualDate: Date;
     
     if (date) {
       // 如果指定了日期，使用该日期
       targetDate = new Date(date);
+      actualDate = targetDate;
     } else {
       // 默认使用昨天的日期
       targetDate = new Date();
       targetDate.setDate(targetDate.getDate() - 1);
+      actualDate = targetDate;
     }
     
     // 查询指定日期的帖子数据
-    const startOfDay = new Date(targetDate);
+    const startOfDay = new Date(actualDate);
     startOfDay.setHours(0, 0, 0, 0);
     
-    const endOfDay = new Date(targetDate);
+    const endOfDay = new Date(actualDate);
     endOfDay.setHours(23, 59, 59, 999);
     
-    const posts = await prisma.posts.findMany({
+    let posts = await prisma.posts.findMany({
       where: {
         timestamp: {
           gte: startOfDay,
@@ -37,6 +40,39 @@ export async function GET(request: Request) {
         timestamp: 'desc'
       }
     });
+
+    // 如果没有指定日期且当天没有数据，则查找最近有数据的日期
+    if (!date && posts.length === 0) {
+      const latestPost = await prisma.posts.findFirst({
+        orderBy: {
+          timestamp: 'desc'
+        },
+        select: {
+          timestamp: true
+        }
+      });
+      
+      if (latestPost && latestPost.timestamp) {
+        actualDate = new Date(latestPost.timestamp);
+        const newStartOfDay = new Date(actualDate);
+        newStartOfDay.setHours(0, 0, 0, 0);
+        
+        const newEndOfDay = new Date(actualDate);
+        newEndOfDay.setHours(23, 59, 59, 999);
+        
+        posts = await prisma.posts.findMany({
+          where: {
+            timestamp: {
+              gte: newStartOfDay,
+              lte: newEndOfDay
+            }
+          },
+          orderBy: {
+            timestamp: 'desc'
+          }
+        });
+      }
+    }
 
     // 转换为组件需要的格式
     const formattedPosts = posts.map(post => ({
@@ -52,7 +88,7 @@ export async function GET(request: Request) {
     }));
 
     // 生成报告元数据
-    const reportDate = targetDate.toISOString().split('T')[0];
+    const reportDate = actualDate.toISOString().split('T')[0];
     
     // 按类型统计
     // const typeStats = posts.reduce((acc, post) => {

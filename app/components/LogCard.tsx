@@ -53,13 +53,13 @@ export default function LogCard({ log }: LogCardProps) {
     return (
       <div className="space-y-4">
         {categories.map((category) => (
-          <div key={category.id} className="space-y-2 pl-4 border-l-2 border-purple-300">
-            <h4 className="text-md font-medium text-purple-700">{category.name}</h4>
+          <div key={category.id} className="space-y-2 pl-4 border-l-2 border-purple-300" style={{borderLeftColor: '#3391ff'}}>
+            <h4 className="text-md font-medium text-purple-700" style={{color: '#3391ff'}}>{category.name}</h4>
             {Array.isArray(category.subCategories) && category.subCategories.map((subCategory) => (
-              <div key={subCategory.id} className="space-y-1 pl-4 border-l border-gray-300">
-                <p className="text-sm font-medium text-gray-700">{subCategory.name}</p>
+              <div key={subCategory.id} className="space-y-1 pl-4 border-l border-gray-300" style={{borderLeftColor: '#3c4043'}}>
+                <p className="text-sm font-medium text-gray-700" style={{color: '#e8e6e3'}}>{subCategory.name}</p>
                 {Array.isArray(subCategory.activities) && subCategory.activities.map((activity) => (
-                  <p key={activity.id} className="text-sm text-gray-700 ml-2">
+                  <p key={activity.id} className="text-sm text-gray-700 ml-2" style={{color: '#e8e6e3'}}>
                     - {activity.name} ({activity.duration})
                   </p>
                 ))}
@@ -74,25 +74,29 @@ export default function LogCard({ log }: LogCardProps) {
   const hasCategoriesContent = log.categories && log.categories.length > 0;
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400 mb-4">
+    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400 mb-4" style={{
+      backgroundColor: '#202324',
+      borderLeftColor: '#3391ff',
+      color: '#e8e6e3'
+    }}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          {log.content && <p className="text-gray-800">{log.content}</p>}
-          {!log.content && !hasCategoriesContent && <p className="text-gray-500 italic">无日志内容或每日总结</p>}
+          {log.content && <p className="text-gray-800" style={{color: '#e8e6e3'}}>{log.content}</p>}
+          {!log.content && !hasCategoriesContent && <p className="text-gray-500 italic" style={{color: '#a8a8a8'}}>无日志内容或每日总结</p>}
         </div>
-        <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
+        <span className="text-xs text-gray-500 ml-4 whitespace-nowrap" style={{color: '#a8a8a8'}}>
           {formatDate(log.timestamp)} {/* Displaying the new timestamp */}
         </span>
       </div>
 
       {log.quest && (
-        <div className="text-sm text-blue-600 mt-2">
+        <div className="text-sm text-blue-600 mt-2" style={{color: '#3391ff'}}>
           关联任务: {log.quest.title}
         </div>
       )}
 
       {hasCategoriesContent && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-gray-200" style={{borderTopColor: '#3c4043'}}>
           {renderCategories(log.categories)}
         </div>
       )}
