@@ -353,8 +353,14 @@ export function TwitterStyleCard({
             </div>
           </div>
 
-          {/* 标题 */}
-          <div className="text-white text-xl font-bold mb-3 group-hover:text-white/90 transition-colors">
+          {/* 标题 - 引用框风格 */}
+          <div className={cn(
+            "border-l-4 pl-4 mb-4",
+            "text-white text-xl font-bold",
+            treasure.type === 'TEXT' && "border-blue-400",
+            treasure.type === 'IMAGE' && "border-green-400",
+            treasure.type === 'MUSIC' && "border-purple-400"
+          )}>
             {treasure.title}
           </div>
 

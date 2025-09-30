@@ -70,6 +70,10 @@ export function TreasureList({ className }: TreasureListProps) {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('📦 从 API 获取的宝藏数据:', data)
+        if (data.length > 0 && data[0].images?.length > 0) {
+          console.log('🖼️ 第一个宝藏的图片 URL:', data[0].images[0].url)
+        }
         setTreasures(data)
       } else {
         console.error('Failed to fetch treasures:', response.status)

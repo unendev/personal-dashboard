@@ -167,6 +167,7 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
       }
       
       const signatureData = await signatureRes.json()
+      console.log('OSS Signature data:', signatureData)
       
       // 检查是否配置了 OSS
       if (signatureData.error) {
@@ -228,7 +229,17 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
       })
 
       // 4. 获取文件 URL
-      const imageUrl = `${signatureData.cdnUrl}/${signatureData.key}`
+      // 确保使用完整的 URL
+      const baseUrl = signatureData.cdnUrl || signatureData.endpoint
+      const imageUrl = baseUrl.endsWith('/') 
+        ? `${baseUrl}${signatureData.key}` 
+        : `${baseUrl}/${signatureData.key}`
+      
+      console.log('=== 图片上传成功 ===')
+      console.log('Base URL:', baseUrl)
+      console.log('File Key:', signatureData.key)
+      console.log('Final Image URL:', imageUrl)
+      console.log('===================')
       
       setImages(prev => [...prev, {
         url: imageUrl,

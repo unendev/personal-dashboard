@@ -46,14 +46,23 @@ export async function GET(request: NextRequest) {
       .update(policy)
       .digest('base64')
 
+    // 构建完整的 OSS endpoint，确保有 https:// 协议头
+    let ossEndpoint = OSS_CONFIG.endpoint || `https://${OSS_CONFIG.bucket}.${OSS_CONFIG.region}.aliyuncs.com`
+    
+    // 如果 endpoint 不包含协议头，自动添加 https://
+    if (ossEndpoint && !ossEndpoint.startsWith('http://') && !ossEndpoint.startsWith('https://')) {
+      ossEndpoint = `https://${ossEndpoint}`
+    }
+    
     // 返回签名数据
     return NextResponse.json({
       accessKeyId: OSS_CONFIG.accessKeyId,
       policy,
       signature,
       key: fileKey,
-      endpoint: OSS_CONFIG.endpoint || `https://${OSS_CONFIG.bucket}.${OSS_CONFIG.region}.aliyuncs.com`,
-      cdnUrl: process.env.ALIYUN_OSS_CDN_URL || OSS_CONFIG.endpoint
+      endpoint: ossEndpoint,
+      cdnUrl: process.env.ALIYUN_OSS_CDN_URL || ossEndpoint,
+      bucket: OSS_CONFIG.bucket
     })
   } catch (error) {
     console.error('Error generating OSS signature:', error)
