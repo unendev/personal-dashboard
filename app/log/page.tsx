@@ -399,16 +399,16 @@ export default function LogPage() {
             {/* 左侧：返回按钮 */}
             <Link
               href="/"
-              className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              className="w-10 h-10 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
             >
-              <span className="text-gray-600 font-medium text-lg">←</span>
+              <span className="text-gray-200 font-medium text-lg">←</span>
             </Link>
 
             {/* 右侧：访客提示和登录按钮 */}
             <div className="flex items-center gap-3">
               {/* 访客提示 */}
-              <div className="flex items-center gap-2 bg-yellow-50/90 backdrop-blur-sm border border-yellow-200 rounded-full px-3 py-2 shadow-sm">
-                <span className="text-sm font-medium text-yellow-700">
+              <div className="flex items-center gap-2 bg-yellow-900/40 backdrop-blur-sm border border-yellow-700/50 rounded-full px-3 py-2 shadow-sm">
+                <span className="text-sm font-medium text-yellow-300">
                   👀 访客模式
                 </span>
               </div>
@@ -416,7 +416,7 @@ export default function LogPage() {
               {/* 登录按钮 */}
               <Link
                 href="/auth/signin"
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                className="bg-blue-700/70 hover:bg-blue-600/80 text-white rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
               >
                 <span className="text-sm font-medium">登录</span>
               </Link>
@@ -425,29 +425,29 @@ export default function LogPage() {
         </div>
 
         {/* 页面导航 */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
           <div className="flex space-x-6">
-            <a href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</a>
-            <a href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
-            <a href="/log" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">📝 每日日志</a>
+            <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
+            <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
+            <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-8">
           {/* 访客欢迎信息 */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl border border-blue-700/50 backdrop-blur-sm">
             <div className="flex items-center gap-4">
               <div className="text-4xl">🎯</div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">欢迎体验个人门户系统</h1>
-                <p className="text-gray-600 mb-4">
+                <h1 className="text-2xl font-bold text-gray-100 mb-2">欢迎体验个人门户系统</h1>
+                <p className="text-gray-300 mb-4">
                   这是一个演示页面，展示了时间管理、任务跟踪和数据分析功能。
                   登录后可以创建和管理您自己的数据。
                 </p>
                 <div className="flex gap-3">
                   <Link
                     href="/auth/signin"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    className="bg-blue-700/70 hover:bg-blue-600/80 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                   >
                     立即登录
                   </Link>
@@ -494,13 +494,13 @@ export default function LogPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockTimerTasks.map((task) => (
-                      <div key={task.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div key={task.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-800">{task.name}</h4>
-                          <p className="text-sm text-gray-600">{task.categoryPath}</p>
+                          <h4 className="font-medium text-gray-200">{task.name}</h4>
+                          <p className="text-sm text-gray-400">{task.categoryPath}</p>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-semibold text-blue-600">
+                          <div className="text-lg font-semibold text-blue-400">
                             {Math.floor(task.elapsedTime / 3600)}h {Math.floor((task.elapsedTime % 3600) / 60)}m
                           </div>
                         </div>
@@ -537,9 +537,9 @@ export default function LogPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                  <h3 className="font-semibold text-gray-800 mb-2">今日学习总结</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                <div className="p-4 bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-lg border border-purple-700/50 backdrop-blur-sm">
+                  <h3 className="font-semibold text-gray-200 mb-2">今日学习总结</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">
                     今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
                     总共投入了 2.25 小时的学习时间，其中 React Hooks 学习占用了 1 小时，
                     技术文档阅读 30 分钟，代码审查 45 分钟。学习效率较高，
@@ -574,21 +574,21 @@ export default function LogPage() {
           {/* 左侧：返回按钮 */}
           <Link
             href="/"
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+            className="w-10 h-10 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
           >
-            <span className="text-gray-600 font-medium text-lg">←</span>
+            <span className="text-gray-200 font-medium text-lg">←</span>
           </Link>
 
           {/* 右侧：操作按钮组 */}
           <div className="flex items-center gap-3">
             {/* 用户信息 */}
-            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-2 shadow-sm">
-              <span className="text-sm font-medium text-gray-700">
+            <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
+              <span className="text-sm font-medium text-gray-200">
                 {session?.user?.name || session?.user?.email || '用户'}
               </span>
               <button
                 onClick={() => signOut()}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-gray-400 hover:text-gray-200 text-sm"
                 title="登出"
               >
                 登出
@@ -598,29 +598,29 @@ export default function LogPage() {
             {/* 创建事物按钮 */}
             <button
               onClick={() => setIsCreateLogModalOpen(true)}
-              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <span className="text-lg">✏️</span>
-              <span className="text-sm font-medium text-gray-700">记录</span>
+              <span className="text-sm font-medium text-gray-200">记录</span>
             </button>
 
             {/* 藏宝阁按钮 */}
             <button
               onClick={() => handleTreasureTypeSelect('TEXT')}
-              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <span className="text-lg">💎</span>
-              <span className="text-sm font-medium text-gray-700">藏宝阁</span>
+              <span className="text-sm font-medium text-gray-200">藏宝阁</span>
             </button>
 
             {/* 操作记录按钮 */}
             <div className="relative" ref={operationHistoryRef}>
               <button
                 onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
-                className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
               >
                 <span className="text-lg">📊</span>
-                <span className="text-sm font-medium text-gray-700">记录</span>
+                <span className="text-sm font-medium text-gray-200">记录</span>
                 <span className={`text-xs transition-transform duration-200 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
@@ -628,12 +628,12 @@ export default function LogPage() {
               
               {/* 操作记录下拉面板 */}
               {isOperationHistoryExpanded && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
+                <div className="absolute top-full right-0 mt-2 w-72 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-800">操作记录</h3>
+                    <h3 className="text-sm font-semibold text-gray-200">操作记录</h3>
                     <button 
                       onClick={() => setIsOperationHistoryExpanded(false)}
-                      className="text-gray-400 hover:text-gray-600 text-lg hover:bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center"
+                      className="text-gray-400 hover:text-gray-200 text-lg hover:bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center"
                     >
                       ×
                     </button>
@@ -641,25 +641,25 @@ export default function LogPage() {
                   {operationHistory.length === 0 ? (
                     <div className="text-center py-8">
                       <span className="text-3xl mb-2 block">📝</span>
-                      <p className="text-gray-500 text-sm">暂无操作记录</p>
+                      <p className="text-gray-400 text-sm">暂无操作记录</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {operationHistory.slice(0, 8).map((operation) => (
-                        <div key={operation.id} className="p-3 bg-gray-50/50 rounded-lg hover:bg-gray-100/50 transition-colors border border-gray-100">
+                        <div key={operation.id} className="p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800/70 transition-colors border border-gray-700/50">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-medium text-gray-700 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                <span className="text-xs font-medium text-blue-300 bg-blue-900/40 px-2 py-1 rounded-full">
                                   {operation.action}
                                 </span>
-                                <span className="text-xs text-gray-600 truncate">{operation.taskName}</span>
+                                <span className="text-xs text-gray-300 truncate">{operation.taskName}</span>
                               </div>
                               {operation.details && (
-                                <p className="text-xs text-gray-500 truncate">{operation.details}</p>
+                                <p className="text-xs text-gray-400 truncate">{operation.details}</p>
                               )}
                             </div>
-                            <div className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                            <div className="text-xs text-gray-500 ml-2 flex-shrink-0">
                               {new Date(operation.timestamp).toLocaleString('zh-CN', {
                                 month: 'short',
                                 day: 'numeric',
@@ -690,23 +690,23 @@ export default function LogPage() {
       {/* 悬浮按钮 - 快速访问藏宝阁 */}
       <Link
         href="/treasure-pavilion"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
         title="藏宝阁"
       >
         <span className="text-2xl">💎</span>
       </Link>
 
       {/* 页面导航 */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
         <div className="flex space-x-6">
-          <a href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</a>
-          <a href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
-          <a href="/log" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">📝 每日日志</a>
+          <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
+          <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
+          <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">每日日志</h1>
+        <h1 className="text-3xl font-bold text-gray-100 mb-8">每日日志</h1>
         
         {/* 日期过滤器 */}
         <div className="mb-8">
@@ -738,7 +738,6 @@ export default function LogPage() {
           <div className="order-2 lg:order-1">
             <DateBasedTodoList 
               userId={userId}
-              compact={true}
             />
           </div>
         </div>

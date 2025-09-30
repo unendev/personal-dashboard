@@ -1,48 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateUploadSignature } from '@/lib/oss-config';
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 
-// POST /api/upload/oss/signature - 获取阿里云 OSS 直传签名
-export async function POST(request: NextRequest) {
+// 阿里云 OSS 配置（从环境变量读取）
+const OSS_CONFIG = {
+  accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID || '',
+  accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET || '',
+  bucket: process.env.ALIYUN_OSS_BUCKET || '',
+  region: process.env.ALIYUN_OSS_REGION || 'oss-cn-hangzhou',
+  endpoint: process.env.ALIYUN_OSS_ENDPOINT || '',
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { filename, contentType } = body;
-
-    if (!filename || !contentType) {
-      return NextResponse.json({ 
-        error: 'filename and contentType are required' 
-      }, { status: 400 });
+    // 检查配置
+    if (!OSS_CONFIG.accessKeyId || !OSS_CONFIG.accessKeySecret || !OSS_CONFIG.bucket) {
+      return NextResponse.json(
+        { error: 'OSS 配置未完成，请设置环境变量' },
+        { status: 500 }
+      )
     }
 
-    // 验证文件类型
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png', 
-      'image/gif',
-      'image/webp',
-      'image/svg+xml'
-    ];
+    // 生成唯一文件名
+    const timestamp = Date.now()
+    const randomStr = crypto.randomBytes(8).toString('hex')
+    const fileKey = `treasure-images/${timestamp}-${randomStr}`
 
-    if (!allowedTypes.includes(contentType)) {
-      return NextResponse.json({ 
-        error: 'Unsupported file type' 
-      }, { status: 400 });
-    }
+    // 设置过期时间（1小时后）
+    const expireTime = new Date(Date.now() + 3600 * 1000).toISOString()
 
-    // 验证文件大小（前端限制）
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (body.size && body.size > maxSize) {
-      return NextResponse.json({ 
-        error: 'File too large. Maximum size is 10MB' 
-      }, { status: 400 });
-    }
+    // 构建 Policy
+    const policyString = JSON.stringify({
+      expiration: expireTime,
+      conditions: [
+        ['content-length-range', 0, 10485760], // 最大 10MB
+        { bucket: OSS_CONFIG.bucket },
+        ['starts-with', '$key', 'treasure-images/'],
+      ]
+    })
 
-    const signature = await generateUploadSignature(filename, contentType);
+    const policy = Buffer.from(policyString).toString('base64')
 
-    return NextResponse.json(signature);
+    // 计算签名
+    const signature = crypto
+      .createHmac('sha1', OSS_CONFIG.accessKeySecret)
+      .update(policy)
+      .digest('base64')
+
+    // 返回签名数据
+    return NextResponse.json({
+      accessKeyId: OSS_CONFIG.accessKeyId,
+      policy,
+      signature,
+      key: fileKey,
+      endpoint: OSS_CONFIG.endpoint || `https://${OSS_CONFIG.bucket}.${OSS_CONFIG.region}.aliyuncs.com`,
+      cdnUrl: process.env.ALIYUN_OSS_CDN_URL || OSS_CONFIG.endpoint
+    })
   } catch (error) {
-    console.error('Error generating OSS signature:', error);
-    return NextResponse.json({ 
-      error: 'Failed to generate upload signature' 
-    }, { status: 500 });
+    console.error('Error generating OSS signature:', error)
+    return NextResponse.json(
+      { error: '生成上传签名失败' },
+      { status: 500 }
+    )
   }
 }

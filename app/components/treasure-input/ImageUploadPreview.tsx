@@ -1,0 +1,113 @@
+'use client'
+
+import { X, Loader2 } from 'lucide-react'
+import { cn } from '../../../lib/utils'
+import Image from 'next/image'
+
+interface UploadingImage {
+  id: string
+  file: File
+  progress: number
+}
+
+interface UploadedImage {
+  url: string
+  alt?: string
+  width?: number
+  height?: number
+  size?: number
+}
+
+interface ImageUploadPreviewProps {
+  images: UploadedImage[]
+  uploadingImages: UploadingImage[]
+  onRemove: (index: number) => void
+}
+
+export function ImageUploadPreview({ 
+  images, 
+  uploadingImages, 
+  onRemove 
+}: ImageUploadPreviewProps) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-600">图片</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        {/* 已上传的图片 */}
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+          >
+            <img
+              src={image.url}
+              alt={image.alt || `图片 ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* 删除按钮 */}
+            <button
+              type="button"
+              onClick={() => onRemove(index)}
+              className={cn(
+                "absolute top-2 right-2",
+                "w-6 h-6 rounded-full",
+                "bg-black/50 hover:bg-black/70",
+                "text-white",
+                "flex items-center justify-center",
+                "opacity-0 group-hover:opacity-100",
+                "transition-opacity duration-200"
+              )}
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* 文件大小 */}
+            {image.size && (
+              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 text-white text-xs rounded">
+                {formatFileSize(image.size)}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* 上传中的图片 */}
+        {uploadingImages.map((uploading) => (
+          <div
+            key={uploading.id}
+            className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+          >
+            {/* 预览图 */}
+            <img
+              src={URL.createObjectURL(uploading.file)}
+              alt="上传中"
+              className="w-full h-full object-cover opacity-50"
+            />
+            
+            {/* 上传进度 */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20">
+              <Loader2 className="h-8 w-8 text-white animate-spin mb-2" />
+              <div className="text-white text-sm font-medium">
+                {uploading.progress}%
+              </div>
+            </div>
+
+            {/* 进度条 */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+              <div
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${uploading.progress}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}

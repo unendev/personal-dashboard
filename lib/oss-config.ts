@@ -3,17 +3,25 @@ import OSS from 'ali-oss';
 // 阿里云 OSS 配置
 const ossConfig = {
   region: process.env.OSS_REGION || 'oss-cn-hangzhou',
-  accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
-  accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
-  bucket: process.env.OSS_BUCKET_NAME!,
+  accessKeyId: process.env.OSS_ACCESS_KEY_ID || '',
+  accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET || '',
+  bucket: process.env.OSS_BUCKET_NAME || '',
 };
 
-// 创建 OSS 客户端
-const client = new OSS(ossConfig);
+// 创建 OSS 客户端（仅在环境变量存在时）
+let client: OSS | null = null;
+if (ossConfig.accessKeyId && ossConfig.accessKeySecret && ossConfig.bucket) {
+  client = new OSS(ossConfig);
+}
 
 // 生成上传签名
 export async function generateUploadSignature(filename: string, contentType: string) {
   try {
+    // 检查 OSS 客户端是否已初始化
+    if (!client) {
+      throw new Error('OSS client not initialized. Please check environment variables.');
+    }
+
     // 生成唯一文件名
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 15);

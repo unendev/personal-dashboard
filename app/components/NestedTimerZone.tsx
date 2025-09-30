@@ -1152,19 +1152,19 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   if (tasks.length === 0) {
     return (
-      <Card className="bg-gray-50">
+      <Card className="bg-gray-800/30">
         <CardContent className="p-6 text-center">
-          <p className="text-gray-500">暂无计时任务</p>
+          <p className="text-gray-400">暂无计时任务</p>
           <p className="text-sm text-gray-400 mt-2">请先点击右上角的&ldquo;添加顶级任务&rdquo;按钮创建任务</p>
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700 font-medium">💡 嵌套功能提示：</p>
-            <p className="text-xs text-blue-600 mt-1">
+          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700/50 rounded-lg">
+            <p className="text-sm text-blue-300 font-medium">💡 嵌套功能提示：</p>
+            <p className="text-xs text-blue-400 mt-1">
               创建任务后，每个任务卡片右侧都有&ldquo;➕ 添加子任务&rdquo;按钮，点击可以创建无限层级的子任务
             </p>
           </div>
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 font-medium">📋 使用步骤：</p>
-            <ol className="text-xs text-yellow-700 mt-1 ml-4 list-decimal">
+          <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
+            <p className="text-sm text-yellow-300 font-medium">📋 使用步骤：</p>
+            <ol className="text-xs text-yellow-400 mt-1 ml-4 list-decimal">
               <li>点击右上角&ldquo;添加顶级任务&rdquo;按钮</li>
               <li>输入任务名称创建任务</li>
               <li>在任务卡片右侧找到绿色&ldquo;➕ 添加子任务&rdquo;按钮</li>
@@ -1172,9 +1172,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               <li>长按拖拽手柄可重新排序（手机端在顶部，桌面端在左侧）</li>
             </ol>
           </div>
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800 font-medium">📱 手机端拖拽提示：</p>
-            <p className="text-xs text-green-700 mt-1">
+          <div className="mt-4 p-3 bg-green-900/30 border border-green-700/50 rounded-lg">
+            <p className="text-sm text-green-300 font-medium">📱 手机端拖拽提示：</p>
+            <p className="text-xs text-green-400 mt-1">
               在手机上，长按任务卡片顶部的拖拽手柄（六个小圆点）约0.1秒后即可开始拖拽重新排序。拖拽时会有轻微震动反馈。
             </p>
           </div>

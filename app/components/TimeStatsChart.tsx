@@ -116,9 +116,9 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
 
   if (tasks.length === 0) {
     return (
-      <Card className="bg-gray-50">
+      <Card className="bg-gray-800/30">
         <CardContent className="p-6 text-center">
-          <p className="text-gray-500">暂无时间数据</p>
+          <p className="text-gray-400">暂无时间数据</p>
           <p className="text-sm text-gray-400 mt-2">开始计时后这里会显示统计图表</p>
         </CardContent>
       </Card>
@@ -132,10 +132,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-blue-400">
                 {totalTime.hours}h{totalTime.minutes}m
               </div>
-              <div className="text-sm text-gray-600">今日总时间</div>
+              <div className="text-sm text-gray-300">今日总时间</div>
             </div>
           </CardContent>
         </Card>
@@ -143,11 +143,11 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-green-400">
                 {hierarchyStats.totalTasks}
               </div>
-              <div className="text-sm text-gray-600">任务总数</div>
-              <div className="text-xs text-gray-500">
+              <div className="text-sm text-gray-300">任务总数</div>
+              <div className="text-xs text-gray-400">
                 ({hierarchyStats.topLevelTasks}个顶级任务)
               </div>
             </div>
@@ -157,10 +157,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-orange-400">
                 {runningTasksCount}
               </div>
-              <div className="text-sm text-gray-600">正在运行</div>
+              <div className="text-sm text-gray-300">正在运行</div>
             </div>
           </CardContent>
         </Card>
@@ -168,10 +168,10 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-purple-400">
                 {formatTime(averageTaskTime)}
               </div>
-              <div className="text-sm text-gray-600">平均任务时间</div>
+              <div className="text-sm text-gray-300">平均任务时间</div>
             </div>
           </CardContent>
         </Card>
@@ -181,25 +181,25 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId }) => {
       <Card>
         <CardContent className="p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-800 mb-2">层级统计</div>
+            <div className="text-lg font-semibold text-gray-200 mb-2">层级统计</div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <div className="text-xl font-bold text-indigo-600">
+                <div className="text-xl font-bold text-indigo-400">
                   {hierarchyStats.maxDepth}
                 </div>
-                <div className="text-sm text-gray-600">最大深度</div>
+                <div className="text-sm text-gray-300">最大深度</div>
               </div>
               <div>
-                <div className="text-xl font-bold text-green-600">
+                <div className="text-xl font-bold text-green-400">
                   {hierarchyStats.tasksWithChildren}
                 </div>
-                <div className="text-sm text-gray-600">有子任务</div>
+                <div className="text-sm text-gray-300">有子任务</div>
               </div>
               <div>
-                <div className="text-xl font-bold text-blue-600">
+                <div className="text-xl font-bold text-blue-400">
                   {hierarchyStats.totalTasks - hierarchyStats.topLevelTasks}
                 </div>
-                <div className="text-sm text-gray-600">子任务数</div>
+                <div className="text-sm text-gray-300">子任务数</div>
               </div>
             </div>
           </div>

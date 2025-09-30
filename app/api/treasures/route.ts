@@ -52,10 +52,12 @@ export async function POST(request: NextRequest) {
       content, 
       type, 
       tags = [], 
+      theme,
       musicTitle, 
       musicArtist, 
       musicAlbum, 
       musicUrl,
+      musicCoverUrl,
       images = []
     } = body;
 
@@ -75,10 +77,12 @@ export async function POST(request: NextRequest) {
         content,
         type,
         tags,
+        theme,
         musicTitle,
         musicArtist,
         musicAlbum,
         musicUrl,
+        musicCoverUrl,
         images: {
           create: images.map((img: { url: string; alt?: string; width?: number; height?: number; size?: number }) => ({
             url: img.url,

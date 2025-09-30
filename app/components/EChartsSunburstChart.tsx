@@ -450,13 +450,13 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       {/* 模式切换：分类 / 事务项（总时长） */}
       <div className="flex items-center justify-center gap-2 mb-3">
         <button
-          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'category' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'category' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800/50 text-gray-300 border-gray-700/50'}`}
           onClick={() => setViewMode('category')}
         >
           按分类
         </button>
         <button
-          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'instance' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+          className={`px-3 py-1 rounded-full text-sm border ${viewMode === 'instance' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800/50 text-gray-300 border-gray-700/50'}`}
           onClick={() => setViewMode('instance')}
         >
           按事务项（总时长）
@@ -487,21 +487,21 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
           click: onChartClick
         }}
       />
-      <div className="mt-4 text-sm text-gray-600 text-center">
+      <div className="mt-4 text-sm text-gray-300 text-center">
         <p>点击扇形区域查看详细信息</p>
-        <p className="text-xs text-gray-500 mt-1">总时间: {formatTime(totalSecondsAllTasks)}</p>
+        <p className="text-xs text-gray-400 mt-1">总时间: {formatTime(totalSecondsAllTasks)}</p>
       </div>
 
       {/* 任务详情显示 */}
       {viewMode === 'category' && showTaskList && (
-        <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+        <div className="mt-6 bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-lg p-6 border border-gray-700/50">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-gray-200">
               {selectedCategory === '所有任务' ? '任务时间统计（按耗时时长排序）' : `${selectedCategory} - 具体事物项`}
             </h3>
             <button
               onClick={() => setShowTaskList(false)}
-              className="text-gray-500 hover:text-gray-700 text-sm"
+              className="text-gray-400 hover:text-gray-200 text-sm"
             >
               ✕ 关闭
             </button>
@@ -510,33 +510,33 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
           {taskDetails.length > 0 ? (
             <div className="space-y-3">
               {taskDetails.map((task) => (
-                <div key={task.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div key={task.id} className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-700/30">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-800">{task.name}</h4>
-                    <p className="text-sm text-gray-600">{task.categoryPath}</p>
+                    <h4 className="font-medium text-gray-200">{task.name}</h4>
+                    <p className="text-sm text-gray-400">{task.categoryPath}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-blue-600">
+                    <div className="text-lg font-semibold text-blue-400">
                       {formatTime(task.elapsedTime)}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-400">
                       {Math.round((task.elapsedTime / sunburstData.value) * 100)}%
                     </div>
                   </div>
                 </div>
               ))}
               
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-700/50">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-800">总计</span>
-                  <span className="text-lg font-semibold text-green-600">
+                  <span className="font-medium text-gray-200">总计</span>
+                  <span className="text-lg font-semibold text-green-400">
                     {formatTime(taskDetails.reduce((sum, task) => sum + task.elapsedTime, 0))}
                   </span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-400">
               <div className="text-4xl mb-2">📝</div>
               <p>该分类下暂无具体事物项</p>
             </div>

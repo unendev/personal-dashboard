@@ -42,12 +42,10 @@ interface TodoItem {
 
 interface DateBasedTodoListProps {
   userId: string;
-  compact?: boolean;
 }
 
 const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({ 
-  userId, 
-  compact = false 
+  userId
 }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTodo, setNewTodo] = useState('');
@@ -637,10 +635,10 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'low': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'high': return 'text-red-400 bg-red-900/30';
+      case 'medium': return 'text-yellow-400 bg-yellow-900/30';
+      case 'low': return 'text-green-400 bg-green-900/30';
+      default: return 'text-gray-400 bg-gray-800/30';
     }
   };
 
@@ -671,7 +669,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const stats = calculateStats(todos);
 
   // 可拖拽的Todo项组件
-  const SortableTodoItem: React.FC<{ todo: TodoItem; isCompact?: boolean }> = ({ todo, isCompact = false }) => {
+  const SortableTodoItem: React.FC<{ todo: TodoItem }> = ({ todo }) => {
     const {
       attributes,
       listeners,
@@ -687,8 +685,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       opacity: isDragging ? 0.5 : 1,
     };
 
-    if (isCompact) {
-      return (
+    return (
         <div>
           <div
             ref={setNodeRef}
@@ -698,8 +695,8 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             }}
             {...attributes}
             {...listeners}
-            className={`flex items-center gap-2 p-2 border rounded-lg text-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${
-              todo.completed ? 'bg-gray-50' : 'bg-white'
+            className={`flex items-center gap-2 p-2 border border-gray-700/30 rounded-lg text-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${
+              todo.completed ? 'bg-gray-800/30' : 'bg-gray-800/50'
             } ${isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-sm'}`}
             title="拖拽重新排序"
           >
@@ -717,13 +714,13 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               <div className={`font-medium truncate ${todo.completed ? 'line-through text-gray-500' : ''}`}>
                 {todo.text}
                 {todo.children && todo.children.length > 0 && (
-                  <span className="text-xs text-blue-600 ml-2">
+                  <span className="text-xs text-blue-400 ml-2">
                     ({todo.children.length}个子任务)
                   </span>
                 )}
               </div>
               {todo.category && (
-                <div className="text-xs text-gray-500">{todo.category}</div>
+                <div className="text-xs text-gray-400">{todo.category}</div>
               )}
             </div>
             <div 
@@ -761,7 +758,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           
           {/* 递归渲染子任务 - 为子任务创建独立的拖拽上下文 */}
           {todo.children && todo.children.length > 0 && (
-            <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 pl-3">
+            <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-700/50 pl-3">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -769,113 +766,22 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
               >
                 <SortableContext items={todo.children.map(child => child.id)} strategy={verticalListSortingStrategy}>
                   {todo.children.map(child => (
-                    <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
+                    <SortableTodoItem key={child.id} todo={child} />
                   ))}
                 </SortableContext>
               </DndContext>
             </div>
           )}
         </div>
-      );
-    }
-
-    // 完整模式
-    return (
-      <div>
-        <div
-          ref={setNodeRef}
-          style={{ 
-            ...style,
-            touchAction: 'none' 
-          }}
-          {...attributes}
-          {...listeners}
-          className={`flex items-center gap-3 p-3 border rounded-lg cursor-grab active:cursor-grabbing transition-all duration-200 ${
-            todo.completed ? 'bg-gray-50' : 'bg-white'
-          } ${isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-md'}`}
-          title="拖拽重新排序"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <Checkbox
-              checked={todo.completed}
-              onCheckedChange={() => toggleTodo(todo.id)}
-            />
-          </div>
-          <div className="flex-1">
-            <div className={`font-medium ${todo.completed ? 'line-through text-gray-500' : ''}`}>
-              {todo.text}
-              {todo.children && todo.children.length > 0 && (
-                <span className="text-xs text-blue-600 ml-2">
-                  ({todo.children.length}个子任务)
-                </span>
-              )}
-            </div>
-            {todo.category && (
-              <div className="text-sm text-gray-500">{todo.category}</div>
-            )}
-          </div>
-          <div 
-            className="flex items-center gap-2"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <select
-              value={todo.priority}
-              onChange={(e) => updatePriority(todo.id, e.target.value as 'low' | 'medium' | 'high')}
-              className={`text-xs px-2 py-1 rounded ${getPriorityColor(todo.priority)}`}
-            >
-              <option value="low">低</option>
-              <option value="medium">中</option>
-              <option value="high">高</option>
-            </select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddSubtaskDialog(todo.id)}
-            >
-              ➕ 子任务
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => deleteTodo(todo.id)}
-            >
-              删除
-            </Button>
-          </div>
-        </div>
-        
-        {/* 递归渲染子任务 - 为子任务创建独立的拖拽上下文 */}
-        {todo.children && todo.children.length > 0 && (
-          <div className="ml-8 mt-2 space-y-2 border-l-2 border-gray-200 pl-4">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={todo.children.map(child => child.id)} strategy={verticalListSortingStrategy}>
-                {todo.children.map(child => (
-                  <SortableTodoItem key={child.id} todo={child} isCompact={isCompact} />
-                ))}
-              </SortableContext>
-            </DndContext>
-          </div>
-        )}
-      </div>
     );
   };
 
-  if (compact) {
-    // 紧凑模式 - 用于日志页面
-    return (
-      <Card className="bg-gradient-to-r from-purple-50 to-indigo-50">
+  return (
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             📋 任务清单
-            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+            <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-full">
               {stats.total}个任务
             </span>
           </CardTitle>
@@ -945,13 +851,13 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mx-auto"></div>
               </div>
             ) : filteredTodos.length === 0 ? (
-              <div className="text-center text-gray-500 py-4 text-sm">
+              <div className="text-center text-gray-400 py-4 text-sm">
                 {filter === 'all' ? '暂无任务' : `暂无${filter === 'active' ? '待完成' : '已完成'}的任务`}
               </div>
             ) : (
                 <SortableContext items={filteredTodos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
                   {filteredTodos.map(todo => (
-                    <SortableTodoItem key={todo.id} todo={todo} isCompact={true} />
+                    <SortableTodoItem key={todo.id} todo={todo} />
                   ))}
                 </SortableContext>
                     )}
@@ -967,7 +873,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             </DialogHeader>
             <div className="py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   子任务内容
                 </label>
                 <Input
@@ -978,7 +884,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   分类 (可选)
                 </label>
                 <Input
@@ -999,164 +905,6 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           </DialogContent>
         </Dialog>
       </Card>
-    );
-  }
-
-  // 完整模式
-  return (
-    <div className="space-y-6">
-      {/* 统计信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>任务统计</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-              <div className="text-sm text-gray-500">总任务</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-              <div className="text-sm text-gray-500">待完成</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{stats.completed}</div>
-              <div className="text-sm text-gray-500">已完成</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 添加新任务 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>添加新任务</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                placeholder="输入任务内容..."
-                onKeyDown={(e) => e.key === 'Enter' && addTodo()}
-                className="flex-1"
-              />
-              <Input
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="分类 (可选)"
-                className="w-32"
-              />
-              <Button onClick={addTodo}>添加</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 任务列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>任务列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex gap-2">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('all')}
-              >
-                全部
-              </Button>
-              <Button
-                variant={filter === 'active' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('active')}
-              >
-                待完成
-              </Button>
-              <Button
-                variant={filter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('completed')}
-              >
-                已完成
-              </Button>
-            </div>
-          </div>
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <div 
-              ref={scrollContainerRef}
-              className="space-y-3 max-h-[500px] overflow-y-auto timer-scroll-area"
-              onScroll={saveScrollPosition}
-            >
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                </div>
-              ) : filteredTodos.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  {filter === 'all' ? '暂无任务' : `暂无${filter === 'active' ? '待完成' : '已完成'}的任务`}
-                </div>
-              ) : (
-                <SortableContext items={filteredTodos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
-                  {filteredTodos.map(todo => (
-                    <SortableTodoItem key={todo.id} todo={todo} isCompact={false} />
-                  ))}
-                </SortableContext>
-              )}
-            </div>
-          </DndContext>
-        </CardContent>
-      </Card>
-
-      {/* 添加子任务弹框 */}
-      <Dialog open={!!showAddSubtaskDialog} onOpenChange={(open) => !open && setShowAddSubtaskDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>添加子任务</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                子任务内容
-              </label>
-              <Input
-                value={newSubtaskText}
-                onChange={(e) => setNewSubtaskText(e.target.value)}
-                placeholder="输入子任务内容..."
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                分类 (可选)
-              </label>
-              <Input
-                value={newSubtaskCategory}
-                onChange={(e) => setNewSubtaskCategory(e.target.value)}
-                placeholder="输入分类..."
-              />
-            </div>
-          </div>
-                      <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddSubtaskDialog(null)}>
-                取消
-              </Button>
-              <Button variant="outline" onClick={() => showAddSubtaskDialog && addSubtask(showAddSubtaskDialog)}>
-                ➕ 添加子任务
-              </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
   );
 };
 

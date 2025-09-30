@@ -43,7 +43,7 @@ const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) =
         onClick={goToPreviousDay}
         variant="outline"
         size="sm"
-        className="text-gray-600 hover:text-gray-800"
+        className="text-gray-300 hover:text-gray-100"
       >
         前一天
       </Button>
@@ -53,9 +53,9 @@ const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) =
           type="date"
           value={selectedDate}
           onChange={(e) => onDateChange(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="border border-gray-700/50 bg-gray-800/50 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-        <span className="text-gray-600 text-sm">
+        <span className="text-gray-300 text-sm">
           {formatDate(selectedDate)}
         </span>
       </div>
@@ -64,7 +64,7 @@ const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) =
         onClick={goToNextDay}
         variant="outline"
         size="sm"
-        className="text-gray-600 hover:text-gray-800"
+        className="text-gray-300 hover:text-gray-100"
       >
         后一天
       </Button>
@@ -73,7 +73,7 @@ const DateFilter: React.FC<DateFilterProps> = ({ selectedDate, onDateChange }) =
         onClick={goToToday}
         variant="outline"
         size="sm"
-        className="text-gray-600 hover:text-gray-800"
+        className="text-gray-300 hover:text-gray-100"
       >
         今天
       </Button>

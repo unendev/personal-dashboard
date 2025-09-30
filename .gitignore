@@ -50,3 +50,6 @@ next-env.d.ts
 *.md
 
 .vercel
+
+# OSS 配置文件（包含敏感密钥）
+oss-config.txt

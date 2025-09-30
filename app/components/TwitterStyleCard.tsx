@@ -117,17 +117,17 @@ export function TwitterStyleCard({
           components={{
           // 自定义组件样式
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-white mt-4 mb-2">
+            <h1 className="text-2xl font-bold text-white mt-4 mb-3">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-white mt-4 mb-2">
+            <h2 className="text-xl font-bold text-white mt-4 mb-2">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-white mt-3 mb-2">
+            <h3 className="text-lg font-semibold text-white mt-3 mb-2">
               {children}
             </h3>
           ),
@@ -354,7 +354,7 @@ export function TwitterStyleCard({
           </div>
 
           {/* 标题 */}
-          <div className="text-white font-medium mb-2 group-hover:text-white/90 transition-colors">
+          <div className="text-white text-xl font-bold mb-3 group-hover:text-white/90 transition-colors">
             {treasure.title}
           </div>
 
