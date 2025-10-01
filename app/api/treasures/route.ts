@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserId } from '../../../lib/auth-utils';
 import { generateSignedUrl, extractOssKey } from '../../../lib/oss-utils';
 import { prisma } from '@/lib/prisma';
+import { createTreasureSchema } from '@/lib/validations/treasure';
+import { ZodError } from 'zod';
 
 // GET /api/treasures - 获取用户的所有宝藏（按时间倒序）
 export async function GET(request: NextRequest) {
@@ -61,28 +63,25 @@ export async function GET(request: NextRequest) {
 // POST /api/treasures - 创建新宝藏
 export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
+    
+    // 验证输入数据
+    const validated = createTreasureSchema.parse(body);
+    
     const { 
       title, 
       content, 
       type, 
-      tags = [], 
+      tags, 
       theme,
       musicTitle, 
       musicArtist, 
       musicAlbum, 
       musicUrl,
       musicCoverUrl,
-      images = []
-    } = body;
-
-    if (!title || !type) {
-      return NextResponse.json({ 
-        error: 'title and type are required' 
-      }, { status: 400 });
-    }
-
-    const userId = await getUserId(request);
+      images
+    } = validated;
 
     // 创建宝藏
     const treasure = await prisma.treasure.create({
@@ -115,6 +114,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(treasure, { status: 201 });
   } catch (error) {
+    // Zod 验证错误
+    if (error instanceof ZodError) {
+      return NextResponse.json({ 
+        error: '数据验证失败', 
+        details: error.issues 
+      }, { status: 400 });
+    }
+    
     console.error('Error creating treasure:', error);
     return NextResponse.json({ error: 'Failed to create treasure' }, { status: 500 });
   }
@@ -123,23 +130,16 @@ export async function POST(request: NextRequest) {
 // PUT /api/treasures - 更新宝藏
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
-    const { 
-      id, 
-      title, 
-      content, 
-      tags, 
-      musicTitle, 
-      musicArtist, 
-      musicAlbum, 
-      musicUrl 
-    } = body;
+    const { id, ...updateData } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
-
-    const userId = await getUserId(request);
+    
+    // 验证更新数据（使用 partial schema）
+    const validated = createTreasureSchema.partial().parse(updateData);
 
     // 验证宝藏属于当前用户
     const existingTreasure = await prisma.treasure.findFirst({
@@ -152,15 +152,7 @@ export async function PUT(request: NextRequest) {
 
     const treasure = await prisma.treasure.update({
       where: { id },
-      data: {
-        title,
-        content,
-        tags,
-        musicTitle,
-        musicArtist,
-        musicAlbum,
-        musicUrl
-      },
+      data: validated as any, // Zod验证后的数据
       include: {
         images: true
       }
@@ -168,6 +160,14 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(treasure);
   } catch (error) {
+    // Zod 验证错误
+    if (error instanceof ZodError) {
+      return NextResponse.json({ 
+        error: '数据验证失败', 
+        details: error.issues 
+      }, { status: 400 });
+    }
+    
     console.error('Error updating treasure:', error);
     return NextResponse.json({ error: 'Failed to update treasure' }, { status: 500 });
   }
