@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/auth-utils';
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1';
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
+    
     const logs = await prisma.log.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       include: {
         quest: { select: { id: true, title: true } },
         categories: {
@@ -34,8 +34,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
     const { content, questId, categories } = body;
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       data: {
         content,
         questId: questId || null,
-        userId: MOCK_USER_ID,
+        userId,
         timestamp: new Date(),
         categories: {
           create: categories?.map((category: { name: string; subCategories?: Array<{ name: string; activities?: Array<{ name: string; duration: string }> }> }) => ({

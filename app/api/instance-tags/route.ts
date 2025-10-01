@@ -1,13 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/auth-utils';
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1';
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || MOCK_USER_ID;
+    const userId = await getUserId(request);
 
     const instanceTags = await prisma.instanceTag.findMany({
       where: { userId },
@@ -24,10 +21,11 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
-    const { name, userId = MOCK_USER_ID } = body;
+    const { name } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
     const existingTag = await prisma.instanceTag.findFirst({
       where: {
         name: tagName,
-        userId: userId
+        userId
       }
     });
 
@@ -57,7 +55,7 @@ export async function POST(request: Request) {
     const instanceTag = await prisma.instanceTag.create({
       data: {
         name: tagName,
-        userId: userId
+        userId
       }
     });
 

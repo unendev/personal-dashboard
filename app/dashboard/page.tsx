@@ -6,18 +6,27 @@ import { levelUpSkill } from '@/app/actions'
 import type { Skill } from '@prisma/client'
 import Link from 'next/link'
 import DashboardLayoutManager from '@/app/components/layout/DashboardLayoutManager'
-
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
+  // 获取当前登录用户
+  const session = await getServerSession(authOptions)
+  
+  if (!session?.user?.id) {
+    redirect('/auth/signin')
+  }
+
+  const userId = session.user.id
+  
   // 在构建时不执行数据库查询，避免连接错误
   let skills: Skill[] = []
   
   try {
     // 查询当前用户的所有技能
     skills = await prisma.skill.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       orderBy: { createdAt: 'desc' }
     })
   } catch (error) {
