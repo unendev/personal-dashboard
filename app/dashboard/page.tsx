@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma'
-import SkillCard from '@/app/components/SkillCard'
-import CreateSkillForm from '@/app/components/CreateSkillForm'
-import InstanceStatsView from '@/app/components/InstanceStatsView'
+import SkillCard from '@/app/components/features/dashboard/SkillCard'
+import CreateSkillForm from '@/app/components/features/dashboard/CreateSkillForm'
+import InstanceStatsView from '@/app/components/features/dashboard/InstanceStatsView'
 import { levelUpSkill } from '@/app/actions'
 import type { Skill } from '@prisma/client'
 import Link from 'next/link'
-import DashboardLayoutManager from '@/app/components/DashboardLayoutManager'
+import DashboardLayoutManager from '@/app/components/layout/DashboardLayoutManager'
 
 // MVP版本：硬编码用户ID
 const MOCK_USER_ID = 'user-1'

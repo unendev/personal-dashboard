@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react';
-import TimeStatsChart from '../components/TimeStatsChart';
+import TimeStatsChart from '../components/shared/TimeStatsChart';
 
 const TestSunburstPage = () => {
   // 测试数据

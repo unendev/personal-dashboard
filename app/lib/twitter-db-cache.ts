@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { TwitterData } from '@/app/components/TwitterCard'; // 复用前端的类型
+import { TwitterData } from '@/app/components/features/widgets/TwitterCard'; // 复用前端的类型
 import { prisma } from '@/lib/prisma';
 const CACHE_DURATION_HOURS = 1;
 

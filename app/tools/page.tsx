@@ -1,6 +1,6 @@
 import React from 'react';
-import TimerWidget from '../components/TimerWidget';
-import TodoList from '../components/TodoList';
+import TimerWidget from '../components/features/timer/TimerWidget';
+import TodoList from '../components/features/todo/TodoList';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
 export default function ToolsPage() {

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
-import NestedTimerZone from '@/app/components/NestedTimerZone';
-import TimeStatsChart from '@/app/components/TimeStatsChart';
+import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone';
+import TimeStatsChart from '@/app/components/shared/TimeStatsChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';

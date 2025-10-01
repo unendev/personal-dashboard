@@ -4,16 +4,16 @@ import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import { useDevSession } from '../hooks/useDevSession';
-import CreateLogModal from '@/app/components/CreateLogModal'
-import NestedTimerZone from '@/app/components/NestedTimerZone'
-import TimeStatsChart from '@/app/components/TimeStatsChart'
-import DateFilter from '@/app/components/DateFilter'
-import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
-import DateBasedTodoList from '@/app/components/DateBasedTodoList'
+import CreateLogModal from '@/app/components/features/log/CreateLogModal'
+import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
+import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
+import DateFilter from '@/app/components/shared/DateFilter'
+import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
+import DateBasedTodoList from '@/app/components/features/todo/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/app/lib/category-cache'
 import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
-import { QuickCreateModal, CreateTreasureData } from '@/app/components/QuickCreateModal'
+import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();

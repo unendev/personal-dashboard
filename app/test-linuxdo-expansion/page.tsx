@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import LinuxDoWidget from '../components/LinuxDoWidget';
+import LinuxDoWidget from '../components/features/widgets/LinuxDoWidget';
 
 export default function TestLinuxDoExpansion() {
   return (

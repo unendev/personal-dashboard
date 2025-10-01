@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react';
-import CreateLogForm from '@/app/components/CreateLogForm';
+import CreateLogForm from '@/app/components/features/log/CreateLogForm';
 
 export default function CreateLogPage() {
   return (
