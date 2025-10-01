@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { TwitterData } from '@/app/components/TwitterCard'; // 复用前端的类型
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 const CACHE_DURATION_HOURS = 1;
 
 // 定义数据库查询结果的类型

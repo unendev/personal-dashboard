@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getUserId } from '@/lib/auth-utils';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/todos - 获取用户的所有任务列表（不按日期过滤）
 export async function GET(request: NextRequest) {

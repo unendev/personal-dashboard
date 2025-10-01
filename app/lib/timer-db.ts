@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { PrismaClient, TimerTask as PrismaTimerTask } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TimerTask as PrismaTimerTask } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export interface TimerTask extends PrismaTimerTask {
   children?: TimerTask[];

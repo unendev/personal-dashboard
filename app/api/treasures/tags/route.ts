@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-utils';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/treasures/tags - 获取用户的所有标签
 export async function GET(request: NextRequest) {

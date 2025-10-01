@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../lib/auth-utils';
 import { generateSignedUrl, extractOssKey } from '../../../lib/oss-utils';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/treasures - 获取用户的所有宝藏（按时间倒序）
 export async function GET(request: NextRequest) {
