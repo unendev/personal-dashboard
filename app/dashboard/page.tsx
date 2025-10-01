@@ -1,23 +1,32 @@
 import { prisma } from '@/lib/prisma'
-import SkillCard from '@/app/components/SkillCard'
-import CreateSkillForm from '@/app/components/CreateSkillForm'
-import InstanceStatsView from '@/app/components/InstanceStatsView'
+import SkillCard from '@/app/components/features/dashboard/SkillCard'
+import CreateSkillForm from '@/app/components/features/dashboard/CreateSkillForm'
+import InstanceStatsView from '@/app/components/features/dashboard/InstanceStatsView'
 import { levelUpSkill } from '@/app/actions'
 import type { Skill } from '@prisma/client'
 import Link from 'next/link'
-import DashboardLayoutManager from '@/app/components/DashboardLayoutManager'
-
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1'
+import DashboardLayoutManager from '@/app/components/layout/DashboardLayoutManager'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
+  // 获取当前登录用户
+  const session = await getServerSession(authOptions)
+  
+  if (!session?.user?.id) {
+    redirect('/auth/signin')
+  }
+
+  const userId = session.user.id
+  
   // 在构建时不执行数据库查询，避免连接错误
   let skills: Skill[] = []
   
   try {
     // 查询当前用户的所有技能
     skills = await prisma.skill.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       orderBy: { createdAt: 'desc' }
     })
   } catch (error) {
@@ -51,10 +60,10 @@ export default async function DashboardPage() {
       {/* 页面导航 */}
       <div key="page-nav" className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex space-x-6">
-          <a href="/dashboard" className="text-green-600 font-medium border-b-2 border-green-600 pb-2">🏆 技能树</a>
-          <a href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
-          <a href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</a>
-          <a href="/timer" className="text-gray-600 hover:text-gray-800 font-medium pb-2">⏱️ 计时器</a>
+          <Link href="/dashboard" className="text-green-600 font-medium border-b-2 border-green-600 pb-2">🏆 技能树</Link>
+          <Link href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</Link>
+          <Link href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</Link>
+          <Link href="/timer" className="text-gray-600 hover:text-gray-800 font-medium pb-2">⏱️ 计时器</Link>
         </div>
       </div>
 

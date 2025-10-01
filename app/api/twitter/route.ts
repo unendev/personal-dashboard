@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TwitterDbCache } from '@/app/lib/twitter-db-cache';
-import { TwitterData } from '@/app/components/TwitterCard';
+import { TwitterDbCache } from '@/lib/twitter-db-cache';
+import { TwitterData } from '@/app/components/features/widgets/TwitterCard';
 
 const BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN || 'AAAAAAAAAAAAAAAAAAAAAEY14QEAAAAAgRSvzkQdsFffGg3JxfFHgCFqKnc%3Dz1d9S20iXUXNLJI8aaUZJa0sMUpvji0MNIfmvPVRlYAmG4q4eN';
 

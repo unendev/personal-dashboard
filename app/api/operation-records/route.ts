@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/auth-utils';
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1';
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
+    
     const records = await prisma.operationRecord.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       orderBy: { timestamp: 'desc' },
       take: 50, // 只获取最近50条记录
     });
@@ -22,8 +22,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
     const { action, taskName, details } = body;
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
         action,
         taskName,
         details: details || null,
-        userId: MOCK_USER_ID,
+        userId,
         timestamp: new Date(),
       },
     });

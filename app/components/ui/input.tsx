@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "../../../lib/utils"; // 假设你有一个cn工具函数
+import { cn } from "@/lib/utils"; // 假设你有一个cn工具函数
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
 
@@ -21,3 +21,5 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input";
 
 export { Input };
+
+

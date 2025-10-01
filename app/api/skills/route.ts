@@ -1,13 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getUserId } from '@/lib/auth-utils'
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1'
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = await getUserId(request)
+    
     const skills = await prisma.skill.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       select: {
         id: true,
         name: true,

@@ -4,16 +4,16 @@ import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import { useDevSession } from '../hooks/useDevSession';
-import CreateLogModal from '@/app/components/CreateLogModal'
-import NestedTimerZone from '@/app/components/NestedTimerZone'
-import TimeStatsChart from '@/app/components/TimeStatsChart'
-import DateFilter from '@/app/components/DateFilter'
-import CollapsibleAISummary from '@/app/components/CollapsibleAISummary'
-import DateBasedTodoList from '@/app/components/DateBasedTodoList'
+import CreateLogModal from '@/app/components/features/log/CreateLogModal'
+import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
+import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
+import DateFilter from '@/app/components/shared/DateFilter'
+import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
+import DateBasedTodoList from '@/app/components/features/todo/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
-import { CategoryCache } from '@/app/lib/category-cache'
-import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
-import { QuickCreateModal, CreateTreasureData } from '@/app/components/QuickCreateModal'
+import { CategoryCache } from '@/lib/category-cache'
+import { InstanceTagCache } from '@/lib/instance-tag-cache'
+import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -426,9 +426,9 @@ export default function LogPage() {
         {/* 页面导航 */}
         <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
           <div className="flex space-x-6">
-            <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
-            <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
-            <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
+            <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
+            <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
+            <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
           </div>
         </div>
 
@@ -581,18 +581,33 @@ export default function LogPage() {
           {/* 右侧：操作按钮组 */}
           <div className="flex items-center gap-3">
             {/* 用户信息 */}
-            <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
-              <span className="text-sm font-medium text-gray-200">
-                {session?.user?.name || session?.user?.email || '用户'}
-              </span>
-              <button
-                onClick={() => signOut()}
-                className="text-gray-400 hover:text-gray-200 text-sm"
-                title="登出"
+            {session?.user ? (
+              <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
+                <span className="text-sm font-medium text-gray-200">
+                  {session.user.name || session.user.email}
+                  {session.user.email === 'dev@localhost.com' && (
+                    <span className="ml-1 text-xs text-yellow-400">(开发)</span>
+                  )}
+                </span>
+                <button
+                  onClick={async () => {
+                    await signOut({ redirect: false });
+                    window.location.reload();
+                  }}
+                  className="text-gray-400 hover:text-gray-200 text-sm"
+                  title="登出"
+                >
+                  登出
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
               >
-                登出
-              </button>
-            </div>
+                <span className="text-sm font-medium text-gray-200">登录</span>
+              </Link>
+            )}
 
             {/* 创建事物按钮 */}
             <button
@@ -698,9 +713,9 @@ export default function LogPage() {
       {/* 页面导航 */}
       <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
         <div className="flex space-x-6">
-          <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
-          <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
-          <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
+          <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
+          <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
+          <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
         </div>
       </div>
 

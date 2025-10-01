@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimerDB } from '@/app/lib/timer-db';
+import { TimerDB } from '@/lib/timer-db';
 
 // GET /api/timer-tasks/running - 获取当前运行中的任务
 export async function GET(request: NextRequest) {

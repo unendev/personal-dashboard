@@ -1,4 +1,4 @@
-import ScrollableLayout from './components/ScrollableLayout'
+import ScrollableLayout from './components/layout/ScrollableLayout'
 
 export default function HomePage() {
   return <ScrollableLayout />

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "./components/Sidebar";
-import AuthProvider from "./components/AuthProvider";
+import Sidebar from "./components/layout/Sidebar";
+import AuthProvider from "./components/auth/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Project Nexus",

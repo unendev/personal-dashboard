@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimerDB } from '@/app/lib/timer-db';
+import { TimerDB } from '@/lib/timer-db';
 
 // GET /api/timer-tasks/stats/by-instance - 获取实例标签统计
 export async function GET(request: NextRequest) {

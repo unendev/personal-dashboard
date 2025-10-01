@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/auth-utils';
+import { createLogSchema } from '@/lib/validations/log';
+import { ZodError } from 'zod';
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1';
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
+    
     const logs = await prisma.log.findMany({
-      where: { userId: MOCK_USER_ID },
+      where: { userId },
       include: {
         quest: { select: { id: true, title: true } },
         categories: {
@@ -34,17 +36,21 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const body = await request.json();
-    const { content, questId, categories } = body;
+    
+    // 验证输入数据
+    const validated = createLogSchema.parse(body);
+    const { content, questId, categories } = validated;
 
     // 创建日志
     const log = await prisma.log.create({
       data: {
         content,
         questId: questId || null,
-        userId: MOCK_USER_ID,
+        userId,
         timestamp: new Date(),
         categories: {
           create: categories?.map((category: { name: string; subCategories?: Array<{ name: string; activities?: Array<{ name: string; duration: string }> }> }) => ({
@@ -79,6 +85,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(log, { status: 201 });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: '数据验证失败', details: error.issues }, { status: 400 });
+    }
     console.error('创建日志失败:', error);
     return NextResponse.json(
       { error: '创建日志失败' },

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AIService } from '@/app/lib/ai-service';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { AIService } from '@/lib/ai-service';
+import { prisma } from '@/lib/prisma';
 
 // POST /api/ai-summary/cron - 定时任务：生成昨日AI总结
 export async function POST(request: NextRequest) {

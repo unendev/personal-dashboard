@@ -1,4 +1,4 @@
-import { TreasureList } from '../components/TreasureList'
+import { TreasureList } from '../components/features/treasure/TreasureList'
 
 export default function TreasurePavilionPage() {
   return (

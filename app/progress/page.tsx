@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react';
-import CategorySelector from '../components/CategorySelector';
-import WorkProgressWidget from '../components/WorkProgressWidget';
+import CategorySelector from '../components/shared/CategorySelector';
+import WorkProgressWidget from '../components/features/dashboard/WorkProgressWidget';
 
 export default function ProgressPage() {
   const [path, setPath] = useState<string | null>(null);

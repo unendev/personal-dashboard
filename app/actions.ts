@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getBeijingTime } from '@/lib/utils'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 // 日志分类相关类型定义
 interface LogActivity {
@@ -20,10 +22,17 @@ interface LogCategory {
   subCategories: LogSubCategory[];
 }
 
-// MVP版本：硬编码用户ID
-const MOCK_USER_ID = 'user-1'
+// 获取当前登录用户ID的辅助函数
+async function getCurrentUserId(): Promise<string> {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    throw new Error('未登录或会话已过期')
+  }
+  return session.user.id
+}
 
 export async function createSkill(formData: FormData) {
+  const userId = await getCurrentUserId()
   const name = formData.get('name') as string
   const description = formData.get('description') as string
 
@@ -36,7 +45,7 @@ export async function createSkill(formData: FormData) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        userId: MOCK_USER_ID,
+        userId,
       },
     })
 
@@ -74,6 +83,7 @@ export async function levelUpSkill(skillId: string) {
 }
 
 export async function createQuest(formData: FormData) {
+  const userId = await getCurrentUserId()
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const skillId = formData.get('skillId') as string
@@ -90,7 +100,7 @@ export async function createQuest(formData: FormData) {
         description: description?.trim() || null,
         skillId: skillId || null,
         priority: priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' || 'MEDIUM',
-        userId: MOCK_USER_ID,
+        userId,
       },
     })
 
@@ -119,6 +129,7 @@ export async function updateQuestStatus(questId: string, status: string) {
 }
 
 export async function createLog(formData: FormData) {
+  const userId = await getCurrentUserId()
   const content = formData.get('content') as string | null;
   const questId = formData.get('questId') as string;
   const categoriesString = formData.get('categories') as string;
@@ -147,7 +158,7 @@ export async function createLog(formData: FormData) {
       data: {
         content: content?.trim() || null,
         questId: questId || null,
-        userId: MOCK_USER_ID,
+        userId,
         timestamp: timestamp,
         categories: {
           create: categoriesData.map(category => ({

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimerDB } from '@/app/lib/timer-db';
+import { TimerDB } from '@/lib/timer-db';
+import { createTimerTaskSchema } from '@/lib/validations/timer-task';
+import { ZodError } from 'zod';
 
 // GET /api/timer-tasks - 获取用户的所有任务
 export async function GET(request: NextRequest) {
@@ -42,27 +44,27 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // 验证基本字段
+    const validated = createTimerTaskSchema.parse(body);
+    
     const { 
-      userId = 'user-1', // 默认用户ID
-      name, 
-      categoryPath, 
+      userId = 'user-1', // 默认用户ID（应该从认证获取）
       instanceTag, // 保留：向后兼容的实例标签字段
       instanceTagNames, // 新增：事务项名称数组
-      elapsedTime, 
-      initialTime, 
       isRunning, 
       startTime, 
-      isPaused, 
-      pausedTime, 
       completedAt, 
-      date,
-      parentId, // 新增：父任务ID
       order = 0 // 新增：排序字段，默认0确保新任务显示在最下面
     } = body;
-
-    if (!name || !categoryPath || !date) {
-      return NextResponse.json({ error: 'Missing required fields: name, categoryPath, date' }, { status: 400 });
-    }
+    
+    const {
+      name,
+      categoryPath,
+      date,
+      elapsedTime,
+      initialTime,
+      parentId
+    } = validated;
 
     const newTask = await TimerDB.addTask({
       userId,
@@ -70,20 +72,23 @@ export async function POST(request: NextRequest) {
       categoryPath,
       instanceTag: instanceTag || null, // 保留：向后兼容的实例标签字段
       instanceTagNames: instanceTagNames || [], // 新增：事务项名称数组
-      elapsedTime: elapsedTime || 0,
-      initialTime: initialTime || 0,
+      elapsedTime: elapsedTime,
+      initialTime: initialTime,
       isRunning: isRunning || false,
       startTime: startTime || null,
-      isPaused: isPaused || false,
-      pausedTime: pausedTime || 0,
+      isPaused: false,
+      pausedTime: 0,
       completedAt: completedAt || null,
-      date,
+      date: date!,
       parentId: parentId || null, // 支持父任务ID
       order: order !== undefined ? order : 0 // 支持排序，默认0确保新任务显示在最下面
     });
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: '数据验证失败', details: error.issues }, { status: 400 });
+    }
     console.error('Error creating timer task:', error);
     return NextResponse.json({ error: 'Failed to create timer task' }, { status: 500 });
   }

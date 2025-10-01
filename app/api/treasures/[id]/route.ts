@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-utils';
 import { generateSignedUrl, extractOssKey } from '../../../../lib/oss-utils';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/treasures/[id] - 获取特定宝藏
 export async function GET(

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AIService } from '@/app/lib/ai-service';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { AIService } from '@/lib/ai-service';
+import { prisma } from '@/lib/prisma';
 
 // GET /api/ai-summary - 获取指定日期的AI总结
 export async function GET(request: NextRequest) {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "../../../lib/utils"; // 假设你有一个cn工具函数
+import { cn } from "@/lib/utils"; // 假设你有一个cn工具函数
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
 
@@ -20,3 +20,5 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 Textarea.displayName = "Textarea";
 
 export { Textarea };
+
+
