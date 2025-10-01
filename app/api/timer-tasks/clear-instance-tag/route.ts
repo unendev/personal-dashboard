@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TimerDB } from '@/lib/timer-db';
+import { prisma } from '@/lib/prisma';
 
 // POST /api/timer-tasks/clear-instance-tag - 清除所有任务中指定的事务项引用
 export async function POST(request: NextRequest) {
@@ -18,21 +19,39 @@ export async function POST(request: NextRequest) {
 
     // 清除每个任务中的指定事务项
     const updatePromises = tasks.map(async (task) => {
+      let needsUpdate = false;
+
       // 检查 instanceTag 字段（旧格式）
       if (task.instanceTag === tagName) {
         await TimerDB.updateTask(task.id, {
           ...task,
           instanceTag: null
         });
+        needsUpdate = true;
       }
 
-      // 检查 instanceTagNames 数组（新格式）
-      if (task.instanceTagNames && task.instanceTagNames.includes(tagName)) {
-        await TimerDB.updateTask(task.id, {
-          ...task,
-          instanceTagNames: task.instanceTagNames.filter(tag => tag !== tagName)
-        });
+      // 检查 instanceTags 关联（新格式）
+      if (task.instanceTags && task.instanceTags.length > 0) {
+        const hasTag = task.instanceTags.some(relation => 
+          relation.instanceTag.name === tagName
+        );
+        
+        if (hasTag) {
+          // 直接删除关联关系
+          await prisma.timerTaskInstanceTag.deleteMany({
+            where: {
+              timerTaskId: task.id,
+              instanceTag: {
+                name: tagName,
+                userId: userId
+              }
+            }
+          });
+          needsUpdate = true;
+        }
       }
+
+      return needsUpdate;
     });
 
     await Promise.all(updatePromises);
