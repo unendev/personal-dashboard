@@ -581,21 +581,33 @@ export default function LogPage() {
           {/* 右侧：操作按钮组 */}
           <div className="flex items-center gap-3">
             {/* 用户信息 */}
-            <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
-              <span className="text-sm font-medium text-gray-200">
-                {session?.user?.name || session?.user?.email || '用户'}
-              </span>
-              <button
-                onClick={async () => {
-                  await signOut({ redirect: false });
-                  window.location.reload();
-                }}
-                className="text-gray-400 hover:text-gray-200 text-sm"
-                title="登出"
+            {session?.user ? (
+              <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
+                <span className="text-sm font-medium text-gray-200">
+                  {session.user.name || session.user.email}
+                  {session.user.email === 'dev@localhost.com' && (
+                    <span className="ml-1 text-xs text-yellow-400">(开发)</span>
+                  )}
+                </span>
+                <button
+                  onClick={async () => {
+                    await signOut({ redirect: false });
+                    window.location.reload();
+                  }}
+                  className="text-gray-400 hover:text-gray-200 text-sm"
+                  title="登出"
+                >
+                  登出
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
               >
-                登出
-              </button>
-            </div>
+                <span className="text-sm font-medium text-gray-200">登录</span>
+              </Link>
+            )}
 
             {/* 创建事物按钮 */}
             <button
