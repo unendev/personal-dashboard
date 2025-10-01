@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimerDB } from '@/app/lib/timer-db';
+import { TimerDB } from '@/lib/timer-db';
 
 // PATCH /api/timer-tasks/[id]/instance - 更新任务的实例标签
 export async function PATCH(

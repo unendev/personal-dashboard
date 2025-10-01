@@ -1,9 +1,8 @@
 import { Prisma } from '@prisma/client';
-import { TwitterData } from '@/app/components/features/widgets/TwitterCard'; // 复用前端的类型
+import { TwitterData } from '@/app/components/features/widgets/TwitterCard';
 import { prisma } from '@/lib/prisma';
 const CACHE_DURATION_HOURS = 1;
 
-// 定义数据库查询结果的类型
 interface UserWithTweets {
   twitterId: string;
   name: string;
@@ -32,9 +31,6 @@ interface UserWithTweets {
   }>;
 }
 
-/**
- * 格式化从数据库取出的数据，使其符合前端 TwitterData 接口的形状
- */
 function formatDataForFrontend(userWithTweets: UserWithTweets | null): TwitterData {
   if (!userWithTweets) {
     return { data: [], includes: { users: [], media: [] } };
@@ -79,11 +75,7 @@ function formatDataForFrontend(userWithTweets: UserWithTweets | null): TwitterDa
   };
 }
 
-
 export class TwitterDbCache {
-  /**
-   * 从数据库获取缓存的推文数据
-   */
   static async getCachedData(username: string, allowExpired: boolean = false): Promise<TwitterData | null> {
     try {
       const user = await prisma.twitterUser.findUnique({
@@ -100,7 +92,6 @@ export class TwitterDbCache {
         },
       });
 
-      // 检查缓存是否过期
       if (user && user.tweets.length > 0) {
         const firstTweet = user.tweets[0];
         if (allowExpired || firstTweet.expiresAt > new Date()) {
@@ -117,9 +108,6 @@ export class TwitterDbCache {
     return null;
   }
 
-  /**
-   * 将从 Twitter API 获取的数据存入数据库
-   */
   static async setCachedData(username: string, apiData: TwitterData): Promise<void> {
     const { data: tweets, includes } = apiData;
     if (!includes?.users || includes.users.length === 0) return;
@@ -129,7 +117,6 @@ export class TwitterDbCache {
 
     try {
       await prisma.$transaction(async (tx) => {
-        // 1. 更新或创建用户
         const user = await tx.twitterUser.upsert({
           where: { twitterId: apiUser.id },
           update: {
@@ -145,7 +132,6 @@ export class TwitterDbCache {
           },
         });
 
-        // 2. 删除该用户的旧推文和媒体数据，防止数据冗余
         const oldTweets = await tx.twitterTweet.findMany({
           where: { authorId: user.id },
           select: { id: true }
@@ -156,8 +142,6 @@ export class TwitterDbCache {
             await tx.twitterTweet.deleteMany({ where: { id: { in: oldTweetIds } } });
         }
 
-
-        // 3. 插入新的推文和媒体数据
         for (const tweet of tweets) {
           const createdTweet = await tx.twitterTweet.create({
             data: {
@@ -198,3 +182,5 @@ export class TwitterDbCache {
     }
   }
 }
+
+

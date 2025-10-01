@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/app/components/ui/input';
 import { createLog } from '@/app/actions';
 import { getBeijingTime } from '@/lib/utils';
-import { CategoryCache } from '@/app/lib/category-cache';
-import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
+import { CategoryCache } from '../../../lib/category-cache';
+import { InstanceTagCache } from '../../../lib/instance-tag-cache';
 import InstanceTagSelector from './InstanceTagSelector';
 
 type CategoryNode = {

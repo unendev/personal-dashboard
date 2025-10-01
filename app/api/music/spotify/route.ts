@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { readSpotifyCache, writeSpotifyCache } from '@/app/lib/spotify-cache';
+import { readSpotifyCache, writeSpotifyCache } from '@/lib/spotify-cache';
 
 export const runtime = 'nodejs';
 

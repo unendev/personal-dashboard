@@ -11,8 +11,8 @@ import DateFilter from '@/app/components/shared/DateFilter'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
 import DateBasedTodoList from '@/app/components/features/todo/DateBasedTodoList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
-import { CategoryCache } from '@/app/lib/category-cache'
-import { InstanceTagCache } from '@/app/lib/instance-tag-cache'
+import { CategoryCache } from '@/lib/category-cache'
+import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
 
 export default function LogPage() {

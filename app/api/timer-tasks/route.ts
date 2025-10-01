@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimerDB } from '@/app/lib/timer-db';
+import { TimerDB } from '@/lib/timer-db';
 import { createTimerTaskSchema } from '@/lib/validations/timer-task';
 import { ZodError } from 'zod';
 

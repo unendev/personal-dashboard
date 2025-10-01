@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
-import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
+import { InstanceTagCache } from '@/lib/instance-tag-cache';
 
 interface InstanceTag {
   id: string;

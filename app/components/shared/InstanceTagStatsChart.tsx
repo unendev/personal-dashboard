@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { InstanceTagCache } from '@/app/lib/instance-tag-cache';
+import { InstanceTagCache } from '@/lib/instance-tag-cache';
 
 interface InstanceTag {
   id: string;
