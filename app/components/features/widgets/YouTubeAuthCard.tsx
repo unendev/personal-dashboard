@@ -28,7 +28,8 @@ const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut({ callbackUrl: '/' });
+      await signOut({ redirect: false });
+      window.location.reload();
     } catch (error) {
       console.error('Sign-out error:', error);
     }

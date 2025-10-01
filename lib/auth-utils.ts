@@ -11,14 +11,14 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 /**
  * 统一的认证检查函数
  * 支持多种认证方式：
- * 1. NextAuth.js 会话认证
+ * 1. NextAuth.js 会话认证（优先）
  * 2. 超级管理员密钥认证（仅开发环境）
  * 3. API密钥认证（向后兼容）
+ * 4. 开发环境自动认证（最后回退）
  */
 export async function getAuthenticatedUser(request: NextRequest) {
-  // 方式1: 开发环境自动认证（无需任何密钥）
+  // 方式1: 超级管理员密钥认证（仅开发环境，优先级高）
   if (isDevelopment) {
-    // 检查是否有超级管理员密钥
     const superAdminKey = request.headers.get('x-super-admin-key') || 
                          request.nextUrl.searchParams.get('superAdminKey');
     
@@ -31,22 +31,13 @@ export async function getAuthenticatedUser(request: NextRequest) {
         authMethod: 'super-admin-key'
       };
     }
-
-    // 开发环境自动认证 - 无需任何密钥
-    console.log('🔓 开发环境自动认证激活');
-    return {
-      id: 'dev-user-1',
-      email: 'dev@localhost.com',
-      name: '开发用户',
-      isSuperAdmin: true,
-      authMethod: 'dev-auto'
-    };
   }
 
-  // 方式2: NextAuth.js 会话认证
+  // 方式2: NextAuth.js 会话认证（优先使用真实会话）
   try {
     const session = await getServerSession(authOptions);
     if (session?.user) {
+      console.log('✅ 使用NextAuth会话:', session.user.email);
       return {
         id: session.user.id,
         email: session.user.email,
@@ -70,6 +61,26 @@ export async function getAuthenticatedUser(request: NextRequest) {
       name: '开发用户',
       isSuperAdmin: false,
       authMethod: 'api-key'
+    };
+  }
+
+  // 方式4: 开发环境自动认证（最后回退，仅在没有其他认证时使用）
+  if (isDevelopment) {
+    // 检查是否禁用开发用户自动登录
+    const disableDevAutoLogin = process.env.NEXT_PUBLIC_DISABLE_DEV_AUTO_LOGIN === 'true'
+    
+    if (disableDevAutoLogin) {
+      console.log('🚫 开发用户自动登录已禁用');
+      return null;
+    }
+    
+    console.log('🔓 开发环境自动认证激活（回退模式）');
+    return {
+      id: 'dev-user-1',
+      email: 'dev@localhost.com',
+      name: '开发用户',
+      isSuperAdmin: true,
+      authMethod: 'dev-auto'
     };
   }
 

@@ -586,7 +586,10 @@ export default function LogPage() {
                 {session?.user?.name || session?.user?.email || '用户'}
               </span>
               <button
-                onClick={() => signOut()}
+                onClick={async () => {
+                  await signOut({ redirect: false });
+                  window.location.reload();
+                }}
                 className="text-gray-400 hover:text-gray-200 text-sm"
                 title="登出"
               >
