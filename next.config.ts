@@ -1,8 +1,5 @@
 import type { NextConfig } from "next";
 
-// 在构建时验证环境变量
-import './lib/env'
-
 const nextConfig: NextConfig = {
   /* config options here */
   // 禁用静态优化，避免构建时执行数据库查询
