@@ -426,9 +426,9 @@ export default function LogPage() {
         {/* 页面导航 */}
         <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
           <div className="flex space-x-6">
-            <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
-            <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
-            <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
+            <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
+            <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
+            <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
           </div>
         </div>
 
@@ -698,9 +698,9 @@ export default function LogPage() {
       {/* 页面导航 */}
       <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
         <div className="flex space-x-6">
-          <a href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</a>
-          <a href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</a>
-          <a href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</a>
+          <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
+          <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
+          <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
         </div>
       </div>
 

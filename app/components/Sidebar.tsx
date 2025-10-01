@@ -101,22 +101,22 @@ const Sidebar = () => {
               </div>
             </li>
             <li>
-              <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-green-400 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">🏆 技能树</span>
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/tools" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <Link href="/tools" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-blue-400 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">📋 任务清单</span>
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/log" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <Link href="/log" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-yellow-400 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">📝 每日日志</span>
-              </a>
+              </Link>
             </li>
 
             {/* 工具系统 */}
@@ -126,10 +126,10 @@ const Sidebar = () => {
               </div>
             </li>
             <li>
-              <a href="/tools" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
+              <Link href="/tools" className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 group">
                 <div className="w-2 h-2 bg-purple-400 rounded-full group-hover:scale-150 transition-transform flex-shrink-0"></div>
                 <span className="font-medium">⚙️ 个人工具</span>
-              </a>
+              </Link>
             </li>
 
             <li>

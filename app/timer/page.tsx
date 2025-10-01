@@ -176,10 +176,10 @@ export default function TimerPage() {
       {/* 页面导航 */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex space-x-6">
-          <a href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</a>
-          <a href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</a>
-          <a href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</a>
-          <a href="/timer" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">⏱️ 计时器</a>
+          <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</Link>
+          <Link href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</Link>
+          <Link href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</Link>
+          <Link href="/timer" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">⏱️ 计时器</Link>
         </div>
       </div>
 
