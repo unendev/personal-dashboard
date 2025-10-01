@@ -369,22 +369,22 @@ model spotify_cache {
 }
 
 model Treasure {
-  id             String       @id @default(cuid())
-  title          String
-  content        String?
-  type           TreasureType
-  tags           String[]     @default([])
-  theme          String?      // 主题分类：灵感、读书、音乐、生活等
-  userId         String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  musicTitle     String?
-  musicArtist    String?
-  musicAlbum     String?
-  musicUrl       String?
-  musicCoverUrl  String?      // 音乐封面
-  images         Image[]
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String       @id @default(cuid())
+  title         String
+  content       String?
+  type          TreasureType
+  tags          String[]     @default([])
+  userId        String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  musicTitle    String?
+  musicArtist   String?
+  musicAlbum    String?
+  musicUrl      String?
+  musicCoverUrl String?
+  theme         String?
+  images        Image[]
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("treasures")
 }

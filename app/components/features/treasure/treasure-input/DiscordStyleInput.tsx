@@ -174,10 +174,15 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
     }])
 
     try {
-      // 1. 获取上传签名
-      const signatureRes = await fetch('/api/upload/oss/signature')
+      // 1. 获取上传签名（传递文件信息）
+      const signatureUrl = new URL('/api/upload/oss/signature', window.location.origin)
+      signatureUrl.searchParams.set('filename', file.name)
+      signatureUrl.searchParams.set('contentType', file.type)
+      
+      const signatureRes = await fetch(signatureUrl.toString())
       if (!signatureRes.ok) {
-        throw new Error('获取上传签名失败')
+        const errorData = await signatureRes.json()
+        throw new Error(`获取上传签名失败: ${errorData.error || signatureRes.statusText}${errorData.missingVariables ? '\n缺失环境变量: ' + errorData.missingVariables.join(', ') : ''}`)
       }
       
       const signatureData = await signatureRes.json()
@@ -185,7 +190,7 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
       
       // 检查是否配置了 OSS
       if (signatureData.error) {
-        console.warn('OSS 未配置，使用本地预览')
+        console.warn('OSS 未配置，详情:', signatureData)
         // 使用本地预览作为降级方案
         const mockUrl = URL.createObjectURL(file)
         setImages(prev => [...prev, {
@@ -194,6 +199,7 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
           size: file.size
         }])
         setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
+        alert(`OSS 配置问题: ${signatureData.error}\n${signatureData.missingVariables ? '缺失: ' + signatureData.missingVariables.join(', ') : ''}`)
         return
       }
 

@@ -126,41 +126,49 @@ export function QuickCreateModal({
     if (!files) return
 
     try {
-      // 获取 OSS 上传签名
-      const signatureResponse = await fetch('/api/upload/oss/signature', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filename: files[0].name,
-          contentType: files[0].type,
-          size: files[0].size
-        }),
-      })
+      // 获取 OSS 上传签名（传递文件信息）
+      const signatureUrl = new URL('/api/upload/oss/signature', window.location.origin)
+      signatureUrl.searchParams.set('filename', files[0].name)
+      signatureUrl.searchParams.set('contentType', files[0].type)
+      
+      const signatureResponse = await fetch(signatureUrl.toString())
 
       if (!signatureResponse.ok) {
-        throw new Error('获取上传签名失败')
+        const errorData = await signatureResponse.json()
+        throw new Error(`获取上传签名失败: ${errorData.error || signatureResponse.statusText}${errorData.missingVariables ? '\n缺失环境变量: ' + errorData.missingVariables.join(', ') : ''}`)
       }
 
       const signature = await signatureResponse.json()
       
-      // 上传文件到 OSS
-      const uploadResponse = await fetch(signature.uploadUrl, {
-        method: 'PUT',
-        body: files[0],
-        headers: {
-          'Content-Type': files[0].type,
-        },
+      // 检查是否有错误
+      if (signature.error) {
+        throw new Error(`OSS 配置错误: ${signature.error}${signature.missingVariables ? '\n缺失: ' + signature.missingVariables.join(', ') : ''}`)
+      }
+      
+      // 使用 FormData 方式上传到 OSS (与 DiscordStyleInput 保持一致)
+      const formData = new FormData()
+      formData.append('key', signature.key)
+      formData.append('policy', signature.policy)
+      formData.append('OSSAccessKeyId', signature.accessKeyId)
+      formData.append('signature', signature.signature)
+      formData.append('success_action_status', '200')
+      formData.append('file', files[0])
+
+      const uploadResponse = await fetch(signature.endpoint, {
+        method: 'POST',
+        body: formData,
       })
 
       if (!uploadResponse.ok) {
-        throw new Error('文件上传失败')
+        throw new Error(`文件上传失败: ${uploadResponse.status} ${uploadResponse.statusText}`)
       }
 
+      // 构建图片公开URL
+      const publicUrl = `${signature.cdnUrl || signature.endpoint}/${signature.key}`
+      
       // 添加上传成功的图片
       const uploadedImage = {
-        url: signature.publicUrl,
+        url: publicUrl,
         alt: files[0].name,
         width: 0,
         height: 0,
@@ -172,7 +180,7 @@ export function QuickCreateModal({
         images: [...(prev.images || []), uploadedImage]
       }))
 
-      console.log('图片上传成功:', signature.publicUrl)
+      console.log('图片上传成功:', publicUrl)
     } catch (error) {
       console.error('图片上传失败:', error)
       alert(`图片上传失败: ${error instanceof Error ? error.message : '未知错误'}`)

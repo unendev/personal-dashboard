@@ -50,9 +50,50 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
           return;
         }
 
-        // 如果没有本地缓存，从API加载
-        const tags = await InstanceTagCache.preload(userId);
-        setAvailableTags(tags);
+        // 并行加载：预定义事务项 + 已使用过的事务项
+        const [predefinedTags, usedTagsResponse] = await Promise.all([
+          InstanceTagCache.preload(userId),
+          fetch(`/api/timer-tasks/instance-tags?userId=${userId}`)
+        ]);
+
+        let usedTags: InstanceTag[] = [];
+        if (usedTagsResponse.ok) {
+          const usedTagsData = await usedTagsResponse.json();
+          // 将使用过的事务项转换为标准格式
+          usedTags = (usedTagsData.instanceTags || []).map((tagName: string) => ({
+            id: `used-${tagName}`,
+            name: tagName,
+            userId: userId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }));
+        }
+
+        // 合并并去重事务项
+        const allTagsMap = new Map<string, InstanceTag>();
+        
+        // 添加预定义的事务项
+        predefinedTags.forEach(tag => {
+          allTagsMap.set(tag.name, tag);
+        });
+        
+        // 添加已使用过的事务项（不覆盖预定义的）
+        usedTags.forEach(tag => {
+          if (!allTagsMap.has(tag.name)) {
+            allTagsMap.set(tag.name, tag);
+          }
+        });
+
+        const mergedTags = Array.from(allTagsMap.values());
+        console.log(`加载事务项完成: 预定义${predefinedTags.length}个, 已使用${usedTags.length}个, 合并后${mergedTags.length}个`);
+        
+        setAvailableTags(mergedTags);
+        
+        // 更新缓存
+        if (mergedTags.length > 0) {
+          InstanceTagCache.updateInstanceTags(mergedTags);
+        }
+        
       } catch (error) {
         console.error('加载事务项失败:', error);
       } finally {
@@ -63,21 +104,53 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
     // 异步检查更新的函数
     const checkForUpdates = async () => {
       try {
-        const response = await fetch(`/api/instance-tags?userId=${userId}`);
-        if (response.ok) {
-          const newData = await response.json();
-          const currentData = InstanceTagCache.getInstanceTags();
+        // 并行检查两个数据源的更新
+        const [predefinedResponse, usedTagsResponse] = await Promise.all([
+          fetch(`/api/instance-tags?userId=${userId}`),
+          fetch(`/api/timer-tasks/instance-tags?userId=${userId}`)
+        ]);
+
+        let hasChanges = false;
+        const currentData = InstanceTagCache.getInstanceTags();
+        
+        if (predefinedResponse.ok && usedTagsResponse.ok) {
+          const predefinedData = await predefinedResponse.json();
+          const usedTagsData = await usedTagsResponse.json();
           
-          // 简单比较数据是否有变化（比较长度和第一个事务项名）
-          const hasChanges = !currentData || 
-            currentData.length !== newData.length ||
-            (currentData.length > 0 && newData.length > 0 && 
-             currentData[0].name !== newData[0].name);
+          // 构建新的合并数据
+          const allTagsMap = new Map<string, InstanceTag>();
+          
+          // 添加预定义的事务项
+          (predefinedData || []).forEach((tag: InstanceTag) => {
+            allTagsMap.set(tag.name, tag);
+          });
+          
+          // 添加已使用过的事务项
+          (usedTagsData.instanceTags || []).forEach((tagName: string) => {
+            if (!allTagsMap.has(tagName)) {
+              allTagsMap.set(tagName, {
+                id: `used-${tagName}`,
+                name: tagName,
+                userId: userId,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+            }
+          });
+
+          const mergedData = Array.from(allTagsMap.values());
+          
+          // 检查是否有变化
+          hasChanges = !currentData || 
+            mergedData.length !== currentData.length ||
+            mergedData.some(newTag => 
+              !currentData.find(currentTag => currentTag.name === newTag.name)
+            );
           
           if (hasChanges) {
-            console.log('检测到事务项数据更新，静默更新缓存');
-            InstanceTagCache.updateInstanceTags(newData);
-            setAvailableTags(newData);
+            console.log('检测到事务项更新，静默更新缓存');
+            InstanceTagCache.updateInstanceTags(mergedData);
+            setAvailableTags(mergedData);
           }
         }
       } catch (error) {
@@ -220,33 +293,49 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
             <p className="text-gray-500 text-sm mt-2">加载中...</p>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-            {availableTags.map(tag => (
-              <div key={tag.id} className="relative group">
-                <Button
-                  variant={selectedTags.includes(tag.name) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTag(tag.name)}
-                  className={`text-sm transition-all duration-200 ${
-                    selectedTags.includes(tag.name)
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : 'hover:bg-blue-50 hover:border-blue-300'
-                  }`}
-                >
-                  {tag.name}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute -top-2 -right-2 w-5 h-5 p-0 bg-red-500 text-white hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-full text-xs"
-                  onClick={() => handleDeleteTag(tag.id, tag.name)}
-                  title="删除"
-                >
-                  ×
-                </Button>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="text-xs text-gray-500 mb-2">
+              共 {availableTags.length} 个事务项 (包含历史使用记录)
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+              {availableTags.map(tag => {
+                // 判断是否是从任务记录中提取的事务项
+                const isFromTasks = tag.id.startsWith('used-');
+                
+                return (
+                  <div key={tag.id} className="relative group">
+                    <Button
+                      variant={selectedTags.includes(tag.name) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleTag(tag.name)}
+                      className={`text-sm transition-all duration-200 ${
+                        selectedTags.includes(tag.name)
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'hover:bg-blue-50 hover:border-blue-300'
+                      } ${isFromTasks ? 'border-l-4 border-l-green-400' : ''}`}
+                      title={isFromTasks ? '来自历史任务记录' : '预定义事务项'}
+                    >
+                      <span className="flex items-center gap-1">
+                        {tag.name}
+                        {isFromTasks && <span className="text-xs opacity-70">📊</span>}
+                      </span>
+                    </Button>
+                    {!isFromTasks && ( // 只有预定义的事务项才能删除
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-5 h-5 p-0 bg-red-500 text-white hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-full text-xs"
+                        onClick={() => handleDeleteTag(tag.id, tag.name)}
+                        title="删除预定义事务项"
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 

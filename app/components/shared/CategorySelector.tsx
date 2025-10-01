@@ -313,7 +313,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
           <p className="text-gray-600 text-sm mb-4">暂无分类，请先创建分类</p>
           <Button
             onClick={() => handleCreateCategory('top')}
-            variant="category"
+            variant="default"
             size="sm"
           >
             ➕ 创建顶级分类
