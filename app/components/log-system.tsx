@@ -427,22 +427,21 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ className, onLogSaved
 
     setIsLoading(true)
     try {
-      const logData = {
-        content: `${selectedPath} > ${taskName} (${duration})`,
-        timestamp: getBeijingTime().toISOString(),
-        categories: [{
-          name: selectedPath.split(' > ')[0] || '未分类',
-          subCategories: [{
-            name: selectedPath,
-            activities: [{
-              name: taskName,
-              duration: duration
-            }]
+      const formData = new FormData()
+      formData.append('content', `${selectedPath} > ${taskName} (${duration})`)
+      formData.append('timestamp', getBeijingTime().toISOString())
+      formData.append('categories', JSON.stringify([{
+        name: selectedPath.split(' > ')[0] || '未分类',
+        subCategories: [{
+          name: selectedPath,
+          activities: [{
+            name: taskName,
+            duration: duration
           }]
         }]
-      }
+      }]))
 
-      await createLog(logData)
+      await createLog(formData)
       
       if (onSelected) {
         onSelected(selectedPath, taskName)
@@ -676,21 +675,29 @@ const CreateLogForm: React.FC = () => {
   const [timestamp, setTimestamp] = useState(getBeijingTime().toISOString().slice(0, 16))
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const updateCategory = (categoryIndex: number, field: string, value: string) => {
+  const updateCategory = (categoryIndex: number, field: keyof typeof initialPresetCategories[0], value: string) => {
     const newCategories = [...categories]
-    ;(newCategories[categoryIndex] as any)[field] = value
+    if (field === 'name') {
+      newCategories[categoryIndex].name = value
+    }
     setCategories(newCategories)
   }
 
   const updateSubCategory = (categoryIndex: number, subIndex: number, field: string, value: string) => {
     const newCategories = [...categories]
-    ;(newCategories[categoryIndex].subCategories[subIndex] as any)[field] = value
+    if (field === 'name') {
+      newCategories[categoryIndex].subCategories[subIndex].name = value
+    }
     setCategories(newCategories)
   }
 
   const updateActivity = (categoryIndex: number, subIndex: number, actIndex: number, field: string, value: string) => {
     const newCategories = [...categories]
-    ;(newCategories[categoryIndex].subCategories[subIndex].activities[actIndex] as any)[field] = value
+    if (field === 'name') {
+      newCategories[categoryIndex].subCategories[subIndex].activities[actIndex].name = value
+    } else if (field === 'duration') {
+      newCategories[categoryIndex].subCategories[subIndex].activities[actIndex].duration = value
+    }
     setCategories(newCategories)
   }
 
@@ -760,13 +767,12 @@ const CreateLogForm: React.FC = () => {
     setIsSubmitting(true)
 
     try {
-      const logData = {
-        content,
-        timestamp: new Date(timestamp).toISOString(),
-        categories
-      }
+      const formData = new FormData()
+      formData.append('content', content)
+      formData.append('timestamp', new Date(timestamp).toISOString())
+      formData.append('categories', JSON.stringify(categories))
 
-      await createLog(logData)
+      await createLog(formData)
       
       // 重置表单
       setContent('')

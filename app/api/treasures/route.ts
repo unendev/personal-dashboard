@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest) {
 
     const treasure = await prisma.treasure.update({
       where: { id },
-      data: validated as any, // Zod验证后的数据
+      data: validated as Parameters<typeof prisma.treasure.update>[0]['data'], // Zod验证后的数据
       include: {
         images: true
       }
