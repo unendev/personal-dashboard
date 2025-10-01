@@ -695,9 +695,9 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
             }}
             {...attributes}
             {...listeners}
-            className={`flex items-center gap-2 p-2 border border-gray-700/30 rounded-lg text-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${
-              todo.completed ? 'bg-gray-800/30' : 'bg-gray-800/50'
-            } ${isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-sm'}`}
+            className={`flex items-center gap-2 p-2 border border-purple-500/30 rounded-lg text-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${
+              todo.completed ? 'bg-purple-900/40' : 'bg-purple-900/60'
+            } ${isDragging ? 'shadow-lg rotate-1 scale-105' : 'hover:shadow-sm hover:bg-purple-800/70'}`}
             title="拖拽重新排序"
           >
             <div 

@@ -17,7 +17,10 @@ import {
   Pause,
   Music,
   Image as ImageIcon,
-  FileText
+  FileText,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -56,6 +59,7 @@ export function TwitterStyleCard({
   const [showActions, setShowActions] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -220,7 +224,10 @@ export function TwitterStyleCard({
     if (treasure.type === 'IMAGE' && treasure.images.length > 0) {
       if (treasure.images.length === 1) {
         return (
-          <div className="mt-3 rounded-2xl overflow-hidden border border-white/10 relative max-h-96">
+          <div 
+            className="mt-3 rounded-2xl overflow-hidden border border-white/10 relative max-h-96 cursor-pointer"
+            onClick={() => setSelectedImageIndex(0)}
+          >
             <Image
               src={treasure.images[0].url}
               alt={treasure.images[0].alt || treasure.title}
@@ -233,8 +240,12 @@ export function TwitterStyleCard({
       } else if (treasure.images.length === 2) {
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            {treasure.images.map((image) => (
-              <div key={image.id} className="relative h-48">
+            {treasure.images.map((image, index) => (
+              <div 
+                key={image.id} 
+                className="relative h-48 cursor-pointer"
+                onClick={() => setSelectedImageIndex(index)}
+              >
                 <Image
                   src={image.url}
                   alt={image.alt || treasure.title}
@@ -249,7 +260,10 @@ export function TwitterStyleCard({
       } else if (treasure.images.length === 3) {
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            <div className="relative h-48">
+            <div 
+              className="relative h-48 cursor-pointer"
+              onClick={() => setSelectedImageIndex(0)}
+            >
               <Image
                 src={treasure.images[0].url}
                 alt={treasure.images[0].alt || treasure.title}
@@ -259,8 +273,12 @@ export function TwitterStyleCard({
               />
             </div>
             <div className="grid grid-rows-2 gap-1">
-              {treasure.images.slice(1).map((image) => (
-                <div key={image.id} className="relative h-24">
+              {treasure.images.slice(1).map((image, index) => (
+                <div 
+                  key={image.id} 
+                  className="relative h-24 cursor-pointer"
+                  onClick={() => setSelectedImageIndex(index + 1)}
+                >
                   <Image
                     src={image.url}
                     alt={image.alt || treasure.title}
@@ -277,7 +295,11 @@ export function TwitterStyleCard({
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
             {treasure.images.slice(0, 4).map((image, index) => (
-              <div key={image.id} className="relative">
+              <div 
+                key={image.id} 
+                className="relative cursor-pointer"
+                onClick={() => setSelectedImageIndex(index)}
+              >
                 <div className={cn(
                   "relative",
                   index === 0 ? "h-48" : "h-24"
@@ -336,7 +358,25 @@ export function TwitterStyleCard({
 
   const shouldTruncate = treasure.content && treasure.content.length > 280
 
+  // 图片导航处理
+  const handlePrevImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1)
+    }
+  }
+
+  const handleNextImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex < treasure.images.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1)
+    }
+  }
+
+  const handleCloseImageModal = () => {
+    setSelectedImageIndex(null)
+  }
+
   return (
+    <>
     <article className={cn(
       "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
       className
@@ -465,5 +505,69 @@ export function TwitterStyleCard({
         </div>
       </div>
     </article>
+
+    {/* 图片预览模态框 */}
+    {selectedImageIndex !== null && (
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+        onClick={handleCloseImageModal}
+      >
+        {/* 关闭按钮 */}
+        <button
+          onClick={handleCloseImageModal}
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+        >
+          <X className="h-6 w-6" />
+        </button>
+
+        {/* 图片计数器 */}
+        {treasure.images.length > 1 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-black/50 text-white text-sm">
+            {selectedImageIndex + 1} / {treasure.images.length}
+          </div>
+        )}
+
+        {/* 左箭头 */}
+        {treasure.images.length > 1 && selectedImageIndex > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handlePrevImage()
+            }}
+            className="absolute left-4 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <ChevronLeft className="h-8 w-8" />
+          </button>
+        )}
+
+        {/* 右箭头 */}
+        {treasure.images.length > 1 && selectedImageIndex < treasure.images.length - 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleNextImage()
+            }}
+            className="absolute right-4 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <ChevronRight className="h-8 w-8" />
+          </button>
+        )}
+
+        {/* 图片显示 */}
+        <div 
+          className="relative max-w-[90vw] max-h-[90vh]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Image
+            src={treasure.images[selectedImageIndex].url}
+            alt={treasure.images[selectedImageIndex].alt || treasure.title}
+            width={treasure.images[selectedImageIndex].width || 1200}
+            height={treasure.images[selectedImageIndex].height || 800}
+            className="max-w-full max-h-[90vh] w-auto h-auto object-contain"
+          />
+        </div>
+      </div>
+    )}
+    </>
   )
 }

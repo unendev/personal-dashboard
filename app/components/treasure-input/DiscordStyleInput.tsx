@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '../ui/button'
-import { Paperclip, Hash, Sparkles } from 'lucide-react'
+import { Paperclip, Hash, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import type { TreasureData } from './TreasureInputModal'
 import { ImageUploadPreview } from './ImageUploadPreview'
@@ -46,6 +46,7 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -123,6 +124,19 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
         }
       }
     }
+  }
+
+  // 处理文件选择
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const imageFiles = files.filter(f => f.type.startsWith('image/'))
+    
+    for (const file of imageFiles) {
+      await uploadImage(file)
+    }
+    
+    // 清空 input，允许重复选择同一个文件
+    e.target.value = ''
   }
 
   // 图片拖拽
@@ -440,10 +454,35 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
 
       {/* 底部栏 */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+        {/* 隐藏的文件输入 */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
         <div className="flex items-center gap-4 text-sm text-gray-400">
+          {/* 图片选择按钮 */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={images.length >= 5}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-700 transition-colors",
+              images.length >= 5 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            )}
+            title="选择图片"
+          >
+            <ImageIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">选择图片</span>
+          </button>
+          
           <span className="flex items-center gap-1">
             <Paperclip className="h-4 w-4" />
-            {images.length}/5 张图片
+            {images.length}/5
           </span>
           
           {tags.length > 0 && (
