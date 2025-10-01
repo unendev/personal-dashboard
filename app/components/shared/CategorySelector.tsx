@@ -425,7 +425,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm">⚡</span>
               </div>
@@ -433,13 +433,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
             </DialogTitle>
           </DialogHeader>
           <div className="py-6 space-y-6">
-            <div className="bg-blue-50 rounded-xl p-4">
-              <p className="text-sm text-blue-700 font-medium mb-2">分类路径</p>
-              <p className="text-blue-600 font-semibold">{selectedPath}</p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4">
+              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-2">分类路径</p>
+              <p className="text-blue-600 dark:text-blue-200 font-semibold">{selectedPath}</p>
             </div>
             
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
                 任务名称 <span className="text-gray-500 font-normal">(可选，默认为分类名)</span>
               </label>
               <Input
@@ -447,13 +447,13 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 onChange={(e) => setTaskName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="可修改任务名称，或直接使用分类名..."
-                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500 dark:focus:ring-blue-500"
                 autoFocus
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
                 时间消耗 (可选)
               </label>
               <Input
@@ -461,7 +461,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
                 onChange={handleDurationChange}
                 onKeyDown={handleKeyDown}
                 placeholder="如: 45m, 1h20m, 2h (为空则使用计时器)"
-                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500 dark:focus:ring-blue-500"
               />
             </div>
 
