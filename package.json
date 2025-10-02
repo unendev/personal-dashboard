@@ -15,7 +15,8 @@
     "test:ai": "node scripts/test-ai-summary.js",
     "db:wake": "node scripts/wake-db.mjs",
     "db:push": "node scripts/wake-db.mjs && prisma db push",
-    "db:migrate": "node scripts/wake-db.mjs && prisma migrate dev",
+    "db:migrate": "node scripts/wake-db.mjs && prisma migrate deploy",
+    "db:migrate:create": "node scripts/create-migration.mjs",
     "db:studio": "node scripts/wake-db.mjs && prisma studio"
   },
   "dependencies": {

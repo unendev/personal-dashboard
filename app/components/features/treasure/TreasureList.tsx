@@ -198,7 +198,7 @@ export function TreasureList({ className }: TreasureListProps) {
   return (
     <div className={cn("space-y-8", className)}>
       {/* 搜索和筛选栏 */}
-      <div className="sticky top-0 z-10 backdrop-blur-lg bg-gray-900/80 border-b border-white/10 pb-4 pt-2">
+      <div className="sticky top-0 z-10 backdrop-blur-lg bg-transparent border-b border-white/10 pb-4 pt-2 -mx-4 px-4">
         <div className="max-w-2xl mx-auto space-y-4">
           {/* 搜索框 */}
           <div className="relative">

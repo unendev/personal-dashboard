@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -75,10 +75,28 @@ export function TwitterStyleCard({
   const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(treasure.likesCount || treasure._count?.likes || 0)
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
-  const [showAnswers, setShowAnswers] = useState(false)
+  const [showAnswers, setShowAnswers] = useState(true) // 默认展示回答
   const [answers, setAnswers] = useState<Answer[]>([])
   const [newAnswer, setNewAnswer] = useState('')
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
+
+  // 获取回答列表
+  const fetchAnswers = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/treasures/${treasure.id}/answers`)
+      if (response.ok) {
+        const data = await response.json()
+        setAnswers(data)
+      }
+    } catch (error) {
+      console.error('Error fetching answers:', error)
+    }
+  }, [treasure.id])
+
+  // 初始加载回答
+  useEffect(() => {
+    fetchAnswers()
+  }, [fetchAnswers])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -394,58 +412,62 @@ export function TwitterStyleCard({
     setSelectedImageIndex(null)
   }
 
-  // 点赞/取消点赞
+  // 点赞/取消点赞（乐观更新）
   const handleLike = async () => {
+    // 乐观更新 UI
+    const wasLiked = isLiked
+    const previousCount = likesCount
+    
+    if (wasLiked) {
+      setIsLiked(false)
+      setLikesCount(prev => Math.max(0, prev - 1))
+    } else {
+      setIsLiked(true)
+      setLikesCount(prev => prev + 1)
+    }
+
     try {
-      if (isLiked) {
-        // 取消点赞
-        const response = await fetch(`/api/treasures/${treasure.id}/like`, {
-          method: 'DELETE'
-        })
-        if (response.ok) {
-          setIsLiked(false)
-          setLikesCount(prev => Math.max(0, prev - 1))
-        }
-      } else {
-        // 点赞
-        const response = await fetch(`/api/treasures/${treasure.id}/like`, {
-          method: 'POST'
-        })
-        if (response.ok) {
-          setIsLiked(true)
-          setLikesCount(prev => prev + 1)
-        }
+      const response = await fetch(`/api/treasures/${treasure.id}/like`, {
+        method: wasLiked ? 'DELETE' : 'POST'
+      })
+      
+      // 如果请求失败，回滚状态
+      if (!response.ok) {
+        setIsLiked(wasLiked)
+        setLikesCount(previousCount)
+        console.error('点赞操作失败')
       }
     } catch (error) {
+      // 请求失败，回滚状态
+      setIsLiked(wasLiked)
+      setLikesCount(previousCount)
       console.error('Error toggling like:', error)
     }
   }
 
-  // 获取回答列表
-  const fetchAnswers = async () => {
-    try {
-      const response = await fetch(`/api/treasures/${treasure.id}/answers`)
-      if (response.ok) {
-        const data = await response.json()
-        setAnswers(data)
-      }
-    } catch (error) {
-      console.error('Error fetching answers:', error)
-    }
-  }
-
   // 切换显示回答
-  const handleToggleAnswers = async () => {
-    if (!showAnswers) {
-      await fetchAnswers()
-    }
+  const handleToggleAnswers = () => {
     setShowAnswers(!showAnswers)
   }
 
-  // 提交回答
+  // 提交回答（乐观更新）
   const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newAnswer.trim() || isSubmittingAnswer) return
+
+    const content = newAnswer.trim()
+    
+    // 乐观更新：立即添加到 UI
+    const optimisticAnswer: Answer = {
+      id: `temp-${Date.now()}`,
+      userId: 'current-user',
+      content,
+      createdAt: new Date().toISOString()
+    }
+    
+    setAnswers(prev => [optimisticAnswer, ...prev])
+    setAnswersCount(prev => prev + 1)
+    setNewAnswer('')
 
     try {
       setIsSubmittingAnswer(true)
@@ -454,15 +476,22 @@ export function TwitterStyleCard({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content: newAnswer })
+        body: JSON.stringify({ content })
       })
 
       if (response.ok) {
-        setNewAnswer('')
+        // 重新获取完整的回答列表（包含真实 ID）
         await fetchAnswers()
-        setAnswersCount(prev => prev + 1)
+      } else {
+        // 请求失败，移除乐观添加的回答
+        setAnswers(prev => prev.filter(a => a.id !== optimisticAnswer.id))
+        setAnswersCount(prev => prev - 1)
+        console.error('提交回答失败')
       }
     } catch (error) {
+      // 请求失败，移除乐观添加的回答
+      setAnswers(prev => prev.filter(a => a.id !== optimisticAnswer.id))
+      setAnswersCount(prev => prev - 1)
       console.error('Error submitting answer:', error)
     } finally {
       setIsSubmittingAnswer(false)
