@@ -27,8 +27,11 @@ export function useDevSession(): DevSession {
   })
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // 开发环境：优先使用真实会话，未登录时才提供开发用户
+    // 检查是否启用演示模式（默认启用）
+    const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false'
+
+    if (isDemoMode) {
+      // 演示模式：优先使用真实会话，未登录时自动使用示例账户
       if (session?.user) {
         console.log('✅ 使用真实NextAuth会话:', session.user.email)
         setDevSession({
@@ -36,28 +39,30 @@ export function useDevSession(): DevSession {
           status: 'authenticated'
         })
       } else if (status === 'unauthenticated') {
-        // 检查是否禁用开发用户自动登录
-        const disableDevAutoLogin = process.env.NEXT_PUBLIC_DISABLE_DEV_AUTO_LOGIN === 'true'
-        
-        if (disableDevAutoLogin) {
-          console.log('🚫 开发用户自动登录已禁用')
-          setDevSession({
-            data: null,
-            status: 'unauthenticated'
+        // 自动获取示例账户信息
+        fetch('/api/auth/ensure-demo-user', { method: 'POST' })
+          .then(() => fetch('/api/auth/ensure-demo-user'))
+          .then(res => res.json())
+          .then(data => {
+            console.log('🎭 使用演示账户:', data.email)
+            setDevSession({
+              data: {
+                user: {
+                  id: data.id,
+                  email: data.email,
+                  name: data.name
+                }
+              },
+              status: 'authenticated'
+            })
           })
-        } else {
-          console.log('🔓 使用开发用户会话（回退模式）')
-          setDevSession({
-            data: {
-              user: {
-                id: 'user-1',
-                email: 'dev@localhost.com',
-                name: '开发用户'
-              }
-            },
-            status: 'authenticated'
+          .catch(err => {
+            console.error('获取演示账户失败:', err)
+            setDevSession({
+              data: null,
+              status: 'unauthenticated'
+            })
           })
-        }
       } else {
         setDevSession({
           data: null,
@@ -65,7 +70,7 @@ export function useDevSession(): DevSession {
         })
       }
     } else {
-      // 生产环境：使用正常的 NextAuth 会话
+      // 非演示模式：使用正常的 NextAuth 会话
       setDevSession({
         data: session,
         status: status as 'loading' | 'authenticated' | 'unauthenticated'

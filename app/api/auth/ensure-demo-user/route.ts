@@ -58,9 +58,31 @@ export async function POST() {
 }
 
 export async function GET() {
-  return NextResponse.json({
-    email: DEMO_USER.email,
-    password: DEMO_USER.password,
-  })
+  try {
+    // 获取示例用户信息
+    const user = await prisma.user.findUnique({
+      where: { email: DEMO_USER.email }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '示例用户不存在，请先创建' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      id: user.id,
+      email: DEMO_USER.email,
+      name: DEMO_USER.name,
+      password: DEMO_USER.password,
+    })
+  } catch (error) {
+    console.error('获取示例用户信息失败:', error)
+    return NextResponse.json(
+      { error: '获取示例用户信息失败' },
+      { status: 500 }
+    )
+  }
 }
 

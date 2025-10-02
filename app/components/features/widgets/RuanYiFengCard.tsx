@@ -25,6 +25,7 @@ const RuanYiFengCard: React.FC = () => {
 
   if (error) return <div className="p-6 h-full flex items-center justify-center text-red-400">加载阮一峰周刊失败</div>;
   if (!feeds || !Array.isArray(feeds)) return <div className="p-6 h-full flex items-center justify-center text-white/60">加载阮一峰周刊中...</div>;
+  if (feeds.length === 0) return <div className="p-6 h-full flex items-center justify-center text-white/60">暂无内容</div>;
 
   return (
     <div className="p-6 h-full flex flex-col bg-transparent">

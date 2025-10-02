@@ -21,6 +21,9 @@ interface YouTubeLikedVideo {
 
 export async function GET(request: Request) {
   try {
+    // 确保 Prisma 连接
+    await prisma.$connect()
+    
     const url = new URL(request.url)
     const defaultUserId = process.env.PUBLIC_YOUTUBE_USER_ID || 'user-1'
     const userId = url.searchParams.get('userId') || defaultUserId

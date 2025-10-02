@@ -18,7 +18,9 @@
     "db:migrate": "node scripts/wake-db.mjs && prisma migrate deploy",
     "db:migrate:create": "node scripts/create-migration.mjs",
     "db:studio": "node scripts/wake-db.mjs && prisma studio",
-    "ensure-demo": "node scripts/ensure-demo-user.mjs"
+    "ensure-demo": "node scripts/ensure-demo-user.mjs",
+    "seed-demo": "node scripts/seed-demo-data.mjs",
+    "setup-demo": "node scripts/ensure-demo-user.mjs && node scripts/seed-demo-data.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

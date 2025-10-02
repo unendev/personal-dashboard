@@ -80,7 +80,7 @@ const ScrollableLayout = () => {
             Project Nexus
           </h1>
           <p className="text-base md:text-lg text-white/70">
-            您的个人数字中心 - 整合所有信息源的智能仪表板
+            个人信息聚合平台
           </p>
         </div>
       </div>
