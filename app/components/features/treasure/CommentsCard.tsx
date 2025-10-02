@@ -1,8 +1,34 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { MessageCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// 日期格式化工具函数（组件外部，避免重复创建）
+function formatDateString(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+  
+  if (diffInHours < 1) {
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    return `${diffInMinutes}分钟前`
+  } else if (diffInHours < 24) {
+    return `${diffInHours}小时前`
+  } else if (diffInHours < 48) {
+    return '昨天'
+  } else if (diffInHours < 168) {
+    const days = Math.floor(diffInHours / 24)
+    return `${days}天前`
+  } else {
+    return date.toLocaleDateString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+}
 
 interface Answer {
   id: string
@@ -23,7 +49,7 @@ interface CommentsCardProps {
   treasure: Treasure
 }
 
-export function CommentsCard({ treasure }: CommentsCardProps) {
+function CommentsCardComponent({ treasure }: CommentsCardProps) {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
 
@@ -46,8 +72,8 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
     fetchAnswers()
   }, [fetchAnswers])
 
-  // 删除回答（乐观更新）
-  const handleDeleteAnswer = async (answerId: string) => {
+  // 删除回答（乐观更新）- 使用 useCallback 优化
+  const handleDeleteAnswer = useCallback(async (answerId: string) => {
     const deletedAnswer = answers.find(a => a.id === answerId)
     if (!deletedAnswer) return
 
@@ -69,32 +95,7 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
       setAnswersCount(prev => prev + 1)
       console.error('Error deleting answer:', error)
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-      return `${diffInMinutes}分钟前`
-    } else if (diffInHours < 24) {
-      return `${diffInHours}小时前`
-    } else if (diffInHours < 48) {
-      return '昨天'
-    } else if (diffInHours < 168) {
-      const days = Math.floor(diffInHours / 24)
-      return `${days}天前`
-    } else {
-      return date.toLocaleDateString('zh-CN', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
-  }
+  }, [answers, treasure.id])
 
   return (
     <div className="border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm p-6 shadow-lg h-fit lg:sticky lg:top-4">
@@ -123,7 +124,7 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="text-white/40 text-xs mt-2">{formatDate(answer.createdAt)}</p>
+              <p className="text-white/40 text-xs mt-2">{formatDateString(answer.createdAt)}</p>
             </div>
           ))
         ) : (
@@ -138,3 +139,13 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
   )
 }
 
+// 使用 React.memo 优化性能，避免不必要的重渲染
+export const CommentsCard = memo(CommentsCardComponent, (prevProps, nextProps) => {
+  // 只在treasure.id或评论数量变化时重新渲染
+  return (
+    prevProps.treasure.id === nextProps.treasure.id &&
+    prevProps.treasure._count?.answers === nextProps.treasure._count?.answers
+  )
+})
+
+CommentsCard.displayName = 'CommentsCard'

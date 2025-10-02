@@ -10,7 +10,11 @@ export const TreasureType = z.enum(['TEXT', 'IMAGE', 'MUSIC'])
  */
 export const ImageSchema = z.object({
   url: z.string().url('图片URL格式不正确'),
+  alt: z.string().max(200, '图片说明不能超过200字符').optional(),
   caption: z.string().max(200, '图片说明不能超过200字符').optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  size: z.number().int().positive().optional(), // 文件大小（字节）
 })
 
 /**

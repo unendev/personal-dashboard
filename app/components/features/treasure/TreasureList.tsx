@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
 import { CommentsCard } from './CommentsCard'
 import { CommentInputModal } from './CommentInputModal'
@@ -57,6 +58,17 @@ export function TreasureList({ className }: TreasureListProps) {
   const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null)
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  
+  // 虚拟滚动相关
+  const parentRef = useRef<HTMLDivElement>(null)
+  
+  // 虚拟滚动配置
+  const rowVirtualizer = useVirtualizer({
+    count: treasures.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 400, // 估计每个卡片高度，会自动调整
+    overscan: 2, // 预渲染前后2个项目
+  })
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -79,9 +91,9 @@ export function TreasureList({ className }: TreasureListProps) {
       
       if (response.ok) {
         const data = await response.json()
-        console.log('📦 从 API 获取的宝藏数据:', data)
+        console.log('📦 [FETCH] 获取宝藏列表:', { count: data.length, filters: { tag: selectedTag, type: selectedType, search: searchQuery } })
         if (data.length > 0 && data[0].images?.length > 0) {
-          console.log('🖼️ 第一个宝藏的图片 URL:', data[0].images[0].url)
+          console.log('🖼️ [FETCH] 首个宝藏图片:', data[0].images[0].url)
         }
         setTreasures(data)
         
@@ -109,7 +121,7 @@ export function TreasureList({ className }: TreasureListProps) {
   // 创建宝藏
   const handleCreateTreasure = async (data: TreasureData) => {
     try {
-      console.log('Creating treasure:', data)
+      console.log('✨ [CREATE] 创建宝藏:', { title: data.title, type: data.type, imagesCount: data.images?.length })
       const response = await fetch('/api/treasures', {
         method: 'POST',
         headers: {
@@ -117,20 +129,18 @@ export function TreasureList({ className }: TreasureListProps) {
         },
         body: JSON.stringify(data),
       })
-
-      console.log('Response status:', response.status)
       
       if (response.ok) {
         const result = await response.json()
-        console.log('Treasure created successfully:', result)
+        console.log('✅ [CREATE] 创建成功:', { id: result.id, type: result.type })
         await fetchTreasures()
       } else {
         const errorText = await response.text()
-        console.error('API Error:', response.status, errorText)
+        console.error('❌ [CREATE] 失败:', response.status, errorText)
         alert(`创建失败: ${response.status} ${errorText}`)
       }
     } catch (error) {
-      console.error('Error creating treasure:', error)
+      console.error('❌ [CREATE] 网络错误:', error)
       alert(`网络错误: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
@@ -174,8 +184,7 @@ export function TreasureList({ className }: TreasureListProps) {
   const handleEditClick = (id: string) => {
     const treasure = treasures.find(t => t.id === id)
     if (treasure) {
-      console.log('📝 准备编辑宝藏:', treasure)
-      console.log('📝 宝藏图片:', treasure.images)
+      console.log('📝 [EDIT] 准备编辑:', { id, title: treasure.title, type: treasure.type, imagesCount: treasure.images.length })
       setEditingTreasure(treasure)
       setShowEditModal(true)
     }
@@ -185,6 +194,7 @@ export function TreasureList({ className }: TreasureListProps) {
     if (!editingTreasure) return
 
     try {
+      console.log('📝 [EDIT] 提交更新:', { id: editingTreasure.id, type: data.type, imagesCount: data.images?.length })
       const response = await fetch(`/api/treasures/${editingTreasure.id}`, {
         method: 'PUT',
         headers: {
@@ -194,15 +204,16 @@ export function TreasureList({ className }: TreasureListProps) {
       })
 
       if (response.ok) {
+        console.log('✅ [EDIT] 更新成功')
         // 刷新列表
         await fetchTreasures()
         setShowEditModal(false)
         setEditingTreasure(null)
       } else {
-        console.error('Failed to update treasure')
+        console.error('❌ [EDIT] 更新失败:', response.status)
       }
     } catch (error) {
-      console.error('Error updating treasure:', error)
+      console.error('❌ [EDIT] 网络错误:', error)
     }
   }
 
@@ -397,7 +408,7 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       </div>
 
-      {/* 宝藏列表 */}
+      {/* 宝藏列表 - 虚拟滚动 */}
       {treasures.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-white/40 mb-4">
@@ -411,8 +422,41 @@ export function TreasureList({ className }: TreasureListProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {treasures.map((treasure) => renderTreasureCard(treasure))}
+        <div 
+          ref={parentRef}
+          className="h-[calc(100vh-16rem)] overflow-auto"
+          style={{
+            contain: 'strict',
+          }}
+        >
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const treasure = treasures[virtualRow.index]
+              return (
+                <div
+                  key={treasure.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className="pb-8"
+                >
+                  {renderTreasureCard(treasure)}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

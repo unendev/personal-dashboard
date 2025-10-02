@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -24,6 +24,33 @@ import {
   Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// 日期格式化工具函数（组件外部，避免重复创建）
+function formatDateString(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+  
+  if (diffInHours < 1) {
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    return `${diffInMinutes}分钟前`
+  } else if (diffInHours < 24) {
+    return `${diffInHours}小时前`
+  } else if (diffInHours < 48) {
+    return '昨天'
+  } else if (diffInHours < 168) {
+    const days = Math.floor(diffInHours / 24)
+    return `${days}天前`
+  } else {
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+}
 
 interface Answer {
   id: string
@@ -65,7 +92,7 @@ interface TwitterStyleCardProps {
   hideComments?: boolean  // 是否隐藏评论区域
 }
 
-export function TwitterStyleCard({ 
+function TwitterStyleCardComponent({ 
   treasure, 
   onEdit, 
   onDelete,
@@ -104,8 +131,9 @@ export function TwitterStyleCard({
     }
   }, [fetchAnswers, hideComments])
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+  // 使用 useMemo 缓存格式化的日期，避免每次渲染都计算
+  const formattedDate = useMemo(() => {
+    const date = new Date(treasure.createdAt)
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
     
@@ -128,23 +156,25 @@ export function TwitterStyleCard({
         minute: '2-digit'
       })
     }
-  }
+  }, [treasure.createdAt])
 
-  const getTypeIcon = () => {
+  // 使用 useMemo 缓存类型图标
+  const typeIcon = useMemo(() => {
     switch (treasure.type) {
       case 'TEXT': return <FileText className="h-4 w-4 text-blue-400" />
       case 'IMAGE': return <ImageIcon className="h-4 w-4 text-green-400" />
       case 'MUSIC': return <Music className="h-4 w-4 text-purple-400" />
     }
-  }
+  }, [treasure.type])
 
-  const getTypeGradient = () => {
+  // 使用 useMemo 缓存类型渐变
+  const typeGradient = useMemo(() => {
     switch (treasure.type) {
       case 'TEXT': return 'from-blue-400 to-blue-600'
       case 'IMAGE': return 'from-green-400 to-green-600'
       case 'MUSIC': return 'from-purple-400 to-purple-600'
     }
-  }
+  }, [treasure.type])
 
   const renderContent = () => {
     if (!treasure.content) return null
@@ -277,6 +307,7 @@ export function TwitterStyleCard({
               alt={treasure.images[0].alt || treasure.title}
               width={treasure.images[0].width || 800}
               height={treasure.images[0].height || 600}
+              loading="lazy"
               className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -295,6 +326,7 @@ export function TwitterStyleCard({
                   alt={image.alt || treasure.title}
                   width={image.width || 400}
                   height={image.height || 300}
+                  loading="lazy"
                   className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
@@ -313,6 +345,7 @@ export function TwitterStyleCard({
                 alt={treasure.images[0].alt || treasure.title}
                 width={treasure.images[0].width || 400}
                 height={treasure.images[0].height || 300}
+                loading="lazy"
                 className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
               />
             </div>
@@ -328,6 +361,7 @@ export function TwitterStyleCard({
                     alt={image.alt || treasure.title}
                     width={image.width || 200}
                     height={image.height || 150}
+                    loading="lazy"
                     className="w-full h-24 object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -353,6 +387,7 @@ export function TwitterStyleCard({
                     alt={image.alt || treasure.title}
                     width={image.width || 400}
                     height={image.height || 300}
+                    loading="lazy"
                     className="w-full object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -402,25 +437,25 @@ export function TwitterStyleCard({
 
   const shouldTruncate = treasure.content && treasure.content.length > 280
 
-  // 图片导航处理
-  const handlePrevImage = () => {
+  // 图片导航处理 - 使用 useCallback 优化
+  const handlePrevImage = useCallback(() => {
     if (selectedImageIndex !== null && selectedImageIndex > 0) {
       setSelectedImageIndex(selectedImageIndex - 1)
     }
-  }
+  }, [selectedImageIndex])
 
-  const handleNextImage = () => {
+  const handleNextImage = useCallback(() => {
     if (selectedImageIndex !== null && selectedImageIndex < treasure.images.length - 1) {
       setSelectedImageIndex(selectedImageIndex + 1)
     }
-  }
+  }, [selectedImageIndex, treasure.images.length])
 
-  const handleCloseImageModal = () => {
+  const handleCloseImageModal = useCallback(() => {
     setSelectedImageIndex(null)
-  }
+  }, [])
 
-  // 点赞（允许多次点赞，用于记录查阅次数）
-  const handleLike = async () => {
+  // 点赞（允许多次点赞，用于记录查阅次数）- 使用 useCallback 优化
+  const handleLike = useCallback(async () => {
     // 乐观更新：直接增加计数
     const previousCount = likesCount
     setLikesCount(prev => prev + 1)
@@ -440,15 +475,15 @@ export function TwitterStyleCard({
       setLikesCount(previousCount)
       console.error('Error liking:', error)
     }
-  }
+  }, [likesCount, treasure.id])
 
-  // 切换输入框显示
-  const handleToggleInput = () => {
-    setShowInput(!showInput)
-  }
+  // 切换输入框显示 - 使用 useCallback 优化
+  const handleToggleInput = useCallback(() => {
+    setShowInput(prev => !prev)
+  }, [])
 
-  // 提交回答（乐观更新）
-  const handleSubmitAnswer = async (e: React.FormEvent) => {
+  // 提交回答（乐观更新）- 使用 useCallback 优化
+  const handleSubmitAnswer = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newAnswer.trim() || isSubmittingAnswer) return
 
@@ -494,10 +529,10 @@ export function TwitterStyleCard({
     } finally {
       setIsSubmittingAnswer(false)
     }
-  }
+  }, [newAnswer, isSubmittingAnswer, treasure.id, fetchAnswers])
 
-  // 删除回答（乐观更新）
-  const handleDeleteAnswer = async (answerId: string) => {
+  // 删除回答（乐观更新）- 使用 useCallback 优化
+  const handleDeleteAnswer = useCallback(async (answerId: string) => {
     // 乐观更新：立即从 UI 移除
     const deletedAnswer = answers.find(a => a.id === answerId)
     if (!deletedAnswer) return
@@ -522,7 +557,7 @@ export function TwitterStyleCard({
       setAnswersCount(prev => prev + 1)
       console.error('Error deleting answer:', error)
     }
-  }
+  }, [answers, treasure.id])
 
   return (
     <>
@@ -540,7 +575,7 @@ export function TwitterStyleCard({
             {/* 头像 */}
             <div className={cn(
               "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
-              getTypeGradient()
+              typeGradient
             )}>
               {treasure.title.charAt(0).toUpperCase()}
             </div>
@@ -549,9 +584,9 @@ export function TwitterStyleCard({
             <div className="flex-1 min-w-0">
               {/* 时间信息 */}
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-white/60 text-sm">{formatDate(treasure.createdAt)}</span>
+                <span className="text-white/60 text-sm">{formattedDate}</span>
                 <div className="flex items-center gap-1 ml-2">
-                  {getTypeIcon()}
+                  {typeIcon}
                 </div>
               </div>
 
@@ -779,7 +814,7 @@ export function TwitterStyleCard({
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <p className="text-white/40 text-xs mt-2">{formatDate(answer.createdAt)}</p>
+                        <p className="text-white/40 text-xs mt-2">{formatDateString(answer.createdAt)}</p>
                       </div>
                     ))
                   ) : (
@@ -800,7 +835,7 @@ export function TwitterStyleCard({
               {/* 头像 */}
               <div className={cn(
                 "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
-                getTypeGradient()
+                typeGradient
               )}>
                 {treasure.title.charAt(0).toUpperCase()}
               </div>
@@ -809,9 +844,9 @@ export function TwitterStyleCard({
               <div className="flex-1 min-w-0">
                 {/* 时间信息 */}
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white/60 text-sm">{formatDate(treasure.createdAt)}</span>
+                  <span className="text-white/60 text-sm">{formattedDate}</span>
                   <div className="flex items-center gap-1 ml-2">
-                    {getTypeIcon()}
+                    {typeIcon}
                   </div>
                 </div>
 
@@ -1018,5 +1053,17 @@ export function TwitterStyleCard({
   )
 }
 
+// 使用 React.memo 优化性能，避免不必要的重渲染
+export const TwitterStyleCard = memo(TwitterStyleCardComponent, (prevProps, nextProps) => {
+  // 自定义比较函数，只在关键属性变化时才重新渲染
+  return (
+    prevProps.treasure.id === nextProps.treasure.id &&
+    prevProps.treasure.updatedAt === nextProps.treasure.updatedAt &&
+    prevProps.treasure._count?.likes === nextProps.treasure._count?.likes &&
+    prevProps.treasure._count?.answers === nextProps.treasure._count?.answers &&
+    prevProps.hideComments === nextProps.hideComments &&
+    prevProps.className === nextProps.className
+  )
+})
 
-
+TwitterStyleCard.displayName = 'TwitterStyleCard'

@@ -71,6 +71,9 @@ export async function PUT(
 
     const userId = await getUserId(request);
     const { id } = await params;
+    
+    console.log(`📝 [UPDATE] 用户 ${userId} 更新宝藏 ${id}`)
+    console.log(`📝 [UPDATE] 数据:`, { title, type, imagesCount: images?.length })
 
     // 验证宝藏属于当前用户
     const existingTreasure = await prisma.treasure.findFirst({
@@ -78,8 +81,11 @@ export async function PUT(
     });
 
     if (!existingTreasure) {
+      console.log(`❌ [UPDATE] 宝藏不存在: ${id}`)
       return NextResponse.json({ error: 'Treasure not found' }, { status: 404 });
     }
+    
+    console.log(`✅ [UPDATE] 当前类型: ${existingTreasure.type} → 更新为: ${type}`)
 
     // 如果有新的图片数组，先删除旧图片，再添加新图片
     const updateData: any = {
@@ -126,9 +132,15 @@ export async function PUT(
       }
     });
 
+    console.log(`✅ [UPDATE] 宝藏更新成功:`, { 
+      id: treasure.id, 
+      type: treasure.type, 
+      imagesCount: treasure.images.length 
+    })
+
     return NextResponse.json(treasure);
   } catch (error) {
-    console.error('Error updating treasure:', error);
+    console.error('❌ [UPDATE] 更新失败:', error);
     return NextResponse.json({ error: 'Failed to update treasure' }, { status: 500 });
   }
 }
