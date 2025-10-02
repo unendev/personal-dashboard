@@ -903,7 +903,10 @@ export function TwitterStyleCard({
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onComment?.(treasure)
+                    }}
                     className="gap-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
                   >
                     <MessageCircle className="h-4 w-4" />
