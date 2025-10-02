@@ -498,6 +498,34 @@ export function TwitterStyleCard({
     }
   }
 
+  // 删除回答（乐观更新）
+  const handleDeleteAnswer = async (answerId: string) => {
+    // 乐观更新：立即从 UI 移除
+    const deletedAnswer = answers.find(a => a.id === answerId)
+    if (!deletedAnswer) return
+
+    setAnswers(prev => prev.filter(a => a.id !== answerId))
+    setAnswersCount(prev => Math.max(0, prev - 1))
+
+    try {
+      const response = await fetch(`/api/treasures/${treasure.id}/answers/${answerId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        // 请求失败，恢复回答
+        setAnswers(prev => [deletedAnswer, ...prev])
+        setAnswersCount(prev => prev + 1)
+        console.error('删除回答失败')
+      }
+    } catch (error) {
+      // 请求失败，恢复回答
+      setAnswers(prev => [deletedAnswer, ...prev])
+      setAnswersCount(prev => prev + 1)
+      console.error('Error deleting answer:', error)
+    }
+  }
+
   return (
     <>
     <article className={cn(
@@ -653,8 +681,17 @@ export function TwitterStyleCard({
               {answers.length > 0 && (
                 <div className="space-y-3">
                   {answers.map((answer) => (
-                    <div key={answer.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
-                      <p className="text-white/90 text-sm">{answer.content}</p>
+                    <div key={answer.id} className="bg-white/5 rounded-lg p-3 border border-white/10 group/answer hover:bg-white/10 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-white/90 text-sm flex-1">{answer.content}</p>
+                        <button
+                          onClick={() => handleDeleteAnswer(answer.id)}
+                          className="opacity-0 group-hover/answer:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all text-red-400 hover:text-red-300"
+                          title="删除回答"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       <p className="text-white/40 text-xs mt-2">
                         {formatDate(answer.createdAt)}
                       </p>
