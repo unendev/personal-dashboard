@@ -160,9 +160,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const renderTreasureCard = (treasure: Treasure) => {
     // 统一使用 TwitterStyleCard
     return (
-      <div onClick={() => setSelectedTreasure(treasure)}>
+      <div key={treasure.id} onClick={() => setSelectedTreasure(treasure)}>
         <TwitterStyleCard
-          key={treasure.id}
           treasure={treasure}
           onDelete={handleDeleteTreasure}
           hideComments={true}
