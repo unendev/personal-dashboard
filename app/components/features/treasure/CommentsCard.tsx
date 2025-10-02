@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/app/components/ui/button'
-import { MessageCircle, X, Trash2, Plus } from 'lucide-react'
+import { MessageCircle, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Answer {
@@ -22,10 +22,9 @@ interface Treasure {
 
 interface CommentsCardProps {
   treasure: Treasure
-  onClose: () => void
 }
 
-export function CommentsCard({ treasure, onClose }: CommentsCardProps) {
+export function CommentsCard({ treasure }: CommentsCardProps) {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
   const [newAnswer, setNewAnswer] = useState('')
@@ -148,26 +147,12 @@ export function CommentsCard({ treasure, onClose }: CommentsCardProps) {
   }
 
   return (
-    <div className="border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm p-6 shadow-lg">
+    <div className="border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm p-6 shadow-lg h-fit lg:sticky lg:top-4">
       {/* 标题栏 */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-blue-400" />
-          <h3 className="text-white font-medium">评论</h3>
-          <span className="text-white/60 text-sm">({answersCount})</span>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white/60 transition-colors p-1"
-          title="关闭"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* 宝藏标题 */}
-      <div className="mb-4 pb-3 border-b border-white/10">
-        <p className="text-white/80 text-sm line-clamp-2">{treasure.title}</p>
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
+        <MessageCircle className="h-5 w-5 text-blue-400" />
+        <h3 className="text-white font-medium">评论</h3>
+        <span className="text-white/60 text-sm">({answersCount})</span>
       </div>
 
       {/* 添加评论按钮 */}

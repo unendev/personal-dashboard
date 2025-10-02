@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
+import { CommentsCard } from './CommentsCard'
 // import { sampleTreasures } from './sample-treasures' // 已移除示例数据
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
@@ -156,14 +157,22 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   const renderTreasureCard = (treasure: Treasure) => {
-    // 统一使用 TwitterStyleCard，每个卡片都显示评论
     return (
-      <TwitterStyleCard
-        key={treasure.id}
-        treasure={treasure}
-        onDelete={handleDeleteTreasure}
-        hideComments={false}
-      />
+      <div key={treasure.id} className="flex flex-col lg:flex-row gap-6">
+        {/* 主卡片 */}
+        <div className="flex-1 min-w-0">
+          <TwitterStyleCard
+            treasure={treasure}
+            onDelete={handleDeleteTreasure}
+            hideComments={true}
+          />
+        </div>
+        
+        {/* 评论卡片 - PC端显示，移动端隐藏 */}
+        <div className="hidden lg:block lg:w-96 flex-shrink-0">
+          <CommentsCard treasure={treasure} />
+        </div>
+      </div>
     )
   }
 
