@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/app/components/ui/button'
-import { Paperclip, Hash, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { Paperclip, Hash, Sparkles, Image as ImageIcon, Wand2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TreasureData } from './TreasureInputModal'
 import { ImageUploadPreview } from './ImageUploadPreview'
@@ -54,6 +54,11 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
   // 主题选择
   const [selectedTheme, setSelectedTheme] = useState<string>('')
   
+  // 智能标签建议
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+  const [isGeneratingTags, setIsGeneratingTags] = useState(false)
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -91,9 +96,74 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
 
   // 提取标签
   const extractTags = (text: string): string[] => {
-    const tagRegex = /#(\w+)/g
+    const tagRegex = /#([\u4e00-\u9fa5\w]+)/g
     const matches = text.match(tagRegex)
     return matches ? matches.map(tag => tag.slice(1)) : []
+  }
+  
+  // 生成智能标签建议
+  const generateTagSuggestions = async () => {
+    if (!content.trim()) {
+      alert('请先输入内容')
+      return
+    }
+    
+    setIsGeneratingTags(true)
+    try {
+      const title = extractTitle(content)
+      const lines = content.split('\n')
+      const contentWithoutTitle = lines.slice(1).join('\n').trim()
+      
+      let type: 'TEXT' | 'IMAGE' | 'MUSIC' = 'TEXT'
+      if (images.length > 0) type = 'IMAGE'
+      if (activeCommand === 'music' && musicData.title) type = 'MUSIC'
+      
+      const response = await fetch('/api/treasures/suggest-tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content: contentWithoutTitle,
+          type
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSuggestedTags(data.tags || [])
+        setShowTagSuggestions(true)
+        
+        // 可选：显示 AI 的推理过程
+        if (data.reasoning) {
+          console.log('🤖 AI 标签推理:', data.reasoning)
+        }
+      } else {
+        alert('生成标签建议失败')
+      }
+    } catch (error) {
+      console.error('Error generating tags:', error)
+      alert('生成标签建议失败')
+    } finally {
+      setIsGeneratingTags(false)
+    }
+  }
+  
+  // 添加建议的标签到内容
+  const addSuggestedTag = (tag: string) => {
+    const currentTags = extractTags(content)
+    if (!currentTags.includes(tag)) {
+      setContent(prev => prev + ` #${tag}`)
+    }
+  }
+  
+  // 一键采纳所有建议标签
+  const acceptAllSuggestions = () => {
+    const currentTags = extractTags(content)
+    const newTags = suggestedTags.filter(tag => !currentTags.includes(tag))
+    if (newTags.length > 0) {
+      setContent(prev => prev + ' ' + newTags.map(tag => `#${tag}`).join(' '))
+    }
+    setShowTagSuggestions(false)
   }
 
   // 提取标题（第一行非空文本）
@@ -511,6 +581,54 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
         />
       )}
 
+      {/* 智能标签建议 */}
+      {showTagSuggestions && suggestedTags.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4 text-purple-400" />
+              <span className="text-sm font-medium text-purple-300">AI 标签建议</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={acceptAllSuggestions}
+                className="text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-500/20 h-7"
+              >
+                一键采纳
+              </Button>
+              <button
+                onClick={() => setShowTagSuggestions(false)}
+                className="text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestedTags.map((tag, index) => {
+              const alreadyUsed = extractTags(content).includes(tag)
+              return (
+                <button
+                  key={index}
+                  onClick={() => !alreadyUsed && addSuggestedTag(tag)}
+                  disabled={alreadyUsed}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-sm transition-all",
+                    alreadyUsed
+                      ? "bg-gray-700/50 text-gray-500 cursor-not-allowed line-through"
+                      : "bg-purple-500/20 text-purple-200 hover:bg-purple-500/30 border border-purple-500/40 hover:scale-105 cursor-pointer"
+                  )}
+                >
+                  #{tag}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 底部栏 */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-700">
         {/* 隐藏的文件输入 */}
@@ -537,6 +655,32 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
           >
             <ImageIcon className="h-4 w-4" />
             <span className="hidden sm:inline">选择图片</span>
+          </button>
+          
+          {/* AI 标签生成按钮 */}
+          <button
+            type="button"
+            onClick={generateTagSuggestions}
+            disabled={isGeneratingTags || !content.trim()}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+              isGeneratingTags || !content.trim()
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-purple-500/20 text-purple-300 cursor-pointer"
+            )}
+            title="AI 生成标签建议"
+          >
+            {isGeneratingTags ? (
+              <>
+                <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin"></div>
+                <span className="hidden sm:inline">生成中...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4" />
+                <span className="hidden sm:inline">AI 标签</span>
+              </>
+            )}
           </button>
           
           <span className="flex items-center gap-1">

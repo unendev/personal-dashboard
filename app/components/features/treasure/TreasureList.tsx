@@ -5,6 +5,7 @@ import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
 // import { sampleTreasures } from './sample-treasures' // 已移除示例数据
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
+import { CommentsCard } from './CommentsCard'
 import { 
   Filter, 
   RefreshCw,
@@ -51,6 +52,7 @@ export function TreasureList({ className }: TreasureListProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [selectedTreasure, setSelectedTreasure] = useState<Treasure | null>(null)
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -158,11 +160,14 @@ export function TreasureList({ className }: TreasureListProps) {
   const renderTreasureCard = (treasure: Treasure) => {
     // 统一使用 TwitterStyleCard
     return (
-      <TwitterStyleCard
-        key={treasure.id}
-        treasure={treasure}
-        onDelete={handleDeleteTreasure}
-      />
+      <div onClick={() => setSelectedTreasure(treasure)}>
+        <TwitterStyleCard
+          key={treasure.id}
+          treasure={treasure}
+          onDelete={handleDeleteTreasure}
+          hideComments={true}
+        />
+      </div>
     )
   }
 
@@ -331,24 +336,41 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       </div>
 
-      {/* 宝藏列表 */}
-      {treasures.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-white/40 mb-4">
-            <Filter className="h-12 w-12 mx-auto" />
+      {/* PC端：左右布局；移动端：上下布局 */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* 左侧：宝藏列表 */}
+        <div className="flex-1 min-w-0">
+          {treasures.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-white/40 mb-4">
+                <Filter className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
+              </h3>
+              <p className="text-white/60 mb-4">
+                {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto space-y-8">
+              {treasures.map((treasure) => renderTreasureCard(treasure))}
+            </div>
+          )}
+        </div>
+
+        {/* 右侧：评论区（独立卡片）- 仅 PC 端显示 */}
+        {selectedTreasure && (
+          <div className="hidden lg:block lg:w-96 flex-shrink-0">
+            <div className="sticky top-4">
+              <CommentsCard
+                treasure={selectedTreasure}
+                onClose={() => setSelectedTreasure(null)}
+              />
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-white mb-2">
-            {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
-          </h3>
-          <p className="text-white/60 mb-4">
-            {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
-          </p>
-        </div>
-      ) : (
-        <div className="max-w-2xl mx-auto space-y-8">
-          {treasures.map((treasure) => renderTreasureCard(treasure))}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 悬浮创建按钮 */}
       <FloatingActionButton onCreateTreasure={handleCreateClick} />
