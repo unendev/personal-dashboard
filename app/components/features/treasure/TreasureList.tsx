@@ -358,7 +358,7 @@ export function TreasureList({ className }: TreasureListProps) {
           )}
         </div>
 
-        {/* 右侧：评论区（独立卡片）- 仅 PC 端显示 */}
+        {/* 右侧：评论区（独立卡片）- PC 端显示 */}
         {selectedTreasure && (
           <div className="hidden lg:block lg:w-96 flex-shrink-0">
             <div className="sticky top-4">
@@ -370,6 +370,22 @@ export function TreasureList({ className }: TreasureListProps) {
           </div>
         )}
       </div>
+
+      {/* 移动端：评论模态框 */}
+      {selectedTreasure && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end animate-in fade-in duration-200">
+          <div 
+            className="absolute inset-0"
+            onClick={() => setSelectedTreasure(null)}
+          />
+          <div className="relative w-full max-h-[85vh] bg-gray-900 rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <CommentsCard
+              treasure={selectedTreasure}
+              onClose={() => setSelectedTreasure(null)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 悬浮创建按钮 */}
       <FloatingActionButton onCreateTreasure={handleCreateClick} />
