@@ -174,6 +174,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const handleEditClick = (id: string) => {
     const treasure = treasures.find(t => t.id === id)
     if (treasure) {
+      console.log('📝 准备编辑宝藏:', treasure)
+      console.log('📝 宝藏图片:', treasure.images)
       setEditingTreasure(treasure)
       setShowEditModal(true)
     }

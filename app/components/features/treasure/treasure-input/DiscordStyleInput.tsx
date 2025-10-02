@@ -93,11 +93,15 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       // 设置图片
       if (initialData.images && initialData.images.length > 0) {
-        setImages(initialData.images.map(img => ({
+        console.log('🖼️ 编辑模式 - 初始化图片:', initialData.images)
+        const mappedImages = initialData.images.map(img => ({
           ...img,
+          url: img.url, // 确保 url 字段存在
           originalUrl: img.url,
           previewUrl: img.url
-        })))
+        }))
+        console.log('🖼️ 编辑模式 - 映射后的图片:', mappedImages)
+        setImages(mappedImages)
       }
       
       // 设置音乐数据
