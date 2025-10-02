@@ -12,7 +12,11 @@
     "cron:test": "node scripts/daily-summary-cron.js --test",
     "ai-summary": "node scripts/daily-ai-summary.js",
     "ai-summary:test": "node scripts/daily-ai-summary.js --test",
-    "test:ai": "node scripts/test-ai-summary.js"
+    "test:ai": "node scripts/test-ai-summary.js",
+    "db:wake": "node scripts/wake-db.mjs",
+    "db:push": "node scripts/wake-db.mjs && prisma db push",
+    "db:migrate": "node scripts/wake-db.mjs && prisma migrate dev",
+    "db:studio": "node scripts/wake-db.mjs && prisma studio"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
