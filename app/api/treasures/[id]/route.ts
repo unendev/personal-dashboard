@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserId } from '../../../../lib/auth-utils';
 import { generateSignedUrl, extractOssKey } from '../../../../lib/oss-utils';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // GET /api/treasures/[id] - 获取特定宝藏
 export async function GET(
@@ -88,7 +89,7 @@ export async function PUT(
     console.log(`✅ [UPDATE] 当前类型: ${existingTreasure.type} → 更新为: ${type}`)
 
     // 如果有新的图片数组，先删除旧图片，再添加新图片
-    const updateData: any = {
+    const updateData: Prisma.TreasureUpdateInput = {
       title,
       content,
       type,

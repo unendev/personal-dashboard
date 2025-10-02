@@ -20,16 +20,6 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* 侧边栏触发按钮 */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed top-4 left-4 z-50 w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 ${
-          isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
-      >
-        <span className="text-white font-bold text-xl">N</span>
-      </button>
-
       {/* 背景遮罩 */}
       {isOpen && (
         <div

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
@@ -8,8 +8,15 @@ export default function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isDemoLoading, setIsDemoLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+
+  // 确保示例账号存在
+  useEffect(() => {
+    fetch('/api/auth/ensure-demo-user', { method: 'POST' })
+      .catch(err => console.error('确保示例账号失败:', err))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +40,34 @@ export default function LoginForm() {
       setError("登录失败，请重试")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true)
+    setError("")
+
+    try {
+      // 获取示例账号信息
+      const demoResponse = await fetch('/api/auth/ensure-demo-user')
+      const demoData = await demoResponse.json()
+      
+      const result = await signIn("credentials", {
+        email: demoData.email,
+        password: demoData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError("示例账号登录失败")
+      } else {
+        // 登录成功，重定向到首页
+        router.push('/')
+      }
+    } catch {
+      setError("示例账号登录失败，请重试")
+    } finally {
+      setIsDemoLoading(false)
     }
   }
 
@@ -100,6 +135,32 @@ export default function LoginForm() {
           </div>
 
         </form>
+
+        {/* 示例账号快速登录 */}
+        <div className="mt-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-50 text-gray-500">或</span>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isDemoLoading}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDemoLoading ? "登录中..." : "使用示例账号登录"}
+            </button>
+            <p className="mt-2 text-center text-xs text-gray-500">
+              示例账号: demo@example.com
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

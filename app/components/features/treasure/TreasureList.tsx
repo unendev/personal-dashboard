@@ -38,6 +38,10 @@ interface Treasure {
     width?: number
     height?: number
   }>
+  _count?: {
+    likes: number
+    answers: number
+  }
 }
 
 interface TreasureListProps {
@@ -481,7 +485,8 @@ export function TreasureList({ className }: TreasureListProps) {
           onSubmit={handleEditTreasure}
           initialData={{
             ...editingTreasure,
-            id: editingTreasure.id
+            id: editingTreasure.id,
+            content: editingTreasure.content || ''
           }}
           mode="edit"
         />

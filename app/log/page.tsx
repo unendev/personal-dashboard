@@ -568,17 +568,9 @@ export default function LogPage() {
   return (
     <div className="log-page-layout">
       {/* 顶部操作栏 */}
-      <div className="fixed top-4 left-4 right-4 z-40">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          {/* 左侧：返回按钮 */}
-          <Link
-            href="/"
-            className="w-10 h-10 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-          >
-            <span className="text-gray-200 font-medium text-lg">←</span>
-          </Link>
-
-          {/* 右侧：操作按钮组 */}
+      <div className="fixed top-4 right-4 z-40">
+        <div className="flex items-center justify-end">
+          {/* 操作按钮组 */}
           <div className="flex items-center gap-3">
             {/* 用户信息 */}
             {session?.user ? (
@@ -616,15 +608,6 @@ export default function LogPage() {
             >
               <span className="text-lg">✏️</span>
               <span className="text-sm font-medium text-gray-200">记录</span>
-            </button>
-
-            {/* 藏宝阁按钮 */}
-            <button
-              onClick={() => handleTreasureTypeSelect('TEXT')}
-              className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              <span className="text-lg">💎</span>
-              <span className="text-sm font-medium text-gray-200">藏宝阁</span>
             </button>
 
             {/* 操作记录按钮 */}
@@ -701,25 +684,7 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      {/* 悬浮按钮 - 快速访问藏宝阁 */}
-      <Link
-        href="/treasure-pavilion"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-        title="藏宝阁"
-      >
-        <span className="text-2xl">💎</span>
-      </Link>
-
-      {/* 页面导航 */}
-      <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
-        <div className="flex space-x-6">
-          <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
-          <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
-          <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-20">
         <h1 className="text-3xl font-bold text-gray-100 mb-8">每日日志</h1>
         
         {/* 日期过滤器 */}
