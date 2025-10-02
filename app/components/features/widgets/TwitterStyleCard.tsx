@@ -613,14 +613,9 @@ export function TwitterStyleCard({
                     e.stopPropagation()
                     handleLike()
                   }}
-                  className={cn(
-                    "gap-2 transition-all duration-200",
-                    isLiked 
-                      ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
-                      : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
-                  )}
+                  className="gap-2 text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
                 >
-                  <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
+                  <Heart className="h-4 w-4" />
                   <span className="text-sm">{likesCount}</span>
                 </Button>
                 
