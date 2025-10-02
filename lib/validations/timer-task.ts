@@ -39,6 +39,7 @@ export const createTimerTaskSchema = z.object({
   instanceTag: z
     .string()
     .max(100, '事务标签不能超过100字符')
+    .nullable()
     .optional(),
   
   // 运行状态相关字段
@@ -108,8 +109,9 @@ export const updateTimerTaskSchema = z.object({
   instanceTag: z
     .string()
     .max(100, '事务标签不能超过100字符')
+    .nullable()
     .optional(),
-})
+}).passthrough()
 
 /**
  * 类型导出

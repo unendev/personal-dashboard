@@ -44,6 +44,9 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // 打印请求体用于调试
+    console.log('创建任务请求数据:', JSON.stringify(body, null, 2));
+    
     // 验证基本字段
     const validated = createTimerTaskSchema.parse(body);
     
@@ -87,7 +90,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json({ error: '数据验证失败', details: error.issues }, { status: 400 });
+      console.error('数据验证失败:', JSON.stringify(error.issues, null, 2));
+      return NextResponse.json({ 
+        error: '数据验证失败', 
+        details: error.issues,
+        message: error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')
+      }, { status: 400 });
     }
     console.error('Error creating timer task:', error);
     return NextResponse.json({ error: 'Failed to create timer task' }, { status: 500 });
