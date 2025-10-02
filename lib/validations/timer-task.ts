@@ -40,7 +40,39 @@ export const createTimerTaskSchema = z.object({
     .string()
     .max(100, '事务标签不能超过100字符')
     .optional(),
-})
+  
+  // 运行状态相关字段
+  isRunning: z.boolean().optional(),
+  
+  startTime: z
+    .number()
+    .int('开始时间必须是整数')
+    .nullable()
+    .optional(),
+  
+  isPaused: z.boolean().optional(),
+  
+  pausedTime: z
+    .number()
+    .int('暂停时间必须是整数')
+    .min(0, '暂停时间不能为负数')
+    .optional(),
+  
+  // 排序字段
+  order: z
+    .number()
+    .int('排序必须是整数')
+    .optional(),
+  
+  // 用户ID
+  userId: z.string().optional(),
+  
+  // 事务项名称数组
+  instanceTagNames: z.array(z.string()).optional(),
+  
+  // 完成时间
+  completedAt: z.string().nullable().optional(),
+}).passthrough() // 允许额外的字段通过，提高容错性
 
 /**
  * 更新计时任务 Schema
