@@ -369,24 +369,50 @@ model spotify_cache {
 }
 
 model Treasure {
-  id            String       @id @default(cuid())
+  id            String          @id @default(cuid())
   title         String
   content       String?
   type          TreasureType
-  tags          String[]     @default([])
+  tags          String[]        @default([])
   userId        String
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   musicTitle    String?
   musicArtist   String?
   musicAlbum    String?
   musicUrl      String?
   musicCoverUrl String?
   theme         String?
+  likesCount    Int             @default(0)
   images        Image[]
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes         TreasureLike[]
+  answers       TreasureAnswer[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("treasures")
+}
+
+model TreasureLike {
+  id         String   @id @default(cuid())
+  treasureId String
+  userId     String
+  createdAt  DateTime @default(now())
+  treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
+  
+  @@unique([treasureId, userId])
+  @@map("treasure_likes")
+}
+
+model TreasureAnswer {
+  id         String   @id @default(cuid())
+  treasureId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
+  
+  @@map("treasure_answers")
 }
 
 model Image {

@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const tag = searchParams.get('tag');
     const type = searchParams.get('type');
+    const search = searchParams.get('search');
 
-    const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC' } = { userId };
+    const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
     
     // 标签筛选
     if (tag) {
@@ -27,11 +28,25 @@ export async function GET(request: NextRequest) {
       where.type = type as 'TEXT' | 'IMAGE' | 'MUSIC';
     }
 
+    // 搜索功能
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
     const treasures = await prisma.treasure.findMany({
       where,
       include: {
         images: {
           orderBy: { createdAt: 'asc' }
+        },
+        _count: {
+          select: {
+            likes: true,
+            answers: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }

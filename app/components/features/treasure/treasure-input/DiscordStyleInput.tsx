@@ -21,9 +21,19 @@ interface UploadingImage {
   progress: number
 }
 
+interface ImageWithPreview {
+  url: string
+  alt?: string
+  width?: number
+  height?: number
+  size?: number
+  originalUrl?: string  // 用于保存到数据库的原始 URL（不带签名）
+  previewUrl?: string   // 用于预览的签名 URL
+}
+
 export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps) {
   const [content, setContent] = useState('')
-  const [images, setImages] = useState<TreasureData['images']>([])
+  const [images, setImages] = useState<ImageWithPreview[]>([])
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -194,7 +204,8 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
         // 使用本地预览作为降级方案
         const mockUrl = URL.createObjectURL(file)
         setImages(prev => [...prev, {
-          url: mockUrl,
+          url: mockUrl,  // 用于预览
+          originalUrl: mockUrl,  // 降级时也保存为 originalUrl
           alt: file.name,
           size: file.size
         }])
@@ -248,24 +259,57 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
         xhr.send(formData)
       })
 
-      // 4. 获取文件 URL
-      // 确保使用完整的 URL
-      const baseUrl = signatureData.cdnUrl || signatureData.endpoint
-      const imageUrl = baseUrl.endsWith('/') 
-        ? `${baseUrl}${signatureData.key}` 
-        : `${baseUrl}/${signatureData.key}`
+      // 4. 获取文件 URL 并生成签名 URL
+      // 构建原始 URL
+      const baseUrl = (signatureData.cdnUrl || signatureData.endpoint).trim()
+      const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
+      const normalizedKey = signatureData.key.replace(/^\/+/, '')
+      const originalUrl = `${normalizedBaseUrl}/${normalizedKey}`
       
       console.log('=== 图片上传成功 ===')
-      console.log('Base URL:', baseUrl)
-      console.log('File Key:', signatureData.key)
-      console.log('Final Image URL:', imageUrl)
+      console.log('Original URL:', originalUrl)
+      
+      // 5. 生成签名 URL 用于预览（私有 Bucket 需要签名访问）
+      try {
+        const signResponse = await fetch('/api/upload/oss/sign-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: originalUrl })
+        })
+        
+        if (!signResponse.ok) {
+          console.warn('生成签名 URL 失败，使用原始 URL')
+          // 如果签名失败，仍使用原始 URL（可能是公共读 Bucket）
+          setImages(prev => [...prev, {
+            url: originalUrl,  // 用于显示（ImageUploadPreview 组件使用）
+            originalUrl: originalUrl,  // 用于保存到数据库
+            alt: file.name,
+            size: file.size
+          }])
+        } else {
+          const { signedUrl } = await signResponse.json()
+          console.log('✅ 签名 URL:', signedUrl)
+          
+          setImages(prev => [...prev, {
+            url: signedUrl,  // 用于显示（ImageUploadPreview 组件使用）
+            originalUrl: originalUrl,  // 用于保存到数据库
+            alt: file.name,
+            size: file.size
+          }])
+        }
+      } catch (error) {
+        console.error('签名 URL 错误:', error)
+        // 降级使用原始 URL
+        setImages(prev => [...prev, {
+          url: originalUrl,
+          originalUrl: originalUrl,
+          alt: file.name,
+          size: file.size
+        }])
+      }
+      
       console.log('===================')
       
-      setImages(prev => [...prev, {
-        url: imageUrl,
-        alt: file.name,
-        size: file.size
-      }])
 
       // 移除上传列表
       setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
@@ -341,13 +385,22 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
       if (images.length > 0) type = 'IMAGE'
       if (activeCommand === 'music' && musicData.title) type = 'MUSIC'
 
+      // 提交时使用原始 URL（不带签名参数）
+      const imagesToSubmit = images.map(img => ({
+        url: img.originalUrl || img.url,  // 优先使用 originalUrl
+        alt: img.alt,
+        width: img.width,
+        height: img.height,
+        size: img.size
+      }))
+
       const data: TreasureData = {
         title,
         content: contentWithoutTitle, // 不包含标题的内容
         type,
         tags,
         theme: selectedTheme || undefined,
-        images,
+        images: imagesToSubmit,
         ...(type === 'MUSIC' && {
           musicTitle: musicData.title,
           musicArtist: musicData.artist,

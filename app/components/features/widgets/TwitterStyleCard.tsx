@@ -24,6 +24,13 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface Answer {
+  id: string
+  userId: string
+  content: string
+  createdAt: string
+}
+
 interface TwitterStyleCardProps {
   treasure: {
     id: string
@@ -33,6 +40,7 @@ interface TwitterStyleCardProps {
     tags: string[]
     createdAt: string
     updatedAt: string
+    likesCount?: number
     musicTitle?: string
     musicArtist?: string
     musicAlbum?: string
@@ -44,6 +52,10 @@ interface TwitterStyleCardProps {
       width?: number
       height?: number
     }>
+    _count?: {
+      likes: number
+      answers: number
+    }
   }
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
@@ -60,6 +72,13 @@ export function TwitterStyleCard({
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [isLiked, setIsLiked] = useState(false)
+  const [likesCount, setLikesCount] = useState(treasure.likesCount || treasure._count?.likes || 0)
+  const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
+  const [showAnswers, setShowAnswers] = useState(false)
+  const [answers, setAnswers] = useState<Answer[]>([])
+  const [newAnswer, setNewAnswer] = useState('')
+  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -375,6 +394,81 @@ export function TwitterStyleCard({
     setSelectedImageIndex(null)
   }
 
+  // 点赞/取消点赞
+  const handleLike = async () => {
+    try {
+      if (isLiked) {
+        // 取消点赞
+        const response = await fetch(`/api/treasures/${treasure.id}/like`, {
+          method: 'DELETE'
+        })
+        if (response.ok) {
+          setIsLiked(false)
+          setLikesCount(prev => Math.max(0, prev - 1))
+        }
+      } else {
+        // 点赞
+        const response = await fetch(`/api/treasures/${treasure.id}/like`, {
+          method: 'POST'
+        })
+        if (response.ok) {
+          setIsLiked(true)
+          setLikesCount(prev => prev + 1)
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+    }
+  }
+
+  // 获取回答列表
+  const fetchAnswers = async () => {
+    try {
+      const response = await fetch(`/api/treasures/${treasure.id}/answers`)
+      if (response.ok) {
+        const data = await response.json()
+        setAnswers(data)
+      }
+    } catch (error) {
+      console.error('Error fetching answers:', error)
+    }
+  }
+
+  // 切换显示回答
+  const handleToggleAnswers = async () => {
+    if (!showAnswers) {
+      await fetchAnswers()
+    }
+    setShowAnswers(!showAnswers)
+  }
+
+  // 提交回答
+  const handleSubmitAnswer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAnswer.trim() || isSubmittingAnswer) return
+
+    try {
+      setIsSubmittingAnswer(true)
+      const response = await fetch(`/api/treasures/${treasure.id}/answers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: newAnswer })
+      })
+
+      if (response.ok) {
+        setNewAnswer('')
+        await fetchAnswers()
+        setAnswersCount(prev => prev + 1)
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error)
+    } finally {
+      setIsSubmittingAnswer(false)
+    }
+  }
+
   return (
     <>
     <article className={cn(
@@ -453,14 +547,34 @@ export function TwitterStyleCard({
 
           {/* 操作按钮 */}
           <div className="flex items-center justify-between mt-3 max-w-md">
-            <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200">
-              <Heart className="h-4 w-4" />
-              <span className="text-sm">0</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLike}
+              className={cn(
+                "gap-2 transition-all duration-200",
+                isLiked 
+                  ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
+                  : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
+              )}
+            >
+              <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
+              <span className="text-sm">{likesCount}</span>
             </Button>
             
-            <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleToggleAnswers}
+              className={cn(
+                "gap-2 transition-all duration-200",
+                showAnswers
+                  ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                  : "text-white/60 hover:text-blue-400 hover:bg-blue-500/10"
+              )}
+            >
               <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">0</span>
+              <span className="text-sm">{answersCount}</span>
             </Button>
             
             <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200">
@@ -502,6 +616,44 @@ export function TwitterStyleCard({
               )}
             </div>
           </div>
+
+          {/* 回答区域 */}
+          {showAnswers && (
+            <div className="mt-4 pt-4 border-t border-white/10 space-y-4 animate-in slide-in-from-top-2 duration-200">
+              {/* 回答列表 */}
+              {answers.length > 0 && (
+                <div className="space-y-3">
+                  {answers.map((answer) => (
+                    <div key={answer.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                      <p className="text-white/90 text-sm">{answer.content}</p>
+                      <p className="text-white/40 text-xs mt-2">
+                        {formatDate(answer.createdAt)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 回答输入框 */}
+              <form onSubmit={handleSubmitAnswer} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newAnswer}
+                  onChange={(e) => setNewAnswer(e.target.value)}
+                  placeholder="写下你的回答..."
+                  className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!newAnswer.trim() || isSubmittingAnswer}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  {isSubmittingAnswer ? '发送中...' : '发送'}
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </article>

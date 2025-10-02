@@ -1,6 +1,7 @@
 'use client'
 
-import { X, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { X, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface UploadingImage {
@@ -23,6 +24,85 @@ interface ImageUploadPreviewProps {
   onRemove: (index: number) => void
 }
 
+function ImagePreviewItem({ 
+  image, 
+  index, 
+  onRemove 
+}: { 
+  image: UploadedImage
+  index: number
+  onRemove: (index: number) => void
+}) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
+  return (
+    <div
+      className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+    >
+      {/* 加载状态 */}
+      {isLoading && !hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+          <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+        </div>
+      )}
+
+      {/* 错误状态 */}
+      {hasError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 text-red-500">
+          <AlertCircle className="h-8 w-8 mb-2" />
+          <span className="text-xs">加载失败</span>
+        </div>
+      )}
+
+      {/* 图片 */}
+      <img
+        src={image.url}
+        alt={image.alt || `图片 ${index + 1}`}
+        className={cn(
+          "w-full h-full object-cover transition-opacity",
+          isLoading && "opacity-0",
+          hasError && "hidden"
+        )}
+        onLoad={() => {
+          setIsLoading(false)
+          setHasError(false)
+        }}
+        onError={(e) => {
+          console.error('图片加载失败:', image.url)
+          setIsLoading(false)
+          setHasError(true)
+        }}
+        crossOrigin="anonymous"
+      />
+      
+      {/* 删除按钮 */}
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className={cn(
+          "absolute top-2 right-2",
+          "w-6 h-6 rounded-full",
+          "bg-black/50 hover:bg-black/70",
+          "text-white",
+          "flex items-center justify-center",
+          "opacity-0 group-hover:opacity-100",
+          "transition-opacity duration-200"
+        )}
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      {/* 文件大小 */}
+      {image.size && !hasError && (
+        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 text-white text-xs rounded">
+          {formatFileSize(image.size)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ImageUploadPreview({ 
   images, 
   uploadingImages, 
@@ -34,40 +114,12 @@ export function ImageUploadPreview({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {/* 已上传的图片 */}
         {images.map((image, index) => (
-          <div
+          <ImagePreviewItem
             key={index}
-            className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
-          >
-            <img
-              src={image.url}
-              alt={image.alt || `图片 ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-            
-            {/* 删除按钮 */}
-            <button
-              type="button"
-              onClick={() => onRemove(index)}
-              className={cn(
-                "absolute top-2 right-2",
-                "w-6 h-6 rounded-full",
-                "bg-black/50 hover:bg-black/70",
-                "text-white",
-                "flex items-center justify-center",
-                "opacity-0 group-hover:opacity-100",
-                "transition-opacity duration-200"
-              )}
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            {/* 文件大小 */}
-            {image.size && (
-              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 text-white text-xs rounded">
-                {formatFileSize(image.size)}
-              </div>
-            )}
-          </div>
+            image={image}
+            index={index}
+            onRemove={onRemove}
+          />
         ))}
 
         {/* 上传中的图片 */}
