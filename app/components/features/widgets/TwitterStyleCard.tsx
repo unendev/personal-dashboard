@@ -77,7 +77,6 @@ export function TwitterStyleCard({
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
-  const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(treasure.likesCount || treasure._count?.likes || 0)
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
   const [answers, setAnswers] = useState<Answer[]>([])
@@ -419,36 +418,26 @@ export function TwitterStyleCard({
     setSelectedImageIndex(null)
   }
 
-  // 点赞/取消点赞（乐观更新）
+  // 点赞（允许多次点赞，用于记录查阅次数）
   const handleLike = async () => {
-    // 乐观更新 UI
-    const wasLiked = isLiked
+    // 乐观更新：直接增加计数
     const previousCount = likesCount
-    
-    if (wasLiked) {
-      setIsLiked(false)
-      setLikesCount(prev => Math.max(0, prev - 1))
-    } else {
-      setIsLiked(true)
-      setLikesCount(prev => prev + 1)
-    }
+    setLikesCount(prev => prev + 1)
 
     try {
       const response = await fetch(`/api/treasures/${treasure.id}/like`, {
-        method: wasLiked ? 'DELETE' : 'POST'
+        method: 'POST'
       })
       
       // 如果请求失败，回滚状态
       if (!response.ok) {
-        setIsLiked(wasLiked)
         setLikesCount(previousCount)
         console.error('点赞操作失败')
       }
     } catch (error) {
       // 请求失败，回滚状态
-      setIsLiked(wasLiked)
       setLikesCount(previousCount)
-      console.error('Error toggling like:', error)
+      console.error('Error liking:', error)
     }
   }
 
@@ -889,14 +878,9 @@ export function TwitterStyleCard({
                       e.stopPropagation()
                       handleLike()
                     }}
-                    className={cn(
-                      "gap-2 transition-all duration-200",
-                      isLiked 
-                        ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
-                        : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
-                    )}
+                    className="gap-2 text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
                   >
-                    <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
+                    <Heart className="h-4 w-4" />
                     <span className="text-sm">{likesCount}</span>
                   </Button>
                   

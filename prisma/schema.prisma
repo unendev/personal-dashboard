@@ -400,7 +400,6 @@ model TreasureLike {
   createdAt  DateTime @default(now())
   treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
   
-  @@unique([treasureId, userId])
   @@map("treasure_likes")
 }
 
