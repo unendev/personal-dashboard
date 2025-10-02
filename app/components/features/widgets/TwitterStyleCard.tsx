@@ -552,232 +552,232 @@ export function TwitterStyleCard({
 
   return (
     <>
-    <article className={cn(
-      "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
-      className
-    )}>
-      {/* PC端：左右布局；移动端：上下布局 */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* 主内容区域 */}
-        <div className="flex-1 min-w-0">
-      {/* 头部信息 */}
-      <div className="flex items-start gap-3">
-        {/* 头像 */}
-        <div className={cn(
-          "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
-          getTypeGradient()
-        )}>
-          {treasure.title.charAt(0).toUpperCase()}
-        </div>
-
-        {/* 内容区域 */}
-        <div className="flex-1 min-w-0">
-          {/* 时间信息 */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-white/60 text-sm">{formatDate(treasure.createdAt)}</span>
-            <div className="flex items-center gap-1 ml-2">
-              {getTypeIcon()}
-            </div>
-          </div>
-
-          {/* 标题 - 引用框风格 */}
-          <div className={cn(
-            "border-l-4 pl-4 mb-4",
-            "text-white text-xl font-bold",
-            treasure.type === 'TEXT' && "border-blue-400",
-            treasure.type === 'IMAGE' && "border-green-400",
-            treasure.type === 'MUSIC' && "border-purple-400"
-          )}>
-            {treasure.title}
-          </div>
-
-          {/* 内容 */}
-          {treasure.content && (
-            <div className="text-white/90 mb-2">
+      <article className={cn(
+        "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
+        className
+      )}>
+        {/* PC端：左右布局；移动端：上下布局 */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* 主内容区域 */}
+          <div className="flex-1 min-w-0">
+            {/* 头部信息 */}
+            <div className="flex items-start gap-3">
+              {/* 头像 */}
               <div className={cn(
-                "prose prose-sm max-w-none",
-                !isExpanded && shouldTruncate && "line-clamp-4"
+                "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
+                getTypeGradient()
               )}>
-                {renderContent()}
+                {treasure.title.charAt(0).toUpperCase()}
               </div>
-              
-              {shouldTruncate && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-blue-400 hover:text-blue-300 text-sm mt-1 transition-colors"
-                >
-                  {isExpanded ? '收起' : '展开'}
-                </button>
-              )}
-            </div>
-          )}
 
-          {/* 媒体内容 */}
-          {renderMedia()}
-
-          {/* 标签 */}
-          {treasure.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {treasure.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 backdrop-blur-sm text-white/80 rounded-full text-xs border border-white/20 hover:bg-white/20 transition-colors"
-                >
-                  <Tag className="h-3 w-3" />
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* 操作按钮 */}
-          <div className="flex items-center justify-between mt-3 max-w-md">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLike}
-              className={cn(
-                "gap-2 transition-all duration-200",
-                isLiked 
-                  ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
-                  : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
-              )}
-            >
-              <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
-              <span className="text-sm">{likesCount}</span>
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleToggleAnswers}
-              className={cn(
-                "gap-2 transition-all duration-200",
-                showAnswers
-                  ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                  : "text-white/60 hover:text-blue-400 hover:bg-blue-500/10"
-              )}
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">{answersCount}</span>
-            </Button>
-            
-            <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200">
-              <Share2 className="h-4 w-4" />
-            </Button>
-
-            {/* 更多操作 */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowActions(!showActions)}
-                className="text-white/60 hover:text-white/80 transition-all duration-200"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-              
-              {showActions && (
-                <div className="absolute right-0 top-8 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
-                  {onEdit && (
-                    <button
-                      onClick={() => onEdit(treasure.id)}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
-                    >
-                      <Edit className="h-4 w-4" />
-                      编辑
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      onClick={() => onDelete(treasure.id)}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      删除
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-        {/* 评论区域 - PC端右侧，移动端底部 */}
-        <div className={cn(
-          "lg:w-80 flex-shrink-0",
-          isMobile && !showAnswers && "hidden"
-        )}>
-          <div className="lg:sticky lg:top-4">
-            {/* 评论标题 */}
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-white/80 font-medium text-sm flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" />
-                评论 ({answersCount})
-              </h3>
-              {isMobile && (
-                <button
-                  onClick={() => setShowAnswers(false)}
-                  className="lg:hidden text-white/40 hover:text-white/60 p-1"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            {/* 回答输入框 */}
-            <form onSubmit={handleSubmitAnswer} className="mb-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newAnswer}
-                  onChange={(e) => setNewAnswer(e.target.value)}
-                  placeholder="写下你的回答..."
-                  className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm"
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!newAnswer.trim() || isSubmittingAnswer}
-                  className="bg-blue-500 hover:bg-blue-600 text-white shrink-0"
-                >
-                  {isSubmittingAnswer ? '...' : '发送'}
-                </Button>
-              </div>
-            </form>
-
-            {/* 回答列表 */}
-            <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
-              {answers.length > 0 ? (
-                answers.map((answer) => (
-                  <div key={answer.id} className="bg-white/5 rounded-lg p-3 border border-white/10 group/answer hover:bg-white/10 transition-colors">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-white/90 text-sm flex-1 break-words">{answer.content}</p>
-                      <button
-                        onClick={() => handleDeleteAnswer(answer.id)}
-                        className="opacity-0 group-hover/answer:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all text-red-400 hover:text-red-300 shrink-0"
-                        title="删除回答"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-white/40 text-xs mt-2">
-                      {formatDate(answer.createdAt)}
-                    </p>
+              {/* 内容区域 */}
+              <div className="flex-1 min-w-0">
+                {/* 时间信息 */}
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white/60 text-sm">{formatDate(treasure.createdAt)}</span>
+                  <div className="flex items-center gap-1 ml-2">
+                    {getTypeIcon()}
                   </div>
-                ))
-              ) : (
-                <p className="text-white/40 text-sm text-center py-8">
-                  暂无评论，来抢沙发吧~
-                </p>
-              )}
+                </div>
+
+                {/* 标题 - 引用框风格 */}
+                <div className={cn(
+                  "border-l-4 pl-4 mb-4",
+                  "text-white text-xl font-bold",
+                  treasure.type === 'TEXT' && "border-blue-400",
+                  treasure.type === 'IMAGE' && "border-green-400",
+                  treasure.type === 'MUSIC' && "border-purple-400"
+                )}>
+                  {treasure.title}
+                </div>
+
+                {/* 内容 */}
+                {treasure.content && (
+                  <div className="text-white/90 mb-2">
+                    <div className={cn(
+                      "prose prose-sm max-w-none",
+                      !isExpanded && shouldTruncate && "line-clamp-4"
+                    )}>
+                      {renderContent()}
+                    </div>
+                    
+                    {shouldTruncate && (
+                      <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="text-blue-400 hover:text-blue-300 text-sm mt-1 transition-colors"
+                      >
+                        {isExpanded ? '收起' : '展开'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* 媒体内容 */}
+                {renderMedia()}
+
+                {/* 标签 */}
+                {treasure.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {treasure.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 backdrop-blur-sm text-white/80 rounded-full text-xs border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex items-center justify-between mt-3 max-w-md">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleLike}
+                    className={cn(
+                      "gap-2 transition-all duration-200",
+                      isLiked 
+                        ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
+                        : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
+                    )}
+                  >
+                    <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
+                    <span className="text-sm">{likesCount}</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleToggleAnswers}
+                    className={cn(
+                      "gap-2 transition-all duration-200",
+                      showAnswers
+                        ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                        : "text-white/60 hover:text-blue-400 hover:bg-blue-500/10"
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="text-sm">{answersCount}</span>
+                  </Button>
+                  
+                  <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+
+                  {/* 更多操作 */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowActions(!showActions)}
+                      className="text-white/60 hover:text-white/80 transition-all duration-200"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                    
+                    {showActions && (
+                      <div className="absolute right-0 top-8 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(treasure.id)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                            编辑
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(treasure.id)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            删除
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 评论区域 - PC端右侧，移动端底部 */}
+          <div className={cn(
+            "lg:w-80 flex-shrink-0",
+            isMobile && !showAnswers && "hidden"
+          )}>
+            <div className="lg:sticky lg:top-4">
+              {/* 评论标题 */}
+              <div className="flex items-center justify-between mb-3 lg:mb-4">
+                <h3 className="text-white/80 font-medium text-sm flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  评论 ({answersCount})
+                </h3>
+                {isMobile && (
+                  <button
+                    onClick={() => setShowAnswers(false)}
+                    className="lg:hidden text-white/40 hover:text-white/60 p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* 回答输入框 */}
+              <form onSubmit={handleSubmitAnswer} className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newAnswer}
+                    onChange={(e) => setNewAnswer(e.target.value)}
+                    placeholder="写下你的回答..."
+                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!newAnswer.trim() || isSubmittingAnswer}
+                    className="bg-blue-500 hover:bg-blue-600 text-white shrink-0"
+                  >
+                    {isSubmittingAnswer ? '...' : '发送'}
+                  </Button>
+                </div>
+              </form>
+
+              {/* 回答列表 */}
+              <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
+                {answers.length > 0 ? (
+                  answers.map((answer) => (
+                    <div key={answer.id} className="bg-white/5 rounded-lg p-3 border border-white/10 group/answer hover:bg-white/10 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-white/90 text-sm flex-1 break-words">{answer.content}</p>
+                        <button
+                          onClick={() => handleDeleteAnswer(answer.id)}
+                          className="opacity-0 group-hover/answer:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all text-red-400 hover:text-red-300 shrink-0"
+                          title="删除回答"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-white/40 text-xs mt-2">
+                        {formatDate(answer.createdAt)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-white/40 text-sm text-center py-8">
+                    暂无评论，来抢沙发吧~
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </article>
+      </article>
 
     {/* 图片预览模态框 */}
     {selectedImageIndex !== null && (
