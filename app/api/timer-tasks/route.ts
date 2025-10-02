@@ -69,6 +69,8 @@ export async function POST(request: NextRequest) {
       parentId
     } = validated;
 
+    console.log('✅ 验证通过，开始创建任务...');
+    
     const newTask = await TimerDB.addTask({
       userId,
       name,
@@ -87,7 +89,19 @@ export async function POST(request: NextRequest) {
       order: order !== undefined ? order : 0 // 支持排序，默认0确保新任务显示在最下面
     });
 
-    return NextResponse.json(newTask, { status: 201 });
+    console.log('✅ 任务创建成功，ID:', newTask.id);
+
+    // 序列化处理：确保所有 Date 对象转换为 ISO 字符串
+    const serializedTask = JSON.parse(JSON.stringify(newTask, (key, value) => {
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      return value;
+    }));
+
+    console.log('✅ 序列化完成，准备返回响应');
+    
+    return NextResponse.json(serializedTask, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
       console.error('数据验证失败:', JSON.stringify(error.issues, null, 2));

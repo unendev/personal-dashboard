@@ -63,51 +63,11 @@ export const TimerDB = {
     try {
       const { instanceTagNames, ...taskData } = task;
       
-      // 创建任务
-      const newTask = await prisma.timerTask.create({
-        data: taskData,
-        include: {
-          children: true,
-          instanceTags: {
-            include: {
-              instanceTag: true
-            }
-          }
-        }
-      });
-
-      // 如果有事务项，创建关联
-      if (instanceTagNames && instanceTagNames.length > 0) {
-        for (const tagName of instanceTagNames) {
-          // 查找或创建事务项
-          let instanceTag = await prisma.instanceTag.findFirst({
-            where: {
-              name: tagName,
-              userId: taskData.userId
-            }
-          });
-
-          if (!instanceTag) {
-            instanceTag = await prisma.instanceTag.create({
-              data: {
-                name: tagName,
-                userId: taskData.userId
-              }
-            });
-          }
-
-          // 创建关联
-          await prisma.timerTaskInstanceTag.create({
-            data: {
-              timerTaskId: newTask.id,
-              instanceTagId: instanceTag.id
-            }
-          });
-        }
-
-        // 重新获取任务以包含新的事务项关联
-        const updatedTask = await prisma.timerTask.findUnique({
-          where: { id: newTask.id },
+      // 使用事务确保原子性操作
+      const result = await prisma.$transaction(async (tx) => {
+        // 创建任务
+        const newTask = await tx.timerTask.create({
+          data: taskData,
           include: {
             children: true,
             instanceTags: {
@@ -118,10 +78,55 @@ export const TimerDB = {
           }
         });
 
-        return updatedTask || newTask;
-      }
+        // 如果有事务项，创建关联
+        if (instanceTagNames && instanceTagNames.length > 0) {
+          for (const tagName of instanceTagNames) {
+            // 查找或创建事务项
+            let instanceTag = await tx.instanceTag.findFirst({
+              where: {
+                name: tagName,
+                userId: taskData.userId
+              }
+            });
 
-      return newTask;
+            if (!instanceTag) {
+              instanceTag = await tx.instanceTag.create({
+                data: {
+                  name: tagName,
+                  userId: taskData.userId
+                }
+              });
+            }
+
+            // 创建关联
+            await tx.timerTaskInstanceTag.create({
+              data: {
+                timerTaskId: newTask.id,
+                instanceTagId: instanceTag.id
+              }
+            });
+          }
+
+          // 重新获取任务以包含新的事务项关联
+          const updatedTask = await tx.timerTask.findUnique({
+            where: { id: newTask.id },
+            include: {
+              children: true,
+              instanceTags: {
+                include: {
+                  instanceTag: true
+                }
+              }
+            }
+          });
+
+          return updatedTask || newTask;
+        }
+
+        return newTask;
+      });
+
+      return result;
     } catch (error) {
       console.error('Failed to add timer task:', error);
       throw error;
