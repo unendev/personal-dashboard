@@ -58,6 +58,7 @@ export async function PUT(
     const { 
       title, 
       content, 
+      type,
       tags, 
       theme,
       musicTitle, 
@@ -84,6 +85,7 @@ export async function PUT(
     const updateData: any = {
       title,
       content,
+      type,
       tags,
       theme,
       musicTitle,

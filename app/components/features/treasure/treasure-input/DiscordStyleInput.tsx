@@ -91,7 +91,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       setContent(fullContent)
       
-      // 设置图片
+      // 设置图片（必须重置，即使为空数组）
       if (initialData.images && initialData.images.length > 0) {
         console.log('🖼️ 编辑模式 - 初始化图片:', initialData.images)
         const mappedImages = initialData.images.map(img => ({
@@ -102,6 +102,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         }))
         console.log('🖼️ 编辑模式 - 映射后的图片:', mappedImages)
         setImages(mappedImages)
+      } else {
+        // 重要：编辑没有图片的宝藏时，必须重置为空数组
+        console.log('🖼️ 编辑模式 - 重置图片为空')
+        setImages([])
       }
       
       // 设置音乐数据

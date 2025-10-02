@@ -264,7 +264,8 @@ export function TwitterStyleCard({
   }
 
   const renderMedia = () => {
-    if (treasure.type === 'IMAGE' && treasure.images.length > 0) {
+    // 只要有图片就显示，不限制类型
+    if (treasure.images && treasure.images.length > 0) {
       if (treasure.images.length === 1) {
         return (
           <div 
