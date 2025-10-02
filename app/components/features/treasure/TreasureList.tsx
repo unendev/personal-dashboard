@@ -157,10 +157,12 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   const renderTreasureCard = (treasure: Treasure) => {
+    const hasComments = treasure._count?.answers && treasure._count.answers > 0
+    
     return (
-      <div key={treasure.id} className="flex flex-col lg:flex-row gap-6">
-        {/* 主卡片 */}
-        <div className="flex-1 min-w-0">
+      <div key={treasure.id} className="relative max-w-7xl mx-auto">
+        {/* 主卡片 - 居中显示 */}
+        <div className="max-w-2xl mx-auto">
           <TwitterStyleCard
             treasure={treasure}
             onDelete={handleDeleteTreasure}
@@ -168,10 +170,12 @@ export function TreasureList({ className }: TreasureListProps) {
           />
         </div>
         
-        {/* 评论卡片 - PC端显示，移动端隐藏 */}
-        <div className="hidden lg:block lg:w-96 flex-shrink-0">
-          <CommentsCard treasure={treasure} />
-        </div>
+        {/* 评论卡片 - 绝对定位在右侧，PC端显示，移动端隐藏，且只在有评论时显示 */}
+        {hasComments && (
+          <div className="hidden lg:block absolute top-0 right-0 w-80">
+            <CommentsCard treasure={treasure} />
+          </div>
+        )}
       </div>
     )
   }
