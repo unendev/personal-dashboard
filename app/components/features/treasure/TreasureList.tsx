@@ -5,7 +5,6 @@ import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
 // import { sampleTreasures } from './sample-treasures' // 已移除示例数据
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
-import { CommentsCard } from './CommentsCard'
 import { 
   Filter, 
   RefreshCw,
@@ -52,7 +51,6 @@ export function TreasureList({ className }: TreasureListProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
-  const [selectedTreasure, setSelectedTreasure] = useState<Treasure | null>(null)
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -158,15 +156,14 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   const renderTreasureCard = (treasure: Treasure) => {
-    // 统一使用 TwitterStyleCard
+    // 统一使用 TwitterStyleCard，每个卡片都显示评论
     return (
-      <div key={treasure.id} onClick={() => setSelectedTreasure(treasure)}>
-        <TwitterStyleCard
-          treasure={treasure}
-          onDelete={handleDeleteTreasure}
-          hideComments={true}
-        />
-      </div>
+      <TwitterStyleCard
+        key={treasure.id}
+        treasure={treasure}
+        onDelete={handleDeleteTreasure}
+        hideComments={false}
+      />
     )
   }
 
@@ -335,55 +332,22 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       </div>
 
-      {/* PC端：左右布局；移动端：上下布局 */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* 左侧：宝藏列表 */}
-        <div className="flex-1 min-w-0">
-          {treasures.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-white/40 mb-4">
-                <Filter className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-white mb-2">
-                {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
-              </h3>
-              <p className="text-white/60 mb-4">
-                {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
-              </p>
-            </div>
-          ) : (
-            <div className="max-w-2xl mx-auto space-y-8">
-              {treasures.map((treasure) => renderTreasureCard(treasure))}
-            </div>
-          )}
+      {/* 宝藏列表 */}
+      {treasures.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-white/40 mb-4">
+            <Filter className="h-12 w-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-2">
+            {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
+          </h3>
+          <p className="text-white/60 mb-4">
+            {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
+          </p>
         </div>
-
-        {/* 右侧：评论区（独立卡片）- PC 端显示 */}
-        {selectedTreasure && (
-          <div className="hidden lg:block lg:w-96 flex-shrink-0">
-            <div className="sticky top-4">
-              <CommentsCard
-                treasure={selectedTreasure}
-                onClose={() => setSelectedTreasure(null)}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 移动端：评论模态框 */}
-      {selectedTreasure && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end animate-in fade-in duration-200">
-          <div 
-            className="absolute inset-0"
-            onClick={() => setSelectedTreasure(null)}
-          />
-          <div className="relative w-full max-h-[85vh] bg-gray-900 rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <CommentsCard
-              treasure={selectedTreasure}
-              onClose={() => setSelectedTreasure(null)}
-            />
-          </div>
+      ) : (
+        <div className="space-y-8">
+          {treasures.map((treasure) => renderTreasureCard(treasure))}
         </div>
       )}
 

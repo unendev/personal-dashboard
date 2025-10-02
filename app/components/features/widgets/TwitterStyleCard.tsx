@@ -20,7 +20,8 @@ import {
   FileText,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -77,11 +78,10 @@ export function TwitterStyleCard({
   const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(treasure.likesCount || treasure._count?.likes || 0)
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
-  const [showAnswers, setShowAnswers] = useState(false) // 移动端默认不显示
   const [answers, setAnswers] = useState<Answer[]>([])
   const [newAnswer, setNewAnswer] = useState('')
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [showInput, setShowInput] = useState(false) // 输入框默认隐藏
 
   // 获取回答列表
   const fetchAnswers = useCallback(async () => {
@@ -96,28 +96,12 @@ export function TwitterStyleCard({
     }
   }, [treasure.id])
 
-  // 检测屏幕尺寸
+  // 初始加载回答
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024 // lg breakpoint
-      setIsMobile(mobile)
-      // PC端默认显示评论，移动端默认隐藏
-      if (!mobile && answers.length === 0) {
-        fetchAnswers()
-      }
-    }
-    
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [fetchAnswers, answers.length])
-
-  // 初始加载回答（仅 PC 端）
-  useEffect(() => {
-    if (!isMobile) {
+    if (!hideComments) {
       fetchAnswers()
     }
-  }, [fetchAnswers, isMobile])
+  }, [fetchAnswers, hideComments])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -466,14 +450,9 @@ export function TwitterStyleCard({
     }
   }
 
-  // 切换显示回答（仅移动端）
-  const handleToggleAnswers = () => {
-    if (isMobile) {
-      if (!showAnswers && answers.length === 0) {
-        fetchAnswers()
-      }
-      setShowAnswers(!showAnswers)
-    }
+  // 切换输入框显示
+  const handleToggleInput = () => {
+    setShowInput(!showInput)
   }
 
   // 提交回答（乐观更新）
@@ -494,6 +473,7 @@ export function TwitterStyleCard({
     setAnswers(prev => [optimisticAnswer, ...prev])
     setAnswersCount(prev => prev + 1)
     setNewAnswer('')
+    setShowInput(false) // 提交后关闭输入框
 
     try {
       setIsSubmittingAnswer(true)
@@ -555,11 +535,14 @@ export function TwitterStyleCard({
   return (
     <>
       <article className={cn(
-        "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl cursor-pointer",
+        "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
         className
       )}>
-        {/* 主内容区域 */}
-        <div className="flex-1 min-w-0">
+        {/* PC端：左右布局；移动端：上下布局 */}
+        {!hideComments ? (
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* 主内容区域 */}
+            <div className="flex-1 min-w-0">
           {/* 头部信息 */}
           <div className="flex items-start gap-3">
             {/* 头像 */}
@@ -650,25 +633,15 @@ export function TwitterStyleCard({
                   <span className="text-sm">{likesCount}</span>
                 </Button>
                 
-                {!hideComments && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleToggleAnswers()
-                    }}
-                    className={cn(
-                      "gap-2 transition-all duration-200",
-                      showAnswers
-                        ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                        : "text-white/60 hover:text-blue-400 hover:bg-blue-500/10"
-                    )}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    <span className="text-sm">{answersCount}</span>
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={(e) => e.stopPropagation()}
+                  className="gap-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-sm">{answersCount}</span>
+                </Button>
                 
                 <Button 
                   variant="ghost" 
@@ -726,6 +699,269 @@ export function TwitterStyleCard({
             </div>
           </div>
         </div>
+
+            {/* 评论区域 - PC端右侧，移动端隐藏 */}
+            <div className="hidden lg:block lg:w-96 flex-shrink-0">
+              <div className="lg:sticky lg:top-4">
+                {/* 评论标题 */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-blue-400" />
+                    <h3 className="text-white/80 font-medium text-sm">评论 ({answersCount})</h3>
+                  </div>
+                </div>
+
+                {/* 添加评论按钮 */}
+                {!showInput && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowInput(true)
+                    }}
+                    className="w-full mb-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    写下你的回答
+                  </Button>
+                )}
+
+                {/* 回答输入框 */}
+                {showInput && (
+                  <form onSubmit={handleSubmitAnswer} className="mb-3">
+                    <div className="space-y-2">
+                      <textarea
+                        value={newAnswer}
+                        onChange={(e) => setNewAnswer(e.target.value)}
+                        placeholder="写下你的回答..."
+                        rows={3}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm resize-none"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowInput(false)
+                            setNewAnswer('')
+                          }}
+                          size="sm"
+                          variant="ghost"
+                          className="text-white/60 hover:text-white"
+                        >
+                          取消
+                        </Button>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={!newAnswer.trim() || isSubmittingAnswer}
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {isSubmittingAnswer ? '发送中...' : '发送'}
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+
+                {/* 回答列表 */}
+                <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
+                  {answers.length > 0 ? (
+                    answers.map((answer) => (
+                      <div
+                        key={answer.id}
+                        className="bg-white/5 rounded-lg p-3 border border-white/10 group/answer hover:bg-white/10 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-white/90 text-sm flex-1 break-words">{answer.content}</p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteAnswer(answer.id)
+                            }}
+                            className="opacity-0 group-hover/answer:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all text-red-400 hover:text-red-300 shrink-0"
+                            title="删除回答"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-white/40 text-xs mt-2">{formatDate(answer.createdAt)}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageCircle className="h-12 w-12 mx-auto text-white/20 mb-3" />
+                      <p className="text-white/40 text-sm">暂无评论</p>
+                      <p className="text-white/30 text-xs mt-1">来抢沙发吧~</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 min-w-0">
+            {/* 头部信息 */}
+            <div className="flex items-start gap-3">
+              {/* 头像 */}
+              <div className={cn(
+                "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
+                getTypeGradient()
+              )}>
+                {treasure.title.charAt(0).toUpperCase()}
+              </div>
+
+              {/* 内容区域 */}
+              <div className="flex-1 min-w-0">
+                {/* 时间信息 */}
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white/60 text-sm">{formatDate(treasure.createdAt)}</span>
+                  <div className="flex items-center gap-1 ml-2">
+                    {getTypeIcon()}
+                  </div>
+                </div>
+
+                {/* 标题 - 引用框风格 */}
+                <div className={cn(
+                  "border-l-4 pl-4 mb-4",
+                  "text-white text-xl font-bold",
+                  treasure.type === 'TEXT' && "border-blue-400",
+                  treasure.type === 'IMAGE' && "border-green-400",
+                  treasure.type === 'MUSIC' && "border-purple-400"
+                )}>
+                  {treasure.title}
+                </div>
+
+                {/* 内容 */}
+                {treasure.content && (
+                  <div className="text-white/90 mb-2">
+                    <div className={cn(
+                      "prose prose-sm max-w-none",
+                      !isExpanded && shouldTruncate && "line-clamp-4"
+                    )}>
+                      {renderContent()}
+                    </div>
+                    
+                    {shouldTruncate && (
+                      <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="text-blue-400 hover:text-blue-300 text-sm mt-1 transition-colors"
+                      >
+                        {isExpanded ? '收起' : '展开'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* 媒体内容 */}
+                {renderMedia()}
+
+                {/* 标签 */}
+                {treasure.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {treasure.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 backdrop-blur-sm text-white/80 rounded-full text-xs border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex items-center justify-between mt-3 max-w-md">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleLike()
+                    }}
+                    className={cn(
+                      "gap-2 transition-all duration-200",
+                      isLiked 
+                        ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
+                        : "text-white/60 hover:text-red-400 hover:bg-red-500/10"
+                    )}
+                  >
+                    <Heart className={cn("h-4 w-4", isLiked && "fill-red-400")} />
+                    <span className="text-sm">{likesCount}</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => e.stopPropagation()}
+                    className="gap-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="text-sm">{answersCount}</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => e.stopPropagation()}
+                    className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+
+                  {/* 更多操作 */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowActions(!showActions)
+                      }}
+                      className="text-white/60 hover:text-white/80 transition-all duration-200"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                    
+                    {showActions && (
+                      <div className="absolute right-0 top-8 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                        {onEdit && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onEdit(treasure.id)
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                            编辑
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDelete(treasure.id)
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            删除
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </article>
 
     {/* 图片预览模态框 */}
