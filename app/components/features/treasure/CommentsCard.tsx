@@ -29,7 +29,6 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
   const [newAnswer, setNewAnswer] = useState('')
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
-  const [showInput, setShowInput] = useState(false)
 
   // 获取回答列表
   const fetchAnswers = useCallback(async () => {
@@ -68,7 +67,6 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
     setAnswers(prev => [optimisticAnswer, ...prev])
     setAnswersCount(prev => prev + 1)
     setNewAnswer('')
-    setShowInput(false)
 
     try {
       setIsSubmittingAnswer(true)
@@ -155,55 +153,28 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
         <span className="text-white/60 text-sm">({answersCount})</span>
       </div>
 
-      {/* 添加评论按钮 */}
-      {!showInput && (
-        <Button
-          onClick={() => setShowInput(true)}
-          className="w-full mb-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30"
-          size="sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          写下你的回答
-        </Button>
-      )}
-
       {/* 回答输入框 */}
-      {showInput && (
-        <form onSubmit={handleSubmitAnswer} className="mb-4">
-          <div className="space-y-2">
-            <textarea
-              value={newAnswer}
-              onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder="写下你的回答..."
-              rows={3}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm resize-none"
-              autoFocus
-            />
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                onClick={() => {
-                  setShowInput(false)
-                  setNewAnswer('')
-                }}
-                size="sm"
-                variant="ghost"
-                className="text-white/60 hover:text-white"
-              >
-                取消
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!newAnswer.trim() || isSubmittingAnswer}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                {isSubmittingAnswer ? '发送中...' : '发送'}
-              </Button>
-            </div>
+      <form onSubmit={handleSubmitAnswer} className="mb-4">
+        <div className="space-y-2">
+          <textarea
+            value={newAnswer}
+            onChange={(e) => setNewAnswer(e.target.value)}
+            placeholder="写下你的回答..."
+            rows={3}
+            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm resize-none"
+          />
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!newAnswer.trim() || isSubmittingAnswer}
+              className="bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
+            >
+              {isSubmittingAnswer ? '发送中...' : '发送'}
+            </Button>
           </div>
-        </form>
-      )}
+        </div>
+      </form>
 
       {/* 回答列表 */}
       <div className="space-y-3 max-h-[calc(100vh-24rem)] overflow-y-auto custom-scrollbar">

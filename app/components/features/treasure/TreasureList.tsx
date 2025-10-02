@@ -160,7 +160,7 @@ export function TreasureList({ className }: TreasureListProps) {
     const hasComments = treasure._count?.answers && treasure._count.answers > 0
     
     return (
-      <div key={treasure.id} className="relative max-w-7xl mx-auto">
+      <div key={treasure.id} className="relative">
         {/* 主卡片 - 居中显示 */}
         <div className="max-w-2xl mx-auto">
           <TwitterStyleCard
@@ -172,7 +172,7 @@ export function TreasureList({ className }: TreasureListProps) {
         
         {/* 评论卡片 - 绝对定位在右侧，PC端显示，移动端隐藏，且只在有评论时显示 */}
         {hasComments && (
-          <div className="hidden lg:block absolute top-0 right-0 w-80">
+          <div className="hidden xl:block absolute top-0 right-4 w-80">
             <CommentsCard treasure={treasure} />
           </div>
         )}
