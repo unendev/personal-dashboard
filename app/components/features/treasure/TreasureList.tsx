@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
 import { CommentsCard } from './CommentsCard'
+import { CommentInputModal } from './CommentInputModal'
 // import { sampleTreasures } from './sample-treasures' // 已移除示例数据
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
@@ -52,6 +53,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [showCommentModal, setShowCommentModal] = useState(false)
+  const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null)
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -156,6 +159,16 @@ export function TreasureList({ className }: TreasureListProps) {
     setShowCreateModal(true)
   }
 
+  const handleCommentClick = (treasure: Treasure) => {
+    setSelectedTreasureForComment(treasure)
+    setShowCommentModal(true)
+  }
+
+  const handleCommentAdded = () => {
+    // 重新获取宝藏列表以更新评论数
+    fetchTreasures()
+  }
+
   const renderTreasureCard = (treasure: Treasure) => {
     const hasComments = treasure._count?.answers && treasure._count.answers > 0
     
@@ -166,6 +179,7 @@ export function TreasureList({ className }: TreasureListProps) {
           <TwitterStyleCard
             treasure={treasure}
             onDelete={handleDeleteTreasure}
+            onComment={handleCommentClick}
             hideComments={true}
           />
         </div>
@@ -373,6 +387,20 @@ export function TreasureList({ className }: TreasureListProps) {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateTreasure}
       />
+
+      {/* 评论输入模态框 */}
+      {selectedTreasureForComment && (
+        <CommentInputModal
+          isOpen={showCommentModal}
+          onClose={() => {
+            setShowCommentModal(false)
+            setSelectedTreasureForComment(null)
+          }}
+          treasureId={selectedTreasureForComment.id}
+          treasureTitle={selectedTreasureForComment.title}
+          onCommentAdded={handleCommentAdded}
+        />
+      )}
     </div>
   )
 }

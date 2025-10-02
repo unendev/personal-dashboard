@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Button } from '@/app/components/ui/button'
-import { MessageCircle, Trash2, Plus } from 'lucide-react'
+import { MessageCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Answer {
@@ -27,8 +26,6 @@ interface CommentsCardProps {
 export function CommentsCard({ treasure }: CommentsCardProps) {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [answersCount, setAnswersCount] = useState(treasure._count?.answers || 0)
-  const [newAnswer, setNewAnswer] = useState('')
-  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
 
   // 获取回答列表
   const fetchAnswers = useCallback(async () => {
@@ -48,51 +45,6 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
   useEffect(() => {
     fetchAnswers()
   }, [fetchAnswers])
-
-  // 提交回答（乐观更新）
-  const handleSubmitAnswer = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newAnswer.trim() || isSubmittingAnswer) return
-
-    const content = newAnswer.trim()
-    
-    // 乐观更新：立即添加到 UI
-    const optimisticAnswer: Answer = {
-      id: `temp-${Date.now()}`,
-      userId: 'current-user',
-      content,
-      createdAt: new Date().toISOString()
-    }
-    
-    setAnswers(prev => [optimisticAnswer, ...prev])
-    setAnswersCount(prev => prev + 1)
-    setNewAnswer('')
-
-    try {
-      setIsSubmittingAnswer(true)
-      const response = await fetch(`/api/treasures/${treasure.id}/answers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content })
-      })
-
-      if (response.ok) {
-        await fetchAnswers()
-      } else {
-        setAnswers(prev => prev.filter(a => a.id !== optimisticAnswer.id))
-        setAnswersCount(prev => prev - 1)
-        console.error('提交回答失败')
-      }
-    } catch (error) {
-      setAnswers(prev => prev.filter(a => a.id !== optimisticAnswer.id))
-      setAnswersCount(prev => prev - 1)
-      console.error('Error submitting answer:', error)
-    } finally {
-      setIsSubmittingAnswer(false)
-    }
-  }
 
   // 删除回答（乐观更新）
   const handleDeleteAnswer = async (answerId: string) => {
@@ -152,29 +104,6 @@ export function CommentsCard({ treasure }: CommentsCardProps) {
         <h3 className="text-white font-medium">评论</h3>
         <span className="text-white/60 text-sm">({answersCount})</span>
       </div>
-
-      {/* 回答输入框 */}
-      <form onSubmit={handleSubmitAnswer} className="mb-4">
-        <div className="space-y-2">
-          <textarea
-            value={newAnswer}
-            onChange={(e) => setNewAnswer(e.target.value)}
-            placeholder="写下你的回答..."
-            rows={3}
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-sm resize-none"
-          />
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!newAnswer.trim() || isSubmittingAnswer}
-              className="bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
-            >
-              {isSubmittingAnswer ? '发送中...' : '发送'}
-            </Button>
-          </div>
-        </div>
-      </form>
 
       {/* 回答列表 */}
       <div className="space-y-3 max-h-[calc(100vh-24rem)] overflow-y-auto custom-scrollbar">
