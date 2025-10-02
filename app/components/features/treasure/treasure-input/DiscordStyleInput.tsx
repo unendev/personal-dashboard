@@ -13,6 +13,8 @@ import { ThemeSelector } from './ThemeSelector'
 interface DiscordStyleInputProps {
   onSubmit: (data: TreasureData) => Promise<void>
   onCancel: () => void
+  initialData?: TreasureData & { id?: string }
+  mode?: 'create' | 'edit'
 }
 
 interface UploadingImage {
@@ -31,7 +33,7 @@ interface ImageWithPreview {
   previewUrl?: string   // 用于预览的签名 URL
 }
 
-export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps) {
+export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create' }: DiscordStyleInputProps) {
   const [content, setContent] = useState('')
   const [images, setImages] = useState<ImageWithPreview[]>([])
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([])
@@ -65,6 +67,57 @@ export function DiscordStyleInput({ onSubmit, onCancel }: DiscordStyleInputProps
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
   }, [content])
+
+  // 初始化编辑数据
+  useEffect(() => {
+    if (initialData && mode === 'edit') {
+      // 构建完整的内容
+      let fullContent = ''
+      
+      // 添加标题
+      if (initialData.title) {
+        fullContent += initialData.title + '\n\n'
+      }
+      
+      // 添加内容
+      if (initialData.content) {
+        fullContent += initialData.content
+      }
+      
+      // 添加标签
+      if (initialData.tags && initialData.tags.length > 0) {
+        fullContent += '\n\n' + initialData.tags.map(tag => `#${tag}`).join(' ')
+      }
+      
+      setContent(fullContent)
+      
+      // 设置图片
+      if (initialData.images && initialData.images.length > 0) {
+        setImages(initialData.images.map(img => ({
+          ...img,
+          originalUrl: img.url,
+          previewUrl: img.url
+        })))
+      }
+      
+      // 设置音乐数据
+      if (initialData.type === 'MUSIC' && initialData.musicTitle) {
+        setMusicData({
+          title: initialData.musicTitle || '',
+          artist: initialData.musicArtist || '',
+          album: initialData.musicAlbum || '',
+          url: initialData.musicUrl || '',
+          coverUrl: initialData.musicCoverUrl || ''
+        })
+        setActiveCommand('music')
+      }
+      
+      // 设置主题
+      if (initialData.theme) {
+        setSelectedTheme(initialData.theme)
+      }
+    }
+  }, [initialData, mode])
 
   // 自动聚焦
   useEffect(() => {

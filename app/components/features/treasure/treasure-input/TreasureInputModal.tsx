@@ -30,12 +30,16 @@ interface TreasureInputModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: TreasureData) => Promise<void>
+  initialData?: TreasureData & { id?: string }
+  mode?: 'create' | 'edit'
 }
 
 export function TreasureInputModal({ 
   isOpen, 
   onClose, 
-  onSubmit 
+  onSubmit,
+  initialData,
+  mode = 'create'
 }: TreasureInputModalProps) {
   const [isMounted, setIsMounted] = useState(false)
 
@@ -71,7 +75,7 @@ export function TreasureInputModal({
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
               <DialogPrimitive.Title className="text-lg font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                记录你的想法
+                {mode === 'edit' ? '编辑宝藏' : '记录你的想法'}
               </DialogPrimitive.Title>
             </div>
             <button
@@ -87,6 +91,8 @@ export function TreasureInputModal({
             <DiscordStyleInput
               onSubmit={onSubmit}
               onCancel={handleClose}
+              initialData={initialData}
+              mode={mode}
             />
           </div>
         </DialogPrimitive.Content>

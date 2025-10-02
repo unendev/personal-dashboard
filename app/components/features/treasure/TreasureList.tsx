@@ -55,6 +55,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [allTags, setAllTags] = useState<string[]>([])
   const [showCommentModal, setShowCommentModal] = useState(false)
   const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null)
+  const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -169,6 +171,39 @@ export function TreasureList({ className }: TreasureListProps) {
     fetchTreasures()
   }
 
+  const handleEditClick = (id: string) => {
+    const treasure = treasures.find(t => t.id === id)
+    if (treasure) {
+      setEditingTreasure(treasure)
+      setShowEditModal(true)
+    }
+  }
+
+  const handleEditTreasure = async (data: TreasureData) => {
+    if (!editingTreasure) return
+
+    try {
+      const response = await fetch(`/api/treasures/${editingTreasure.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        // 刷新列表
+        await fetchTreasures()
+        setShowEditModal(false)
+        setEditingTreasure(null)
+      } else {
+        console.error('Failed to update treasure')
+      }
+    } catch (error) {
+      console.error('Error updating treasure:', error)
+    }
+  }
+
   const renderTreasureCard = (treasure: Treasure) => {
     const hasComments = treasure._count?.answers && treasure._count.answers > 0
     
@@ -178,6 +213,7 @@ export function TreasureList({ className }: TreasureListProps) {
         <div className="max-w-2xl mx-auto">
           <TwitterStyleCard
             treasure={treasure}
+            onEdit={handleEditClick}
             onDelete={handleDeleteTreasure}
             onComment={handleCommentClick}
             hideComments={true}
@@ -387,6 +423,23 @@ export function TreasureList({ className }: TreasureListProps) {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateTreasure}
       />
+
+      {/* 编辑模态框 */}
+      {editingTreasure && (
+        <TreasureInputModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingTreasure(null)
+          }}
+          onSubmit={handleEditTreasure}
+          initialData={{
+            ...editingTreasure,
+            id: editingTreasure.id
+          }}
+          mode="edit"
+        />
+      )}
 
       {/* 评论输入模态框 */}
       {selectedTreasureForComment && (
