@@ -105,8 +105,8 @@ export class RAGServiceHF {
     for (let i = 0; i < maxRetries; i++) {
       try {
         return await this.generateEmbedding(text, model);
-      } catch (error: any) {
-        const errorMessage = error.message || '';
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         
         // 如果是 503（模型正在加载），等待后重试
         if (errorMessage.includes('503') && i < maxRetries - 1) {

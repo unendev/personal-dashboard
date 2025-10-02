@@ -68,7 +68,7 @@ function ImagePreviewItem({
           setIsLoading(false)
           setHasError(false)
         }}
-        onError={(e) => {
+        onError={() => {
           console.error('图片加载失败:', image.url)
           setIsLoading(false)
           setHasError(true)
