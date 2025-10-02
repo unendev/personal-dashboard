@@ -59,10 +59,13 @@ export async function PUT(
       title, 
       content, 
       tags, 
+      theme,
       musicTitle, 
       musicArtist, 
       musicAlbum, 
-      musicUrl 
+      musicUrl,
+      musicCoverUrl,
+      images 
     } = body;
 
     const userId = await getUserId(request);
@@ -77,19 +80,47 @@ export async function PUT(
       return NextResponse.json({ error: 'Treasure not found' }, { status: 404 });
     }
 
+    // 如果有新的图片数组，先删除旧图片，再添加新图片
+    const updateData: any = {
+      title,
+      content,
+      tags,
+      theme,
+      musicTitle,
+      musicArtist,
+      musicAlbum,
+      musicUrl,
+      musicCoverUrl
+    };
+
+    // 处理图片更新
+    if (images !== undefined) {
+      // 删除所有旧图片
+      await prisma.image.deleteMany({
+        where: { treasureId: id }
+      });
+      
+      // 添加新图片
+      if (images.length > 0) {
+        updateData.images = {
+          create: images.map((img: { url: string; alt?: string; width?: number; height?: number; size?: number }) => ({
+            url: img.url,
+            alt: img.alt,
+            width: img.width,
+            height: img.height,
+            size: img.size
+          }))
+        };
+      }
+    }
+
     const treasure = await prisma.treasure.update({
       where: { id },
-      data: {
-        title,
-        content,
-        tags,
-        musicTitle,
-        musicArtist,
-        musicAlbum,
-        musicUrl
-      },
+      data: updateData,
       include: {
-        images: true
+        images: {
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
