@@ -8,7 +8,8 @@ import type { TreasureData } from './TreasureInputModal'
 import { ImageUploadPreview } from './ImageUploadPreview'
 import { SlashCommandPanel } from './SlashCommandPanel'
 import { MusicCardForm } from './MusicCardForm'
-import { ThemeSelector } from './ThemeSelector'
+import { PrimaryCategorySelector } from './PrimaryCategorySelector'
+import { TagInput } from './TagInput'
 
 interface DiscordStyleInputProps {
   onSubmit: (data: TreasureData) => Promise<void>
@@ -53,8 +54,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     coverUrl: ''
   })
   
-  // 主题选择
-  const [selectedTheme, setSelectedTheme] = useState<string>('')
+  // 标签系统
+  const [primaryCategory, setPrimaryCategory] = useState<string>('')
+  const [topicTags, setTopicTags] = useState<string[]>([])
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -67,6 +70,24 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
   }, [content])
+
+  // 获取标签建议
+  useEffect(() => {
+    const fetchTagSuggestions = async () => {
+      try {
+        const response = await fetch('/api/treasures/tags')
+        if (response.ok) {
+          const tags = await response.json()
+          // tags 是 { name: string, count: number }[] 格式
+          setTagSuggestions(tags.map((t: { name: string }) => t.name))
+        }
+      } catch (error) {
+        console.error('Failed to fetch tag suggestions:', error)
+      }
+    }
+
+    fetchTagSuggestions()
+  }, [])
 
   // 初始化编辑数据
   useEffect(() => {
@@ -84,12 +105,20 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         fullContent += initialData.content
       }
       
-      // 添加标签
-      if (initialData.tags && initialData.tags.length > 0) {
-        fullContent += '\n\n' + initialData.tags.map(tag => `#${tag}`).join(' ')
-      }
-      
       setContent(fullContent)
+      
+      // 初始化标签系统
+      if (initialData.tags && initialData.tags.length > 0) {
+        // 检查是否有主要分类
+        const primaryCategories = ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music']
+        const primaryTag = initialData.tags.find(tag => primaryCategories.includes(tag))
+        const topicTagsList = initialData.tags.filter(tag => !primaryCategories.includes(tag))
+        
+        if (primaryTag) {
+          setPrimaryCategory(primaryTag)
+        }
+        setTopicTags(topicTagsList)
+      }
       
       // 设置图片（必须重置，即使为空数组）
       if (initialData.images && initialData.images.length > 0) {
@@ -119,11 +148,20 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         })
         setActiveCommand('music')
       }
-      
-      // 设置主题
-      if (initialData.theme) {
-        setSelectedTheme(initialData.theme)
-      }
+    } else if (!initialData) {
+      // 重置所有状态（创建模式）
+      setContent('')
+      setImages([])
+      setPrimaryCategory('')
+      setTopicTags([])
+      setActiveCommand(null)
+      setMusicData({
+        title: '',
+        artist: '',
+        album: '',
+        url: '',
+        coverUrl: ''
+      })
     }
   }, [initialData, mode])
 
@@ -431,12 +469,24 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     // 保存当前内容，以便错误时恢复
     const savedContent = content
     const savedImages = images
-    const savedTheme = selectedTheme
     const savedMusicData = { ...musicData }
 
     try {
       const title = extractTitle(content)
-      const tags = extractTags(content)
+      
+      // 合并标签：主要分类 + 主题标签
+      const tags = [
+        ...(primaryCategory ? [primaryCategory] : []),
+        ...topicTags
+      ]
+      
+      console.log('📝 [提交] 准备提交宝藏:', { 
+        title, 
+        primaryCategory, 
+        topicTags, 
+        mergedTags: tags,
+        imagesCount: images.length 
+      })
       
       // 移除第一行（作为标题）后的内容
       const lines = content.split('\n')
@@ -460,7 +510,6 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         content: contentWithoutTitle, // 不包含标题的内容
         type,
         tags,
-        theme: selectedTheme || undefined,
         images: imagesToSubmit,
         ...(type === 'MUSIC' && {
           musicTitle: musicData.title,
@@ -471,6 +520,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         })
       }
 
+      console.log('✅ [提交] 最终数据:', data)
       await onSubmit(data)
       
       // 提交成功后关闭（由父组件处理）
@@ -481,7 +531,6 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       // 网络错误时恢复内容
       setContent(savedContent)
       setImages(savedImages)
-      setSelectedTheme(savedTheme)
       setMusicData(savedMusicData)
       
       alert(`提交失败: ${error instanceof Error ? error.message : '未知错误'}\n\n您的内容已保存，请稍后重试`)
@@ -490,7 +539,6 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     }
   }
 
-  const tags = extractTags(content)
   const charCount = content.length
   const maxChars = 2000
 
@@ -502,10 +550,18 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {/* 主题选择 */}
-      <ThemeSelector
-        value={selectedTheme}
-        onChange={setSelectedTheme}
+      {/* 主要分类选择 */}
+      <PrimaryCategorySelector
+        value={primaryCategory}
+        onChange={setPrimaryCategory}
+      />
+
+      {/* 主题标签输入 */}
+      <TagInput
+        tags={topicTags}
+        onChange={setTopicTags}
+        suggestions={tagSuggestions}
+        maxTags={10}
       />
 
       {/* 输入区域 */}
@@ -528,7 +584,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
           onChange={handleContentChange}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
-          placeholder="分享你的想法...&#10;&#10;💡 使用 / 调用特殊功能&#10;🏷️ 使用 #标签 进行分类"
+          placeholder="分享你的想法...&#10;&#10;💡 使用 / 调用特殊功能（如 /music）"
           className={cn(
             "w-full resize-none border-0 rounded-lg",
             "bg-gray-800 focus:bg-gray-750",
@@ -604,13 +660,6 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
             <Paperclip className="h-4 w-4" />
             {images.length}/5
           </span>
-          
-          {tags.length > 0 && (
-            <span className="flex items-center gap-1 text-orange-400">
-              <Hash className="h-4 w-4" />
-              {tags.length} 个标签
-            </span>
-          )}
           
           <span className={cn(
             "text-gray-400",

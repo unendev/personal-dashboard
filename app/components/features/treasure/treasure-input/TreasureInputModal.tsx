@@ -11,7 +11,6 @@ export interface TreasureData {
   content: string
   type: 'TEXT' | 'IMAGE' | 'MUSIC'
   tags: string[]
-  theme?: string
   images: Array<{
     url: string
     alt?: string

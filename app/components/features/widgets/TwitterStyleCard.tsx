@@ -582,11 +582,27 @@ function TwitterStyleCardComponent({
 
             {/* 内容区域 */}
             <div className="flex-1 min-w-0">
-              {/* 时间信息 */}
+              {/* 时间信息和类型 */}
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-white/60 text-sm">{formattedDate}</span>
-                <div className="flex items-center gap-1 ml-2">
+                <div className="flex items-center gap-2 ml-2">
                   {typeIcon}
+                  {/* 主要分类 - 紧跟类型图标 */}
+                  {treasure.tags.some(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+                    <>
+                      <span className="text-white/30">•</span>
+                      {treasure.tags
+                        .filter(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                        .map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 backdrop-blur-sm rounded-full text-xs border transition-colors bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 text-blue-300 font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -625,18 +641,39 @@ function TwitterStyleCardComponent({
               {/* 媒体内容 */}
               {renderMedia()}
 
-              {/* 标签 */}
-              {treasure.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {treasure.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 backdrop-blur-sm text-white/80 rounded-full text-xs border border-white/20 hover:bg-white/20 transition-colors"
-                    >
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </span>
-                  ))}
+              {/* 主题标签 - 只显示非主要分类的标签 */}
+              {treasure.tags.some(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {treasure.tags
+                    .filter(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                    .map((tag, index) => {
+                      // 处理层级标签的显示
+                      const parts = tag.split('/')
+                      const isHierarchical = parts.length > 1
+                      
+                      return (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 backdrop-blur-sm rounded-full text-xs border transition-colors bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+                        >
+                          <Tag className="h-3 w-3" />
+                          {isHierarchical ? (
+                            <span className="flex items-center gap-0.5">
+                              {parts.map((part, i) => (
+                                <span key={i} className="flex items-center">
+                                  {i > 0 && <span className="text-white/40 mx-0.5">/</span>}
+                                  <span className={i === parts.length - 1 ? "font-medium" : "text-white/60"}>
+                                    {part}
+                                  </span>
+                                </span>
+                              ))}
+                            </span>
+                          ) : (
+                            tag
+                          )}
+                        </span>
+                      )
+                    })}
                 </div>
               )}
 
@@ -842,11 +879,27 @@ function TwitterStyleCardComponent({
 
               {/* 内容区域 */}
               <div className="flex-1 min-w-0">
-                {/* 时间信息 */}
+                {/* 时间信息和类型 */}
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-white/60 text-sm">{formattedDate}</span>
-                  <div className="flex items-center gap-1 ml-2">
+                  <div className="flex items-center gap-2 ml-2">
                     {typeIcon}
+                    {/* 主要分类 - 紧跟类型图标 */}
+                    {treasure.tags.some(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+                      <>
+                        <span className="text-white/30">•</span>
+                        {treasure.tags
+                          .filter(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                          .map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 backdrop-blur-sm rounded-full text-xs border transition-colors bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 text-blue-300 font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -885,18 +938,39 @@ function TwitterStyleCardComponent({
                 {/* 媒体内容 */}
                 {renderMedia()}
 
-                {/* 标签 */}
-                {treasure.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {treasure.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 backdrop-blur-sm text-white/80 rounded-full text-xs border border-white/20 hover:bg-white/20 transition-colors"
-                      >
-                        <Tag className="h-3 w-3" />
-                        {tag}
-                      </span>
-                    ))}
+                {/* 主题标签 - 只显示非主要分类的标签 */}
+                {treasure.tags.some(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {treasure.tags
+                      .filter(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                      .map((tag, index) => {
+                        // 处理层级标签的显示
+                        const parts = tag.split('/')
+                        const isHierarchical = parts.length > 1
+                        
+                        return (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 backdrop-blur-sm rounded-full text-xs border transition-colors bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+                          >
+                            <Tag className="h-3 w-3" />
+                            {isHierarchical ? (
+                              <span className="flex items-center gap-0.5">
+                                {parts.map((part, i) => (
+                                  <span key={i} className="flex items-center">
+                                    {i > 0 && <span className="text-white/40 mx-0.5">/</span>}
+                                    <span className={i === parts.length - 1 ? "font-medium" : "text-white/60"}>
+                                      {part}
+                                    </span>
+                                  </span>
+                                ))}
+                              </span>
+                            ) : (
+                              tag
+                            )}
+                          </span>
+                        )
+                      })}
                   </div>
                 )}
 

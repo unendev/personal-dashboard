@@ -38,11 +38,6 @@ export const createTreasureSchema = z.object({
     .max(20, '标签数量不能超过20个')
     .default([]),
   
-  theme: z
-    .string()
-    .max(50, '主题不能超过50字符')
-    .optional(),
-  
   // 音乐相关字段（当 type 为 MUSIC 时）
   musicTitle: z
     .string()

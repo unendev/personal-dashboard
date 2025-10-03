@@ -23,7 +23,6 @@ interface Treasure {
   content?: string
   type: 'TEXT' | 'IMAGE' | 'MUSIC'
   tags: string[]
-  theme?: string
   createdAt: string
   updatedAt: string
   musicTitle?: string
@@ -58,6 +57,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [primaryCategories, setPrimaryCategories] = useState<string[]>([])
+  const [topicTags, setTopicTags] = useState<string[]>([])
   const [showCommentModal, setShowCommentModal] = useState(false)
   const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null)
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
@@ -101,12 +102,26 @@ export function TreasureList({ className }: TreasureListProps) {
         }
         setTreasures(data)
         
-        // 提取所有标签
-        const tags = new Set<string>()
+        // 提取并分类标签
+        const allTagsSet = new Set<string>()
+        const primaryCategoriesSet = new Set<string>()
+        const topicTagsSet = new Set<string>()
+        const primaryCategoryList = ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music']
+        
         data.forEach((treasure: Treasure) => {
-          treasure.tags.forEach(tag => tags.add(tag))
+          treasure.tags.forEach(tag => {
+            allTagsSet.add(tag)
+            if (primaryCategoryList.includes(tag)) {
+              primaryCategoriesSet.add(tag)
+            } else {
+              topicTagsSet.add(tag)
+            }
+          })
         })
-        setAllTags(Array.from(tags))
+        
+        setAllTags(Array.from(allTagsSet))
+        setPrimaryCategories(Array.from(primaryCategoriesSet))
+        setTopicTags(Array.from(topicTagsSet))
       } else {
         console.error('Failed to fetch treasures:', response.status)
         // 降级到示例数据
@@ -368,12 +383,35 @@ export function TreasureList({ className }: TreasureListProps) {
                 </div>
               </div>
 
-              {/* 标签筛选 */}
-              {allTags.length > 0 && (
+              {/* 主要分类筛选 */}
+              {primaryCategories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">标签</label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">主要分类</label>
                   <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => (
+                    {primaryCategories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedTag(selectedTag === category ? '' : category)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full border text-sm transition-all font-medium",
+                          selectedTag === category
+                            ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-500/60 text-blue-200"
+                            : "bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 text-blue-300/80 hover:from-blue-500/20 hover:to-purple-500/20"
+                        )}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 主题标签筛选 */}
+              {topicTags.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">主题标签</label>
+                  <div className="flex flex-wrap gap-2">
+                    {topicTags.map((tag) => (
                       <button
                         key={tag}
                         onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
