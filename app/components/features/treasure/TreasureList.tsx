@@ -8,11 +8,14 @@ import { CommentInputModal } from './CommentInputModal'
 // import { sampleTreasures } from './sample-treasures' // 已移除示例数据
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
+import { TreasureTimeline } from './TreasureTimeline'
+import { TreasureStatsPanel } from './TreasureStatsPanel'
 import { 
   Filter, 
   RefreshCw,
   Search,
-  X
+  X,
+  Calendar
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/app/components/ui/button'
@@ -64,8 +67,13 @@ export function TreasureList({ className }: TreasureListProps) {
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   
+  // 时间线相关状态
+  const [showTimeline, setShowTimeline] = useState(false) // 移动端时间线显示状态
+  const [activeTimelineId, setActiveTimelineId] = useState<string>()
+  
   // 虚拟滚动相关
   const parentRef = useRef<HTMLDivElement>(null)
+  const treasureRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   
   // 虚拟滚动配置
   const rowVirtualizer = useVirtualizer({
@@ -236,12 +244,75 @@ export function TreasureList({ className }: TreasureListProps) {
     }
   }
 
+  // 时间线项点击跳转
+  const handleTimelineItemClick = useCallback((treasureId: string) => {
+    const index = treasures.findIndex(t => t.id === treasureId)
+    if (index !== -1) {
+      // 使用虚拟滚动器的 scrollToIndex 方法
+      rowVirtualizer.scrollToIndex(index, {
+        align: 'start',
+        behavior: 'smooth',
+      })
+      setActiveTimelineId(treasureId)
+      // 移动端点击后关闭时间线
+      setShowTimeline(false)
+    }
+  }, [treasures, rowVirtualizer])
+
+  // 监听滚动，更新活跃的时间线项
+  useEffect(() => {
+    const scrollElement = parentRef.current
+    if (!scrollElement || treasures.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            const index = entry.target.getAttribute('data-index')
+            if (index !== null) {
+              const treasure = treasures[parseInt(index)]
+              if (treasure) {
+                setActiveTimelineId(treasure.id)
+              }
+            }
+          }
+        })
+      },
+      {
+        root: scrollElement,
+        threshold: [0.5],
+        rootMargin: '-20% 0px -20% 0px',
+      }
+    )
+
+    // 使用 MutationObserver 监听 DOM 变化
+    const mutationObserver = new MutationObserver(() => {
+      const items = scrollElement.querySelectorAll('[data-index]')
+      items.forEach((item) => observer.observe(item))
+    })
+
+    // 初始观察
+    const items = scrollElement.querySelectorAll('[data-index]')
+    items.forEach((item) => observer.observe(item))
+
+    // 监听DOM变化（虚拟滚动会动态添加/移除元素）
+    mutationObserver.observe(scrollElement, {
+      childList: true,
+      subtree: true,
+    })
+
+    return () => {
+      observer.disconnect()
+      mutationObserver.disconnect()
+    }
+  }, [treasures])
+
   const renderTreasureCard = (treasure: Treasure) => {
     const hasComments = treasure._count?.answers && treasure._count.answers > 0
     
     return (
       <div key={treasure.id} className="relative">
-        {/* 主卡片 - 居中显示 */}
+        {/* 主卡片 - 居中显示（就像原来一样）*/}
         <div className="max-w-2xl mx-auto">
           <TwitterStyleCard
             treasure={treasure}
@@ -252,7 +323,7 @@ export function TreasureList({ className }: TreasureListProps) {
           />
         </div>
         
-        {/* 评论卡片 - 绝对定位在右侧，PC端显示，移动端隐藏，且只在有评论时显示 */}
+        {/* 评论卡片 - 绝对定位在右侧 */}
         {hasComments && (
           <div className="hidden xl:block absolute top-0 right-4 w-80">
             <CommentsCard treasure={treasure} />
@@ -292,72 +363,154 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={cn("space-y-8", className)}>
-      {/* 搜索和筛选栏 */}
-      <div className="sticky top-0 z-10 backdrop-blur-lg bg-transparent border-b border-white/10 pb-4 pt-2 -mx-4 px-4">
-        <div className="max-w-2xl mx-auto space-y-4">
-          {/* 搜索框 */}
+    <div className={cn("relative", className)}>
+      {/* 时间线 - 浮动在左侧，不占据布局空间 */}
+      <TreasureTimeline
+        treasures={treasures.map(t => ({
+          id: t.id,
+          title: t.title,
+          content: t.content,
+          createdAt: t.createdAt,
+          type: t.type,
+          tags: t.tags,
+        }))}
+        activeId={activeTimelineId}
+        isOpen={showTimeline}
+        onItemClick={handleTimelineItemClick}
+        onClose={() => setShowTimeline(false)}
+      />
+
+      {/* 右侧统计面板 - PC端 */}
+      <aside className="hidden xl:block fixed top-0 right-4 w-80 h-screen overflow-y-auto pt-4 z-20 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <TreasureStatsPanel 
+          treasures={treasures.map(t => ({
+            id: t.id,
+            createdAt: t.createdAt,
+            tags: t.tags
+          }))}
+          onTagClick={setSelectedTag}
+          selectedTag={selectedTag}
+        />
+      </aside>
+
+      {/* 筛选面板 - 固定在时间线右侧顶部 */}
+      <div className="hidden lg:block fixed top-0 left-64 xl:left-72 z-30 w-80 xl:w-96 bg-black/40 backdrop-blur-xl border-b border-white/5 p-3">
+        <div className="space-y-2">
+          {/* 紧凑搜索框 */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
             <input
               type="text"
-              placeholder="搜索宝藏标题或内容..."
+              placeholder="搜索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
+              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-white/10 rounded-full"
               >
-                <X className="h-5 w-5 text-white/60" />
+                <X className="h-3.5 w-3.5 text-white/60" />
               </button>
             )}
           </div>
 
-          {/* 筛选按钮和筛选器 */}
-          <div className="flex items-center gap-3">
+          {/* 筛选按钮和标签 */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "gap-2 border-white/20 text-white hover:bg-white/10",
+                "h-7 gap-1.5 px-2.5 text-xs border-white/20 text-white hover:bg-white/10",
                 showFilters && "bg-white/10"
               )}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className="h-3.5 w-3.5" />
               筛选
             </Button>
 
-            {/* 活跃的筛选标签 */}
             {selectedType && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-sm text-blue-300">
-                类型: {selectedType}
-                <button
-                  onClick={() => setSelectedType('')}
-                  className="hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
-                >
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300">
+                {selectedType === 'TEXT' && '文本'}
+                {selectedType === 'IMAGE' && '图片'}
+                {selectedType === 'MUSIC' && '音乐'}
+                <button onClick={() => setSelectedType('')} className="hover:bg-blue-500/30 rounded-full p-0.5">
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
             
             {selectedTag && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-sm text-green-300">
-                标签: {selectedTag}
-                <button
-                  onClick={() => setSelectedTag('')}
-                  className="hover:bg-green-500/30 rounded-full p-0.5 transition-colors"
-                >
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded-full text-xs text-green-300">
+                {selectedTag}
+                <button onClick={() => setSelectedTag('')} className="hover:bg-green-500/30 rounded-full p-0.5">
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* 筛选面板 */}
+      {/* 主内容区域 - 保持原有布局，屏幕正中心 */}
+      <div className="space-y-0">
+        {/* 移动端时间线唤出按钮 */}
+        <button
+          onClick={() => setShowTimeline(true)}
+          className="lg:hidden fixed top-20 left-4 z-30 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
+          aria-label="打开时间线"
+        >
+          <Calendar className="w-6 h-6" />
+        </button>
+
+        {/* 移动端搜索和筛选栏 */}
+        <div className="lg:hidden sticky top-0 z-10 backdrop-blur-lg bg-black/40 border-b border-white/10 pb-3 pt-2 px-4">
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+              <input
+                type="text"
+                placeholder="搜索..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5">
+                  <X className="h-3.5 w-3.5 text-white/60" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className={cn("h-7 text-xs", showFilters && "bg-white/10")}>
+                <Filter className="h-3.5 w-3.5 mr-1" />
+                筛选
+              </Button>
+              {selectedType && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 rounded-full text-xs text-blue-300">
+                  {selectedType}
+                  <button onClick={() => setSelectedType('')}><X className="h-3 w-3" /></button>
+                </div>
+              )}
+              {selectedTag && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 rounded-full text-xs text-green-300">
+                  {selectedTag}
+                  <button onClick={() => setSelectedTag('')}><X className="h-3 w-3" /></button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 筛选面板 */}
+        <div className={cn(
+          "fixed top-12 left-64 xl:left-72 z-20 w-96 max-h-[80vh] overflow-y-auto",
+          "bg-black/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl",
+          "transition-all duration-300",
+          showFilters ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-4"
+        )}>
           {showFilters && (
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
               {/* 类型筛选 */}
@@ -465,7 +618,6 @@ export function TreasureList({ className }: TreasureListProps) {
             </div>
           )}
         </div>
-      </div>
 
       {/* 宝藏列表 - 虚拟滚动 */}
       {treasures.length === 0 ? (
@@ -509,7 +661,7 @@ export function TreasureList({ className }: TreasureListProps) {
                     width: '100%',
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  className="pb-8"
+                  className="pb-2"
                 >
                   {renderTreasureCard(treasure)}
                 </div>
@@ -519,47 +671,48 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       )}
 
-      {/* 悬浮创建按钮 */}
-      <FloatingActionButton onCreateTreasure={handleCreateClick} />
+        {/* 悬浮创建按钮 */}
+        <FloatingActionButton onCreateTreasure={handleCreateClick} />
 
-      {/* 创建模态框 */}
-      <TreasureInputModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateTreasure}
-      />
-
-      {/* 编辑模态框 */}
-      {editingTreasure && (
+        {/* 创建模态框 */}
         <TreasureInputModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false)
-            setEditingTreasure(null)
-          }}
-          onSubmit={handleEditTreasure}
-          initialData={{
-            ...editingTreasure,
-            id: editingTreasure.id,
-            content: editingTreasure.content || ''
-          }}
-          mode="edit"
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateTreasure}
         />
-      )}
 
-      {/* 评论输入模态框 */}
-      {selectedTreasureForComment && (
-        <CommentInputModal
-          isOpen={showCommentModal}
-          onClose={() => {
-            setShowCommentModal(false)
-            setSelectedTreasureForComment(null)
-          }}
-          treasureId={selectedTreasureForComment.id}
-          treasureTitle={selectedTreasureForComment.title}
-          onCommentAdded={handleCommentAdded}
-        />
-      )}
+        {/* 编辑模态框 */}
+        {editingTreasure && (
+          <TreasureInputModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingTreasure(null)
+            }}
+            onSubmit={handleEditTreasure}
+            initialData={{
+              ...editingTreasure,
+              id: editingTreasure.id,
+              content: editingTreasure.content || ''
+            }}
+            mode="edit"
+          />
+        )}
+
+        {/* 评论输入模态框 */}
+        {selectedTreasureForComment && (
+          <CommentInputModal
+            isOpen={showCommentModal}
+            onClose={() => {
+              setShowCommentModal(false)
+              setSelectedTreasureForComment(null)
+            }}
+            treasureId={selectedTreasureForComment.id}
+            treasureTitle={selectedTreasureForComment.title}
+            onCommentAdded={handleCommentAdded}
+          />
+        )}
+      </div>
     </div>
   )
 }

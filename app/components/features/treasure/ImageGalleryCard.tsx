@@ -80,11 +80,11 @@ export function ImageGalleryCard({
 
     if (treasure.images.length === 1) {
       return (
-        <div className="relative">
+        <div className="relative flex justify-center bg-gray-50 rounded-lg p-2">
           <img
             src={treasure.images[0].url}
             alt={treasure.images[0].alt || treasure.title}
-            className="w-full h-64 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            className="max-h-96 w-auto object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => openLightbox(0)}
           />
         </div>
@@ -95,13 +95,17 @@ export function ImageGalleryCard({
       return (
         <div className="grid grid-cols-2 gap-2">
           {treasure.images.map((image, index) => (
-            <img
-              key={image.id}
-              src={image.url}
-              alt={image.alt || treasure.title}
-              className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            <div 
+              key={image.id} 
+              className="relative h-32 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
               onClick={() => openLightbox(index)}
-            />
+            >
+              <img
+                src={image.url}
+                alt={image.alt || treasure.title}
+                className="w-full h-full object-contain rounded-lg hover:opacity-90 transition-opacity"
+              />
+            </div>
           ))}
         </div>
       )
@@ -109,53 +113,55 @@ export function ImageGalleryCard({
 
     if (treasure.images.length === 3) {
       return (
-        <div className="grid grid-cols-2 gap-2">
-          <img
-            src={treasure.images[0].url}
-            alt={treasure.images[0].alt || treasure.title}
-            className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => openLightbox(0)}
-          />
-          <div className="grid grid-rows-2 gap-2">
-            {treasure.images.slice(1).map((image, index) => (
+        <div className="grid grid-cols-3 gap-2">
+          {treasure.images.map((image, index) => (
+            <div 
+              key={image.id} 
+              className="relative h-24 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
+              onClick={() => openLightbox(index)}
+            >
               <img
-                key={image.id}
                 src={image.url}
                 alt={image.alt || treasure.title}
-                className="w-full h-15 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => openLightbox(index + 1)}
+                className="w-full h-full object-contain rounded-lg hover:opacity-90 transition-opacity"
               />
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )
     }
 
-    // 4+ 图片
+    // 4+ 图片：显示前4张，如果超过4张则第4张显示 +N
     return (
       <div className="grid grid-cols-2 gap-2">
-        {treasure.images.slice(0, 3).map((image, index) => (
-          <img
-            key={image.id}
-            src={image.url}
-            alt={image.alt || treasure.title}
-            className={cn(
-              "w-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity",
-              index === 0 ? "h-32" : "h-15"
-            )}
-            onClick={() => openLightbox(index)}
-          />
-        ))}
-        {treasure.images.length > 3 && (
-          <div
-            className="relative h-15 bg-gray-200 rounded-lg cursor-pointer hover:bg-gray-300 transition-colors flex items-center justify-center"
-            onClick={() => openLightbox(3)}
-          >
-            <span className="text-gray-600 font-medium">
-              +{treasure.images.length - 3}
-            </span>
-          </div>
-        )}
+        {treasure.images.slice(0, 4).map((image, index) => {
+          // 如果是第4张且还有更多图片，显示 +N 叠加层
+          const isLastWithMore = index === 3 && treasure.images.length > 4
+          
+          return (
+            <div 
+              key={image.id} 
+              className={cn(
+                "relative flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer group",
+                index === 0 ? "h-32" : "h-15"
+              )}
+              onClick={() => openLightbox(index)}
+            >
+              <img
+                src={image.url}
+                alt={image.alt || treasure.title}
+                className="w-full h-full object-contain rounded-lg group-hover:opacity-90 transition-opacity"
+              />
+              {isLastWithMore && (
+                <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">
+                    +{treasure.images.length - 4}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     )
   }

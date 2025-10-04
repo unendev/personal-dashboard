@@ -299,7 +299,7 @@ function TwitterStyleCardComponent({
       if (treasure.images.length === 1) {
         return (
           <div 
-            className="mt-3 rounded-2xl overflow-hidden border border-white/10 relative max-h-96 cursor-pointer"
+            className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer"
             onClick={() => setSelectedImageIndex(0)}
           >
             <Image
@@ -308,7 +308,7 @@ function TwitterStyleCardComponent({
               width={treasure.images[0].width || 800}
               height={treasure.images[0].height || 600}
               loading="lazy"
-              className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-300"
+              className="w-full max-h-96 object-contain hover:opacity-90 transition-opacity duration-300"
             />
           </div>
         )
@@ -318,7 +318,7 @@ function TwitterStyleCardComponent({
             {treasure.images.map((image, index) => (
               <div 
                 key={image.id} 
-                className="relative h-48 cursor-pointer"
+                className="relative h-48 bg-gray-900/20 flex items-center justify-center cursor-pointer"
                 onClick={() => setSelectedImageIndex(index)}
               >
                 <Image
@@ -327,7 +327,7 @@ function TwitterStyleCardComponent({
                   width={image.width || 400}
                   height={image.height || 300}
                   loading="lazy"
-                  className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
                 />
               </div>
             ))}
@@ -335,71 +335,58 @@ function TwitterStyleCardComponent({
         )
       } else if (treasure.images.length === 3) {
         return (
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            <div 
-              className="relative h-48 cursor-pointer"
-              onClick={() => setSelectedImageIndex(0)}
-            >
-              <Image
-                src={treasure.images[0].url}
-                alt={treasure.images[0].alt || treasure.title}
-                width={treasure.images[0].width || 400}
-                height={treasure.images[0].height || 300}
-                loading="lazy"
-                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div className="grid grid-rows-2 gap-1">
-              {treasure.images.slice(1).map((image, index) => (
-                <div 
-                  key={image.id} 
-                  className="relative h-24 cursor-pointer"
-                  onClick={() => setSelectedImageIndex(index + 1)}
-                >
-                  <Image
-                    src={image.url}
-                    alt={image.alt || treasure.title}
-                    width={image.width || 200}
-                    height={image.height || 150}
-                    loading="lazy"
-                    className="w-full h-24 object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-              ))}
-            </div>
+          <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl overflow-hidden border border-white/10">
+            {treasure.images.map((image, index) => (
+              <div 
+                key={image.id}
+                className="relative h-32 bg-gray-900/20 flex items-center justify-center cursor-pointer"
+                onClick={() => setSelectedImageIndex(index)}
+              >
+                <Image
+                  src={image.url}
+                  alt={image.alt || treasure.title}
+                  width={image.width || 200}
+                  height={image.height || 150}
+                  loading="lazy"
+                  className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
+                />
+              </div>
+            ))}
           </div>
         )
       } else {
+        // 4+ 图片：2x2 网格，显示前4张
         return (
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            {treasure.images.slice(0, 4).map((image, index) => (
-              <div 
-                key={image.id} 
-                className="relative cursor-pointer"
-                onClick={() => setSelectedImageIndex(index)}
-              >
-                <div className={cn(
-                  "relative",
-                  index === 0 ? "h-48" : "h-24"
-                )}>
+            {treasure.images.slice(0, 4).map((image, index) => {
+              const isLastWithMore = index === 3 && treasure.images.length > 4
+              return (
+                <div 
+                  key={image.id} 
+                  className={cn(
+                    "relative bg-gray-900/20 flex items-center justify-center cursor-pointer",
+                    index === 0 ? "h-48" : "h-24"
+                  )}
+                  onClick={() => setSelectedImageIndex(index)}
+                >
                   <Image
                     src={image.url}
                     alt={image.alt || treasure.title}
                     width={image.width || 400}
                     height={image.height || 300}
                     loading="lazy"
-                    className="w-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
                   />
+                  {isLastWithMore && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg">
+                      <span className="text-white font-bold text-2xl">
+                        +{treasure.images.length - 4}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {index === 3 && treasure.images.length > 4 && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className="text-white font-semibold text-lg">
-                      +{treasure.images.length - 4}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       }
@@ -572,25 +559,48 @@ function TwitterStyleCardComponent({
             <div className="flex-1 min-w-0">
           {/* 头部信息 */}
           <div className="flex items-start gap-3">
-            {/* 头像 - 使用主要分类emoji或首字母 */}
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+            {/* 头像区域 - 包含分类名称和头像 */}
+            <div className="flex flex-col items-center gap-1">
+              {/* 分类名称 */}
               {(() => {
-                // 如果有主要分类，显示emoji
                 const primaryCategory = treasure.tags.find(tag => 
                   ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
                 )
                 if (primaryCategory) {
-                  const categoryEmoji: Record<string, string> = {
-                    'Life': '🌱',
-                    'Knowledge': '📚',
-                    'Thought': '💭',
-                    'Root': '🌳'
+                  const categoryLabel: Record<string, string> = {
+                    'Life': '生活',
+                    'Knowledge': '知识',
+                    'Thought': '思考',
+                    'Root': '根源'
                   }
-                  return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                  return (
+                    <span className="text-xs text-white/60 font-medium whitespace-nowrap">
+                      {categoryLabel[primaryCategory]}
+                    </span>
+                  )
                 }
-                // 否则显示标题首字母
-                return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+                return null
               })()}
+              {/* 头像 - 使用主要分类emoji或首字母 */}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+                {(() => {
+                  // 如果有主要分类，显示emoji
+                  const primaryCategory = treasure.tags.find(tag => 
+                    ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
+                  )
+                  if (primaryCategory) {
+                    const categoryEmoji: Record<string, string> = {
+                      'Life': '🌱',
+                      'Knowledge': '📚',
+                      'Thought': '💭',
+                      'Root': '🌳'
+                    }
+                    return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                  }
+                  // 否则显示标题首字母
+                  return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+                })()}
+              </div>
             </div>
 
             {/* 内容区域 */}
@@ -863,25 +873,48 @@ function TwitterStyleCardComponent({
           <div className="flex-1 min-w-0">
             {/* 头部信息 */}
             <div className="flex items-start gap-3">
-            {/* 头像 - 使用主要分类emoji或首字母 */}
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+            {/* 头像区域 - 包含分类名称和头像 */}
+            <div className="flex flex-col items-center gap-1">
+              {/* 分类名称 */}
               {(() => {
-                // 如果有主要分类，显示emoji
                 const primaryCategory = treasure.tags.find(tag => 
                   ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
                 )
                 if (primaryCategory) {
-                  const categoryEmoji: Record<string, string> = {
-                    'Life': '🌱',
-                    'Knowledge': '📚',
-                    'Thought': '💭',
-                    'Root': '🌳'
+                  const categoryLabel: Record<string, string> = {
+                    'Life': '生活',
+                    'Knowledge': '知识',
+                    'Thought': '思考',
+                    'Root': '根源'
                   }
-                  return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                  return (
+                    <span className="text-xs text-white/60 font-medium whitespace-nowrap">
+                      {categoryLabel[primaryCategory]}
+                    </span>
+                  )
                 }
-                // 否则显示标题首字母
-                return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+                return null
               })()}
+              {/* 头像 - 使用主要分类emoji或首字母 */}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+                {(() => {
+                  // 如果有主要分类，显示emoji
+                  const primaryCategory = treasure.tags.find(tag => 
+                    ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
+                  )
+                  if (primaryCategory) {
+                    const categoryEmoji: Record<string, string> = {
+                      'Life': '🌱',
+                      'Knowledge': '📚',
+                      'Thought': '💭',
+                      'Root': '🌳'
+                    }
+                    return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                  }
+                  // 否则显示标题首字母
+                  return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+                })()}
+              </div>
             </div>
 
             {/* 内容区域 */}
@@ -927,10 +960,10 @@ function TwitterStyleCardComponent({
                 {renderMedia()}
 
                 {/* 主题标签 - 只显示非主要分类的标签 */}
-                {treasure.tags.some(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+                {treasure.tags.some(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)) && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {treasure.tags
-                      .filter(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                      .filter(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
                       .map((tag, index) => {
                         // 处理层级标签的显示
                         const parts = tag.split('/')
