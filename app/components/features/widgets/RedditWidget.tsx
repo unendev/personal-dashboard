@@ -13,11 +13,9 @@ const RedditWidget = () => {
   const [report, setReport] = useState<RedditReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedPosts, setExpandedPosts] = useState(false);
-  const [expandedSummary, setExpandedSummary] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
-  const [showDateSelector, setShowDateSelector] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'analysis'>('overview');
 
   // 获取可用日期列表
   useEffect(() => {
@@ -58,22 +56,6 @@ const RedditWidget = () => {
     fetchReport();
   }, [selectedDate]);
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading Reddit report...</div>
-      </div>
-    );
-  }
-
-  if (error || !report) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-red-500">Error: {error}</div>
-      </div>
-    );
-  }
-
   const getValueAssessmentColor = (assessment: string) => {
     switch (assessment) {
       case '高': return 'text-green-400';
@@ -94,215 +76,260 @@ const RedditWidget = () => {
     }
   };
 
+  const tabs = [
+    { id: 'overview' as const, label: '概览', icon: '📊' },
+    { id: 'posts' as const, label: '帖子', icon: '🔥' },
+    { id: 'analysis' as const, label: '分析', icon: '🔍' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/60 mx-auto mb-4"></div>
+          <div className="text-white/60">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center text-red-400">
+          <div className="text-4xl mb-4">⚠️</div>
+          <div className="text-lg font-semibold mb-2">加载失败</div>
+          <div className="text-white/60">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   const highValuePosts = report.posts.filter(post => post.analysis.value_assessment === '高');
-  const displayPosts = expandedPosts ? report.posts : report.posts.slice(0, 3);
 
   return (
-    <div className="p-4">
-      {/* 紧凑的标题区域 */}
-      <div className="text-center mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold gradient-text">Reddit 热帖报告</h2>
+    <div className="flex flex-col h-full">
+      {/* 日期选择器 - 横向滚动 */}
+      <div className="p-4 border-b border-white/10">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin pb-2">
           <button
-            onClick={() => setShowDateSelector(!showDateSelector)}
-            className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/30 rounded text-xs text-orange-400 transition-colors"
+            onClick={() => setSelectedDate('')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              !selectedDate
+                ? 'bg-orange-500/30 text-orange-400 border border-orange-500/50'
+                : 'bg-white/5 hover:bg-white/10 text-white/70'
+            }`}
           >
-            📅 往期
+            最新
           </button>
-        </div>
-        
-        {/* 日期选择器 */}
-        {showDateSelector && (
-          <div className="mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
-            <div className="text-xs text-white/60 mb-2">选择查看日期：</div>
-            <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
-              {availableDates.map((dateInfo) => (
-                <button
-                  key={dateInfo.date}
-                  onClick={() => {
-                    setSelectedDate(dateInfo.date);
-                    setShowDateSelector(false);
-                  }}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    selectedDate === dateInfo.date
-                      ? 'bg-orange-500/30 text-orange-400'
-                      : 'bg-white/5 hover:bg-white/10 text-white/70'
-                  }`}
-                >
-                  <div className="font-medium">{dateInfo.label}</div>
-                  <div className="text-xs opacity-60">{dateInfo.count}篇</div>
-                </button>
-              ))}
-            </div>
-            {selectedDate && (
-              <button
-                onClick={() => {
-                  setSelectedDate('');
-                  setShowDateSelector(false);
-                }}
-                className="mt-2 px-2 py-1 bg-gray-500/20 hover:bg-gray-500/30 rounded text-xs text-gray-400 transition-colors"
-              >
-                返回最新
-              </button>
-            )}
-          </div>
-        )}
-        
-        <p className="text-white/60 text-xs">{report.meta.report_date}</p>
-        <div className="flex justify-center items-center gap-2 mt-1">
-          <span className="px-2 py-0.5 bg-orange-500/20 rounded-full text-xs text-orange-400">
-            {report.meta.post_count} 篇
-          </span>
-          <span className="px-2 py-0.5 bg-green-500/20 rounded-full text-xs text-green-400">
-            {highValuePosts.length} 高价值
-          </span>
-        </div>
-      </div>
-
-      {/* 总结概览 */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <div className="w-1 h-4 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
-            今日概览
-          </h3>
-          <button
-            onClick={() => setExpandedSummary(!expandedSummary)}
-            className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
-          >
-            {expandedSummary ? '收起' : '展开'}
-          </button>
-        </div>
-        <div className={`expandable-content ${expandedSummary ? 'expanded' : 'collapsed'}`}>
-          <p className="text-white/70 text-sm leading-relaxed">{report.summary.overview}</p>
-        </div>
-        {!expandedSummary && (
-          <div className="mt-1 text-xs text-white/40">点击展开查看完整内容...</div>
-        )}
-      </div>
-
-      {/* 紧凑的亮点内容 */}
-      <div className="mb-4 space-y-3">
-        <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-          <div className="w-1 h-4 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
-          社区亮点
-        </h3>
-
-        {/* 技术亮点 */}
-        <div className="mb-3">
-          <h4 className="text-xs font-semibold text-orange-400 mb-1">🔥 热门讨论</h4>
-          <ul className="space-y-1">
-            {report.summary.highlights.tech_savvy.slice(0, 2).map((item, index) => (
-              <li key={index} className="text-white/60 text-xs flex items-start gap-1">
-                <span className="text-orange-400 mt-0.5 text-xs">•</span>
-                <span className="leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 资源分享 */}
-        <div className="mb-3">
-          <h4 className="text-xs font-semibold text-green-400 mb-1">💎 优质内容</h4>
-          <ul className="space-y-1">
-            {report.summary.highlights.resources_deals.slice(0, 2).map((item, index) => (
-              <li key={index} className="text-white/60 text-xs flex items-start gap-1">
-                <span className="text-green-400 mt-0.5 text-xs">•</span>
-                <span className="leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 热门话题 */}
-        <div className="mb-3">
-          <h4 className="text-xs font-semibold text-blue-400 mb-1">🌟 热门话题</h4>
-          <ul className="space-y-1">
-            {report.summary.highlights.hot_topics.slice(0, 2).map((item, index) => (
-              <li key={index} className="text-white/60 text-xs flex items-start gap-1">
-                <span className="text-blue-400 mt-0.5 text-xs">•</span>
-                <span className="leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* 结论 */}
-      <div className="mb-4 p-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
-        <h3 className="text-xs font-semibold text-orange-400 mb-1">💭 社区感悟</h3>
-        <p className="text-white/70 text-sm italic leading-relaxed">&quot;{report.summary.conclusion}&quot;</p>
-      </div>
-
-      {/* 热门帖子 */}
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <div className="w-1 h-4 bg-gradient-to-b from-red-500 to-pink-500 rounded-full"></div>
-            热门帖子
-          </h3>
-          <button
-            onClick={() => setExpandedPosts(!expandedPosts)}
-            className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
-          >
-            {expandedPosts ? '收起' : '展开'}
-          </button>
-        </div>
-
-        <div className={`space-y-2 expandable-content ${expandedPosts ? 'expanded' : 'collapsed'}`}>
-          {displayPosts.map((post) => (
-            <a
-              key={post.id}
-              href={post.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors group"
+          {availableDates.slice(0, 8).map((dateInfo) => (
+            <button
+              key={dateInfo.date}
+              onClick={() => setSelectedDate(dateInfo.date)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                selectedDate === dateInfo.date
+                  ? 'bg-orange-500/30 text-orange-400 border border-orange-500/50'
+                  : 'bg-white/5 hover:bg-white/10 text-white/70'
+              }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-white group-hover:text-white/90 mb-2 leading-relaxed">
-                    {post.title}
-                  </h4>
-                  {post.analysis.core_issue && (
-                    <p className="text-xs text-white/60 mb-2 leading-relaxed">
-                      {post.analysis.core_issue}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-1 rounded text-xs ${getPostTypeColor(post.analysis.post_type)}`}>
-                      {post.analysis.post_type}
-                    </span>
-                    <span className={`text-xs ${getValueAssessmentColor(post.analysis.value_assessment)}`}>
-                      {post.analysis.value_assessment}
-                    </span>
-                    {post.analysis.key_info && post.analysis.key_info.length > 0 && (
-                      <span className="text-xs text-white/40">
-                        {post.analysis.key_info.length} 个关键点
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </a>
+              {dateInfo.label}
+            </button>
           ))}
         </div>
+      </div>
 
-        <div className="text-center mt-3">
-          <span className="text-xs text-white/40">
-            {expandedPosts ? `显示全部 ${report.posts.length} 篇` : `显示前 ${displayPosts.length} 篇，共 ${report.posts.length} 篇`}
-          </span>
-          {!expandedPosts && report.posts.length > 3 && (
-            <div className="mt-1 text-xs text-orange-400">
-              点击展开查看全部帖子
-            </div>
-          )}
+      {/* 标签页导航 */}
+      <div className="px-4 pt-4">
+        <div className="flex space-x-1 bg-white/5 rounded-lg p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 px-3 py-2 rounded-md text-xs font-medium tab-transition ${
+                activeTab === tab.id
+                  ? 'bg-white/20 text-white shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span className="mr-1">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* 标签页内容 - 可滚动 */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {activeTab === 'overview' && (
+          <div className="space-y-4">
+            {/* 数据统计 */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-white/5 rounded-lg">
+                <div className="text-xl font-bold text-orange-400">{report.meta.post_count}</div>
+                <div className="text-xs text-white/60">总帖子</div>
+              </div>
+              <div className="text-center p-3 bg-white/5 rounded-lg">
+                <div className="text-xl font-bold text-green-400">{highValuePosts.length}</div>
+                <div className="text-xs text-white/60">高价值</div>
+              </div>
+              <div className="text-center p-3 bg-white/5 rounded-lg">
+                <div className="text-xl font-bold text-blue-400">{report.meta.report_date.split('-')[2]}</div>
+                <div className="text-xs text-white/60">日期</div>
+              </div>
+            </div>
+
+            {/* 概览 */}
+            <div className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
+              <p className="text-white/80 text-sm leading-relaxed">{report.summary.overview}</p>
+            </div>
+
+            {/* 社区亮点 */}
+            <div className="space-y-3">
+              <div className="p-3 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
+                <h4 className="text-sm font-bold text-orange-400 mb-2">🔥 热门讨论</h4>
+                <ul className="space-y-1.5">
+                  {report.summary.highlights.tech_savvy.map((item, index) => (
+                    <li key={index} className="text-white/70 text-xs flex items-start gap-2">
+                      <span className="text-orange-400 mt-0.5">•</span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                <h4 className="text-sm font-bold text-green-400 mb-2">💎 优质内容</h4>
+                <ul className="space-y-1.5">
+                  {report.summary.highlights.resources_deals.map((item, index) => (
+                    <li key={index} className="text-white/70 text-xs flex items-start gap-2">
+                      <span className="text-green-400 mt-0.5">•</span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+                <h4 className="text-sm font-bold text-blue-400 mb-2">🌟 热门话题</h4>
+                <ul className="space-y-1.5">
+                  {report.summary.highlights.hot_topics.map((item, index) => (
+                    <li key={index} className="text-white/70 text-xs flex items-start gap-2">
+                      <span className="text-blue-400 mt-0.5">•</span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* 社区感悟 */}
+            <div className="p-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
+              <h3 className="text-sm font-bold text-orange-400 mb-2">💭 社区感悟</h3>
+              <p className="text-white/80 text-sm italic leading-relaxed">&ldquo;{report.summary.conclusion}&rdquo;</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'posts' && (
+          <div className="space-y-3">
+            {report.posts.map((post, index) => (
+              <a
+                key={post.id}
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors group border border-white/10"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
+                    #{index + 1}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPostTypeColor(post.analysis.post_type)}`}>
+                    {post.analysis.post_type}
+                  </span>
+                  <span className={`text-xs font-medium ${getValueAssessmentColor(post.analysis.value_assessment)}`}>
+                    {post.analysis.value_assessment}
+                  </span>
+                </div>
+                <h4 className="text-sm font-semibold text-white group-hover:text-white/90 mb-2 leading-relaxed">
+                  {post.title}
+                </h4>
+                {post.analysis.core_issue && (
+                  <p className="text-white/70 mb-2 text-xs leading-relaxed line-clamp-2">
+                    {post.analysis.core_issue}
+                  </p>
+                )}
+                {post.analysis.key_info && post.analysis.key_info.length > 0 && (
+                  <div className="text-xs text-white/40">
+                    {post.analysis.key_info.length} 个关键点
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'analysis' && (
+          <div className="space-y-4">
+            {/* 帖子类型分布 */}
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-3">📊 帖子类型分布</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {['求助', '讨论', '资源分享', '新闻资讯', '日常闲聊'].map((type) => {
+                  const count = report.posts.filter(post => post.analysis.post_type === type).length;
+                  const percentage = ((count / report.posts.length) * 100).toFixed(1);
+                  return (
+                    <div key={type} className="p-3 bg-white/5 rounded-lg text-center">
+                      <div className="text-lg font-bold text-white">{count}</div>
+                      <div className="text-xs text-white/60">{type}</div>
+                      <div className="text-xs text-white/40">{percentage}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 价值评估分布 */}
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-3">⭐ 价值评估</h4>
+              <div className="grid grid-cols-3 gap-3">
+                {['高', '中', '低'].map((level) => {
+                  const count = report.posts.filter(post => post.analysis.value_assessment === level).length;
+                  const percentage = ((count / report.posts.length) * 100).toFixed(1);
+                  return (
+                    <div key={level} className="p-3 bg-white/5 rounded-lg text-center">
+                      <div className={`text-xl font-bold ${getValueAssessmentColor(level)}`}>{count}</div>
+                      <div className="text-xs text-white/60">{level}价值</div>
+                      <div className="text-xs text-white/40">{percentage}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 关键信息统计 */}
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-3">📝 关键信息</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="text-lg font-bold text-orange-400">
+                    {report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0)}
+                  </div>
+                  <div className="text-xs text-white/60">总信息点</div>
+                </div>
+                <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="text-lg font-bold text-green-400">
+                    {(report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0) / report.posts.length).toFixed(1)}
+                  </div>
+                  <div className="text-xs text-white/60">平均每帖</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default RedditWidget;
-
-
-

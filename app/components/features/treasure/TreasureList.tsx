@@ -106,7 +106,7 @@ export function TreasureList({ className }: TreasureListProps) {
         const allTagsSet = new Set<string>()
         const primaryCategoriesSet = new Set<string>()
         const topicTagsSet = new Set<string>()
-        const primaryCategoryList = ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music']
+        const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
         
         data.forEach((treasure: Treasure) => {
           treasure.tags.forEach(tag => {
@@ -388,20 +388,37 @@ export function TreasureList({ className }: TreasureListProps) {
                 <div>
                   <label className="block text-sm font-medium text-white/80 mb-2">主要分类</label>
                   <div className="flex flex-wrap gap-2">
-                    {primaryCategories.map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => setSelectedTag(selectedTag === category ? '' : category)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full border text-sm transition-all font-medium",
-                          selectedTag === category
-                            ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-500/60 text-blue-200"
-                            : "bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 text-blue-300/80 hover:from-blue-500/20 hover:to-purple-500/20"
-                        )}
-                      >
-                        {category}
-                      </button>
-                    ))}
+                    {primaryCategories.map((category) => {
+                      // 主要分类的 emoji 映射
+                      const categoryEmoji: Record<string, string> = {
+                        'Life': '🌱',
+                        'Knowledge': '📚',
+                        'Thought': '💭',
+                        'Root': '🌳'
+                      }
+                      const categoryLabel: Record<string, string> = {
+                        'Life': '生活',
+                        'Knowledge': '知识',
+                        'Thought': '思考',
+                        'Root': '根源'
+                      }
+                      return (
+                        <button
+                          key={category}
+                          onClick={() => setSelectedTag(selectedTag === category ? '' : category)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-all",
+                            selectedTag === category
+                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-500/60 text-blue-200"
+                              : "bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 text-blue-300/80 hover:from-blue-500/20 hover:to-purple-500/20"
+                          )}
+                          title={categoryLabel[category]}
+                        >
+                          <span>{categoryEmoji[category]}</span>
+                          <span className="font-medium">{categoryLabel[category]}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}

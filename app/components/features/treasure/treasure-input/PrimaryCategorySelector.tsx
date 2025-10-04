@@ -9,13 +9,10 @@ interface PrimaryCategorySelectorProps {
 
 // 主要分类定义
 const PRIMARY_CATEGORIES = [
-  { id: 'Daily', label: '日常', emoji: '📅' },
-  { id: 'Resources', label: '资源', emoji: '📚' },
-  { id: 'Info', label: '信息', emoji: 'ℹ️' },
-  { id: 'Tech', label: '技术', emoji: '💻' },
-  { id: 'Thoughts', label: '思考', emoji: '💭' },
-  { id: 'Art', label: '艺术', emoji: '🎨' },
-  { id: 'Music', label: '音乐', emoji: '🎵' },
+  { id: 'Life', label: '生活', emoji: '🌱' },
+  { id: 'Knowledge', label: '知识', emoji: '📚' },
+  { id: 'Thought', label: '思考', emoji: '💭' },
+  { id: 'Root', label: '根源', emoji: '🌳' },
 ] as const
 
 export function PrimaryCategorySelector({ value, onChange }: PrimaryCategorySelectorProps) {

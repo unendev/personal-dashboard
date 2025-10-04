@@ -110,7 +110,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       // 初始化标签系统
       if (initialData.tags && initialData.tags.length > 0) {
         // 检查是否有主要分类
-        const primaryCategories = ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music']
+        const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
         const primaryTag = initialData.tags.find(tag => primaryCategories.includes(tag))
         const topicTagsList = initialData.tags.filter(tag => !primaryCategories.includes(tag))
         

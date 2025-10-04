@@ -572,38 +572,32 @@ function TwitterStyleCardComponent({
             <div className="flex-1 min-w-0">
           {/* 头部信息 */}
           <div className="flex items-start gap-3">
-            {/* 头像 */}
-            <div className={cn(
-              "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
-              typeGradient
-            )}>
-              {treasure.title.charAt(0).toUpperCase()}
+            {/* 头像 - 使用主要分类emoji或首字母 */}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+              {(() => {
+                // 如果有主要分类，显示emoji
+                const primaryCategory = treasure.tags.find(tag => 
+                  ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
+                )
+                if (primaryCategory) {
+                  const categoryEmoji: Record<string, string> = {
+                    'Life': '🌱',
+                    'Knowledge': '📚',
+                    'Thought': '💭',
+                    'Root': '🌳'
+                  }
+                  return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                }
+                // 否则显示标题首字母
+                return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+              })()}
             </div>
 
             {/* 内容区域 */}
             <div className="flex-1 min-w-0">
-              {/* 时间信息和类型 */}
+              {/* 时间信息 */}
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-white/60 text-sm">{formattedDate}</span>
-                <div className="flex items-center gap-2 ml-2">
-                  {typeIcon}
-                  {/* 主要分类 - 紧跟类型图标 */}
-                  {treasure.tags.some(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
-                    <>
-                      <span className="text-white/30">•</span>
-                      {treasure.tags
-                        .filter(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
-                        .map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 backdrop-blur-sm rounded-full text-xs border transition-colors bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 text-blue-300 font-medium"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                    </>
-                  )}
-                </div>
               </div>
 
               {/* 标题 - 引用框风格 */}
@@ -642,10 +636,10 @@ function TwitterStyleCardComponent({
               {renderMedia()}
 
               {/* 主题标签 - 只显示非主要分类的标签 */}
-              {treasure.tags.some(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
+              {treasure.tags.some(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)) && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {treasure.tags
-                    .filter(tag => !['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
+                    .filter(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
                     .map((tag, index) => {
                       // 处理层级标签的显示
                       const parts = tag.split('/')
@@ -869,39 +863,33 @@ function TwitterStyleCardComponent({
           <div className="flex-1 min-w-0">
             {/* 头部信息 */}
             <div className="flex items-start gap-3">
-              {/* 头像 */}
-              <div className={cn(
-                "w-10 h-10 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300",
-                typeGradient
-              )}>
-                {treasure.title.charAt(0).toUpperCase()}
-              </div>
+            {/* 头像 - 使用主要分类emoji或首字母 */}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300">
+              {(() => {
+                // 如果有主要分类，显示emoji
+                const primaryCategory = treasure.tags.find(tag => 
+                  ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)
+                )
+                if (primaryCategory) {
+                  const categoryEmoji: Record<string, string> = {
+                    'Life': '🌱',
+                    'Knowledge': '📚',
+                    'Thought': '💭',
+                    'Root': '🌳'
+                  }
+                  return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                }
+                // 否则显示标题首字母
+                return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+              })()}
+            </div>
 
-              {/* 内容区域 */}
-              <div className="flex-1 min-w-0">
-                {/* 时间信息和类型 */}
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white/60 text-sm">{formattedDate}</span>
-                  <div className="flex items-center gap-2 ml-2">
-                    {typeIcon}
-                    {/* 主要分类 - 紧跟类型图标 */}
-                    {treasure.tags.some(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag)) && (
-                      <>
-                        <span className="text-white/30">•</span>
-                        {treasure.tags
-                          .filter(tag => ['Daily', 'Resources', 'Info', 'Tech', 'Thoughts', 'Art', 'Music'].includes(tag))
-                          .map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 backdrop-blur-sm rounded-full text-xs border transition-colors bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 text-blue-300 font-medium"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                      </>
-                    )}
-                  </div>
-                </div>
+            {/* 内容区域 */}
+            <div className="flex-1 min-w-0">
+              {/* 时间信息 */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-white/60 text-sm">{formattedDate}</span>
+              </div>
 
                 {/* 标题 - 引用框风格 */}
                 <div className={cn(
