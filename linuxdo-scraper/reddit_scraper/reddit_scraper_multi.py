@@ -251,7 +251,12 @@ async def create_posts_table():
 
     conn = None
     try:
-        conn = await asyncpg.connect(NEON_DB_URL, command_timeout=30)
+        # Neon需要SSL连接
+        conn = await asyncpg.connect(
+            NEON_DB_URL, 
+            command_timeout=60,
+            ssl='require'
+        )
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS reddit_posts (
                 id TEXT PRIMARY KEY,
@@ -285,7 +290,12 @@ async def insert_posts_into_db(posts_data):
 
     conn = None
     try:
-        conn = await asyncpg.connect(NEON_DB_URL, command_timeout=30)
+        # Neon需要SSL连接
+        conn = await asyncpg.connect(
+            NEON_DB_URL, 
+            command_timeout=60,
+            ssl='require'
+        )
         logger.info("开始插入数据到数据库...")
         
         success_count = 0
