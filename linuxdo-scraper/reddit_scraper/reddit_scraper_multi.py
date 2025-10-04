@@ -39,6 +39,12 @@ POST_COUNT_PER_SUB = 5  # 每个subreddit取5个帖子
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 NEON_DB_URL = os.getenv("DATABASE_URL")
 
+# 确保DATABASE_URL包含SSL参数（Neon要求）
+if NEON_DB_URL and '?' not in NEON_DB_URL:
+    NEON_DB_URL = f"{NEON_DB_URL}?sslmode=require"
+elif NEON_DB_URL and 'sslmode' not in NEON_DB_URL:
+    NEON_DB_URL = f"{NEON_DB_URL}&sslmode=require"
+
 # GitHub Actions环境检测（不使用代理）
 IS_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 if not IS_GITHUB_ACTIONS and os.path.exists(".env"):
@@ -251,12 +257,13 @@ async def create_posts_table():
 
     conn = None
     try:
-        # Neon需要SSL连接
+        # Neon需要SSL连接（sslmode已在URL中配置）
+        logger.info(f"尝试连接数据库... (URL前缀: {NEON_DB_URL[:30] if NEON_DB_URL else 'None'}...)")
         conn = await asyncpg.connect(
-            NEON_DB_URL, 
-            command_timeout=60,
-            ssl='require'
+            dsn=NEON_DB_URL,
+            timeout=60
         )
+        logger.info("✓ 数据库连接成功")
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS reddit_posts (
                 id TEXT PRIMARY KEY,
@@ -290,11 +297,10 @@ async def insert_posts_into_db(posts_data):
 
     conn = None
     try:
-        # Neon需要SSL连接
+        # Neon需要SSL连接（sslmode已在URL中配置）
         conn = await asyncpg.connect(
-            NEON_DB_URL, 
-            command_timeout=60,
-            ssl='require'
+            dsn=NEON_DB_URL,
+            timeout=60
         )
         logger.info("开始插入数据到数据库...")
         
