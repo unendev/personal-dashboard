@@ -168,7 +168,7 @@ model LogCategory {
 
 model InstanceTag {
   id         String                 @id @default(cuid())
-  name       String                 @unique
+  name       String
   userId     String
   createdAt  DateTime               @default(now())
   updatedAt  DateTime               @updatedAt
@@ -294,6 +294,14 @@ model reddit_posts {
   post_type        String?
   value_assessment String?
   timestamp        DateTime? @default(now()) @db.Timestamptz(6)
+  subreddit        String?
+  score            Int?
+  num_comments     Int?
+  title_cn         String?
+
+  @@index([subreddit], map: "idx_reddit_posts_subreddit")
+  @@index([timestamp(sort: Desc)], map: "idx_reddit_posts_timestamp")
+  @@index([value_assessment], map: "idx_reddit_posts_value")
 }
 
 model TwitterUser {
@@ -370,25 +378,25 @@ model spotify_cache {
 }
 
 model Treasure {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
   title         String
   content       String?
   type          TreasureType
-  tags          String[]        @default([])
+  tags          String[]         @default([])
   userId        String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   musicTitle    String?
   musicArtist   String?
   musicAlbum    String?
   musicUrl      String?
   musicCoverUrl String?
   theme         String?
-  likesCount    Int             @default(0)
+  likesCount    Int              @default(0)
+  answers       TreasureAnswer[]
   images        Image[]
   likes         TreasureLike[]
-  answers       TreasureAnswer[]
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("treasures")
 }
@@ -399,7 +407,7 @@ model TreasureLike {
   userId     String
   createdAt  DateTime @default(now())
   treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
-  
+
   @@map("treasure_likes")
 }
 
@@ -411,7 +419,7 @@ model TreasureAnswer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
-  
+
   @@map("treasure_answers")
 }
 

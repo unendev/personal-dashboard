@@ -1,0 +1,60 @@
+name: Reddit多板块爬虫
+
+on:
+  schedule:
+    # 每天北京时间19:00 (UTC 11:00) 执行
+    - cron: '0 11 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout代码
+        uses: actions/checkout@v4
+      
+      - name: 🐍 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 📦 安装依赖
+        run: |
+          cd linuxdo-scraper/reddit_scraper
+          pip install --upgrade pip
+          pip install requests python-dotenv asyncpg
+      
+      - name: 🚀 执行爬虫任务
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GITHUB_ACTIONS: true
+        run: |
+          cd linuxdo-scraper/reddit_scraper
+          python reddit_scraper_multi.py
+      
+      - name: 📊 上传报告为Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reddit-reports-${{ github.run_number }}
+          path: |
+            linuxdo-scraper/reddit_scraper/data/*.json
+            linuxdo-scraper/reddit_scraper/reports/*.md
+            linuxdo-scraper/reddit_scraper/logs/*.log
+          retention-days: 30
+      
+      - name: ✅ 任务完成通知
+        if: success()
+        run: |
+          echo "🎉 Reddit爬虫任务执行成功！"
+          echo "📊 报告已生成并上传到Artifacts"
+      
+      - name: ❌ 任务失败通知
+        if: failure()
+        run: |
+          echo "💥 Reddit爬虫任务执行失败！"
+          echo "请检查日志查看详细错误信息"
+

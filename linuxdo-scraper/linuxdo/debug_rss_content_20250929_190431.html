@@ -1,0 +1,1678 @@
+<html><head><meta name="color-scheme" content="light dark"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;rss version="2.0" xmlns:discourse="http://www.discourse.org/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"&gt;
+  &lt;channel&gt;
+    &lt;title&gt;LINUX DO - 最新话题&lt;/title&gt;
+    &lt;link&gt;https://linux.do/latest&lt;/link&gt;
+    &lt;description&gt;最新话题&lt;/description&gt;
+    &lt;language&gt;zh-CN&lt;/language&gt;
+      &lt;lastBuildDate&gt;Mon, 29 Sep 2025 11:03:49 +0000&lt;/lastBuildDate&gt;
+      &lt;atom:link href="https://linux.do/latest.rss" rel="self" type="application/rss+xml" /&gt;
+        &lt;item&gt;
+          &lt;title&gt;教程：如何批量下载一个 YouTuber 主页 全部几百个视频。 （学会可用此赚到钱）（最关键的不是ip问题，而是不能一次提交太多请求）（附完整探索经历）&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[明 花]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;h1&gt;&lt;a name="p-9060077-h-1" class="anchor" href="https://linux.do#p-9060077-h-1"&gt;&lt;/a&gt;效果：&lt;/h1&gt;
+&lt;p&gt;只需一个脚本，跟一个要下载的youtuber的主页链接，&lt;br&gt;
+启动脚本，一键处理全部，相当自动化，只需要在提示下载失败的时候，换一下节点即可！&lt;br&gt;
+省心省力无需操心，静等下载完成，爽歪歪美滋滋&lt;/p&gt;
+&lt;p&gt;运行了一次，处理完成了484个视频。&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/7oamew.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/6/9/a/69a535df8e1fa8b0759dad5eb87577dde822fc58.png" data-dominant-color="F9F9F9" width="690" height="156"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;p&gt;随便找了个youtuber 测试了一下&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/hgxpsl.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/d/9/9/d990f7751bb339836018eaa2b72ef6f06343473d.jpeg" data-dominant-color="EEEFEE" width="690" height="498"&gt;
+          &lt;/a&gt;
+
+&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/rj6uth.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/0/2/2/02209be39ec57566770ec0872d7424191fb1d3e4.jpeg" data-dominant-color="F3F3F3" width="661" height="499"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-2" class="anchor" href="https://linux.do#p-9060077-h-2"&gt;&lt;/a&gt;脚本内容：&lt;/h1&gt;
+&lt;div data-theme-scrollable="true"&gt;#!/bin/bash
+&lt;h1&gt;&lt;a name="p-9060077-h-3" class="anchor" href="https://linux.do#p-9060077-h-3"&gt;&lt;/a&gt;===================================================================================&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-4" class="anchor" href="https://linux.do#p-9060077-h-4"&gt;&lt;/a&gt;— &lt;img src="https://linux.do/images/emoji/twemoji/rocket.png?v=14" title=":rocket:" class="emoji" alt=":rocket:" loading="lazy" width="20" height="20"&gt; 用户配置中心 (请在此处修改) &lt;img src="https://linux.do/images/emoji/twemoji/rocket.png?v=14" title=":rocket:" class="emoji" alt=":rocket:" loading="lazy" width="20" height="20"&gt; —&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-5" class="anchor" href="https://linux.do#p-9060077-h-5"&gt;&lt;/a&gt;&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-6" class="anchor" href="https://linux.do#p-9060077-h-6"&gt;&lt;/a&gt;您只需要修改下方的链接和端口号即可，脚本会自动完成后续转换。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-7" class="anchor" href="https://linux.do#p-9060077-h-7"&gt;&lt;/a&gt;===================================================================================&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-1-youtube-8" class="anchor" href="https://linux.do#p-9060077-h-1-youtube-8"&gt;&lt;/a&gt;1. YouTube 频道主页链接&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-9" class="anchor" href="https://linux.do#p-9060077-h-9"&gt;&lt;/a&gt;说明：请在这里粘贴频道的“主页链接”。脚本会自动为您找到最稳定的官方上传列表。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-httpswwwyoutubecomtonyrobbinslive-featured-10" class="anchor" href="https://linux.do#p-9060077-httpswwwyoutubecomtonyrobbinslive-featured-10"&gt;&lt;/a&gt;示例: “&lt;a href="https://www.youtube.com/@TonyRobbinsLive" rel="noopener nofollow ugc"&gt;https://www.youtube.com/@TonyRobbinsLive&lt;/a&gt;” #  注：链接最后面不要跟这个 /featured，不然会失败&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-11" class="anchor" href="https://linux.do#p-9060077-h-11"&gt;&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;USER_CHANNEL_URL=“&lt;a href="https://www.youtube.com/@zhengdayu4405" rel="noopener nofollow ugc"&gt;https://www.youtube.com/@zhengdayu4405&lt;/a&gt;” # &amp;lt;— 请在这里粘贴要下载的youtuber的主页链接&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-2-12" class="anchor" href="https://linux.do#p-9060077-h-2-12"&gt;&lt;/a&gt;2. 你的代理端口&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-socks5-13" class="anchor" href="https://linux.do#p-9060077-socks5-13"&gt;&lt;/a&gt;说明：这是你本地代理工具的 SOCKS5 端口号。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-7897-clash-1080-1086-14" class="anchor" href="https://linux.do#p-9060077-h-7897-clash-1080-1086-14"&gt;&lt;/a&gt;常见的端口有 7897 (Clash 默认), 1080, 1086 等。&lt;/h1&gt;
+&lt;p&gt;PROXY_PORT=“7897”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-15" class="anchor" href="https://linux.do#p-9060077-h-15"&gt;&lt;/a&gt;— 高级选项 (通常无需修改) —&lt;/h1&gt;
+&lt;p&gt;DETAILS_FETCH_BATCH_SIZE=50&lt;br&gt;
+DOWNLOAD_BATCH_SIZE=10&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-16" class="anchor" href="https://linux.do#p-9060077-h-16"&gt;&lt;/a&gt;===================================================================================&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-17" class="anchor" href="https://linux.do#p-9060077-h-17"&gt;&lt;/a&gt;— 配置结束，请勿修改以下内容 —&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-18" class="anchor" href="https://linux.do#p-9060077-h-18"&gt;&lt;/a&gt;===================================================================================&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-19" class="anchor" href="https://linux.do#p-9060077-h-19"&gt;&lt;/a&gt;— 脚本自动设定 —&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-20" class="anchor" href="https://linux.do#p-9060077-h-20"&gt;&lt;/a&gt;下载目录将自动设置为本脚本文件所在的文件夹。&lt;/h1&gt;
+&lt;p&gt;DOWNLOAD_DIR=&lt;span class="math"&gt;(cd -- "&lt;/span&gt;(dirname – “${BASH_SOURCE[0]}”)" &amp;amp;&amp;gt; /dev/null &amp;amp;&amp;amp; pwd)&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-21" class="anchor" href="https://linux.do#p-9060077-h-21"&gt;&lt;/a&gt;— 核心功能函数 —&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-ctrlc-22" class="anchor" href="https://linux.do#p-9060077-ctrlc-22"&gt;&lt;/a&gt;捕获中断信号 (Ctrl+C)，并终止所有子进程&lt;/h1&gt;
+&lt;p&gt;trap ‘pkill -P $$; echo -e “\n\n​&lt;img src="https://linux.do/images/emoji/twemoji/stop_sign.png?v=14" title=":stop_sign:" class="emoji" alt=":stop_sign:" loading="lazy" width="20" height="20"&gt; 任务被用户中断。所有相关进程已停止。”; exit 1’ EXIT&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-23" class="anchor" href="https://linux.do#p-9060077-h-23"&gt;&lt;/a&gt;倒计时函数&lt;/h1&gt;
+&lt;p&gt;function countdown() {&lt;br&gt;
+local seconds=$1&lt;br&gt;
+while [ &lt;span class="math"&gt;seconds -gt 0 ]; do
+        printf "⏱️  批次间冷却中，还剩 %02d分%02d秒 后继续... \r" &lt;/span&gt;((seconds/60)) &lt;span class="math"&gt;((seconds%60));
+        sleep 1; : &lt;/span&gt;((seconds–));&lt;br&gt;
+done&lt;br&gt;
+echo “\n​&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 冷却完成，继续下一批任务！”&lt;br&gt;
+}&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-24" class="anchor" href="https://linux.do#p-9060077-h-24"&gt;&lt;/a&gt;— 脚本主体 —&lt;/h1&gt;
+&lt;p&gt;echo -e “\n=======================================================”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/rocket.png?v=14" title=":rocket:" class="emoji" alt=":rocket:" loading="lazy" width="20" height="20"&gt; YouTube 全自动批量下载任务 (建筑师·终极版) &lt;img src="https://linux.do/images/emoji/twemoji/rocket.png?v=14" title=":rocket:" class="emoji" alt=":rocket:" loading="lazy" width="20" height="20"&gt;”&lt;br&gt;
+echo “=======================================================”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-25" class="anchor" href="https://linux.do#p-9060077-h-25"&gt;&lt;/a&gt;— 【新】自动转换链接 —&lt;/h1&gt;
+&lt;p&gt;echo “&lt;img src="https://linux.do/images/emoji/twemoji/counterclockwise_arrows_button.png?v=14" title=":counterclockwise_arrows_button:" class="emoji" alt=":counterclockwise_arrows_button:" loading="lazy" width="20" height="20"&gt; 正在从主页链接中提取频道官方ID…”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-playlist-items-1-id-26" class="anchor" href="https://linux.do#p-9060077-playlist-items-1-id-26"&gt;&lt;/a&gt;【核心修正】增加 --playlist-items 1 参数，让其只处理第一个视频，从而快速获取ID，避免卡顿。&lt;/h1&gt;
+&lt;p&gt;CHANNEL_ID=&lt;span class="math"&gt;(yt-dlp --proxy "socks5://127.0.0.1:&lt;/span&gt;{PROXY_PORT}" --print channel_id --playlist-items 1 “${USER_CHANNEL_URL}” 2&amp;gt;/dev/null)&lt;/p&gt;
+&lt;p&gt;if [ -z “&lt;span class="math"&gt;{CHANNEL_ID}" ]; then
+    echo "❌ 错误：无法从链接 [&lt;/span&gt;{USER_CHANNEL_URL}] 中提取频道ID。”&lt;br&gt;
+echo "   请检查：1. 链接是否为正确的YouTube频道主页链接。 2. 代理是否已开启且端口(${PROXY_PORT})正确。"&lt;br&gt;
+exit 1&lt;br&gt;
+fi&lt;/p&gt;
+&lt;p&gt;UPLOADS_PLAYLIST_ID=“UU${CHANNEL_ID:2}”&lt;br&gt;
+CHANNEL_URL=“&lt;a href="https://www.youtube.com/playlist?list=$%7BUPLOADS_PLAYLIST_ID%7D" rel="noopener nofollow ugc"&gt;https://www.youtube.com/playlist?list=${UPLOADS_PLAYLIST_ID}&lt;/a&gt;”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 已成功转换为官方上传清单链接。”&lt;br&gt;
+echo “-------------------------------------------------------”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-27" class="anchor" href="https://linux.do#p-9060077-h-27"&gt;&lt;/a&gt;— 准备工作：进入目录，定义独立的日志文件夹和文件名 —&lt;/h1&gt;
+&lt;p&gt;cd "&lt;span class="math"&gt;{DOWNLOAD_DIR}"
+if [ &lt;/span&gt;? -ne 0 ]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/cross_mark.png?v=14" title=":cross_mark:" class="emoji" alt=":cross_mark:" loading="lazy" width="20" height="20"&gt; 错误：无法进入工作目录: &lt;span class="math"&gt;{DOWNLOAD_DIR}。脚本已终止。"
+    exit 1
+fi
+echo "✅ 已进入工作目录: &lt;/span&gt;{DOWNLOAD_DIR}”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-28" class="anchor" href="https://linux.do#p-9060077-h-28"&gt;&lt;/a&gt;创建独立的日志文件夹&lt;/h1&gt;
+&lt;p&gt;INFO_LOG_DIR=“&lt;span class="math"&gt;{DOWNLOAD_DIR}/视频信息采集日志"; mkdir -p "&lt;/span&gt;{INFO_LOG_DIR}”&lt;br&gt;
+DOWNLOAD_LOG_DIR=“&lt;span class="math"&gt;{DOWNLOAD_DIR}/视频下载日志"; mkdir -p "&lt;/span&gt;{DOWNLOAD_LOG_DIR}”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-29" class="anchor" href="https://linux.do#p-9060077-h-29"&gt;&lt;/a&gt;信息采集阶段的文件&lt;/h1&gt;
+&lt;p&gt;GOAL_IDS_FILE=“&lt;span class="math"&gt;{INFO_LOG_DIR}/目标ID清单.txt"
+MASTER_METADATA_FILE="&lt;/span&gt;{INFO_LOG_DIR}/视频信息数据库.txt”&lt;br&gt;
+EXISTING_IDS_FILE=“&lt;span class="math"&gt;{INFO_LOG_DIR}/已有ID清单.tmp"
+MISSING_IDS_FILE="&lt;/span&gt;{INFO_LOG_DIR}/待办ID清单.tmp”&lt;br&gt;
+INFO_FAILED_IDS_FILE=“&lt;span class="math"&gt;{INFO_LOG_DIR}/失败ID清单.tmp"
+METADATA_COMPLETE_FLAG="&lt;/span&gt;{INFO_LOG_DIR}/元数据.已完成”&lt;br&gt;
+TIMESTAMP=$(date +“%Y%m%d_%H%M%S”)&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-30" class="anchor" href="https://linux.do#p-9060077-h-30"&gt;&lt;/a&gt;下载阶段的文件&lt;/h1&gt;
+&lt;p&gt;DOWNLOAD_ARCHIVE_FILE=“&lt;span class="math"&gt;{DOWNLOAD_LOG_DIR}/下载存档.txt"
+DOWNLOAD_FAILED_IDS_FILE="&lt;/span&gt;{DOWNLOAD_LOG_DIR}/下载失败清单.txt”&lt;br&gt;
+DOWNLOAD_COMPLETE_FLAG=“${DOWNLOAD_LOG_DIR}/下载.已完成”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-31" class="anchor" href="https://linux.do#p-9060077-h-31"&gt;&lt;/a&gt;— 智能启动：检查“完工”标记 —&lt;/h1&gt;
+&lt;p&gt;if [ -f “${METADATA_COMPLETE_FLAG}” ]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/information_source.png?v=14" title=":information_source:" class="emoji" alt=":information_source:" loading="lazy" width="20" height="20"&gt;  检测到“元数据.已完成”标记，清单已备好。”&lt;br&gt;
+while true; do&lt;br&gt;
+read -p "是否直接使用此清单开始下载任务 (将跳过信息获取步骤)？ (y/n): " -n 1 -r; echo&lt;br&gt;
+if [[ &lt;span class="math"&gt;REPLY =~ ^[Yy]&lt;/span&gt; ]]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 好的，将使用现有清单，直接进入下载前的最终确认步骤。”&lt;br&gt;
+SKIP_FETCH=true; break&lt;br&gt;
+elif [[ &lt;span class="math"&gt;REPLY =~ ^[Nn]&lt;/span&gt; ]]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/counterclockwise_arrows_button.png?v=14" title=":counterclockwise_arrows_button:" class="emoji" alt=":counterclockwise_arrows_button:" loading="lazy" width="20" height="20"&gt; 好的，将忽略现有清单，重新从头获取所有视频信息。”&lt;br&gt;
+rm -f “&lt;span class="math"&gt;{METADATA_COMPLETE_FLAG}" "&lt;/span&gt;{MASTER_METADATA_FILE}” “${GOAL_IDS_FILE}”&lt;br&gt;
+SKIP_FETCH=false; break&lt;br&gt;
+fi&lt;br&gt;
+done&lt;br&gt;
+fi&lt;/p&gt;
+&lt;p&gt;if [ “&lt;span class="math"&gt;SKIP_FETCH" != true ]; then
+    # --- STEP 1: 获取“总蓝图”(全部视频ID) ---
+    echo -e "\nSTEP 1: 获取“总蓝图”(全部视频ID)"
+    echo "-------------------------------------------------------"
+    if [ -f "&lt;/span&gt;{GOAL_IDS_FILE}” ]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; “总蓝图”文件已存在，跳过获取。”&lt;br&gt;
+else&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/counterclockwise_arrows_button.png?v=14" title=":counterclockwise_arrows_button:" class="emoji" alt=":counterclockwise_arrows_button:" loading="lazy" width="20" height="20"&gt; 正在通过“极速模式”获取全部视频ID…”&lt;br&gt;
+# 注意，这里现在使用的是我们自动转换后的 CHANNEL_URL&lt;br&gt;
+yt-dlp --proxy “socks5://127.0.0.1:&lt;span class="math"&gt;{PROXY_PORT}" --flat-playlist --print id "&lt;/span&gt;{CHANNEL_URL}” &amp;gt; “&lt;span class="math"&gt;{GOAL_IDS_FILE}"
+        echo "✅ “总蓝图”获取完成，总目标 &lt;/span&gt;(wc -l &amp;lt; “${GOAL_IDS_FILE}” | tr -d ’ ') 个视频。”&lt;br&gt;
+fi&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# --- 自动循环重试“补货”逻辑 ---
+MAX_RETRY_ROUNDS=3
+for (( round=1; round&amp;lt;=MAX_RETRY_ROUNDS; round++ )); do
+    echo -e "\nSTEP 2 (第 ${round}/${MAX_RETRY_ROUNDS} 轮): 计算“待办事项”清单"
+    echo "-------------------------------------------------------"
+    touch "${MASTER_METADATA_FILE}"
+    awk -F'\t' '{print $2}' "${MASTER_METADATA_FILE}" | sort &amp;gt; "${EXISTING_IDS_FILE}"
+    sort "${GOAL_IDS_FILE}" | comm -23 - "${EXISTING_IDS_FILE}" &amp;gt; "${MISSING_IDS_FILE}"
+    
+    MISSING_COUNT=$(wc -l &amp;lt; "${MISSING_IDS_FILE}" | tr -d ' ')
+    if [ "${MISSING_COUNT}" -eq 0 ]; then
+        echo "✅ 恭喜！所有视频的详细信息都已获取，无需“补货”。"
+        break
+    else
+        echo "ℹ️  第 ${round} 轮：需要为 ${MISSING_COUNT} 个新视频获取详细信息。"
+        # --- STEP 3: 分批“精准补货” ---
+        echo -e "\nSTEP 3 (第 ${round}/${MAX_RETRY_ROUNDS} 轮): 开始分批“精准补货”"
+        echo "-------------------------------------------------------"
+        BATCH_COUNTER=0
+        &amp;gt; "${INFO_FAILED_IDS_FILE}"
+        while read -r VIDEO_ID; do
+            ((BATCH_COUNTER++))
+            echo "补货中(${BATCH_COUNTER}/${MISSING_COUNT}): 正在获取ID ${VIDEO_ID} 的详细信息..."
+            
+            VIDEO_INFO=$(yt-dlp --proxy "socks5://127.0.0.1:${PROXY_PORT}" --print "%(upload_date)s\t%(id)s\t%(title)s" --ignore-errors --retries 10 "https://www.youtube.com/watch?v=${VIDEO_ID}")
+            
+            if [ -n "$VIDEO_INFO" ]; then
+                echo -e "${VIDEO_INFO}" &amp;gt;&amp;gt; "${MASTER_METADATA_FILE}"
+            else
+                echo "⚠️  获取ID ${VIDEO_ID} 失败，已记录到失败清单。"
+                echo "${VIDEO_ID}" &amp;gt;&amp;gt; "${INFO_FAILED_IDS_FILE}"
+            fi
+
+            if (( BATCH_COUNTER % DETAILS_FETCH_BATCH_SIZE == 0 &amp;amp;&amp;amp; BATCH_COUNTER &amp;lt; MISSING_COUNT )); then
+                SLEEP_TIME=$(( (RANDOM % 46) + 15 ));
+                echo "⏳ 完成一批“补货”，为安全起见，自动冷却 ${SLEEP_TIME} 秒..."
+                sleep ${SLEEP_TIME}
+            else
+                sleep 1
+            fi
+        done &amp;lt; "${MISSING_IDS_FILE}"
+        echo "✅ 第 ${round} 轮“补货”尝试完成！"
+    fi
+done
+
+# --- STEP 4: 最终审计与标记 ---
+echo -e "\nSTEP 4: 最终审计与标记"
+echo "-------------------------------------------------------"
+echo "🔄 正在进行最终审计..."
+awk -F'\t' '{print $2}' "${MASTER_METADATA_FILE}" | sort &amp;gt; "${EXISTING_IDS_FILE}"
+sort "${GOAL_IDS_FILE}" | comm -23 - "${EXISTING_IDS_FILE}" &amp;gt; "${MISSING_IDS_FILE}"
+FINAL_MISSING_COUNT=$(wc -l &amp;lt; "${MISSING_IDS_FILE}" | tr -d ' ')
+FINAL_SUCCESS_COUNT=$(wc -l &amp;lt; "${MASTER_METADATA_FILE}" | tr -d ' ')
+GOAL_COUNT=$(wc -l &amp;lt; "${GOAL_IDS_FILE}" | tr -d ' ')
+
+echo "📊 信息采集最终审计报告："
+echo "    - 总目标视频数: ${GOAL_COUNT}"
+echo "    - 成功获取信息数: ${FINAL_SUCCESS_COUNT}"
+echo "    - 最终缺失数: ${FINAL_MISSING_COUNT}"
+
+if [ "${FINAL_SUCCESS_COUNT}" -eq "${GOAL_COUNT}" ]; then
+    echo "✅ 完美！所有视频信息均已成功获取。"
+    echo "🔄 正在对最终清单进行排序（从旧到新）..."
+    sort -k1,1 "${MASTER_METADATA_FILE}" &amp;gt; "${MASTER_METADATA_FILE}.sorted"
+    mv "${MASTER_METADATA_FILE}.sorted" "${MASTER_METADATA_FILE}"
+    touch "${METADATA_COMPLETE_FLAG}"
+    echo "✅ 清单已排序并标记为“已完成”。"
+else
+    echo "❌ 警告：经过多轮尝试，仍有 ${FINAL_MISSING_COUNT} 个视频信息获取失败。"
+    echo "    失败的ID列表已保存在: ${INFO_FAILED_IDS_FILE}"
+    echo "    脚本将仅使用已成功的 ${FINAL_SUCCESS_COUNT} 个视频继续下一步。"
+fi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;fi&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-step-5-32" class="anchor" href="https://linux.do#p-9060077-step-5-32"&gt;&lt;/a&gt;— STEP 5: 预览与最终确认 —&lt;/h1&gt;
+&lt;p&gt;TOTAL_VIDEOS=&lt;span class="math"&gt;(wc -l &amp;lt; "&lt;/span&gt;{MASTER_METADATA_FILE}" | tr -d ’ ')&lt;br&gt;
+if [ “${TOTAL_VIDEOS}” -eq 0 ]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/cross_mark.png?v=14" title=":cross_mark:" class="emoji" alt=":cross_mark:" loading="lazy" width="20" height="20"&gt; 错误：未能获取或找到任何有效的视频信息。脚本已终止。”&lt;br&gt;
+exit 1&lt;br&gt;
+fi&lt;/p&gt;
+&lt;p&gt;echo -e “\nSTEP 5: 预览与最终确认”&lt;br&gt;
+echo “-------------------------------------------------------”&lt;br&gt;
+PREVIEW_LIST_DESKTOP=“&lt;span class="math"&gt;HOME/Desktop/视频下载预览清单_&lt;/span&gt;{TIMESTAMP}.txt”&lt;br&gt;
+PREVIEW_LIST_BACKUP=“&lt;span class="math"&gt;{INFO_LOG_DIR}/视频下载预览清单_&lt;/span&gt;{TIMESTAMP}.txt”&lt;br&gt;
+awk -F’\t’ '{ date_str = $1; year = substr(date_str, 1, 4); month = substr(date_str, 5, 2); day = substr(date_str, 7, 2); printf “%s\t%s年%s月%s日\t%s\n”, NR, year, month, day, &lt;span class="math"&gt;3 }' "&lt;/span&gt;{MASTER_METADATA_FILE}" &amp;gt; “&lt;span class="math"&gt;{PREVIEW_LIST_BACKUP}"
+cp "&lt;/span&gt;{PREVIEW_LIST_BACKUP}” “${PREVIEW_LIST_DESKTOP}”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 预览清单已生成到你的桌面，请检查内容和顺序（从旧到新）。”&lt;/p&gt;
+&lt;p&gt;while true; do&lt;br&gt;
+read -p "是否确认开始下载这 ${TOTAL_VIDEOS} 个视频？ (y/n): " -n 1 -r; echo&lt;br&gt;
+if [[ &lt;span class="math"&gt;REPLY =~ ^[Yy]&lt;/span&gt; ]]; then&lt;br&gt;
+break&lt;br&gt;
+elif [[ &lt;span class="math"&gt;REPLY =~ ^[Nn]&lt;/span&gt; ]]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/cross_mark.png?v=14" title=":cross_mark:" class="emoji" alt=":cross_mark:" loading="lazy" width="20" height="20"&gt; 用户选择中止任务。”; exit 1&lt;br&gt;
+fi&lt;br&gt;
+done&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-step-6-33" class="anchor" href="https://linux.do#p-9060077-step-6-33"&gt;&lt;/a&gt;— STEP 6: 开始智能分批全自动下载 —&lt;/h1&gt;
+&lt;p&gt;echo -e “\n=======================================================”&lt;br&gt;
+echo “STEP 6: 开始智能分批全自动下载”&lt;br&gt;
+echo “=======================================================”&lt;/p&gt;
+&lt;p&gt;if [ -f “${DOWNLOAD_COMPLETE_FLAG}” ]; then&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/information_source.png?v=14" title=":information_source:" class="emoji" alt=":information_source:" loading="lazy" width="20" height="20"&gt;  检测到“下载.已完成”标记，所有视频均已成功下载。任务结束。”&lt;br&gt;
+exit 0&lt;br&gt;
+fi&lt;/p&gt;
+&lt;p&gt;DOWNLOAD_MAX_ROUNDS=3&lt;br&gt;
+for (( round=1; round&amp;lt;=DOWNLOAD_MAX_ROUNDS; round++ )); do&lt;br&gt;
+echo -e “\n— 下载轮次 &lt;span class="math"&gt;{round}/&lt;/span&gt;{DOWNLOAD_MAX_ROUNDS} —”&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 【核心修正】: 计算待下载清单，同时保留时间顺序
+touch "${DOWNLOAD_ARCHIVE_FILE}"
+# 1. 从下载存档中提取已下载的视频ID，并去重排序，以便高效查询
+awk '{print $2}' "${DOWNLOAD_ARCHIVE_FILE}" | sort -u &amp;gt; "${DOWNLOAD_LOG_DIR}/already_downloaded_ids.tmp"
+
+# 2. 遍历 MASTER_METADATA_FILE (已按时间排序)，过滤掉已下载的视频，生成新的待下载清单 (按时间顺序)
+awk -F'\t' '
+    BEGIN {
+        # 将已下载的ID加载到关联数组中
+        while ((getline &amp;lt; "'"${DOWNLOAD_LOG_DIR}/already_downloaded_ids.tmp"'") &amp;gt; 0) {
+            downloaded_ids[$1] = 1
+        }
+        close("'"${DOWNLOAD_LOG_DIR}/already_downloaded_ids.tmp"'") # 关闭文件
+    }
+    # 如果当前视频的ID不在已下载列表中，则打印其ID，保持原始时间顺序
+    !downloaded_ids[$2] {
+        print $2
+    }
+' "${MASTER_METADATA_FILE}" &amp;gt; "${DOWNLOAD_LOG_DIR}/download_missing.tmp"
+
+# 计算实际需要下载的数量
+DOWNLOAD_MISSING_COUNT=$(wc -l &amp;lt; "${DOWNLOAD_LOG_DIR}/download_missing.tmp" | tr -d ' ')
+
+if [ "${DOWNLOAD_MISSING_COUNT}" -eq 0 ]; then
+    echo "✅ 恭喜！所有视频均已下载完成。"
+    break
+else
+    echo "ℹ️  第 ${round} 轮：需要下载 ${DOWNLOAD_MISSING_COUNT} 个视频。"
+    
+    # 读取待下载清单，并逐个下载
+    DOWNLOAD_BATCH_COUNTER=0
+    while read -r VIDEO_ID; do
+        ((DOWNLOAD_BATCH_COUNTER++))
+        
+        # 从主数据库中查找标题
+        VIDEO_TITLE=$(awk -F'\t' -v id="$VIDEO_ID" '$2==id {print $3}' "${MASTER_METADATA_FILE}")
+        echo -e "\n-------------------------------------------------------"
+        echo "📥 准备下载 (${DOWNLOAD_BATCH_COUNTER}/${DOWNLOAD_MISSING_COUNT}): ${VIDEO_TITLE}"
+        
+        # 执行下载，并检查退出代码
+        yt-dlp \
+            --proxy "socks5://127.0.0.1:${PROXY_PORT}" \
+            --ignore-errors \
+            --download-archive "${DOWNLOAD_ARCHIVE_FILE}" \
+            --retries 20 \
+            -f 'bestvideo[height&amp;lt;=720][ext=mp4]+bestaudio[ext=m4a]/best[height&amp;lt;=720][ext=mp4]/best[ext=mp4]' \
+            --sleep-interval 1 --max-sleep-interval 10 \
+            -o "【%(upload_date&amp;gt;%Y年%m月%d日发布)s】%(title)s.%(ext)s" \
+            "https://www.youtube.com/watch?v=${VIDEO_ID}"
+        
+        if [ $? -ne 0 ]; then
+            echo "${VIDEO_ID}" &amp;gt;&amp;gt; "${DOWNLOAD_FAILED_IDS_FILE}"
+            echo "❌ 下载ID ${VIDEO_ID} 失败，已记录到下载失败清单。"
+        fi
+
+        if (( DOWNLOAD_BATCH_COUNTER % DOWNLOAD_BATCH_SIZE == 0 &amp;amp;&amp;amp; DOWNLOAD_BATCH_COUNTER &amp;lt; DOWNLOAD_MISSING_COUNT )); then
+            SLEEP_TIME=$(( (RANDOM % 241) + 60 ));
+            echo "✅ 完成一个下载批次，长时冷却中..."
+            countdown ${SLEEP_TIME}
+        fi
+    done &amp;lt; "${DOWNLOAD_LOG_DIR}/download_missing.tmp"
+    echo "✅ 第 ${round} 轮下载尝试完成！"
+fi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;done&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-step-7-34" class="anchor" href="https://linux.do#p-9060077-step-7-34"&gt;&lt;/a&gt;— STEP 7: 最终下载审计 —&lt;/h1&gt;
+&lt;p&gt;echo -e “\nSTEP 7: 最终下载审计”&lt;br&gt;
+echo “-------------------------------------------------------”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/counterclockwise_arrows_button.png?v=14" title=":counterclockwise_arrows_button:" class="emoji" alt=":counterclockwise_arrows_button:" loading="lazy" width="20" height="20"&gt; 正在进行最终下载审计…”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-comm-id-35" class="anchor" href="https://linux.do#p-9060077-comm-id-35"&gt;&lt;/a&gt;为 comm 命令准备一份按ID排序的完整目标清单&lt;/h1&gt;
+&lt;p&gt;awk -F’\t’ '{print &lt;span class="math"&gt;2}' "&lt;/span&gt;{MASTER_METADATA_FILE}" | sort &amp;gt; “${DOWNLOAD_LOG_DIR}/download_goal_for_audit.tmp”&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-id-36" class="anchor" href="https://linux.do#p-9060077-id-36"&gt;&lt;/a&gt;从下载存档中提取已下载的ID&lt;/h1&gt;
+&lt;p&gt;awk '{print &lt;span class="math"&gt;2}' "&lt;/span&gt;{DOWNLOAD_ARCHIVE_FILE}" | sort &amp;gt; “${DOWNLOAD_LOG_DIR}/download_existing_for_audit.tmp”&lt;/p&gt;
+&lt;p&gt;DOWNLOAD_GOAL_COUNT=&lt;span class="math"&gt;(wc -l &amp;lt; "&lt;/span&gt;{MASTER_METADATA_FILE}" | tr -d ’ ')&lt;br&gt;
+DOWNLOAD_SUCCESS_COUNT=&lt;span class="math"&gt;(wc -l &amp;lt; "&lt;/span&gt;{DOWNLOAD_LOG_DIR}/download_existing_for_audit.tmp" | tr -d ’ ')&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-comm-id-37" class="anchor" href="https://linux.do#p-9060077-comm-id-37"&gt;&lt;/a&gt;使用 comm 命令找出最终未下载成功的ID&lt;/h1&gt;
+&lt;p&gt;sort “&lt;span class="math"&gt;{DOWNLOAD_LOG_DIR}/download_goal_for_audit.tmp" | comm -23 - "&lt;/span&gt;{DOWNLOAD_LOG_DIR}/download_existing_for_audit.tmp” &amp;gt; "&lt;span class="math"&gt;{DOWNLOAD_FAILED_IDS_FILE}"
+FINAL_DOWNLOAD_FAIL_COUNT=&lt;/span&gt;(wc -l &amp;lt; “${DOWNLOAD_FAILED_IDS_FILE}” | tr -d ’ ')&lt;/p&gt;
+&lt;p&gt;echo “&lt;img src="https://linux.do/images/emoji/twemoji/bar_chart.png?v=14" title=":bar_chart:" class="emoji" alt=":bar_chart:" loading="lazy" width="20" height="20"&gt; 最终下载报告：”&lt;br&gt;
+echo "    - 目标下载总数: &lt;span class="math"&gt;{DOWNLOAD_GOAL_COUNT}"
+echo "    - 成功下载总数: &lt;/span&gt;{DOWNLOAD_SUCCESS_COUNT}"&lt;br&gt;
+echo "    - 最终失败总数: ${FINAL_DOWNLOAD_FAIL_COUNT}"&lt;/p&gt;
+&lt;p&gt;if [ “&lt;span class="math"&gt;{FINAL_DOWNLOAD_FAIL_COUNT}" -eq 0 ]; then
+    echo "✅ 完美！所有目标视频均已成功下载。"
+    touch "&lt;/span&gt;{DOWNLOAD_COMPLETE_FLAG}”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 已创建“下载.已完成”标记。”&lt;br&gt;
+else&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/cross_mark.png?v=14" title=":cross_mark:" class="emoji" alt=":cross_mark:" loading="lazy" width="20" height="20"&gt; 警告：经过多轮尝试，仍有 &lt;span class="math"&gt;{FINAL_DOWNLOAD_FAIL_COUNT} 个视频下载失败。"
+    echo "    失败的ID列表已保存在: &lt;/span&gt;{DOWNLOAD_FAILED_IDS_FILE}”&lt;br&gt;
+fi&lt;/p&gt;
+&lt;p&gt;echo -e “\n=======================================================”&lt;br&gt;
+echo “&lt;img src="https://linux.do/images/emoji/twemoji/tada.png?v=14" title=":tada:" class="emoji" alt=":tada:" loading="lazy" width="20" height="20"&gt; ** 所有任务流程已结束！** &lt;img src="https://linux.do/images/emoji/twemoji/tada.png?v=14" title=":tada:" class="emoji" alt=":tada:" loading="lazy" width="20" height="20"&gt;”&lt;br&gt;
+echo “=======================================================”&lt;br&gt;
+trap - EXIT&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-38" class="anchor" href="https://linux.do#p-9060077-h-38"&gt;&lt;/a&gt;使用方法：&lt;/h1&gt;
+&lt;p&gt;1 创建一个 download_videos.sh 文件，&lt;br&gt;
+就像这样：&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/8p8mb2.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/1/f/3/1f37074c1ada90eea105ef90ab9cfb442673d1a3.png" data-dominant-color="F7F7F7" width="690" height="347"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;p&gt;把我上面给出的脚本内容，复制粘贴进去这个sh文件里面&lt;/p&gt;
+&lt;p&gt;2 配置脚本里面的相关信息：&lt;/p&gt;
+&lt;p&gt;找到你要下载的那个youtuber的主页，复制最上面的那个链接&lt;br&gt;
+容纳后在脚本配置里面，填进去&lt;/p&gt;
+&lt;p&gt;                    &lt;a href="https://files.catbox.moe/ot6u49.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/8/d/3/8d34396ae0d6ee8bd845b685171d07a145752056.jpeg" data-dominant-color="F1EEF3" width="690" height="241"&gt;
+          &lt;/a&gt;
+
+&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/brxgps.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/b/3/8/b381bdd5b7cd26c44efb33724631d0824402ed84.png" data-dominant-color="F0F0F0" width="690" height="146"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;p&gt;填写你的本地代理端口号&lt;/p&gt;
+&lt;p&gt;3&lt;br&gt;
+想办法让ai教给你，怎么使用这个sh文件，&lt;br&gt;
+我是mac系统，，所以我就打开这个 终端&lt;/p&gt;
+&lt;p&gt;4 输入这个命令，脚本就会开始运行&lt;br&gt;
+这是运行脚本的命令：&lt;br&gt;
+./download_videos.sh&lt;/p&gt;
+&lt;p&gt;我是mac系统，同样是mac系统的，可能打开终端就可以直接使用，不过可能要下载一些必要个工具什么的。&lt;br&gt;
+但是其他系统我也不知道行不行， ，反正不行就让ai教你嘛，改一改这个脚本内容的相关配置。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-aiai-ai-39" class="anchor" href="https://linux.do#p-9060077-aiai-ai-39"&gt;&lt;/a&gt;总之：哪里不会问ai。哪里不行让ai改哪里。 别问我，不是不告诉你，因为我也不会，我哪里不会，我也是问ai。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-40" class="anchor" href="https://linux.do#p-9060077-h-40"&gt;&lt;/a&gt;其他说明：&lt;/h1&gt;
+&lt;p&gt;01 视频分辨率：&lt;br&gt;
+我设置的是默认为 最高720p，必须输出mp4 格式，&lt;/p&gt;
+&lt;p&gt;02 文件名：&lt;br&gt;
+我设置的是，【xx年xx月xx日发布】文件名&lt;/p&gt;
+&lt;p&gt;如图所示：&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/t8qqab.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/9/b/3/9b3cd439f12a7085b4e4f1bd01629410cb294314.png" data-dominant-color="D6D6D6" width="162" height="500"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;p&gt;03 不支持按youtuber设定的播放列表 来分别下载，&lt;br&gt;
+因为这样会出很多问题，，有的youtuber的播放列表，&lt;br&gt;
+同一个视频，放到了不同的播放列表里面去，&lt;br&gt;
+还有的一个播放列表里面同一个视频发两遍，&lt;br&gt;
+会造成重复下载&lt;/p&gt;
+&lt;p&gt;所以考虑再三，&lt;br&gt;
+我选择直接按照 这个youtuber，所有视频的发布日期，从过去到现在的时间顺序，&lt;br&gt;
+一个个按顺序爬取下载，并且在视频名字前面标上 发布日期，方便排序归类。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-ai-41" class="anchor" href="https://linux.do#p-9060077-ai-41"&gt;&lt;/a&gt;如有其他要求，，让ai去帮你改改脚本就好啦。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-42" class="anchor" href="https://linux.do#p-9060077-h-42"&gt;&lt;/a&gt;杂谈：&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-43" class="anchor" href="https://linux.do#p-9060077-h-43"&gt;&lt;/a&gt;为何研究：&lt;/h1&gt;
+&lt;p&gt;三天前, 我想要去下载一个YouTube，主页内的全部几百个视频。&lt;br&gt;
+原本以为下载这种视频不是很简单吗，但是没有想象中那么简单，遇到了许多困难。&lt;br&gt;
+你确实你下载几个十几个视频没什么问题的。&lt;br&gt;
+但是如果你下载上百个、几百个、上千个, 它就会出现一些问题了。&lt;br&gt;
+一次下了几十个上百个，就会一直提示你下载失败。&lt;br&gt;
+通过三天的高强度研究, 我终于彻底解决这个问题。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-44" class="anchor" href="https://linux.do#p-9060077-h-44"&gt;&lt;/a&gt;探索历程：&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-45" class="anchor" href="https://linux.do#p-9060077-h-45"&gt;&lt;/a&gt;尝试过的一些失败的方法：&lt;/h1&gt;
+&lt;p&gt;1 最开始，直接使用机场节点 + yt-dlp。&lt;br&gt;
+失败。&lt;br&gt;
+失败的表现为：下载了60,70个之后就封ip，不给你下载。&lt;br&gt;
+换了ip 一开始还可以，后来又不行了。&lt;/p&gt;
+&lt;p&gt;01 我还以为是我之前那个机场垃圾，换了一个贵一点的机场&lt;br&gt;
+还是不行&lt;/p&gt;
+&lt;p&gt;这里我还在想，是否是ip的问题，站内搜过，&lt;br&gt;
+有的佬说是批量下载youtube最关键的是ip问题，而不是工具问题！&lt;/p&gt;
+&lt;p&gt;我以为是我的机场不行，专心去研究这个 ip的问题&lt;br&gt;
+刚好手里有一个德国的vps，&lt;br&gt;
+研究出了第二个方案&lt;/p&gt;
+&lt;p&gt;2 VPS下载机 + SFTP搬运&lt;br&gt;
+还是失败。 依旧是下来几十个之后就封ip。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-46" class="anchor" href="https://linux.do#p-9060077-h-46"&gt;&lt;/a&gt;尝试了其他的策略：&lt;/h1&gt;
+&lt;p&gt;01 添加了三个谷歌号的Cookies，还是失败，没用。&lt;br&gt;
+02 设置延时机制，每下载一个就延时30秒，下载20个就延时5-10分钟。&lt;br&gt;
+依旧没用。&lt;/p&gt;
+&lt;p&gt;我依旧怀疑是ip的问题，是不是我的这个ip纯净度不够？&lt;/p&gt;
+&lt;p&gt;我又想着折腾：&lt;br&gt;
+01 要不要搞一个家宽？&lt;br&gt;
+02 要不要搞一个代理池？&lt;/p&gt;
+&lt;p&gt;但是这样额外购买这些东西，成本又上去了，&lt;br&gt;
+而且我当时也不能确定这样搞能不能搞定。&lt;/p&gt;
+&lt;p&gt;我想了想，与其多花这个钱，又不确定能不能搞定，&lt;br&gt;
+不如花钱去找别人帮忙搞，&lt;br&gt;
+我先去咸鱼看了，确实有大量的这种代下载服务，&lt;br&gt;
+但是有的贵有的便宜， 我问了一个，砍价到120，&lt;br&gt;
+其实我是不太想给人家弄的，一方面是浪费钱，&lt;br&gt;
+另一方面我感觉这也挺简单的 ，&lt;br&gt;
+你说都能翻墙上网了，弄vps弄ai了，，下载几百个视频，这点小事，我还要给人几百块？&lt;br&gt;
+让我感觉有点侮辱我的智商。&lt;/p&gt;
+&lt;p&gt;但是那个时候，我搞了也搞烦了，懒得弄了&lt;br&gt;
+于是我就想了想，在站内发帖，&lt;br&gt;
+有偿看谁可以帮我下载。&lt;br&gt;
+花了100，找到了一个很好的佬帮我代下载好了。&lt;/p&gt;
+&lt;p&gt;但是下载好了之后，我就在琢磨，到底是什么问题？ 为什么不行呢？&lt;br&gt;
+主要是我还要下载其他youtuber的全部视频，，而那个站内帮我代下载的大佬明确告诉我，他只是玩玩，想搞明白怎么样弄这个东西罢了，，下次不一定可以帮我 。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-47" class="anchor" href="https://linux.do#p-9060077-h-47"&gt;&lt;/a&gt;没办法了，那就只能我自己来了！！我就不信自己搞不定。&lt;/h1&gt;
+&lt;p&gt;我跑去咸鱼问那些商家，，问能不能教我&lt;br&gt;
+这个商家也挺好的，给我提示了一下，（后面我也给他发了个红包）&lt;/p&gt;
+&lt;p&gt;第1个提示：&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/shll2x.jpg" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/9/9/0/9902609d0d68044b96d9f8dee6f198ae6c386741.jpeg" data-dominant-color="F6F4E6" width="285" height="500"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;p&gt;第2个提示：&lt;br&gt;
+再加上我之前发贴问过，有其他佬友评论说，&lt;br&gt;
+必须要分批 延时下载，一次下载10个-20个&lt;/p&gt;
+&lt;p&gt;第三个提示：&lt;br&gt;
+还有之前问ai，他也是建议我 分批下载，，而且是手动修改，&lt;br&gt;
+先下载1-10个，下载完成后再手动修改，下载11-20个，&lt;br&gt;
+我当时还在想？ 这个ai为什么这样教，干嘛搞这么原始？&lt;br&gt;
+我直接全部提交，然后让他慢慢下不就好了。&lt;br&gt;
+但就是这个想法，让我前面的尝试全部失败。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-48" class="anchor" href="https://linux.do#p-9060077-h-48"&gt;&lt;/a&gt;那个咸鱼卖家提示我了，我又把这三个提示都联想到了一起，有了一个猜测&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-ai-49" class="anchor" href="https://linux.do#p-9060077-ai-49"&gt;&lt;/a&gt;去问了一下ai，果然让我猜对了，&lt;/h1&gt;
+&lt;p&gt;让我学习到了这个概念：&lt;/p&gt;
+&lt;div data-theme-scrollable="true"&gt;
+我如果不设置一次下载20个，而是一次下载300个，然后设定一个一个慢慢下，，我的问题是，我一次提交20个，跟我一次提交300个有区别吗？ 谷歌能察觉到？
+&lt;p&gt;问得非常好！这是一个极其关键的点，也是很多批量下载新手最容易误解的地方。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;简单直接的回答是：是的，有巨大区别。谷歌完全能察觉到。&lt;/strong&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3&gt;&lt;a name="p-9060077-h-50" class="anchor" href="https://linux.do#p-9060077-h-50"&gt;&lt;/a&gt;&lt;strong&gt;核心区别：单次“任务请求”的规模&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;让我们用一个“去图书馆借书”的比喻来解释：&lt;/p&gt;
+&lt;h4&gt;&lt;a name="p-9060077-h-300-51" class="anchor" href="https://linux.do#p-9060077-h-300-51"&gt;&lt;/a&gt;&lt;strong&gt;情况一：一次提交300个（你的想法）&lt;/strong&gt;&lt;/h4&gt;
+&lt;p&gt;你走进图书馆，直接走到总服务台，递上一张写着300本书名的单子，对管理员说：“你好，请把这300本书全部从书库里帮我找出来。”&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;管理员（谷歌服务器）的反应&lt;/strong&gt;：管理员会立刻警觉起来。普通人一次只会借几本书，而你一次要借300本。你的&lt;strong&gt;意图&lt;/strong&gt;在第一时间就暴露了——你不是一个普通的读者，你很可能是在做数据研究、批量扫描，或者你根本就是个“机器人”。即使你告诉管理员“你慢慢找，我每隔30秒来取一本”，但你的**“我要300本”这个初始请求**已经被记录在案了。管理员会立刻把你列为“重点观察对象”，并且很可能会限制你的借阅权限，或者干脆拒绝你的这次请求。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应到 &lt;code&gt;yt-dlp&lt;/code&gt;&lt;/strong&gt;：当你运行 &lt;code&gt;yt-dlp ... --playlist-end 300&lt;/code&gt; 时，&lt;code&gt;yt-dlp&lt;/code&gt; 的&lt;strong&gt;第一步&lt;/strong&gt;就是向YouTube服务器发出请求：“你好，请把这个列表里300个视频的&lt;strong&gt;所有信息&lt;/strong&gt;（元数据）都发给我。” YouTube的服务器瞬间就知道了你的“宏大计划”，即便你后面用 &lt;code&gt;--sleep-interval&lt;/code&gt; 让它一个一个慢慢下，但这个“一次要300个”的初始请求，已经让你被系统标记为&lt;strong&gt;高风险的机器人行为&lt;/strong&gt;了。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;&lt;a name="p-9060077-h-20-52" class="anchor" href="https://linux.do#p-9060077-h-20-52"&gt;&lt;/a&gt;&lt;strong&gt;情况二：一次只提交20个（大佬的建议）&lt;/strong&gt;&lt;/h4&gt;
+&lt;p&gt;你走进图书馆，走到服务台，说：“你好，请帮我找这个系列的前20本书。”&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;管理员（谷歌服务器）的反应&lt;/strong&gt;：这个请求听起来非常正常、合理。管理员会很快帮你找出来。你看完后，过了一会儿，又去服务台说：“你好，麻烦再帮我找接下来那20本。”&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应到 &lt;code&gt;yt-dlp&lt;/code&gt;&lt;/strong&gt;：当你运行 &lt;code&gt;yt-dlp ... --playlist-end 20&lt;/code&gt; 时，&lt;code&gt;yt-dlp&lt;/code&gt; 向YouTube发出的初始请求规模非常小。这个行为模式看起来&lt;strong&gt;和一个普通用户在浏览播放列表非常相似&lt;/strong&gt;。完成这次任务后，你的程序就退出了。当你再次运行命令下载第21-40个时，从YouTube的角度看，这像是一个&lt;strong&gt;全新的、小规模的、低风险的请求&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3&gt;&lt;a name="p-9060077-h-53" class="anchor" href="https://linux.do#p-9060077-h-53"&gt;&lt;/a&gt;&lt;strong&gt;总结：“请求的总量”是什么意思？&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;大佬说的“请求的总量”，指的不是你最终下载视频的总数量，而是你**“单次任务向YouTube索取信息的规模”**。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;一次提交300个&lt;/strong&gt;：任务规模是300，意图明显，容易触发警报。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;一次提交20个&lt;/strong&gt;：任务规模是20，看起来像正常浏览，不容易触发警报。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;所以，那位大佬的建议是完全正确的。&lt;strong&gt;通过把一个“下载300个视频”的大任务，拆分成15个“每次下载20个视频”的小任务，你就把自己的行为从“机器人”伪装成了“普通用户”&lt;/strong&gt;，从而极大地降低了IP被封锁的概率。&lt;/p&gt;
+&lt;p&gt;虽然这样做需要你手动改几次命令，但这正是与YouTube反爬虫机制“斗智斗勇”的关键所在。&lt;/p&gt;
+&lt;p&gt;必须要进行手动改命令吗？ 没有办法用那种自动化的方案吗&lt;/p&gt;
+&lt;p&gt;显示思路&lt;/p&gt;
+&lt;p&gt;当然有！你完全不需要手动一次次地修改和执行命令。&lt;/p&gt;
+&lt;p&gt;我们可以用一个简单的“循环脚本”来让终端自动帮你完成**“下载一批 → 休息一下 → 再下载下一批”**的全部工作。这正是命令行的强大之处。&lt;/p&gt;
+&lt;/div&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-54" class="anchor" href="https://linux.do#p-9060077-h-54"&gt;&lt;/a&gt;所以说，在这里就真相大白了，&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-55" class="anchor" href="https://linux.do#p-9060077-h-55"&gt;&lt;/a&gt;为什么之前全部失败？&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-56" class="anchor" href="https://linux.do#p-9060077-h-56"&gt;&lt;/a&gt;就是因为一次提交几百个请求，而不是分批一次只提交几个请求。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-57" class="anchor" href="https://linux.do#p-9060077-h-57"&gt;&lt;/a&gt;这是最核心的问题！！！&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-ip-58" class="anchor" href="https://linux.do#p-9060077-ip-58"&gt;&lt;/a&gt;ip反而不是最重要的，&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-59" class="anchor" href="https://linux.do#p-9060077-h-59"&gt;&lt;/a&gt;根据这个思路，我设计了一个脚本，&lt;/h1&gt;
+&lt;p&gt;一次提交10个视频下载，然后10个视频下载完了之后，自动在1-5分钟，里面选一个时间冷却，&lt;br&gt;
+冷却完再去下载，，&lt;br&gt;
+通过这样的设计，&lt;br&gt;
+一个ip我可以直接下载200多个视频，然后终端才会报错，谷歌封禁了你的ip，需要换ip节点。&lt;br&gt;
+最终我用了4个ip节点，就把我之前花钱找别人弄的这个400多个视频一次下载下来了。&lt;br&gt;
+（为什么是4个ip节点，而不是2个ip节点，后面会说到，&lt;br&gt;
+因为我不仅下载视频，我还需要提前下载一遍视频的信息，也需要用两个ip节点&lt;/p&gt;
+&lt;p&gt;之前一次提交几百个请求，搞的我一个ip节点我只能下载50,60个就失败，然后一直报错，再怎么样换节点也无法给你下载，什么封禁了我的ip。 关键这个方法，你说要是一个ip能成50,60个还好，我多换几个不就好了。关键是不行，搞到后面你怎么换ip，怎么换机场都无效了，都不给你下载，都下载失败了。。因为我再怎么折腾，，我一开始的一次提交400多个请求，已经被谷歌标记为异常了。&lt;/p&gt;
+&lt;p&gt;这就是差距呀。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-60" class="anchor" href="https://linux.do#p-9060077-h-60"&gt;&lt;/a&gt;机场选择：&lt;/h1&gt;
+&lt;p&gt;我用的这个机场：nutbit（自用推荐，无广告）&lt;/p&gt;&lt;aside class="quote quote-modified" data-post="1" data-topic="989802"&gt;
+  &lt;div class="title"&gt;
+    &lt;div class="quote-controls"&gt;&lt;/div&gt;
+    &lt;img alt="" width="24" height="24" src="https://linux.do/user_avatar/linux.do/hhjhkh/48/405933_2.png" class="avatar"&gt;
+    &lt;div class="quote-title__text-content"&gt;
+      &lt;a href="https://linux.do/t/topic/989802"&gt;（已解决，附带建议汇总以及最终解决方案）求助，yt-dlp 命令工具 批量下载youtube视频，用哪里的机场节点合适？ 大概下载2000个g的视频&lt;/a&gt; &lt;a class="badge-category__wrapper " href="https://linux.do/c/gossip/11"&gt;&lt;span data-category-id="11" style="--category-badge-color: #3AB54A; --category-badge-text-color: #000000;" data-drop-close="true" class="badge-category --style-icon " title="闲聊吹水的板块。不得讨论政治、色情等违规内容。"&gt;&lt;svg class="fa d-icon svg-icon svg-node" aria-hidden="true"&gt;&lt;svg id="droplet" viewBox="0 0 384 512"&gt;
+  &lt;path d="M192 512C86 512 0 426 0 320C0 228.8 130.2 57.7 166.6 11.7C172.6 4.2 181.5 0 191.1 0l1.8 0c9.6 0 18.5 4.2 24.5 11.7C253.8 57.7 384 228.8 384 320c0 106-86 192-192 192zM96 336c0-8.8-7.2-16-16-16s-16 7.2-16 16c0 61.9 50.1 112 112 112c8.8 0 16-7.2 16-16s-7.2-16-16-16c-44.2 0-80-35.8-80-80z"&gt;&lt;/path&gt;
+&lt;/svg&gt;&lt;/svg&gt;
+&lt;span class="badge-category__name"&gt;搞七捻三&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;blockquote&gt;
+    使用 yt-dlp 命令工具，让ai教了我一下， 在mac 终端上输入命令下载的，，下载到我的 移动硬盘里面去。 
+在站内搜索过，看到有人说 批量下载youtube视频最重要的是节点什么的 
+求助一下，哪里有适合批量下载youtube视频的比较好的节点，另外价格便宜一点，要用2000个g。 
+另外，如果有佬友愿意提供自己的节点，可以有偿付费使用。Thanks♪(･ω･)ﾉ 
+（我也不确定要不要20…
+  &lt;/blockquote&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;前几天我发贴问怎么下载youtube视频，&lt;br&gt;
+下面有个佬推荐的，确实挺好用的，&lt;br&gt;
+下载速度有时候都可以几十mb每秒。&lt;/p&gt;
+&lt;p&gt;这是我设计的脚本，搞了两天弄出来的，做了大量的微调优化，&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-61" class="anchor" href="https://linux.do#p-9060077-h-61"&gt;&lt;/a&gt;脚本设计思路：&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-62" class="anchor" href="https://linux.do#p-9060077-h-62"&gt;&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;如果想要获取这个, 下载这个 YouTube 首页, 也就是说这个人呢, 他发布的全部的视频,&lt;br&gt;
+第一步要做什么?&lt;br&gt;
+那第一步就是确定确认, 他到底发了多少个视频吗? 先确认要下载的目标。&lt;/p&gt;
+&lt;p&gt;这里有三种方法测试啊。 其实我也不太懂, 因为我问AI。 我搞半天才搞明白了。&lt;br&gt;
+它是有好几种方式去确认这个 YouTuber 这个人呢, 他到底发了多少视频。&lt;/p&gt;
+&lt;p&gt;有三种方法测试, 我最终选择了第一种方法。 也把这个方法写入到了我的脚本里面去。&lt;/p&gt;
+&lt;p&gt;第一种方法： 官方上传清单” (Uploads Playlist)**&lt;br&gt;
+获取该频道所有&lt;strong&gt;常规长视频&lt;/strong&gt;的准确数量跟全部视频链接，&lt;br&gt;
+这是最可靠的核心内容列表。&lt;/p&gt;
+&lt;p&gt;第二种方法：&lt;br&gt;
+测试“分类页面清单” (Tab-specific Playlist)**&lt;br&gt;
+分别统计“影片”、“Shorts”、“直播”这三个分类页面下的全部视频链接。&lt;/p&gt;
+&lt;p&gt;第三种方法：&lt;br&gt;
+测试“主页聚合清单” (Homepage Aggregate)&lt;br&gt;
+获取一个对频道&lt;strong&gt;所有类型内容&lt;/strong&gt;（影片、Shorts、直播等）的全部视频链接。&lt;/p&gt;
+&lt;p&gt;第二种跟第三种方法呢? 它测出来这个视频的数量有可能是比第一种要多的。&lt;br&gt;
+有时候它是重复弄的一些视频啊。 有可能让视频数量变多,&lt;br&gt;
+它在这样子页面上乱抓,可能会重复抓取 ，包括了这个 YouTuber, 它这个分类有可能乱分类, 会出现一些问题啊。所以说我还是选择第一种方法。&lt;/p&gt;
+&lt;p&gt;第一个它虽然有可能会比较少几十个吧, 但是呢, 它能确保你没有重复。&lt;br&gt;
+这是我猜的嘛。 我也不确定这个到底对不对。 你们说要是有懂的可以指正我啊。&lt;br&gt;
+包括呢, 之前有一个咸鱼的卖家, 我发给主页链接给他看, 问他有多少个视频。 他说是494个。 啊, 我用第一种方法测也是494个。&lt;br&gt;
+我想人家毕竟比较专业， 他应该也是用的我第一个方法，第一种方法应该是没错的。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-youtuber-63" class="anchor" href="https://linux.do#p-9060077-youtuber-63"&gt;&lt;/a&gt;总之，第一步是先确认这个youtuber到底有多少个视频，&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-id-64" class="anchor" href="https://linux.do#p-9060077-id-64"&gt;&lt;/a&gt;极快速地抓取下来这些所有的视频的 id信息，生成一个文件。&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-65" class="anchor" href="https://linux.do#p-9060077-h-65"&gt;&lt;/a&gt;这个是用来下一步用的，视频信息采集用的，&lt;/h1&gt;
+&lt;p&gt;用来确认要采集哪些视频的信息，以及用来核对用的。还有信息采集阶段，断点续传会用到。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-ip-5015-60-66" class="anchor" href="https://linux.do#p-9060077-ip-5015-60-66"&gt;&lt;/a&gt;第二步： 智能信息采集阶段 （这个阶段的信息 也是要进行分批获取，延时冷却的，因为一次搞太多也会搞不了，封ip。 所以我设定了一次获取50个视频的信息，然后随机休息个（15-60秒 ））&lt;/h1&gt;
+&lt;p&gt;这个阶段主要负责从指定的 YouTube 频道获取所有视频的元数据（ID、发布日期、标题），并进行去重和管理。&lt;/p&gt;
+&lt;p&gt;这些信息一方面是用来做给文件名字重命名用的，&lt;br&gt;
+另一方面是给下一步视频下载用的，，下一步下载跟核对会用到这份视频数据清单。&lt;/p&gt;
+&lt;p&gt;一些功能介绍：&lt;/p&gt;
+&lt;p&gt;断点续传 (信息采集)&lt;br&gt;
+* 脚本会检查是否存在“元数据.已完成”标记。如果存在，用户可以选择直接跳过信息获取步骤，使用现有的视频清单。&lt;br&gt;
+* 通过比较“总蓝图”（所有视频 ID）和“视频信息数据库”中已有的视频 ID，智能生成“待办ID清单”，实现只获取缺失视频信息的增量更新。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;多轮重试机制&lt;/strong&gt; : 对于信息采集失败的视频，脚本会进行最多 3 轮的自动重试，提高信息获取的成功率。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分批获取与冷却&lt;/strong&gt; : 采用 &lt;code&gt;DETAILS_FETCH_BATCH_SIZE&lt;/code&gt; 控制每次获取的视频数量，并在批次之间进行随机时长的冷却（15-60秒），模拟人工操作，降低被服务器限制的风险。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;详细审计报告&lt;/strong&gt; : 在信息采集结束后，提供详细的报告，包括总目标视频数、成功获取数和最终缺失数，让用户对信息采集结果一目了然。&lt;/li&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-67" class="anchor" href="https://linux.do#p-9060077-h-67"&gt;&lt;/a&gt;获取视频信息，之后，，要做下载之前，还有一个阶段&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-68" class="anchor" href="https://linux.do#p-9060077-h-68"&gt;&lt;/a&gt;第三步， 预览与最终确认阶段&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;功能说明&lt;/strong&gt; : 在开始下载之前，脚本会生成一个预览清单，并要求用户进行最终确认，以避免不必要的下载。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;设计亮点&lt;/strong&gt; :
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;用户友好预览&lt;/strong&gt; : 生成一个易于查看的预览清单文件（包含序号、发布日期和视频标题），并复制到桌面，方便用户快速检查和核对。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;二次确认&lt;/strong&gt; : 强制用户确认是否开始下载，给予用户充分的控制权。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这里有一个二次确认，等你确认了，这个要下载的预览视频清单可以符合你的要求，，按下y键确认，才会开始第二步的视频下载。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-69" class="anchor" href="https://linux.do#p-9060077-h-69"&gt;&lt;/a&gt;第四步，智能分批下载阶段&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;功能说明&lt;/strong&gt; : 这是脚本的核心执行部分，负责按照设定的批次和策略下载视频。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;设计亮点&lt;/strong&gt; :
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;增量下载与断点续传 (视频下载)&lt;/strong&gt; :
+&lt;ul&gt;
+&lt;li&gt;通过维护一个“下载存档.txt”文件，记录所有已成功下载的视频 ID。&lt;/li&gt;
+&lt;li&gt;在每次下载轮次开始前，脚本会根据主视频信息数据库和下载存档，动态生成当前需要下载的视频清单，确保不会重复下载已有的视频。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;多轮下载重试&lt;/strong&gt; : 同样采用最多 3 轮的下载重试机制，应对下载过程中的网络波动或服务器问题。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;优化下载格式&lt;/strong&gt; : 默认下载 &lt;code&gt;bestvideo[height&amp;lt;=720][ext=mp4]+bestaudio[ext=m4a]/best[height&amp;lt;=720][ext=mp4]/best[ext=mp4]&lt;/code&gt; 格式，优先选择 720p 的 MP4 视频，兼顾画质和文件大小。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;动态文件名&lt;/strong&gt; : 下载的文件名会包含视频的发布日期和标题，方便用户管理（例如：“【2023年01月01日发布】视频标题.mp4”）。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分批下载与长时冷却&lt;/strong&gt; : 采用 &lt;code&gt;DOWNLOAD_BATCH_SIZE&lt;/code&gt; 控制每次下载的视频数量，并在批次之间进行随机时长的长时间冷却（60-300秒），进一步降低被服务器检测和限制的风险。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;下载进度与标题显示&lt;/strong&gt; : 在下载每个视频前，会显示当前是第几个视频，以及视频的标题，让用户清楚当前正在下载哪个视频。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-70" class="anchor" href="https://linux.do#p-9060077-h-70"&gt;&lt;/a&gt;第五步：最终审计与完成标记&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;功能说明&lt;/strong&gt; : 在所有下载轮次结束后，脚本会进行最终的下载审计，生成报告，并标记任务是否完全成功。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;设计亮点&lt;/strong&gt; :
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;全面的下载报告&lt;/strong&gt; : 提供目标下载总数、成功下载总数和最终失败总数，清晰展示下载结果。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;失败 ID 记录&lt;/strong&gt; : 将所有最终下载失败的视频 ID 记录到“下载失败清单.txt”中，方便用户手动处理或后续重试。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;“下载.已完成”标记&lt;/strong&gt; : 如果所有视频都成功下载，会创建一个“下载.已完成”标记，以便下次智能启动时直接判断任务已完成。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-71" class="anchor" href="https://linux.do#p-9060077-h-71"&gt;&lt;/a&gt;其中三个比较重要的机制，&lt;/h1&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-72" class="anchor" href="https://linux.do#p-9060077-h-72"&gt;&lt;/a&gt;三轮下载机制&lt;/h1&gt;
+&lt;p&gt;如果有的信息获取失败，或者视频获取失败，，会在第一轮下载失败之后，检索下载失败的清单，会继续下载。确保不会有一个漏下载。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-73" class="anchor" href="https://linux.do#p-9060077-h-73"&gt;&lt;/a&gt;确认审查机制。&lt;/h1&gt;
+&lt;p&gt;没有完成不会标记完成。&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-74" class="anchor" href="https://linux.do#p-9060077-h-74"&gt;&lt;/a&gt;日志系统，&lt;/h1&gt;
+&lt;p&gt;不管在信息采集阶段，还是视频下载阶段，都有记录，方便核对查看&lt;/p&gt;
+&lt;p&gt;如图：&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/xcjz9n.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/8/9/b/89b4ae1ae5cb00496d8ca5824bc0588a673ac717.png" data-dominant-color="F5F5F5" width="690" height="306"&gt;
+          &lt;/a&gt;
+
+&lt;br&gt;
+                    &lt;a href="https://files.catbox.moe/ydcwgc.png" target="_blank" rel="noopener nofollow ugc" class="onebox"&gt;
+            &lt;img src="https://linux.do/uploads/default/original/4X/a/d/5/ad552479e2d43b8d1d2d8825a07f35e57733f9d4.png" data-dominant-color="F5F5F5" width="690" height="299"&gt;
+          &lt;/a&gt;
+
+&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060077-h-75" class="anchor" href="https://linux.do#p-9060077-h-75"&gt;&lt;/a&gt;为什么说可以赚钱：&lt;/h1&gt;
+&lt;p&gt;这个确实可以赚钱啊, 咸鱼上有许多这样的服务，&lt;br&gt;
+帮忙能下载 YouTube 视频,&lt;/p&gt;
+&lt;p&gt;可能是我习惯性翻墙了。还是怎么样,&lt;br&gt;
+觉得这些东西没有什么技术门槛。对有些人来说那可能还是有比较有门槛的。&lt;br&gt;
+这个咸鱼卖家给我说， 他说要收一个技术费啊,&lt;/p&gt;
+&lt;p&gt;我去问人家咸鱼那些人了。484多个视频, 其中还有200是一分钟的短视频。&lt;br&gt;
+而且, 而且只要 720P, 又不要太高清了。&lt;/p&gt;
+&lt;p&gt;嗯, 报价最高那个人, 他直接跟我说了, 他从业这行业十几年了, 你这个要求没有五百块搞不定。他说我报价100多块，他惊呆了，，别说他惊呆了，他说要收500块我自己都惊呆了吗&lt;/p&gt;
+&lt;p&gt;还有的人他说你这个视频太多了, 我要一个一个下载。一个一个核对,&lt;br&gt;
+我不知道他是不是骗我, 还是他不会搞，&lt;br&gt;
+这不是批量搞就可以了吗?&lt;/p&gt;
+&lt;p&gt;还有我去问他们四百多个视频, 嗯, 一百多块能不能搞。他们都觉得一百多块搞不了。&lt;br&gt;
+还有一个本来不是说一百二吗, 到后面又坐地起价, 他说要一百五。&lt;br&gt;
+然后他考虑一会, 他又说不搞了。&lt;/p&gt;
+&lt;p&gt;你说 搞这块也没什么难度吗? 你放在那里下载, 上传不就好了?&lt;br&gt;
+关键的还是这个网络的问题。又不要你干什么。&lt;/p&gt;
+&lt;p&gt;有的人说这个还不够流量费,&lt;br&gt;
+这个纯扯淡呢, 这个流量机场流量又不要多贵。我买了这个什么机场, 五百G, 四十块钱。&lt;br&gt;
+我全部400多个视频下下来不过100g左右，，流量费也就10块钱左右嘛&lt;/p&gt;
+&lt;p&gt;为啥这些人 150块都不愿意搞，，全部自动化完成，，&lt;/p&gt;
+&lt;p&gt;我是懒得去咸鱼这里搞了, 我觉得如果你们有兴趣的话, 可以去咸鱼上面帮别人下载。&lt;br&gt;
+赚点钱当兼职也可以嘛。&lt;br&gt;
+我一方面觉得有点贵，，另一方面我是觉得不太值得。&lt;br&gt;
+我花个几百块就为了让别人帮我下一些视频，说出去要被笑死了吧 &lt;img src="https://linux.do/images/emoji/twemoji/laughing.png?v=14" title=":laughing:" class="emoji" alt=":laughing:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;我感觉这个挺简单的, 别人说有什么技术门槛, 好像是有一点吧 &lt;img src="https://linux.do/images/emoji/twemoji/laughing.png?v=14" title=":laughing:" class="emoji" alt=":laughing:" loading="lazy" width="20" height="20"&gt; 不过我都研究好啦，可以直接拿去用哦，&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;1 个帖子 - 1 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997938"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997938&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 11:03:49 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997938&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997938.rss"&gt;教程：如何批量下载一个 YouTuber 主页 全部几百个视频。 （学会可用此赚到钱）（最关键的不是ip问题，而是不能一次提交太多请求）（附完整探索经历）&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;关于Deepseek的一些难绷猜想&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[PlayGenshin]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;V3-&amp;gt;V3.1中间隔了238天。V3.1-&amp;gt;V3.2-exp中间隔了大概39天。考虑之前适配国产的传言，再结合最近的更新频率感觉有可能是跑去适配国产了。&lt;/p&gt;
+&lt;p&gt;毕竟现在Deepseek感觉就像下议院了很久，最近能开始自由开火了一样释放压力 &lt;img src="https://linux.do/images/emoji/twemoji/rofl.png?v=14" title=":rofl:" class="emoji" alt=":rofl:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997937"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997937&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 11:03:04 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997937&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997937.rss"&gt;关于Deepseek的一些难绷猜想&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Grok随便一问就搜索200多个网页，这就是数值压制&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Mozi]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;越小众的事件搜索网页越多&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/b/7/8/b78880be3a99cab17b91ffb7152c3e7e00f445f0.jpeg" data-download-href="https://linux.do/uploads/default/b78880be3a99cab17b91ffb7152c3e7e00f445f0" title="Screenshot_2025-09-29-18-56-31-06_74158c69f0af68fbf38b28b8774cd491"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/7/8/b78880be3a99cab17b91ffb7152c3e7e00f445f0_2_690x106.jpeg" alt="Screenshot_2025-09-29-18-56-31-06_74158c69f0af68fbf38b28b8774cd491" data-base62-sha1="qbBPERPtob9cyzfIvRpH1JYE90I" width="690" height="106" srcset="https://linux.do/uploads/default/optimized/4X/b/7/8/b78880be3a99cab17b91ffb7152c3e7e00f445f0_2_690x106.jpeg, https://linux.do/uploads/default/optimized/4X/b/7/8/b78880be3a99cab17b91ffb7152c3e7e00f445f0_2_1035x159.jpeg 1.5x, https://linux.do/uploads/default/original/4X/b/7/8/b78880be3a99cab17b91ffb7152c3e7e00f445f0.jpeg 2x" data-dominant-color="201E1D"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/0/6/4/0642dc4853257eb345a4aace984e9935e24dcfe3.jpeg" data-download-href="https://linux.do/uploads/default/0642dc4853257eb345a4aace984e9935e24dcfe3" title="Screenshot_2025-09-29-19-00-02-22_74158c69f0af68fbf38b28b8774cd491"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/0/6/4/0642dc4853257eb345a4aace984e9935e24dcfe3_2_689x119.jpeg" alt="Screenshot_2025-09-29-19-00-02-22_74158c69f0af68fbf38b28b8774cd491" data-base62-sha1="To6ZmtYmMvX61cK9tz95wZiLtx" width="689" height="119" srcset="https://linux.do/uploads/default/optimized/4X/0/6/4/0642dc4853257eb345a4aace984e9935e24dcfe3_2_689x119.jpeg, https://linux.do/uploads/default/optimized/4X/0/6/4/0642dc4853257eb345a4aace984e9935e24dcfe3_2_1033x178.jpeg 1.5x, https://linux.do/uploads/default/original/4X/0/6/4/0642dc4853257eb345a4aace984e9935e24dcfe3.jpeg 2x" data-dominant-color="1F1E20"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;4 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997935"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997935&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 11:02:07 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997935&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997935.rss"&gt;Grok随便一问就搜索200多个网页，这就是数值压制&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;ai agent2025比赛捞人&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Asmat_naoka]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;现在项目已经基本初具雏形，已经提交，需要一位前端/agent后端开发+运营，后面团队预期不超过三个人，希望打造一个小而精的团队，请先阅读我的BP/GitHub上项目链接&lt;a href="https://github.com/Frederick2313072/ai_student_agent" rel="noopener nofollow ugc"&gt;https://github.com/Frederick2313072/ai_student_agent&lt;/a&gt;,如果你有兴趣可以随时联系我（wechat：Chocoalike）：&lt;/p&gt;
+&lt;h1&gt;&lt;a name="p-9060035-aifeynmanflow-1" class="anchor" href="https://linux.do#p-9060035-aifeynmanflow-1"&gt;&lt;/a&gt;商业计划书：AI费曼学习系统（FeynmanFlow）&lt;/h1&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-1-2" class="anchor" href="https://linux.do#p-9060035-h-1-2"&gt;&lt;/a&gt;1、项目名称及产品定位&lt;/h2&gt;
+&lt;p&gt;项目名称：AI费曼学习系统（英文名：FeynmanFlow）&lt;br&gt;
+Learn by teaching&lt;/p&gt;
+&lt;p&gt;陈述：通过“先教后问”的输出-反馈循环，系统化识别盲点、生成分层追问并迭代优化解释，沉淀可复用的个人知识，帮助用户从“会用”走向“说清楚、讲明白、能迁移”。&lt;/p&gt;
+&lt;p&gt;核心价值主张：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;深度理解：将隐性理解外化为可检验的解释与问题链&lt;/li&gt;
+&lt;li&gt;结构化追问：围绕薄弱点生成由浅入深的分层问题&lt;/li&gt;
+&lt;li&gt;持续巩固：记录“解释-追问-修正”轨迹，支持复盘与导出&lt;/li&gt;
+&lt;li&gt;隐私友好：本地优先与数据自主管理&lt;/li&gt;
+&lt;li&gt;轻量可扩展：低门槛使用，保留向进阶功能演化空间&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;非目标/边界：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;非通用聊天机器人，不以覆盖广度为目标&lt;/li&gt;
+&lt;li&gt;不替代系统性课程内容与教材&lt;/li&gt;
+&lt;li&gt;非重笔记/知识库软件，聚焦“解释-追问-修正”闭环&lt;/li&gt;
+&lt;li&gt;非大规模企业级文档管理平台&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;成功指标（定位阶段）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;学习闭环完成率（解释→追问→修正→导出）&lt;/li&gt;
+&lt;li&gt;盲点命中率与问题链采纳率&lt;/li&gt;
+&lt;li&gt;单次学习会话的理解提升自评与 NPS&lt;/li&gt;
+&lt;li&gt;单次会话平均成本与时长&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-2-3" class="anchor" href="https://linux.do#p-9060035-h-2-3"&gt;&lt;/a&gt;2、主要业务及产品&lt;/h2&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-21-4" class="anchor" href="https://linux.do#p-9060035-h-21-4"&gt;&lt;/a&gt;2.1 核心功能&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;费曼学习闭环：解释 → 识别疑点 → 问题链 → 修正解释 → 巩固&lt;/li&gt;
+&lt;li&gt;智能疑点识别：定位逻辑漏洞、概念混淆与知识缺漏&lt;/li&gt;
+&lt;li&gt;分层问题生成：基础检验、边界条件、迁移与跨领域联系&lt;/li&gt;
+&lt;li&gt;自适应追问：根据表现动态调整难度与节奏&lt;/li&gt;
+&lt;li&gt;学习记录与导出：自动沉淀“理解深化路径”，支持 Markdown/PDF&lt;/li&gt;
+&lt;li&gt;知识图谱（可选）：抽取关键实体与关系，辅助宏观理解&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-22-5" class="anchor" href="https://linux.do#p-9060035-h-22-5"&gt;&lt;/a&gt;2.2 产品形态与版本&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;基础版（免费开源）：完整费曼闭环、基础问题链、学习记录与导出,与 Notion/Obsidian/bilibili集成&lt;/li&gt;
+&lt;li&gt;专业版（订阅）：无限制使用次数,进阶图谱,与 Notion/Obsidian 集成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-23-6" class="anchor" href="https://linux.do#p-9060035-h-23-6"&gt;&lt;/a&gt;2.3 使用流程&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;设定主题与水平 → 2) 提交自我解释 → 3) 系统标注疑点与生成问题链 → 4) 互动答复并修正解释 → 5) 导出学习报告与待巩固清单&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-24-7" class="anchor" href="https://linux.do#p-9060035-h-24-7"&gt;&lt;/a&gt;2.4 典型使用场景&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;新技术速通：在短时间内验证理解、补齐薄弱点&lt;/li&gt;
+&lt;li&gt;面试/答辩演练：模拟追问链，打磨结构化表达&lt;/li&gt;
+&lt;li&gt;论文精读拆解：从核心概念到方法细节的层层追问&lt;/li&gt;
+&lt;li&gt;课程备课打磨：预演讲解，提前暴露模糊地带&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-25-8" class="anchor" href="https://linux.do#p-9060035-h-25-8"&gt;&lt;/a&gt;2.5 产出与交付&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;学习报告：要点提炼、薄弱点清单、问题链、优化后解释&lt;/li&gt;
+&lt;li&gt;待巩固清单：按优先级与难度组织的后续练习建议&lt;/li&gt;
+&lt;li&gt;可选可视化：轻量知识图谱视图&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-26-9" class="anchor" href="https://linux.do#p-9060035-h-26-9"&gt;&lt;/a&gt;2.6 合规与隐私&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;本地优先，数据不出本机（默认）&lt;/li&gt;
+&lt;li&gt;用户可控导出与清理策略&lt;/li&gt;
+&lt;li&gt;外部服务调用可开关与可替换&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-3-10" class="anchor" href="https://linux.do#p-9060035-h-3-10"&gt;&lt;/a&gt;3、主要客户群&lt;/h2&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-31-11" class="anchor" href="https://linux.do#p-9060035-h-31-11"&gt;&lt;/a&gt;3.1 关键细分与画像&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;自学者与开源开发者&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;画像&lt;/strong&gt;：活跃于 GitHub/V2EX/HN，频繁更换技术栈，重视实战与表达&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;痛点&lt;/strong&gt;：看完教程“会用但讲不清”，边界与取舍不清晰，迁移能力弱&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;需求&lt;/strong&gt;：快速暴露盲点、形成分层问题链、打磨可复述的解释&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;场景&lt;/strong&gt;：新框架速通、源码阅读、项目复盘&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;衡量&lt;/strong&gt;：问题链采纳率、优化后解释质量、自评理解提升&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;高校学生与研究生&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;画像&lt;/strong&gt;：理工/计算机方向，本科高年级或研一研二，备考与开题/答辩压力大&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;痛点&lt;/strong&gt;：概念混淆、推导卡点、表达缺少结构与层次&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;需求&lt;/strong&gt;：从基本概念到边界条件的系统性追问，演讲稿/答辩稿打磨&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;场景&lt;/strong&gt;：课程期末复习、开题报告、文献综述、读书会分享&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;衡量&lt;/strong&gt;：闭环完成率、错误复发率下降、答辩/考试表现&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;数据/AI 从业者&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;画像&lt;/strong&gt;：紧跟论文/新模型，上下游协作多，注重可解释与迁移&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;痛点&lt;/strong&gt;：论文读完停留表面，难以用自己的话讲明白并迁移到业务&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;需求&lt;/strong&gt;：面向业务的边界追问、可落地的对比与取舍说明&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;场景&lt;/strong&gt;：论文精读拆解、面试演练、方案评审准备&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;衡量&lt;/strong&gt;：复述通过率、方案复盘效率、面试通过率&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;教育工作者与内容创作者&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;画像&lt;/strong&gt;：教师/培训师/技术博主，输出密集，追求讲解清晰度与可预判性&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;痛点&lt;/strong&gt;：难提前预判听众疑问，讲解中易出现跳步与模糊带&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;需求&lt;/strong&gt;：面向真实听众的追问模拟、讲解稿结构化打磨&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;场景&lt;/strong&gt;：课程备课、公开课/直播、图文/视频稿件打磨&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;衡量&lt;/strong&gt;：听众反馈、留存与完读率、稿件修改轮次&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-32-12" class="anchor" href="https://linux.do#p-9060035-h-32-12"&gt;&lt;/a&gt;3.2 优先级与切入顺序&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;第一优先&lt;/strong&gt;：自学者与开源开发者（易获取、口碑扩散快、社区带动强）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第二优先&lt;/strong&gt;：高校学生与研究生（需求稳定、复用率高、转介绍显著）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第三优先&lt;/strong&gt;：数据/AI 从业者与教育创作者（客单价高、PR 价值强）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-33-13" class="anchor" href="https://linux.do#p-9060035-h-33-13"&gt;&lt;/a&gt;3.3 触达与转化路径（简要）&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;触达&lt;/strong&gt;：GitHub 开源、V2EX/HN/Reddit、B 站/知乎专栏、校园社群&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;转化&lt;/strong&gt;：模板与示例用例 → 一键体验 → 导出学习报告 → 分享与协作&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;留存&lt;/strong&gt;：学习历史沉淀、模板市场、周度复盘提示、跨设备云同步（专业版）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-4-14" class="anchor" href="https://linux.do#p-9060035-h-4-14"&gt;&lt;/a&gt;4、商业及盈利模式&lt;/h2&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-41-15" class="anchor" href="https://linux.do#p-9060035-h-41-15"&gt;&lt;/a&gt;4.1 模式结构&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;核心开源 + 社区赞助（核心免费）&lt;/li&gt;
+&lt;li&gt;轻量订阅（Freemium）&lt;/li&gt;
+&lt;li&gt;增值服务（B2B/B2I）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-42-16" class="anchor" href="https://linux.do#p-9060035-h-42-16"&gt;&lt;/a&gt;4.2 订阅梯度&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;入门版（免费）：
+&lt;ul&gt;
+&lt;li&gt;费曼闭环、基础问题链、学习报告导出、本地优先&lt;/li&gt;
+&lt;li&gt;限制：月度会话数、问题链长度、模型选择&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;专业版（$5/月–$10/月）：
+&lt;ul&gt;
+&lt;li&gt;更强模型与更长上下文、跨设备云同步&lt;/li&gt;
+&lt;li&gt;进阶知识图谱、模板市场、与 Notion/Obsidian 集成&lt;/li&gt;
+&lt;li&gt;学习周报/月报、个性化巩固计划&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-43-17" class="anchor" href="https://linux.do#p-9060035-h-43-17"&gt;&lt;/a&gt;4.3 增值服务&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;定制工作流：企业内训/考试的专用问题链与闭环形态&lt;/li&gt;
+&lt;li&gt;私有化部署与技术支持：内网部署、SLA、权限与审计&lt;/li&gt;
+&lt;li&gt;数据导入脚本：教材/内部文档的批量接入与清洗&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-44-18" class="anchor" href="https://linux.do#p-9060035-h-44-18"&gt;&lt;/a&gt;4.4 收费策略与折扣&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;年付折扣：8–9 折；教育优惠与校园授权&lt;/li&gt;
+&lt;li&gt;团队与机构：按席位与用量分级，提供 PoC 试用期&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-45-19" class="anchor" href="https://linux.do#p-9060035-h-45-19"&gt;&lt;/a&gt;4.5 增长与留存机制&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;模板与用例市场：场景化模板（面试演练/论文精读/新框架速通）&lt;/li&gt;
+&lt;li&gt;社区激励：贡献模板与改进方案可获得订阅抵扣&lt;/li&gt;
+&lt;li&gt;学习飞轮：历史沉淀、周度复盘提醒、跨设备同步&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-46-20" class="anchor" href="https://linux.do#p-9060035-h-46-20"&gt;&lt;/a&gt;4.6 指标与目标&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;转化链路：访问 → 体验 → 导出报告 → 订阅试用 → 付费&lt;/li&gt;
+&lt;li&gt;关键指标：MAU、订阅转化率、付费留存（月/三月）、MRR&lt;/li&gt;
+&lt;li&gt;成本控制：单次会话成本、模型调用预算占比&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-5-21" class="anchor" href="https://linux.do#p-9060035-h-5-21"&gt;&lt;/a&gt;5、市场规模、竞争格局、竞争对手&lt;/h2&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-51-22" class="anchor" href="https://linux.do#p-9060035-h-51-22"&gt;&lt;/a&gt;5.1 市场定义与边界&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;领域：AI+教育（学习辅导/知识巩固）与个人知识管理的交叉&lt;/li&gt;
+&lt;li&gt;核心价值：以费曼学习法驱动“解释-追问-修正-巩固”的可度量闭环&lt;/li&gt;
+&lt;li&gt;非目标：通用问答助手、重知识库/文档管理、系统性课程内容&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-52-23" class="anchor" href="https://linux.do#p-9060035-h-52-23"&gt;&lt;/a&gt;5.2 规模测算方法（不填具体数值）&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;TAM：深度学习与职业进阶人群 × 年均愿付费/工具预算&lt;/li&gt;
+&lt;li&gt;SAM：编程/数据/AI 学习人群 × 方法论工具渗透率 × ARPU&lt;/li&gt;
+&lt;li&gt;SOM：开源+轻订阅触达的早期采用者 × 转化 × 留存 × ARPU&lt;/li&gt;
+&lt;li&gt;数据来源建议：自有漏斗数据、开源社区指标、社群活跃、问卷访谈&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-53-24" class="anchor" href="https://linux.do#p-9060035-h-53-24"&gt;&lt;/a&gt;5.3 竞争格局（类型化）&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;通用对话助理：能力强但流程与度量不足，难形成稳定学习闭环&lt;/li&gt;
+&lt;li&gt;知识库/工作空间问答：检索/组织强，主动追问与分层教学不足&lt;/li&gt;
+&lt;li&gt;在线课程/练习平台：体系化强，个性化互动与私有知识结合弱&lt;/li&gt;
+&lt;li&gt;AI 学习/导师工具：逐步兴起，场景与方法论差异明显&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-54-25" class="anchor" href="https://linux.do#p-9060035-h-54-25"&gt;&lt;/a&gt;5.4 代表性竞品与定性对比&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Khanmigo（Khan Academy）：K12/通用学科 AI 助教；课程生态强；技术学习与私有资料结合有限&lt;/li&gt;
+&lt;li&gt;Socratic（Google）：作业/题目辅导；拍题检索与解释强；方法论与追问层次有限&lt;/li&gt;
+&lt;li&gt;Quizlet Q-Chat：基于记忆/测验的对话练习；记忆巩固强；深度理解与迁移相对不足&lt;/li&gt;
+&lt;li&gt;Notion Q&amp;amp;A：自有知识库检索；组织与联动强；缺少费曼式输出-反馈闭环&lt;/li&gt;
+&lt;li&gt;Perplexity：检索增强型问答与快速调研；外部信息强；个体学习闭环与巩固能力弱&lt;/li&gt;
+&lt;li&gt;Elicit（Ought）：科研/文献调研助手；研究流程友好；教学式追问与口头表达打磨不足&lt;/li&gt;
+&lt;li&gt;Poe（Quora）：多模型聚合对话；易用；学习度量与闭环弱&lt;/li&gt;
+&lt;li&gt;TutorAI：自学者的课程化/辅导化体验；方法论差异与私有知识结合程度不一&lt;/li&gt;
+&lt;li&gt;Lime AI（待确认）:布鲁托学习法&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;与本项目差异化：坚持“费曼式输出-反馈闭环”、分层追问链、可导出的学习轨迹与巩固清单，强调本地优先与隐私友好，聚焦技术自学与开发者场景。&lt;/p&gt;
+&lt;h3&gt;&lt;a name="p-9060035-h-55-26" class="anchor" href="https://linux.do#p-9060035-h-55-26"&gt;&lt;/a&gt;5.5 机会与定位&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;方法论即产品：可度量的解释-追问-修正闭环&lt;/li&gt;
+&lt;li&gt;私有知识与个体经验结合：服务“我的项目/论文/面试”&lt;/li&gt;
+&lt;li&gt;开源与模板生态：以模板/工作流沉淀实现口碑扩散与低成本增长&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-6-27" class="anchor" href="https://linux.do#p-9060035-h-6-27"&gt;&lt;/a&gt;6、核心竞争力及进入壁垒&lt;/h2&gt;
+&lt;p&gt;方法论与产品融合：将费曼学习法拆解为可度量、可迭代的产品闭环。&lt;/p&gt;
+&lt;p&gt;数据飞轮：形成“解释-疑点-追问-优化”的结构化数据资产，支持算法与模板迭代。&lt;/p&gt;
+&lt;p&gt;隐私与本地优先：满足对敏感/专有知识的学习需求，建立信任门槛。&lt;/p&gt;
+&lt;p&gt;开源生态与模板市场：社区贡献的工作流与模板沉淀，降低获客成本、增强粘性。&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-7-28" class="anchor" href="https://linux.do#p-9060035-h-7-28"&gt;&lt;/a&gt;7、核心团队成员背景&lt;/h2&gt;
+&lt;p&gt;Frederick:创始人/独立开发者：具备 Python（FastAPI+Langchain+llamaindex）、LLM 工作流编排、前端（React）、DevOps（Docker）经验。&lt;/p&gt;
+&lt;p&gt;分工（阶段性）：产品与研发合一；社区与内容运营兼职化推进；按里程碑梯次引入设计与前端协作。&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-8-29" class="anchor" href="https://linux.do#p-9060035-h-8-29"&gt;&lt;/a&gt;8、财务分析&lt;/h2&gt;
+&lt;p&gt;成本结构（方法）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;模型调用：按请求量 × 单次 token 成本 × 安全系数估算&lt;/li&gt;
+&lt;li&gt;基础设施：云主机（可选）、域名与监控&lt;/li&gt;
+&lt;li&gt;市场与内容：按内容产出频率与渠道投放做低配预算&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;收入结构（方法与示例假设）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;赞助：早期以内容影响力与开源贡献拉动&lt;/li&gt;
+&lt;li&gt;订阅：MAU × 转化率 × ARPU（以 $5–$10/月区间测算）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;现金流目标（阶段）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;0–6 个月：收支平衡（以赞助覆盖模型成本为主）&lt;/li&gt;
+&lt;li&gt;6–12 个月：小幅正向现金流，探索更优 ARPU 与留存策略&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;指标体系（方向）：MAU、订阅转化率、付费留存（30/90 天）、MRR、单会话成本&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-9060035-h-9-30" class="anchor" href="https://linux.do#p-9060035-h-9-30"&gt;&lt;/a&gt;9、股权结构、融资额、融资用途&lt;/h2&gt;
+&lt;p&gt;基线方案：不融资，100% 个人持有，后期可分股份，保持方向与节奏的灵活性。&lt;/p&gt;
+&lt;p&gt;备选方案（验证成功后再行评估）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;轮次：天使/种子&lt;/li&gt;
+&lt;li&gt;融资额：$5 万–$15 万（根据增长指标与收入数据调整）&lt;/li&gt;
+&lt;li&gt;资金用途结构（建议）：
+&lt;ul&gt;
+&lt;li&gt;60% 模型与推理成本（增强模型与承载能力）&lt;/li&gt;
+&lt;li&gt;25% 产品研发与设计（体验与工作流优化）&lt;/li&gt;
+&lt;li&gt;15% 市场与社区运营（内容、渠道与活动）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;——&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;2 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997931"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997931&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 11:00:48 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997931&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997931.rss"&gt;ai agent2025比赛捞人&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;做一个微信小程序有多大难度？求大佬指点&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[edawrz]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;家人单位想做一个微信小程序来订餐，但是有几个要求：&lt;br&gt;
+1.数据要安全，数据怎样放在一个可靠安全的服务器上？租华为的？&lt;br&gt;
+2.单位后台能轻松访问查看订餐内容，如果要对订餐数据进行分析，并导出报表，如何加入AI支持？&lt;br&gt;
+3.实现这些功能需要多少费用？&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;4 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997927"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997927&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:58:50 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997927&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997927.rss"&gt;做一个微信小程序有多大难度？求大佬指点&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;全年不落 顺带说一个AI判断误区&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[ks]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;今天颁发的&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/9/1/291746cc2b94411647a522364c43f9f1b387bd11.jpeg" data-download-href="https://linux.do/uploads/default/291746cc2b94411647a522364c43f9f1b387bd11" title="Screenshot_20250929_062425"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/2/9/1/291746cc2b94411647a522364c43f9f1b387bd11_2_225x500.jpeg" alt="Screenshot_20250929_062425" data-base62-sha1="5RvrEHGgktt2W7v7YXy3wCnP8qd" width="225" height="500" srcset="https://linux.do/uploads/default/optimized/4X/2/9/1/291746cc2b94411647a522364c43f9f1b387bd11_2_225x500.jpeg, https://linux.do/uploads/default/optimized/4X/2/9/1/291746cc2b94411647a522364c43f9f1b387bd11_2_337x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/2/9/1/291746cc2b94411647a522364c43f9f1b387bd11_2_450x1000.jpeg 2x" data-dominant-color="282C2D"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+只发这个有点太水了，顺便说一下判断模型真假的一个误区吧 ，以及 一个还算有效的方法&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;现在还是有部分佬友，直接发一句问模型你是谁并根据这个判断，但是实际上这个方法是并不准确的，模型本身是有幻觉的，他并不能清晰的认知到自己是什么版本的模型号，不过可以认知到自己是哪家公司的，官方网站是有额外提示词的，所以知道&lt;/p&gt;
+&lt;p&gt;那么有效的方法是什么呢，其实这个也只能大概的分别模型，那就是根据他的知识库日期提问大事件，因为三家模型的知识库日期都有差别，同一家模型的知识库日期也有差别，通过这种方法可以大概判断出来 是什么模型&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;12 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997911"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997911&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:48:31 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997911&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997911.rss"&gt;全年不落 顺带说一个AI判断误区&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;准备DS新版本横向评测了&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[弦塔_]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;为了水一点赞，打算开展两模型的横向，简单评测了&lt;/p&gt;
+&lt;p&gt;如果不出意外，还是我之前在站内发过的题目&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;7 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997909"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997909&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:48:03 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997909&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997909.rss"&gt;准备DS新版本横向评测了&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Apple TV端的飞牛TV应用上线了🤗&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[马冬梅]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/8/a/18a179f98087b52d0bfbdca24d77c7e07ea36eeb.jpeg" data-download-href="https://linux.do/uploads/default/18a179f98087b52d0bfbdca24d77c7e07ea36eeb" title="mmexport1759142586592"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/8/a/18a179f98087b52d0bfbdca24d77c7e07ea36eeb_2_138x500.jpeg" alt="mmexport1759142586592" data-base62-sha1="3vTq6omCp7n7UlLZLJyCC3ZfftN" width="138" height="500" srcset="https://linux.do/uploads/default/optimized/4X/1/8/a/18a179f98087b52d0bfbdca24d77c7e07ea36eeb_2_138x500.jpeg, https://linux.do/uploads/default/optimized/4X/1/8/a/18a179f98087b52d0bfbdca24d77c7e07ea36eeb_2_207x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/1/8/a/18a179f98087b52d0bfbdca24d77c7e07ea36eeb_2_276x1000.jpeg 2x" data-dominant-color="CED0D7"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997900"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997900&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:44:32 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997900&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997900.rss"&gt;Apple TV端的飞牛TV应用上线了🤗&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;这个错误到底是什么鬼？一开游戏就会蹦出来……&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[蹲神]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/3/4/a/34a6aa937b3f7635131b075f054b4151e82ea63e.png" data-download-href="https://linux.do/uploads/default/34a6aa937b3f7635131b075f054b4151e82ea63e" title="{0EFC1CAE-777F-457F-AA7E-07424475DA03}"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/3/4/a/34a6aa937b3f7635131b075f054b4151e82ea63e.png" alt="{0EFC1CAE-777F-457F-AA7E-07424475DA03}" data-base62-sha1="7vLUnHxSWq5ZQKviEIDCYQKDD66" width="456" height="180"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+能叠加，弹6-7个&lt;img src="https://linux.do/uploads/default/original/3X/c/7/c756c0f079d25093ed6c7c2feaaa423ead63411c.png?v=14" title=":tieba_009:" class="emoji emoji-custom" alt=":tieba_009:" loading="lazy" width="20" height="20"&gt;&lt;br&gt;
+佬们感觉帮助电脑小白&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;4 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997896"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997896&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:42:36 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997896&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997896.rss"&gt;这个错误到底是什么鬼？一开游戏就会蹦出来……&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;我发现了回复和话题的点赞秘密&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[42w]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;从&lt;a href="https://linux.do/t/topic/980846" class="inline-onebox"&gt;我发现了关于点赞的一个秘密！&lt;/a&gt; 开始：&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/8/2/28246103182de95b99d3607d235a8486eac188af.png" data-download-href="https://linux.do/uploads/default/28246103182de95b99d3607d235a8486eac188af" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/2/8/2/28246103182de95b99d3607d235a8486eac188af.png" alt="image" data-base62-sha1="5J72vaq4epCfjgaukWjcxL7U8Hl" width="690" height="371" data-dominant-color="F2F1EF"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/a/2/1/a21ad22fd0a7843eb89e462f2063798e69317424.png" data-download-href="https://linux.do/uploads/default/a21ad22fd0a7843eb89e462f2063798e69317424" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/a/2/1/a21ad22fd0a7843eb89e462f2063798e69317424.png" alt="image" data-base62-sha1="n82Ot8f4N1DYkxMWGmu4hYxIqOM" width="690" height="361" data-dominant-color="F2F2F2"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/1/a/d1a40b0f4f9a543762193a8e7a651a62cd41d0dc.png" data-download-href="https://linux.do/uploads/default/d1a40b0f4f9a543762193a8e7a651a62cd41d0dc" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/d/1/a/d1a40b0f4f9a543762193a8e7a651a62cd41d0dc.png" alt="image" data-base62-sha1="tUzfDHzY5BKUbD1iUsFEfK76DFi" width="690" height="367" data-dominant-color="F3F2EF"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;话题和回复获赞存在倒挂&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997889"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997889&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:37:07 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997889&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997889.rss"&gt;我发现了回复和话题的点赞秘密&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;[2级+] 来玩游戏【猜画小歌 / 快速涂鸦 / Quick Draw!】国内也能玩！&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[黑猫警长1000000000]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;最近又想折腾游戏了，无意间想起了以前的《猜画小歌》……然后就搞出来了&lt;br&gt;
+去除了分享功能和谷歌统计，以及对中文词汇进行了 AI 重译，所以部分词读出来的可能和显示的不一样&lt;/p&gt;
+&lt;p&gt;帖子所有等级可见，但网站要求使用 LINUX DO 登录且信任等级为 2 级及以上才能玩~&lt;/p&gt;
+&lt;p&gt;地址：&lt;a href="https://hmjz100blog.rf.gd/games/quickdraw/" rel="noopener nofollow ugc"&gt;hmjz100blog.rf.gd/games/quickdraw/&lt;/a&gt;&lt;/p&gt;
+&lt;div class="d-image-grid"&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/6/3/9/6390e4a6592726c1119068a877e916313c2631e2.jpeg" data-download-href="https://linux.do/uploads/default/6390e4a6592726c1119068a877e916313c2631e2" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/6/3/9/6390e4a6592726c1119068a877e916313c2631e2_2_690x401.jpeg" alt="image" data-base62-sha1="ecNHvvuWUu0nZM3qrVPvtHrhtsu" width="690" height="401" srcset="https://linux.do/uploads/default/optimized/4X/6/3/9/6390e4a6592726c1119068a877e916313c2631e2_2_690x401.jpeg, https://linux.do/uploads/default/optimized/4X/6/3/9/6390e4a6592726c1119068a877e916313c2631e2_2_1035x601.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/6/3/9/6390e4a6592726c1119068a877e916313c2631e2_2_1380x802.jpeg 2x" data-dominant-color="F8F8F5"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/b/3/2b37637c30b31ca25ded2cc7db4a6876b3739e1b.png" data-download-href="https://linux.do/uploads/default/2b37637c30b31ca25ded2cc7db4a6876b3739e1b" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/2/b/3/2b37637c30b31ca25ded2cc7db4a6876b3739e1b_2_436x499.png" alt="image" data-base62-sha1="6ajcrP9vlz1cVoKvmpdLlOKhBb5" width="436" height="499" srcset="https://linux.do/uploads/default/optimized/4X/2/b/3/2b37637c30b31ca25ded2cc7db4a6876b3739e1b_2_436x499.png, https://linux.do/uploads/default/optimized/4X/2/b/3/2b37637c30b31ca25ded2cc7db4a6876b3739e1b_2_654x748.png 1.5x, https://linux.do/uploads/default/original/4X/2/b/3/2b37637c30b31ca25ded2cc7db4a6876b3739e1b.png 2x" data-dominant-color="F6D669"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/4/1/e/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe.jpeg" data-download-href="https://linux.do/uploads/default/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/4/1/e/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe_2_186x500.jpeg" alt="image" data-base62-sha1="9oW5Kc8hNN1cEkQmKQajpl7T58y" width="186" height="500" srcset="https://linux.do/uploads/default/optimized/4X/4/1/e/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe_2_186x500.jpeg, https://linux.do/uploads/default/optimized/4X/4/1/e/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe_2_279x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/4/1/e/41e53300ad68d93cd61b6cbf5d79c2ff454e40fe_2_372x1000.jpeg 2x" data-dominant-color="D8C174"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;/div&gt;
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997888"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997888&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:36:55 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997888&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997888.rss"&gt;[2级+] 来玩游戏【猜画小歌 / 快速涂鸦 / Quick Draw!】国内也能玩！&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求nl2pandas的开发思路&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[伯起 杨]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;最近在搞nl2pandas做数据分析，准确率不是很稳定，有没有什么好的开源项目可以学一下的，或者有没有什么优化思路可以分享一下的&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;2 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997880"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997880&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:31:41 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997880&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997880.rss"&gt;求nl2pandas的开发思路&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;API 大幅降价！&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[yhe]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;本次更新带来了 API 大幅度降价，开发者调用 DeepSeek API 的成本将降低 50% 以上。&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;9 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997869"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997869&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:24:07 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997869&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997869.rss"&gt;API 大幅降价！&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Notion运动数据模版+Keep数据+NotionAI：已经进化到这种地步了么&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[大侠 周]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;最近Notion接了AI能力，一直没怎么用。之前想的是无非就是把你的笔记当做数据库，增强一下检索，总结归纳搜索一下你的笔记。不过最近发现有运动能力+分析的妙用啊。&lt;br&gt;
+如图：&lt;br&gt;
+可以试用Claude4 + ChatGPT5。实测Claude4的召回比较好使。&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/9/f/7/9f75dbb68fd0876d524bc3ae48a34f8a51a05003.png" data-download-href="https://linux.do/uploads/default/9f75dbb68fd0876d524bc3ae48a34f8a51a05003" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/9/f/7/9f75dbb68fd0876d524bc3ae48a34f8a51a05003_2_564x500.png" alt="image" data-base62-sha1="mKEqx1JG54yStp4z6QR94uH9tCP" width="564" height="500" srcset="https://linux.do/uploads/default/optimized/4X/9/f/7/9f75dbb68fd0876d524bc3ae48a34f8a51a05003_2_564x500.png, https://linux.do/uploads/default/optimized/4X/9/f/7/9f75dbb68fd0876d524bc3ae48a34f8a51a05003_2_846x750.png 1.5x, https://linux.do/uploads/default/original/4X/9/f/7/9f75dbb68fd0876d524bc3ae48a34f8a51a05003.png 2x" data-dominant-color="FCFCFB"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/e/5/1/e518b051ff7a781cde1c90768b98b7f8412949a4.png" data-download-href="https://linux.do/uploads/default/e518b051ff7a781cde1c90768b98b7f8412949a4" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/e/5/1/e518b051ff7a781cde1c90768b98b7f8412949a4_2_521x500.png" alt="image" data-base62-sha1="wGGeDImWTc0gHzzjDHA5oE39BI0" width="521" height="500" srcset="https://linux.do/uploads/default/optimized/4X/e/5/1/e518b051ff7a781cde1c90768b98b7f8412949a4_2_521x500.png, https://linux.do/uploads/default/original/4X/e/5/1/e518b051ff7a781cde1c90768b98b7f8412949a4.png 1.5x, https://linux.do/uploads/default/original/4X/e/5/1/e518b051ff7a781cde1c90768b98b7f8412949a4.png 2x" data-dominant-color="F8F8F8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;原理：&lt;br&gt;
+也是依赖文档，不过之前接了个notion的运动文档模版，keep数据在github actions定时同步的。&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/c/9/0/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce.png" data-download-href="https://linux.do/uploads/default/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/c/9/0/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce_2_690x345.png" alt="image" data-base62-sha1="sGwEQ9M0R56cLDhEFVxCYr7ZFcq" width="690" height="345" srcset="https://linux.do/uploads/default/optimized/4X/c/9/0/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce_2_690x345.png, https://linux.do/uploads/default/optimized/4X/c/9/0/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce_2_1035x517.png 1.5x, https://linux.do/uploads/default/optimized/4X/c/9/0/c90b85cc91bfaa6982a5cb37fb5cc5c2be923fce_2_1380x690.png 2x" data-dominant-color="F7F8F9"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/2/7/227f0172882649bdb39d39b1463470f5da8fceb8.png" data-download-href="https://linux.do/uploads/default/227f0172882649bdb39d39b1463470f5da8fceb8" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/2/2/7/227f0172882649bdb39d39b1463470f5da8fceb8_2_690x450.png" alt="image" data-base62-sha1="4Vale0tIaLeRyeW275SZLVMTc8M" width="690" height="450" srcset="https://linux.do/uploads/default/optimized/4X/2/2/7/227f0172882649bdb39d39b1463470f5da8fceb8_2_690x450.png, https://linux.do/uploads/default/optimized/4X/2/2/7/227f0172882649bdb39d39b1463470f5da8fceb8_2_1035x675.png 1.5x, https://linux.do/uploads/default/original/4X/2/2/7/227f0172882649bdb39d39b1463470f5da8fceb8.png 2x" data-dominant-color="F8F8F9"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/f/2/1f29fee57c894db68e6ea5857cc4801423601abf.png" data-download-href="https://linux.do/uploads/default/1f29fee57c894db68e6ea5857cc4801423601abf" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/f/2/1f29fee57c894db68e6ea5857cc4801423601abf_2_690x403.png" alt="image" data-base62-sha1="4rGMawTDj2D7BEtjK0oki2Xrgib" width="690" height="403" srcset="https://linux.do/uploads/default/optimized/4X/1/f/2/1f29fee57c894db68e6ea5857cc4801423601abf_2_690x403.png, https://linux.do/uploads/default/optimized/4X/1/f/2/1f29fee57c894db68e6ea5857cc4801423601abf_2_1035x604.png 1.5x, https://linux.do/uploads/default/original/4X/1/f/2/1f29fee57c894db68e6ea5857cc4801423601abf.png 2x" data-dominant-color="F7F8F7"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;这个场景不错， 为notion点个赞。&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;4 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997868"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997868&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:24:05 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997868&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997868.rss"&gt;Notion运动数据模版+Keep数据+NotionAI：已经进化到这种地步了么&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;馅饼还是陷阱~西安中奖记&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[树枝孤鸟]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;  来西安旅游，在去酒店的路上，从后面出现两个骑着电车的女生，其中后座女生问我免费的国旗要不要，我犹豫了一下还是要了，然后让我给她们门店(移动)投个票。微信扫码网页投票，我投完票有个抽奖，点了一下，她说有可能是小礼品会送个充电宝，没想到，我中了一台智能平板(oh my god) 另一个女生说“我第一次碰见，我问问”，之后还问我移动卡用了几年了，芝麻信用分多少，这张卡还打算用多久，想兑换需要再用两年。这个过程中，我脑海天人交战：可能是骗局(之前似乎看到过类似帖子)，但是去了也不亏，今天也没什么安排，见识一下，顺便还能水水L站，冲了。&lt;br&gt;
+  她骑着电车带我去了移动营业厅(大概？牌子是5G+，里面布局不是太像)，然后有人过来问我具体信息，和之前问的差不多一样。关键来了，他说是华为平板，条件是电话卡累计消费达到一定目标，我说多少，他说他去查一下(我想：几百也不是不行)。等他查完，先核对了中奖微信，说需要消费达到5999！！！不管你怎么搞，用多久，累计20年也可以，这个过程中不能欠费，最后达到这个金额就可以。我tm保号套餐6块，我得用83年。卧槽，当时想着纯陷阱就跑路了。&lt;br&gt;
+  如果每月消费一百左右的还行，我没见到平板，不知道多少钱，不过还是感觉坑逼，掏3000买个ipad不比这货强？&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;省流版：大街扫码中平板，骑车带我去兑换，话费累计六千块，还想在活80年&lt;/p&gt;
+&lt;/blockquote&gt;
+            &lt;p&gt;&lt;small&gt;16 个帖子 - 11 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997856"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997856&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:18:57 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997856&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997856.rss"&gt;馅饼还是陷阱~西安中奖记&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;突然发现v0-1.5-md和真正的claude差距好大。。。。&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Encore4732]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;因为发现n佬的privnode我居然用得起，然后买了点余额在cc里用，和v0.dev的1.5-md比，明显感觉原生claude强很多不知道为啥，之前我看有佬友说1.5-md也是claude底层模型，是我的错觉吗&lt;img src="https://linux.do/images/emoji/twemoji/joy.png?v=14" title=":joy:" class="emoji" alt=":joy:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;11 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997852"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997852&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:18:48 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997852&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997852.rss"&gt;突然发现v0-1.5-md和真正的claude差距好大。。。。&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;我是【大家都是啊】不是村网通？才知道L站官方有商家评价网&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[包子]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;进去可以看到目前富可敌国？&lt;/p&gt;
+&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://rate.linux.do/"&gt;
+  &lt;header class="source"&gt;
+      &lt;img src="https://linux.do/uploads/default/original/4X/0/5/8/058907af50d0557fc62e4176a968fe69b7377da8.svg" class="site-icon" alt="" data-dominant-color="" width="32" height="32"&gt;
+
+      &lt;a href="https://rate.linux.do/" target="_blank" rel="noopener"&gt;rate.linux.do&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    
+
+&lt;h3&gt;&lt;a href="https://rate.linux.do/" target="_blank" rel="noopener"&gt;LinuxDo商家评价平台&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;LinuxDo商家评价平台&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+            &lt;p&gt;&lt;small&gt;54 个帖子 - 40 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997850"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997850&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:17:16 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997850&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997850.rss"&gt;我是【大家都是啊】不是村网通？才知道L站官方有商家评价网&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助贴·论坛功能·编号001：论坛的指定人员功能如何使用？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[黑寡妇]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/7/2/2728835acb78ddccad9a25b1d949613ecfe01ca8.jpeg" data-download-href="https://linux.do/uploads/default/2728835acb78ddccad9a25b1d949613ecfe01ca8" title="Screenshot_2025-09-29-18-17-10-77_40deb401b9ffe8e1df2f1cc5ba480b12"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/2/7/2/2728835acb78ddccad9a25b1d949613ecfe01ca8_2_690x104.jpeg" alt="Screenshot_2025-09-29-18-17-10-77_40deb401b9ffe8e1df2f1cc5ba480b12" data-base62-sha1="5Apq3wNk8dsK6zXq6t58xNSC5y8" width="690" height="104" srcset="https://linux.do/uploads/default/optimized/4X/2/7/2/2728835acb78ddccad9a25b1d949613ecfe01ca8_2_690x104.jpeg, https://linux.do/uploads/default/optimized/4X/2/7/2/2728835acb78ddccad9a25b1d949613ecfe01ca8_2_1035x156.jpeg 1.5x, https://linux.do/uploads/default/original/4X/2/7/2/2728835acb78ddccad9a25b1d949613ecfe01ca8.jpeg 2x" data-dominant-color="31333F"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/2/a/22ac7baa09de08cd5157250ae55c6517273756ef.jpeg" data-download-href="https://linux.do/uploads/default/22ac7baa09de08cd5157250ae55c6517273756ef" title="Screenshot_2025-09-29-18-13-08-89_40deb401b9ffe8e1df2f1cc5ba480b12"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/2/2/a/22ac7baa09de08cd5157250ae55c6517273756ef_2_690x96.jpeg" alt="Screenshot_2025-09-29-18-13-08-89_40deb401b9ffe8e1df2f1cc5ba480b12" data-base62-sha1="4WJMbLqmhodelEagXboFAkgddO7" width="690" height="96" srcset="https://linux.do/uploads/default/optimized/4X/2/2/a/22ac7baa09de08cd5157250ae55c6517273756ef_2_690x96.jpeg, https://linux.do/uploads/default/optimized/4X/2/2/a/22ac7baa09de08cd5157250ae55c6517273756ef_2_1035x144.jpeg 1.5x, https://linux.do/uploads/default/original/4X/2/2/a/22ac7baa09de08cd5157250ae55c6517273756ef.jpeg 2x" data-dominant-color="323441"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如图，请问各位佬友，需要怎么设置点开三个点之后会出现指定人员这个功能？&lt;/p&gt;
+&lt;/blockquote&gt;
+            &lt;p&gt;&lt;small&gt;5 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997849"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997849&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:16:41 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997849&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997849.rss"&gt;求助贴·论坛功能·编号001：论坛的指定人员功能如何使用？&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;deepseek v3.2模型卡:成本降降降，官方API降价!&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Shyliuli]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;huggingface.co&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;div class="aspect-image" style="--aspect-ratio:690/372;"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/c/f/bcff2a0d361891866adee72381b171f26db43e13_2_690x372.png" class="thumbnail" alt="" data-dominant-color="5B70A4" width="690" height="372"&gt;&lt;/div&gt;
+
+&lt;h3&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;We’re on a journey to advance and democratize artificial intelligence through open source and open science.&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/0/8/2/0823d945b14f3581fdeec860f8b5bcd1af27d54b.png" data-download-href="https://linux.do/uploads/default/0823d945b14f3581fdeec860f8b5bcd1af27d54b" title="图片"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/0/8/2/0823d945b14f3581fdeec860f8b5bcd1af27d54b_2_690x283.png" alt="图片" data-base62-sha1="1a0CLCpWpHHf3vOK8mWpiKeApET" width="690" height="283" srcset="https://linux.do/uploads/default/optimized/4X/0/8/2/0823d945b14f3581fdeec860f8b5bcd1af27d54b_2_690x283.png, https://linux.do/uploads/default/original/4X/0/8/2/0823d945b14f3581fdeec860f8b5bcd1af27d54b.png 1.5x, https://linux.do/uploads/default/original/4X/0/8/2/0823d945b14f3581fdeec860f8b5bcd1af27d54b.png 2x" data-dominant-color="F9F9F9"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/7/c/17cf159d4fc91e1b3a9666a50293925cd1a19e0e.png" data-download-href="https://linux.do/uploads/default/17cf159d4fc91e1b3a9666a50293925cd1a19e0e" title="图片"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/7/c/17cf159d4fc91e1b3a9666a50293925cd1a19e0e_2_486x500.png" alt="图片" data-base62-sha1="3oCEO04IFuu8E5YEbUUwBRVXmXk" width="486" height="500" srcset="https://linux.do/uploads/default/optimized/4X/1/7/c/17cf159d4fc91e1b3a9666a50293925cd1a19e0e_2_486x500.png, https://linux.do/uploads/default/optimized/4X/1/7/c/17cf159d4fc91e1b3a9666a50293925cd1a19e0e_2_729x750.png 1.5x, https://linux.do/uploads/default/original/4X/1/7/c/17cf159d4fc91e1b3a9666a50293925cd1a19e0e.png 2x" data-dominant-color="FCFCFD"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/6/6/1661e64647690d1a0f86e6580671857400a98155.jpeg" data-download-href="https://linux.do/uploads/default/1661e64647690d1a0f86e6580671857400a98155" title="f6c03ffc1b663bef3a09661ec1cb0004"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/6/6/1661e64647690d1a0f86e6580671857400a98155_2_227x500.jpeg" alt="f6c03ffc1b663bef3a09661ec1cb0004" data-base62-sha1="3c0fGQCZO2cDkbEEaupkOE9nCux" width="227" height="500" srcset="https://linux.do/uploads/default/optimized/4X/1/6/6/1661e64647690d1a0f86e6580671857400a98155_2_227x500.jpeg, https://linux.do/uploads/default/optimized/4X/1/6/6/1661e64647690d1a0f86e6580671857400a98155_2_340x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/1/6/6/1661e64647690d1a0f86e6580671857400a98155_2_454x1000.jpeg 2x" data-dominant-color="E5E7E9"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;14 个帖子 - 14 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997846"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997846&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:14:09 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997846&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997846.rss"&gt;deepseek v3.2模型卡:成本降降降，官方API降价!&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;DeepSeek开源稀疏注意力模型DeepSeek-V3.2-Exp&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[HCPTangHY]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face — deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/b/7/a/b7a2dd74d5dde4b63a051844b7840f097efe20a8.png" data-download-href="https://linux.do/uploads/default/b7a2dd74d5dde4b63a051844b7840f097efe20a8" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/7/a/b7a2dd74d5dde4b63a051844b7840f097efe20a8_2_690x478.png" alt="image" data-base62-sha1="qcwjsz04YGhuoj2HFVvnuBn6CqA" width="690" height="478" srcset="https://linux.do/uploads/default/optimized/4X/b/7/a/b7a2dd74d5dde4b63a051844b7840f097efe20a8_2_690x478.png, https://linux.do/uploads/default/original/4X/b/7/a/b7a2dd74d5dde4b63a051844b7840f097efe20a8.png 1.5x, https://linux.do/uploads/default/original/4X/b/7/a/b7a2dd74d5dde4b63a051844b7840f097efe20a8.png 2x" data-dominant-color="F6F7F7"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+可能是对年初新科研成果 &lt;a href="https://arxiv.org/abs/2502.11089" rel="noopener nofollow ugc"&gt;[2502.11089] Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention&lt;/a&gt;的技术验证&lt;p&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;第一作者&lt;/strong&gt;：Jingyang Yuan，分别来自 DeepSeek-AI 和北京大学多媒体信息处理重点实验室。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;团队&lt;/strong&gt;：主要来自 DeepSeek-AI 团队， 也有部分作者来自北京大学和华盛顿大学。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/5/5/85588cd5cfa94d5ac74886ee53b1815bff796b1b.jpeg" data-download-href="https://linux.do/uploads/default/85588cd5cfa94d5ac74886ee53b1815bff796b1b" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/8/5/5/85588cd5cfa94d5ac74886ee53b1815bff796b1b_2_690x379.jpeg" alt="image" data-base62-sha1="j1DdIVjYZCdDkRaTIeqq1HaD7UD" width="690" height="379" srcset="https://linux.do/uploads/default/optimized/4X/8/5/5/85588cd5cfa94d5ac74886ee53b1815bff796b1b_2_690x379.jpeg, https://linux.do/uploads/default/optimized/4X/8/5/5/85588cd5cfa94d5ac74886ee53b1815bff796b1b_2_1035x568.jpeg 1.5x, https://linux.do/uploads/default/original/4X/8/5/5/85588cd5cfa94d5ac74886ee53b1815bff796b1b.jpeg 2x" data-dominant-color="ADB7C5"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;14 个帖子 - 13 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997845"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997845&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:13:15 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997845&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997845.rss"&gt;DeepSeek开源稀疏注意力模型DeepSeek-V3.2-Exp&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;DeepSeek V3.2 超级大降价！&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[光头不砍树]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/5/3/b/53babe5973a57e323049b1057fc00e7e6467cc72.jpeg" data-download-href="https://linux.do/uploads/default/53babe5973a57e323049b1057fc00e7e6467cc72" title="mmexport1759140742378"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/5/3/b/53babe5973a57e323049b1057fc00e7e6467cc72_2_690x380.jpeg" alt="mmexport1759140742378" data-base62-sha1="bWHJ1KPREfyUK003MD1TCJIc9vc" width="690" height="380" srcset="https://linux.do/uploads/default/optimized/4X/5/3/b/53babe5973a57e323049b1057fc00e7e6467cc72_2_690x380.jpeg, https://linux.do/uploads/default/optimized/4X/5/3/b/53babe5973a57e323049b1057fc00e7e6467cc72_2_1035x570.jpeg 1.5x, https://linux.do/uploads/default/original/4X/5/3/b/53babe5973a57e323049b1057fc00e7e6467cc72.jpeg 2x" data-dominant-color="BCC2CC"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+这个价格真神了&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;44 个帖子 - 40 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997844"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997844&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:13:11 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997844&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997844.rss"&gt;DeepSeek V3.2 超级大降价！&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;分享一下自己gpt账号从降智状态恢复的经验&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[晚闻]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;h1&gt;&lt;a name="p-9058878-gpt-team-1" class="anchor" href="https://linux.do#p-9058878-gpt-team-1"&gt;&lt;/a&gt;&lt;img src="https://linux.do/images/emoji/twemoji/rocket.png?v=14" title=":rocket:" class="emoji" alt=":rocket:" loading="lazy" width="20" height="20"&gt; 今天忽然发现：网页端的 GPT Team 不降智了！&lt;/h1&gt;
+&lt;p&gt;&lt;img src="https://linux.do/images/emoji/twemoji/camera_with_flash.png?v=14" title=":camera_with_flash:" class="emoji" alt=":camera_with_flash:" loading="lazy" width="20" height="20"&gt; 现场截图：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://linux.do/uploads/default/original/4X/5/0/2/502f05e747359126f26477e7e0a0dcc4a3583b47.png" alt="状态截图" data-base62-sha1="brkWx2cDagwvuXYnheSy1jWahMP" width="388" height="60"&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-9058878-logo480x480upload4l4unxknwmx5lvo9ubnbqcdjoqipng-2" class="anchor" href="https://linux.do#p-9058878-logo480x480upload4l4unxknwmx5lvo9ubnbqcdjoqipng-2"&gt;&lt;/a&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/2/1/5/215b17129e6819580bc5d8207c0e3ad7582d7f40.png" data-download-href="https://linux.do/uploads/default/215b17129e6819580bc5d8207c0e3ad7582d7f40" title="官方logo"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/2/1/5/215b17129e6819580bc5d8207c0e3ad7582d7f40.png" alt="官方logo" data-base62-sha1="4L4UNXKNWMX5LVo9UbnBQcdJoqI" width="480" height="480"&gt;&lt;/a&gt;&lt;/div&gt;&lt;/h2&gt;
+&lt;h2&gt;&lt;a name="p-9058878-h-3" class="anchor" href="https://linux.do#p-9058878-h-3"&gt;&lt;/a&gt;&lt;img src="https://linux.do/images/emoji/twemoji/bullseye.png?v=14" title=":bullseye:" class="emoji" alt=":bullseye:" loading="lazy" width="20" height="20"&gt; 分享一下我的解决过程&lt;/h2&gt;
+&lt;p&gt;事后总结，发现自己的账号在网页端使用时明显降智。&lt;/p&gt;
+&lt;p&gt;当我真的需要高质量的 GPT 输出时，我发现 &lt;strong&gt;有两种解决方案&lt;/strong&gt;：&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3&gt;&lt;a name="p-9058878-h-1-chatgpt-app-4" class="anchor" href="https://linux.do#p-9058878-h-1-chatgpt-app-4"&gt;&lt;/a&gt;&lt;img src="https://linux.do/images/emoji/twemoji/white_check_mark.png?v=14" title=":white_check_mark:" class="emoji" alt=":white_check_mark:" loading="lazy" width="20" height="20"&gt; 方案 1：&lt;strong&gt;稳定不换节点 + 使用 ChatGPT 官方 App&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;我个人用的是安卓客户端，从下半月开始几乎都不会降智，表现如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;简单问题&lt;/strong&gt;：不会思考太久，直接给出答案&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;深入对话&lt;/strong&gt;：会开始认真思考，给出更有逻辑的内容&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;长问题/写代码&lt;/strong&gt;：也会思考，质量更高&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;特别现象&lt;/strong&gt;：如果连续聊几轮后忽然换话题，几乎必定会思考几秒（说明真的在推理！）&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="https://linux.do/images/emoji/twemoji/light_bulb.png?v=14" title=":light_bulb:" class="emoji" alt=":light_bulb:" loading="lazy" width="20" height="20"&gt; &lt;strong&gt;建议&lt;/strong&gt;：如果网页端一直降智，可以先下载官方 App 用着，暂时放弃网页端。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3&gt;&lt;a name="p-9058878-h-2-app-5" class="anchor" href="https://linux.do#p-9058878-h-2-app-5"&gt;&lt;/a&gt;&lt;img src="https://linux.do/images/emoji/twemoji/counterclockwise_arrows_button.png?v=14" title=":counterclockwise_arrows_button:" class="emoji" alt=":counterclockwise_arrows_button:" loading="lazy" width="20" height="20"&gt; 方案 2：&lt;strong&gt;保持节点稳定 + 长期使用 App + 再回网页端&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;毕竟在电脑上用 GPT 是刚需，但网页端容易降智，所以我尝试了：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;上了 GPT Team 车&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;网页端降智&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;登录 App → 不降智&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;回网页端 → 还是降智&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;节点连续几天不变 → 网页端忽然不降智了 &lt;img src="https://linux.do/images/emoji/twemoji/tada.png?v=14" title=":tada:" class="emoji" alt=":tada:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;我推测是 &lt;strong&gt;节点稳定后，OpenAI 可能重新划分了账号分区&lt;/strong&gt;，于是恢复正常。&lt;/p&gt;
+&lt;p&gt;（我的账号是老账号，供参考）&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3&gt;&lt;a name="p-9058878-h-6" class="anchor" href="https://linux.do#p-9058878-h-6"&gt;&lt;/a&gt;&lt;img src="https://linux.do/images/emoji/twemoji/pushpin.png?v=14" title=":pushpin:" class="emoji" alt=":pushpin:" loading="lazy" width="20" height="20"&gt; 额外补充&lt;/h3&gt;
+&lt;p&gt;目前看来 &lt;strong&gt;手机端 App 与网页端模型体验差别不大&lt;/strong&gt;，只是网页端更容易“犯傻”，App 更稳定。&lt;/p&gt;
+&lt;div class="spoiler"&gt;&lt;a href="https://linux.do/t/topic/997842/1"&gt;剧透&lt;/a&gt;&lt;/div&gt;
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997842"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997842&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:12:13 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997842&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997842.rss"&gt;分享一下自己gpt账号从降智状态恢复的经验&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求推荐dify零基础到进阶课程&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[takatorury🛡]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;最好附带课程链接，现在b站好多教程都是引流的&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997840"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997840&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:11:44 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997840&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997840.rss"&gt;求推荐dify零基础到进阶课程&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;有佬在使用github-copilot-proxies这个项目吗？我有一个问题&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Neo]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;我在本地部署这个软件，会时不时的出现不管问什么问题都“很抱歉未返回响应”，有时候正常能用但是有时候又会不能用，我使用的newApi提供的模型，求解答，我看过日志了，无报错&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/8/b/d8b5571773eb432b9b222f337011ac65bced1f74.png" data-download-href="https://linux.do/uploads/default/d8b5571773eb432b9b222f337011ac65bced1f74" title="494961516-5f49b8e3-47ff-4f94-ac12-201fbf0af861"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/d/8/b/d8b5571773eb432b9b222f337011ac65bced1f74.png" alt="494961516-5f49b8e3-47ff-4f94-ac12-201fbf0af861" data-base62-sha1="uV5EuVxO0wUlzgawgCVs7TxlHLu" width="498" height="440"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;10 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997832"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997832&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:09:08 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997832&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997832.rss"&gt;有佬在使用github-copilot-proxies这个项目吗？我有一个问题&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;DeepSeek-V3.2-Exp(实验版)发布，性能基于V3.1-Terminus，价格低于白菜&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[wyntalgeer]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/c/7/8c76cf50a887b4adee4d36e7b314bf89028f1d7e.png" data-download-href="https://linux.do/uploads/default/8c76cf50a887b4adee4d36e7b314bf89028f1d7e" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/8/c/7/8c76cf50a887b4adee4d36e7b314bf89028f1d7e.png" alt="image" data-base62-sha1="k2Botn5FpDMISLBa5XEmdH9MsSa" width="394" height="378"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/5/6/7/5678045674c60c7339414a0f152937e978a2bd3c.jpeg" data-download-href="https://linux.do/uploads/default/5678045674c60c7339414a0f152937e978a2bd3c" title="656d29dae5064fc62d2ba8a236752adc"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/5/6/7/5678045674c60c7339414a0f152937e978a2bd3c_2_690x380.jpeg" alt="656d29dae5064fc62d2ba8a236752adc" data-base62-sha1="ckWcftP26ySeYh9yIYfTlSH6ePG" width="690" height="380" srcset="https://linux.do/uploads/default/optimized/4X/5/6/7/5678045674c60c7339414a0f152937e978a2bd3c_2_690x380.jpeg, https://linux.do/uploads/default/optimized/4X/5/6/7/5678045674c60c7339414a0f152937e978a2bd3c_2_1035x570.jpeg 1.5x, https://linux.do/uploads/default/original/4X/5/6/7/5678045674c60c7339414a0f152937e978a2bd3c.jpeg 2x" data-dominant-color="BAC2CD"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/d/3/dd34a7a50d36e57f198ea460448eb820b74e0b05.png" data-download-href="https://linux.do/uploads/default/dd34a7a50d36e57f198ea460448eb820b74e0b05" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/d/d/3/dd34a7a50d36e57f198ea460448eb820b74e0b05.png" alt="image" data-base62-sha1="vySkFWjuDH5bU2yEoNZneYpQHop" width="637" height="331"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;huggingface.co&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;div class="aspect-image" style="--aspect-ratio:690/372;"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/c/f/bcff2a0d361891866adee72381b171f26db43e13_2_690x372.png" class="thumbnail" alt="" data-dominant-color="5B70A4" width="690" height="372"&gt;&lt;/div&gt;
+
+&lt;h3&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;We’re on a journey to advance and democratize artificial intelligence through open source and open science.&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://modelscope.cn/models/deepseek-ai/DeepSeek-V3.2-Exp"&gt;
+  &lt;header class="source"&gt;
+      &lt;img src="https://linux.do/uploads/default/original/4X/7/3/a/73ade915534dc2351bab75c5a3bd892b39750873.png" class="site-icon" alt="" data-dominant-color="7E6BFF" width="128" height="128"&gt;
+
+      &lt;a href="https://modelscope.cn/models/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;modelscope.cn&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;img width="200" height="200" src="https://linux.do/uploads/default/original/4X/a/5/b/a5bcdb88d5f29f243d7eb6d7d6fe8ee2448ce132.jpeg" class="thumbnail onebox-avatar" alt="" data-dominant-color="CAD3FB"&gt;
+
+&lt;h3&gt;&lt;a href="https://modelscope.cn/models/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;DeepSeek-V3.2-Exp&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;ModelScope——汇聚各领域先进的机器学习模型，提供模型探索体验、推理、训练、部署和应用的一站式服务。在这里，共建模型开源社区，发现、学习、定制和分享心仪的模型。&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;我们很高兴地宣布DeepSeek-V3.2-Exp的正式发布，这是我们模型的一个实验版本。作为通向下一代架构的中间步骤，V3.2-Exp在V3.1-Terminus的基础上引入了DeepSeek稀疏注意力机制——一种旨在探索和验证长上下文场景下训练和推理效率优化的稀疏注意力机制。&lt;/p&gt;
+&lt;p&gt;这一实验版本代表了我们对更高效的Transformer架构的持续研究，特别聚焦于提升处理长文本序列时的计算效率。&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/6/a/1/6a1a2a7a6742d4d298761ef62c865c06e653a744.png" data-download-href="https://linux.do/uploads/default/6a1a2a7a6742d4d298761ef62c865c06e653a744" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/6/a/1/6a1a2a7a6742d4d298761ef62c865c06e653a744_2_690x274.png" alt="image" data-base62-sha1="f8CFFBID1KFqjs1JnVngFixYzPK" width="690" height="274" srcset="https://linux.do/uploads/default/optimized/4X/6/a/1/6a1a2a7a6742d4d298761ef62c865c06e653a744_2_690x274.png, https://linux.do/uploads/default/original/4X/6/a/1/6a1a2a7a6742d4d298761ef62c865c06e653a744.png 1.5x, https://linux.do/uploads/default/original/4X/6/a/1/6a1a2a7a6742d4d298761ef62c865c06e653a744.png 2x" data-dominant-color="F8F8F8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;DeepSeek稀疏注意力（DSA）首次实现了细粒度的稀疏注意力，在保持几乎相同模型输出质量的同时，显著提升了长上下文训练和推理效率。&lt;/p&gt;
+&lt;p&gt;为了严格评估引入稀疏注意力的影响，我们特意将DeepSeek-V3.2-Exp的训练配置与V3.1-Terminus对齐。在多个领域的公共基准测试中，DeepSeek-V3.2-Exp的表现与V3.1-Terminus相当。&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/c/6/c/c6cdcd94478008ea9e4a1fc7c36e24a651f53f42.png" data-download-href="https://linux.do/uploads/default/c6cdcd94478008ea9e4a1fc7c36e24a651f53f42" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/c/6/c/c6cdcd94478008ea9e4a1fc7c36e24a651f53f42.png" alt="image" data-base62-sha1="smHt9cKgShNfXkn3Uo3uwj5LZEC" width="522" height="387"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/6/2/d62ca717ad33068f6f3b2896df2330104578ad84.png" data-download-href="https://linux.do/uploads/default/d62ca717ad33068f6f3b2896df2330104578ad84" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/d/6/2/d62ca717ad33068f6f3b2896df2330104578ad84.png" alt="image" data-base62-sha1="uyFQuxGEb6WLCB1ONJKxUOwA3OY" width="525" height="338"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;17 个帖子 - 14 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997826"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997826&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:06:44 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997826&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997826.rss"&gt;DeepSeek-V3.2-Exp(实验版)发布，性能基于V3.1-Terminus，价格低于白菜&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Deepseek 来了 抱脸上架 DeepSeek-V3.2-Exp&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[shock]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/a/6/4/a648b6e3e7ae9a9f71a38de39b5af3c94c9f272d.png" data-download-href="https://linux.do/uploads/default/a648b6e3e7ae9a9f71a38de39b5af3c94c9f272d" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/a/6/4/a648b6e3e7ae9a9f71a38de39b5af3c94c9f272d.png" alt="image" data-base62-sha1="nJ136eR1b1OvVmnF0eLycO5CWyF" width="492" height="218"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp - deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/a/1/7/a176042e4afc6d77cf098fab09720c9c35cd59f6.png" data-download-href="https://linux.do/uploads/default/a176042e4afc6d77cf098fab09720c9c35cd59f6" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/a/1/7/a176042e4afc6d77cf098fab09720c9c35cd59f6.png" alt="image" data-base62-sha1="n2lIJHpIZgwrLAx3ugZPseZK1o2" width="690" height="274" data-dominant-color="F5F4F4"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;7 个帖子 - 5 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997822"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997822&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:05:45 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997822&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997822.rss"&gt;Deepseek 来了 抱脸上架 DeepSeek-V3.2-Exp&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;DeepSeek发布DeepSeek-V3.2-Exp (huggingface)&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Bunn]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;huggingface.co&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;div class="aspect-image" style="--aspect-ratio:690/372;"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/c/f/bcff2a0d361891866adee72381b171f26db43e13_2_690x372.png" class="thumbnail" alt="" data-dominant-color="5B70A4" width="690" height="372"&gt;&lt;/div&gt;
+
+&lt;h3&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp · Hugging Face&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;We’re on a journey to advance and democratize artificial intelligence through open source and open science.&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp-Base"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp-Base" target="_blank" rel="noopener nofollow ugc"&gt;huggingface.co&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;div class="aspect-image" style="--aspect-ratio:690/372;"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/7/5/b/75b1d208e51916b67837bb2b47d00a53d633ae1f_2_690x372.png" class="thumbnail" alt="" data-dominant-color="5C71A4" width="690" height="372"&gt;&lt;/div&gt;
+
+&lt;h3&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp-Base" target="_blank" rel="noopener nofollow ugc"&gt;deepseek-ai/DeepSeek-V3.2-Exp-Base · Hugging Face&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;We’re on a journey to advance and democratize artificial intelligence through open source and open science.&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997821"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997821&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:05:41 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997821&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997821.rss"&gt;DeepSeek发布DeepSeek-V3.2-Exp (huggingface)&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;吐槽古怪加速器&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[皮皮]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;不知道论坛是否可以吐槽加速器，如果不行，请管理直接删除！！！&lt;/p&gt;
+&lt;p&gt;一款加速器名为古怪加速器，以前在哔哩哔哩上看到了他的推广，我就尝试下载来试了一下，发现效果真不错，堪比uu加速器了，后面我就开始充米了，价格很便宜，效果又这么顶，我心想妥妥的宝藏加速器啊，前前后后通过活动和充米，现在一共有15w多的时长，是的，可以用一辈子了，甚至10w永久时长，但是就在今年6-7月份开始，加速器效果变得一塌糊涂，我玩pubg亚服，用古怪100多延迟，不开加速器都只有70多，甚至有时候会导致游戏卡死，进不去，卡在加载画面，本来以为是pubg的问题，后面我有一次卡在加载画面的时候，把加速器一关，诶，秒进，神奇吧，碰到这么多问题我就开始找客服，前前后后到现在为止总共不下5次，每次都是说留下联系方式，技术人员来处理，但是等到现在技术人员都没有联系过我，然后去找客服为什么不处理，客服就说处理完了，是运营商调整导致的。就这样循环往复，找客服-技术人员处理-不联系-找客服-运营商调整&lt;/p&gt;
+&lt;p&gt;ok，也是吐槽完了这款加速器，佬友们，避雷古怪加速器，推广是一片的，只要是加速器推荐视频里面必有它，线路是一坨屎的，我也搞不懂，古怪的ui、小工具、界面等等和迅游简直是一模一样，和迅游没有关系我是不相信的，但是迅游怎么会放任古怪这么乱搞呢，好歹迅游今年还会pubg合作呢，哎&lt;img src="https://linux.do/images/emoji/twemoji/face_exhaling.png?v=14" title=":face_exhaling:" class="emoji" alt=":face_exhaling:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;佬友们记住避雷古怪加速器、避雷古怪加速器、避雷古怪加速器（重要的事说三遍）&lt;/p&gt;
+&lt;p&gt;因为真的很垃圾，也不知道可以退款吗？筋疲力尽了和这款加速器，转别的加速器了&lt;img src="https://linux.do/images/emoji/twemoji/face_exhaling.png?v=14" title=":face_exhaling:" class="emoji" alt=":face_exhaling:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;20 个帖子 - 10 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997815"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997815&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:02:04 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997815&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997815.rss"&gt;吐槽古怪加速器&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;佬们，推荐下免费的能换绑L站的不绑定手机号的邮箱&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[linuxAI]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;有没有万能的佬推荐下，除国内要手机号的邮箱，微软邮箱，谷歌邮箱&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;2 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997813"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997813&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 10:00:45 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997813&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997813.rss"&gt;佬们，推荐下免费的能换绑L站的不绑定手机号的邮箱&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;佬友们，放假啦放假啦&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[freedomtrail]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;放假咯！！！ &lt;img src="https://linux.do/images/emoji/twemoji/smiling_face.png?v=14" title=":smiling_face:" class="emoji" alt=":smiling_face:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;7 个帖子 - 6 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/997808"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/997808&lt;/link&gt;
+          &lt;pubDate&gt;Mon, 29 Sep 2025 09:59:56 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-997808&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/997808.rss"&gt;佬友们，放假啦放假啦&lt;/source&gt;
+        &lt;/item&gt;
+  &lt;/channel&gt;
+&lt;/rss&gt;
+</pre></body></html>

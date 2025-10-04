@@ -1,143 +1,103 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export const dynamic = 'force-dynamic';
-
-export async function GET(request: Request) {
+/**
+ * GET /api/reddit
+ * 获取Reddit帖子列表
+ * 
+ * 查询参数:
+ * - subreddit: 过滤特定板块
+ * - limit: 返回数量 (默认10)
+ * - offset: 偏移量 (默认0)
+ * - type: 过滤帖子类型
+ * - value: 过滤价值评估 (高/中/低)
+ */
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date'); // 可选参数，用于查看往期数据
+    const searchParams = request.nextUrl.searchParams;
+    const subreddit = searchParams.get('subreddit');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const type = searchParams.get('type');
+    const value = searchParams.get('value');
+
+    // 构建查询条件
+    const where: any = {};
     
-    let targetDate: Date;
-    let actualDate: Date;
-    
-    if (date) {
-      // 如果指定了日期，使用该日期
-      targetDate = new Date(date);
-      actualDate = targetDate;
-    } else {
-      // 默认使用昨天的日期
-      targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() - 1);
-      actualDate = targetDate;
+    if (subreddit) {
+      where.subreddit = subreddit;
     }
     
-    // 查询指定日期的Reddit帖子数据
-    const startOfDay = new Date(actualDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    if (type) {
+      where.post_type = type;
+    }
     
-    const endOfDay = new Date(actualDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    let posts = await prisma.reddit_posts.findMany({
-      where: {
-        timestamp: {
-          gte: startOfDay,
-          lte: endOfDay
+    if (value) {
+      where.value_assessment = value;
+    }
+
+    // 查询数据
+    const [posts, total] = await Promise.all([
+      prisma.reddit_posts.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          title: true,
+          title_cn: true,
+          url: true,
+          core_issue: true,
+          key_info: true,
+          post_type: true,
+          value_assessment: true,
+          subreddit: true,
+          score: true,
+          num_comments: true,
+          timestamp: true
         }
+      }),
+      prisma.reddit_posts.count({ where })
+    ]);
+
+    // 统计各板块数量
+    const subredditStats = await prisma.reddit_posts.groupBy({
+      by: ['subreddit'],
+      _count: {
+        id: true
       },
       orderBy: {
-        timestamp: 'desc'
+        _count: {
+          id: 'desc'
+        }
       }
     });
 
-    // 如果没有指定日期且当天没有数据，则查找最近有数据的日期
-    if (!date && posts.length === 0) {
-      const latestPost = await prisma.reddit_posts.findFirst({
-        orderBy: {
-          timestamp: 'desc'
-        },
-        select: {
-          timestamp: true
-        }
-      });
-      
-      if (latestPost && latestPost.timestamp) {
-        actualDate = new Date(latestPost.timestamp);
-        const newStartOfDay = new Date(actualDate);
-        newStartOfDay.setHours(0, 0, 0, 0);
-        
-        const newEndOfDay = new Date(actualDate);
-        newEndOfDay.setHours(23, 59, 59, 999);
-        
-        posts = await prisma.reddit_posts.findMany({
-          where: {
-            timestamp: {
-              gte: newStartOfDay,
-              lte: newEndOfDay
-            }
-          },
-          orderBy: {
-            timestamp: 'desc'
-          }
-        });
-      }
-    }
-
-    // 转换为组件需要的格式
-    const formattedPosts = posts.map(post => ({
-      id: post.id,
-      title: post.title,
-      url: post.url,
-      analysis: {
-        core_issue: post.core_issue || '',
-        key_info: Array.isArray(post.key_info) ? post.key_info : [],
-        post_type: post.post_type || '未知',
-        value_assessment: post.value_assessment || '中'
-      }
-    }));
-
-    // 生成报告元数据
-    const reportDate = actualDate.toISOString().split('T')[0];
-    
-    // 生成摘要信息
-    const summary = generateRedditSummary(posts);
-
-    const report = {
-      meta: {
-        report_date: reportDate,
-        title: `Reddit 每日热帖报告 (${reportDate})`,
-        source: "Reddit",
-        post_count: posts.length
+    return NextResponse.json({
+      success: true,
+      data: posts,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total
       },
-      summary,
-      posts: formattedPosts
-    };
-
-    return NextResponse.json(report);
+      stats: {
+        subreddits: subredditStats.map(s => ({
+          name: s.subreddit,
+          count: s._count.id
+        }))
+      }
+    });
   } catch (error) {
-    console.error('Error fetching Reddit data from database:', error);
+    console.error('Reddit API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to load Reddit report from database' },
+      {
+        success: false,
+        error: '获取Reddit数据失败'
+      },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
-}
-
-// 生成Reddit摘要信息的辅助函数
-function generateRedditSummary(posts: Array<{ value_assessment?: string | null; post_type?: string | null; title: string }>) {
-  const highValuePosts = posts.filter(post => post.value_assessment === '高');
-  const techPosts = posts.filter(post => 
-    post.post_type === '技术讨论' || 
-    post.post_type === '资源分享' || 
-    post.post_type === '新闻资讯'
-  );
-  
-  const overview = `今日Reddit社区共收集到 ${posts.length} 条帖子，其中高价值内容 ${highValuePosts.length} 条。主要围绕技术讨论、资源分享和生活交流展开。`;
-  
-  const highlights = {
-    tech_savvy: techPosts.slice(0, 3).map(post => post.title),
-    resources_deals: highValuePosts.slice(0, 3).map(post => post.title),
-    hot_topics: posts.slice(0, 3).map(post => post.title)
-  };
-  
-  const conclusion = `在技术探索与生活分享的交织中，Reddit社区展现了丰富的讨论内容和活跃的交流氛围。`;
-  
-  return {
-    overview,
-    highlights,
-    conclusion
-  };
 }
