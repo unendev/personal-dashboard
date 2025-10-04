@@ -226,6 +226,23 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     return () => clearTimeout(timer);
   }, [todos.length, restoreScrollPosition]);
 
+  // 清理孤儿任务的 parentId
+  const cleanupOrphanedTask = async (taskId: string) => {
+    try {
+      await fetch('/api/todos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          parentId: null
+        }),
+      });
+      console.log(`✅ 已清理孤儿任务 ${taskId} 的 parentId`);
+    } catch (error) {
+      console.error(`❌ 清理孤儿任务失败:`, error);
+    }
+  };
+
   // 构建嵌套结构的工具函数
   const buildNestedStructure = (flatTodos: TodoItem[]): TodoItem[] => {
     const todoMap = new Map<string, TodoItem>();
@@ -250,9 +267,14 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
           parent.children = parent.children || [];
           parent.children.push(todoItem);
         } else {
-          // 如果找不到父任务，将其作为根任务
-          console.warn(`找不到父任务 ${todo.parentId}，将任务 ${todo.id} 作为根任务`);
+          // 如果找不到父任务，将其作为根任务并清理 parentId
+          console.warn(`⚠️ 发现孤儿任务: ${todo.text} (ID: ${todo.id})，父任务 ${todo.parentId} 不存在。已自动修复为根任务。`);
+          // 清理 parentId，避免后续操作出错
+          todoItem.parentId = null;
           rootTodos.push(todoItem);
+          
+          // 自动清理数据库中的孤儿 parentId
+          cleanupOrphanedTask(todo.id);
         }
       } else {
         // 确保没有parentId的任务被添加到根任务

@@ -73,20 +73,22 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, text, completed, priority, category } = body;
+    const { id, text, completed, priority, category, parentId } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
+    const updateData: any = {};
+    if (text !== undefined) updateData.text = text;
+    if (completed !== undefined) updateData.completed = completed;
+    if (priority !== undefined) updateData.priority = priority;
+    if (category !== undefined) updateData.category = category;
+    if (parentId !== undefined) updateData.parentId = parentId; // 支持更新 parentId
+
     const todo = await prisma.todo.update({
       where: { id },
-      data: {
-        text,
-        completed,
-        priority,
-        category
-      }
+      data: updateData
     });
 
     return NextResponse.json(todo);
@@ -96,7 +98,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/todos - 删除任务
+// DELETE /api/todos - 删除任务（级联删除子任务）
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -106,11 +108,27 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    await prisma.todo.delete({
-      where: { id }
-    });
+    // 递归查找并删除所有子任务
+    async function deleteWithChildren(todoId: string) {
+      // 查找所有子任务
+      const children = await prisma.todo.findMany({
+        where: { parentId: todoId }
+      });
 
-    return NextResponse.json({ message: 'Todo deleted successfully' });
+      // 递归删除子任务
+      for (const child of children) {
+        await deleteWithChildren(child.id);
+      }
+
+      // 删除当前任务
+      await prisma.todo.delete({
+        where: { id: todoId }
+      });
+    }
+
+    await deleteWithChildren(id);
+
+    return NextResponse.json({ message: 'Todo and its children deleted successfully' });
   } catch (error) {
     console.error('Error deleting todo:', error);
     return NextResponse.json({ error: 'Failed to delete todo' }, { status: 500 });
