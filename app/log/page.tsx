@@ -806,12 +806,13 @@ export default function LogPage() {
                 tasks={timerTasks}
                 userId={userId}
                 onQuickCreate={handleQuickCreate}
-                renderTaskList={(tasks, onTaskClone) => (
+                renderTaskList={(groupTasks, onTaskClone) => (
                   <NestedTimerZone
-                    tasks={tasks}
+                    tasks={timerTasks}
                     onTasksChange={setTimerTasks}
                     onOperationRecord={recordOperation}
                     onTaskClone={onTaskClone}
+                    groupFilter={groupTasks.map(t => t.id)}
                   />
                 )}
               />

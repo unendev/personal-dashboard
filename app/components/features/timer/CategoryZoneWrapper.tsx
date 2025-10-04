@@ -7,8 +7,7 @@ import QuickCreateDialog, { QuickCreateData } from './QuickCreateDialog';
 import { 
   groupTasksByCategory, 
   loadCollapsedCategories, 
-  saveCollapsedCategories,
-  CategoryGroup
+  saveCollapsedCategories
 } from '@/lib/timer-utils';
 
 interface TimerTask {
@@ -66,6 +65,21 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     return groupTasksByCategory(tasks);
   }, [tasks]);
   
+  // 提取不参与分组的任务（时间黑洞、身体锻炼）
+  const ungroupedTasks = useMemo(() => {
+    const filtered = tasks.filter(t => 
+      !t.parentId && 
+      (t.categoryPath?.startsWith('时间黑洞') || t.categoryPath?.startsWith('身体锻炼'))
+    );
+    
+    // 排序：运行中的任务在前，然后按创建时间降序
+    return filtered.sort((a, b) => {
+      if (a.isRunning && !b.isRunning) return -1;
+      if (!a.isRunning && b.isRunning) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [tasks]);
+  
   // 切换折叠状态
   const toggleCategoryCollapse = (categoryPath: string) => {
     setCollapsedCategories(prev => {
@@ -107,23 +121,24 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   };
   
   // 如果没有任务，显示空状态
-  if (categoryGroups.length === 0) {
+  if (categoryGroups.length === 0 && ungroupedTasks.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <p className="text-lg mb-2">暂无任务</p>
-        <p className="text-sm">点击"创建新事物"开始添加任务</p>
+        <p className="text-sm">点击&ldquo;创建新事物&rdquo;开始添加任务</p>
       </div>
     );
   }
   
   return (
     <div className="space-y-4">
+      {/* 分组任务 */}
       {categoryGroups.map((group) => {
         const isCollapsed = collapsedCategories.has(group.categoryPath);
         
         return (
           <Card 
-            key={group.categoryPath}
+            key={group.id}
             className="overflow-hidden border-2 hover:shadow-lg transition-shadow duration-200"
           >
             {/* 区域头部 */}
@@ -143,6 +158,13 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
           </Card>
         );
       })}
+      
+      {/* 不分组的任务（时间黑洞、身体锻炼）：直接显示 */}
+      {ungroupedTasks.length > 0 && (
+        <div className="space-y-4">
+          {renderTaskList(ungroupedTasks, handleTaskClone)}
+        </div>
+      )}
       
       {/* 快速创建对话框 */}
       {quickCreateDialog && (

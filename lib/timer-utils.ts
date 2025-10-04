@@ -23,6 +23,7 @@ interface TimerTask {
 }
 
 export interface CategoryGroup {
+  id: string;                   // 唯一标识符（用于 React key）
   categoryPath: string;        // 分类路径（如 "工作/开发"）
   displayName: string;          // 显示名称（从路径提取）
   tasks: TimerTask[];           // 该分类下的所有任务（包含嵌套）
@@ -35,6 +36,7 @@ export interface CategoryGroup {
 /**
  * 按 categoryPath 分组任务
  * 注意：只对顶级任务（没有 parentId 的）进行分组，保持子任务的嵌套结构
+ * 特殊处理：时间黑洞分类的任务不参与分组
  */
 export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
   const groups = new Map<string, TimerTask[]>();
@@ -42,12 +44,19 @@ export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
   // 只对顶级任务（没有 parentId 的）进行分组
   const topLevelTasks = tasks.filter(t => !t.parentId);
   
+  // 过滤掉不参与分组的任务（时间黑洞、身体锻炼）
   topLevelTasks.forEach(task => {
     const category = task.categoryPath || "未分类";
+    
+    // 跳过不参与分组的分类
+    if (category.startsWith('时间黑洞') || category.startsWith('身体锻炼')) {
+      return;
+    }
+    
     if (!groups.has(category)) {
       groups.set(category, []);
     }
-    groups.get(category)!.push(task); // task 保留 children
+    groups.get(category)!.push(task);
   });
   
   // 转换为 CategoryGroup 并计算统计信息
@@ -56,7 +65,8 @@ export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
     const runningCount = countRunningTasks(tasks);
     
     return {
-      categoryPath,
+      id: categoryPath,
+      categoryPath: categoryPath,
       displayName: extractDisplayName(categoryPath),
       tasks: sortTasks(tasks),
       totalTime,

@@ -102,10 +102,8 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="text-xl">
-              {type === 'category' ? '⚡' : '📋'}
-            </span>
-            {type === 'category' ? '快速创建任务' : '复制创建任务'}
+            <span className="text-xl">⚡</span>
+            复制任务
           </DialogTitle>
         </DialogHeader>
         

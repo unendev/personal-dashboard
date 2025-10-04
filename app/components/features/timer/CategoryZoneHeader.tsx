@@ -137,7 +137,7 @@ const CategoryZoneHeader: React.FC<CategoryZoneHeaderProps> = ({
           )}
         </div>
         
-        {/* 右侧：快速创建按钮 */}
+        {/* 右侧：复制任务按钮 */}
         <Button
           variant="outline"
           size="sm"
@@ -152,11 +152,10 @@ const CategoryZoneHeader: React.FC<CategoryZoneHeaderProps> = ({
             whitespace-nowrap
             flex-shrink-0
           `}
-          title="在此分类下快速创建任务"
+          title="复制此分类的任务配置"
         >
           <span className="text-base">➕</span>
-          <span className="hidden sm:inline">创建事务</span>
-          <span className="sm:hidden">创建</span>
+          <span>复制任务</span>
         </Button>
       </div>
       

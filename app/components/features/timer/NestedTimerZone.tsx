@@ -52,6 +52,7 @@ interface NestedTimerZoneProps {
   onTasksChange: (tasks: TimerTask[]) => void;
   onOperationRecord?: (action: string, taskName: string, details?: string) => void;
   onTaskClone?: (task: TimerTask) => void; // 新增：任务复制创建回调
+  groupFilter?: string[]; // 新增：只显示这些ID的任务（用于分组显示）
   level?: number;
   parentId?: string; // 添加父级ID用于区分不同层级的弹框
   collapsedTasks?: Set<string>; // 传递收缩状态
@@ -72,6 +73,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   onTasksChange, 
   onOperationRecord,
   onTaskClone,
+  groupFilter,
   level = 0,
   collapsedTasks: externalCollapsedTasks,
   onToggleCollapse: externalOnToggleCollapse,
@@ -267,9 +269,15 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   };
 
-  // 对任务进行排序：优先使用order字段，如果没有则使用createdAt
+  // 对任务进行排序和过滤
   const sortedTasks = React.useMemo(() => {
-    const sorted = [...tasks].sort((a, b) => {
+    // 如果有 groupFilter，只显示这些任务
+    let filteredTasks = tasks;
+    if (groupFilter && groupFilter.length > 0) {
+      filteredTasks = tasks.filter(t => groupFilter.includes(t.id));
+    }
+    
+    const sorted = [...filteredTasks].sort((a, b) => {
       // 如果两个任务都有order字段且order >= 0，按order排序
       if (a.order !== undefined && b.order !== undefined && a.order >= 0 && b.order >= 0) {
         // 如果order相同，按createdAt降序排序（新任务在前）
@@ -290,7 +298,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     });
     
     return sorted;
-  }, [tasks]);
+  }, [tasks, groupFilter]);
 
   // 计算任务的当前显示时间（不修改原始数据）
   const getCurrentDisplayTime = (task: TimerTask): number => {
@@ -622,6 +630,28 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const isConfirmed = confirm(`确定要删除任务"${task.name}"吗？\n\n这将永久删除该任务及其所有子任务和计时数据。`);
     if (!isConfirmed) return;
 
+    // 乐观删除：立即更新前端状态
+    const removeTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
+      return taskList.filter(t => {
+        if (t.id === taskId) return false;
+        if (t.children) {
+          t.children = removeTaskRecursive(t.children);
+        }
+        return true;
+      });
+    };
+
+    const updatedTasks = removeTaskRecursive(tasks);
+    const previousTasks = tasks; // 保存原始状态，以便失败时恢复
+    
+    // 立即更新UI
+    onTasksChange(updatedTasks);
+    
+    if (onOperationRecord) {
+      onOperationRecord('删除任务', task.name);
+    }
+
+    // 异步调用API
     try {
       const response = await fetchWithRetry(`/api/timer-tasks?id=${taskId}`, {
         method: 'DELETE',
@@ -632,26 +662,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         console.error('Delete API error after retries:', response.status, errorText);
         throw new Error(`Failed to delete task: ${response.status} ${errorText}`);
       }
-
-      const removeTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.filter(task => {
-          if (task.id === taskId) return false;
-          if (task.children) {
-            task.children = removeTaskRecursive(task.children);
-          }
-          return true;
-        });
-      };
-
-      const updatedTasks = removeTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
       
-      if (onOperationRecord) {
-        onOperationRecord('删除任务', task.name);
-      }
+      // 删除成功，不需要额外操作
     } catch (error) {
       console.error('Failed to delete timer:', error);
-      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      // 删除失败，恢复原始状态
+      onTasksChange(previousTasks);
+      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}\n已恢复任务。`);
     }
   };
 
@@ -1085,94 +1102,32 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   </Button>
                 )}
                 
-                {/* 次要按钮：桌面端hover显示，移动端始终显示 */}
-                <div className="hidden sm:flex gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {/* 复制创建按钮 */}
-                  {onTaskClone && level === 0 && (
-                    <Button 
-                      onClick={() => onTaskClone(task)}
-                      variant="outline"
-                      size="sm"
-                      title="复制创建任务"
-                      className={hasInstanceTag 
-                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                        : "border-blue-300 text-blue-600 hover:bg-blue-50"
-                      }
-                    >
-                      📋
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    onClick={() => setShowAddChildDialog(task.id)}
-                    variant="outline"
-                    size="sm"
-                    title="添加子任务"
-                    className={hasInstanceTag 
-                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                      : "border-green-300 text-green-600 hover:bg-green-50"
-                    }
-                  >
-                    ➕
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => deleteTimer(task.id)}
-                    variant="outline"
-                    size="sm"
-                    title="删除任务"
-                    className={hasInstanceTag 
-                      ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
-                      : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
-                    }
-                  >
-                    🗑️
-                  </Button>
-                </div>
+                {/* 次要按钮：始终显示 */}
+                <Button 
+                  onClick={() => setShowAddChildDialog(task.id)}
+                  variant="outline"
+                  size="sm"
+                  title="添加子任务"
+                  className={hasInstanceTag 
+                    ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                    : "border-green-300 text-green-600 hover:bg-green-50"
+                  }
+                >
+                  ➕
+                </Button>
                 
-                {/* 移动端：次要按钮始终显示 */}
-                <div className="flex sm:hidden gap-1">
-                  {onTaskClone && level === 0 && (
-                    <Button 
-                      onClick={() => onTaskClone(task)}
-                      variant="outline"
-                      size="sm"
-                      title="复制创建"
-                      className={hasInstanceTag 
-                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                        : "border-blue-300 text-blue-600"
-                      }
-                    >
-                      📋
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    onClick={() => setShowAddChildDialog(task.id)}
-                    variant="outline"
-                    size="sm"
-                    title="添加子任务"
-                    className={hasInstanceTag 
-                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                      : "border-green-300 text-green-600"
-                    }
-                  >
-                    ➕
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => deleteTimer(task.id)}
-                    variant="outline"
-                    size="sm"
-                    title="删除"
-                    className={hasInstanceTag 
-                      ? "text-red-400 border-red-400 hover:bg-red-800" 
-                      : "text-red-600 border-red-300"
-                    }
-                  >
-                    🗑️
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => deleteTimer(task.id)}
+                  variant="outline"
+                  size="sm"
+                  title="删除任务"
+                  className={hasInstanceTag 
+                    ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
+                    : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                  }
+                >
+                  ➖
+                </Button>
               </div>
             </div>
           </CardContent>
