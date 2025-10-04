@@ -4,6 +4,7 @@ import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import { useDevSession } from '../hooks/useDevSession';
+import { isMobileDevice } from '@/lib/device-utils';
 import CreateLogModal from '@/app/components/features/log/CreateLogModal'
 import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
 import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper'
@@ -21,6 +22,10 @@ export default function LogPage() {
   const { data: session, status } = useDevSession();
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // 移动端区域切换
+  const [activeSection, setActiveSection] = useState<'timer' | 'todo' | 'stats' | 'ai'>('timer');
+  const [isMobile, setIsMobile] = useState(false);
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
@@ -93,6 +98,11 @@ export default function LogPage() {
     setIsTreasureModalOpen(true);
   };
 
+  // 检测设备类型
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
+  
   // 预加载分类和事务项数据
   useEffect(() => {
     const preloadData = async () => {
@@ -792,63 +802,185 @@ export default function LogPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* 计时器 - 在手机端显示在前面 */}
-          <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">⏱️</span>
-                计时器
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CategoryZoneWrapper
-                tasks={timerTasks}
-                userId={userId}
-                onQuickCreate={handleQuickCreate}
-                renderTaskList={(groupTasks, onTaskClone) => (
-                  <NestedTimerZone
-                    tasks={timerTasks}
-                    onTasksChange={setTimerTasks}
-                    onOperationRecord={recordOperation}
-                    onTaskClone={onTaskClone}
-                    groupFilter={groupTasks.map(t => t.id)}
-                  />
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 任务清单 - 在手机端显示在后面 */}
-          <div className="order-2 lg:order-1">
-            <DateBasedTodoList 
-              userId={userId}
-            />
+        {/* 移动端标签页导航 */}
+        {isMobile && (
+          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50">
+            <div className="grid grid-cols-4 gap-1">
+              <button
+                onClick={() => setActiveSection('timer')}
+                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeSection === 'timer'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">⏱️</span>
+                  <span className="text-xs">计时器</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveSection('todo')}
+                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeSection === 'todo'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">📋</span>
+                  <span className="text-xs">任务</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveSection('stats')}
+                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeSection === 'stats'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">📊</span>
+                  <span className="text-xs">统计</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveSection('ai')}
+                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeSection === 'ai'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">🤖</span>
+                  <span className="text-xs">AI</span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 时间统计 */}
-        <div className="mb-8">
-          <Card className="hover:shadow-lg transition-shadow duration-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">📊</span>
-                时间统计
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TimeStatsChart tasks={timerTasks} userId={userId} />
-            </CardContent>
-          </Card>
-        </div>
+        {/* 移动端：根据选中的标签页显示内容 */}
+        {isMobile ? (
+          <>
+            {activeSection === 'timer' && (
+              <Card className="hover:shadow-lg transition-shadow duration-200 mb-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">⏱️</span>
+                    计时器
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategoryZoneWrapper
+                    tasks={timerTasks}
+                    userId={userId}
+                    onQuickCreate={handleQuickCreate}
+                    renderTaskList={(groupTasks, onTaskClone) => (
+                      <NestedTimerZone
+                        tasks={timerTasks}
+                        onTasksChange={setTimerTasks}
+                        onOperationRecord={recordOperation}
+                        onTaskClone={onTaskClone}
+                        groupFilter={groupTasks.map(t => t.id)}
+                      />
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-        {/* AI总结 */}
-        <div className="mb-8">
-          <CollapsibleAISummary 
-            userId={userId}
-            date={selectedDate}
-          />
-        </div>
+            {activeSection === 'todo' && (
+              <div className="mb-8">
+                <DateBasedTodoList userId={userId} />
+              </div>
+            )}
+
+            {activeSection === 'stats' && (
+              <Card className="hover:shadow-lg transition-shadow duration-200 mb-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">📊</span>
+                    时间统计
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TimeStatsChart tasks={timerTasks} userId={userId} />
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === 'ai' && (
+              <div className="mb-8">
+                <CollapsibleAISummary 
+                  userId={userId}
+                  date={selectedDate}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          /* 桌面端：保持原有布局 */
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* 计时器 */}
+              <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">⏱️</span>
+                    计时器
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategoryZoneWrapper
+                    tasks={timerTasks}
+                    userId={userId}
+                    onQuickCreate={handleQuickCreate}
+                    renderTaskList={(groupTasks, onTaskClone) => (
+                      <NestedTimerZone
+                        tasks={timerTasks}
+                        onTasksChange={setTimerTasks}
+                        onOperationRecord={recordOperation}
+                        onTaskClone={onTaskClone}
+                        groupFilter={groupTasks.map(t => t.id)}
+                      />
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* 任务清单 */}
+              <div className="order-2 lg:order-1">
+                <DateBasedTodoList userId={userId} />
+              </div>
+            </div>
+
+            {/* 时间统计 */}
+            <div className="mb-8">
+              <Card className="hover:shadow-lg transition-shadow duration-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">📊</span>
+                    时间统计
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TimeStatsChart tasks={timerTasks} userId={userId} />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* AI总结 */}
+            <div className="mb-8">
+              <CollapsibleAISummary 
+                userId={userId}
+                date={selectedDate}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 藏宝阁创建模态框 */}

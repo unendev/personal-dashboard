@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
-import { fetchWithRetry } from '@/lib/utils';
+import { fetchWithRetry } from '@/lib/fetch-utils';
 import {
   DndContext,
   closestCenter,
@@ -168,13 +168,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // 适中的距离，避免误触发
+        distance: 8, // 增加距离，减少误触
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100, // 稍微增加延迟，确保用户意图明确
-        tolerance: 5, // 适中的容差
+        delay: 150, // 增加延迟，避免误触
+        tolerance: 8, // 增加容差
       },
     }),
     useSensor(KeyboardSensor, {
@@ -494,32 +494,40 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('暂停计时', task.name);
     }
 
-    // 异步更新数据库（带重试机制）
+    // 异步更新数据库（带重试机制，失败后不回滚）
+    let retryCount = 0;
     try {
-      const response = await fetchWithRetry('/api/timer-tasks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithRetry(
+        '/api/timer-tasks',
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: taskId,
+            elapsedTime: newElapsedTime,
+            isPaused: true,
+            isRunning: false,
+            startTime: null,
+            pausedTime: 0
+          }),
         },
-        body: JSON.stringify({
-          id: taskId,
-          elapsedTime: newElapsedTime,
-          isPaused: true,
-          isRunning: false, // 数据库中也要设置isRunning为false
-          startTime: null,
-          pausedTime: 0
-        }),
-      });
+        3,
+        (attempt, error) => {
+          retryCount = attempt;
+          console.warn(`暂停任务重试 ${attempt}/3:`, error.message);
+        }
+      );
 
       if (!response.ok) {
-        console.error('Failed to update database for pause timer after retries');
         const errorText = await response.text();
-        console.error('Database error details:', errorText);
-      } else {
-        // console.log('成功更新数据库 - 暂停任务:', { taskId, newElapsedTime });
+        throw new Error(`暂停失败 (${response.status}): ${errorText}`);
       }
     } catch (error) {
-      console.error('Failed to pause timer in database:', error);
+      const errorMsg = error instanceof Error ? error.message : '未知错误';
+      console.error('暂停任务失败（已重试3次）:', errorMsg);
+      alert(`暂停任务失败（已重试${retryCount}次）：\n${errorMsg}\n\n任务状态已保留在本地，请稍后同步。`);
     }
   };
 
@@ -750,28 +758,49 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
 
     // 异步处理数据库操作（带重试机制）
+    let retryCount = 0;
+    console.log('📤 创建子任务请求:', {
+      name: newChildName.trim(),
+      categoryPath: newChildCategory.trim() || '未分类',
+      parentId,
+      date: new Date().toISOString().split('T')[0],
+      initialTime: initialTimeInSeconds,
+      order: newOrder
+    });
+    
     try {
-      const response = await fetchWithRetry('/api/timer-tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithRetry(
+        '/api/timer-tasks',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newChildName.trim(),
+            categoryPath: newChildCategory.trim() || '未分类',
+            parentId: parentId,
+            date: new Date().toISOString().split('T')[0],
+            initialTime: initialTimeInSeconds,
+            elapsedTime: initialTimeInSeconds,
+            order: newOrder
+          }),
         },
-        body: JSON.stringify({
-          name: newChildName.trim(),
-          categoryPath: newChildCategory.trim() || '未分类',
-          parentId: parentId,
-          date: new Date().toISOString().split('T')[0],
-          initialTime: initialTimeInSeconds,
-          elapsedTime: initialTimeInSeconds,
-          order: newOrder // 使用计算出的正确order值
-        }),
-      });
+        3,
+        (attempt, error) => {
+          retryCount = attempt;
+          console.warn(`创建子任务重试 ${attempt}/3:`, error.message);
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to add child task after retries');
+        const errorText = await response.text();
+        console.error('❌ 子任务创建失败:', errorText);
+        throw new Error(`创建失败 (${response.status}): ${errorText}`);
       }
 
       const newTask = await response.json();
+      console.log('✅ 子任务创建成功:', newTask);
 
       // 用真实的任务数据替换临时任务
       const replaceTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
@@ -794,14 +823,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       const finalTasks = replaceTempTaskRecursive(updatedTasks);
       onTasksChange(finalTasks);
       
-      console.log('子任务创建成功:', newTask.name);
-      
       // 自动开始计时
       setTimeout(() => {
         startTimer(newTask.id);
-      }, 100); // 短暂延迟确保状态更新完成
+      }, 100);
     } catch (error) {
-      console.error('Failed to add child task:', error);
+      const errorMsg = error instanceof Error ? error.message : '未知错误';
+      console.error('❌ 子任务创建失败（已重试3次）:', errorMsg);
       
       // 如果数据库操作失败，回滚UI状态
       const removeTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
@@ -822,7 +850,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       const rolledBackTasks = removeTempTaskRecursive(updatedTasks);
       onTasksChange(rolledBackTasks);
       
-      alert('创建失败，请重试');
+      alert(`创建子任务失败（已重试${retryCount}次）：\n${errorMsg}\n\n请检查网络连接或查看控制台日志。`);
     }
   };
 

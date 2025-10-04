@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
+import { fetchWithRetry } from '@/lib/fetch-utils';
 import {
   DndContext,
   closestCenter,
@@ -63,11 +64,11 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
   const scrollPositionRef = useRef(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 拖拽传感器配置
+  // 拖拽传感器配置 - 优化移动端支持
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 8, // 增加距离，减少误触
       },
     }),
     useSensor(KeyboardSensor, {
@@ -394,67 +395,69 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
     setNewSubtaskCategory('');
     setShowAddSubtaskDialog(null);
 
+    // 带重试机制的创建请求
+    let retryCount = 0;
+    console.log('📤 创建待办子任务请求:', {
+      userId,
+      text: optimisticSubtask.text,
+      category: optimisticSubtask.category,
+      parentId
+    });
+
     try {
-      const response = await fetch('/api/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithRetry(
+        '/api/todos',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            text: optimisticSubtask.text,
+            category: optimisticSubtask.category,
+            parentId: parentId
+          }),
         },
-        body: JSON.stringify({
-          userId,
-          text: optimisticSubtask.text,
-          category: optimisticSubtask.category,
-          parentId: parentId
-        }),
-      });
+        3,
+        (attempt, error) => {
+          retryCount = attempt;
+          console.warn(`创建待办子任务重试 ${attempt}/3:`, error.message);
+        }
+      );
 
-      if (response.ok) {
-        const realSubtask = await response.json();
-        const realSubtaskWithChildren = { ...realSubtask, children: [] };
-
-        const updateSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
-          return todoList.map(todo => {
-            if (todo.id === parentId) {
-              return {
-                ...todo,
-                children: todo.children?.map(child => 
-                  child.id === optimisticSubtask.id ? realSubtaskWithChildren : child
-                ) || []
-              };
-            }
-            if (todo.children) {
-              return { ...todo, children: updateSubtaskRecursive(todo.children) };
-            }
-            return todo;
-          });
-        };
-
-        setTodos(prevTodos => updateSubtaskRecursive(prevTodos));
-        console.log('子任务已添加:', realSubtask.text);
-      } else {
-        // 如果失败，回滚乐观更新
-        const removeSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
-          return todoList.map(todo => {
-            if (todo.id === parentId) {
-              return {
-                ...todo,
-                children: todo.children?.filter(child => child.id !== optimisticSubtask.id) || []
-              };
-            }
-            if (todo.children) {
-              return { ...todo, children: removeSubtaskRecursive(todo.children) };
-            }
-            return todo;
-          });
-        };
-        setTodos(prevTodos => removeSubtaskRecursive(prevTodos));
-        setNewSubtaskText(optimisticSubtask.text);
-        setNewSubtaskCategory(optimisticSubtask.category || '');
-        setShowAddSubtaskDialog(parentId);
-        alert('添加子任务失败，请重试');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ 待办子任务创建失败:', errorText);
+        throw new Error(`创建失败 (${response.status}): ${errorText}`);
       }
+
+      const realSubtask = await response.json();
+      console.log('✅ 待办子任务创建成功:', realSubtask);
+      const realSubtaskWithChildren = { ...realSubtask, children: [] };
+
+      const updateSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
+        return todoList.map(todo => {
+          if (todo.id === parentId) {
+            return {
+              ...todo,
+              children: todo.children?.map(child => 
+                child.id === optimisticSubtask.id ? realSubtaskWithChildren : child
+              ) || []
+            };
+          }
+          if (todo.children) {
+            return { ...todo, children: updateSubtaskRecursive(todo.children) };
+          }
+          return todo;
+        });
+      };
+
+      setTodos(prevTodos => updateSubtaskRecursive(prevTodos));
     } catch (error) {
-      console.error('Failed to add subtask:', error);
+      const errorMsg = error instanceof Error ? error.message : '未知错误';
+      console.error('❌ 待办子任务创建失败（已重试3次）:', errorMsg);
+      
       // 回滚乐观更新
       const removeSubtaskRecursive = (todoList: TodoItem[]): TodoItem[] => {
         return todoList.map(todo => {
@@ -474,7 +477,7 @@ const DateBasedTodoList: React.FC<DateBasedTodoListProps> = ({
       setNewSubtaskText(optimisticSubtask.text);
       setNewSubtaskCategory(optimisticSubtask.category || '');
       setShowAddSubtaskDialog(parentId);
-      alert('添加子任务失败，请重试');
+      alert(`创建待办子任务失败（已重试${retryCount}次）：\n${errorMsg}\n\n请检查网络连接或查看控制台日志。`);
     }
   };
 
