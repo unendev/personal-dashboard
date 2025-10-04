@@ -991,11 +991,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       : (hasInstanceTag ? 'bg-orange-300' : 'bg-gray-400')
                   }`}></div>
                   <h3 className="font-medium text-white break-words min-w-0 flex-1">
-                    {/* 有事物项时显示事物项名称，否则显示任务名称 */}
-                    {hasInstanceTag ? task.instanceTag : task.name}
+                    {/* 始终显示任务名称作为主标题 */}
+                    {task.name}
                     {hasInstanceTag && (
                       <span className="text-xs text-orange-300 ml-2 whitespace-nowrap">
-                        🏷️ {task.name}
+                        🏷️ {task.instanceTag}
                       </span>
                     )}
                     {hasChildren && (
