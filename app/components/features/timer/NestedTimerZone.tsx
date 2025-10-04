@@ -959,41 +959,14 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           }}
         >
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* 移动端拖拽手柄 - 顶部居中 */}
-              <div className="flex justify-center mb-3 sm:hidden">
-                <div 
-                  {...listeners}
-                  data-drag-handle
-                  className="cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 flex items-center justify-center"
-                  style={{
-                    // 移动端优化：确保触摸目标足够大
-                    minWidth: '44px',
-                    minHeight: '44px',
-                    touchAction: 'none', // 防止默认触摸行为干扰拖拽
-                    // 确保拖拽手柄区域不会触发其他手势
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  title="拖拽重新排序"
-                >
-                  <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-
+            <div className="flex items-start sm:items-center gap-3">
               {/* 桌面端拖拽手柄 - 左侧 */}
               <div 
                 {...listeners}
                 data-drag-handle
                 className="hidden sm:flex flex-shrink-0 cursor-grab active:cursor-grabbing p-2 -m-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 items-center justify-center"
                 style={{
-                  // 移动端优化：确保触摸目标足够大
+                  // 确保触摸目标足够大
                   minWidth: '44px',
                   minHeight: '44px',
                   touchAction: 'none', // 防止默认触摸行为干扰拖拽
@@ -1074,88 +1047,113 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 )}
               </div>
               
-              <div 
-                className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end group-hover:show-secondary-buttons" 
-                style={{ 
-                  zIndex: 10,
-                  // 确保按钮区域不会干扰拖拽
-                  touchAction: 'manipulation',
-                  // 防止按钮区域触发拖拽
-                  pointerEvents: 'auto'
-                }}
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  // 注意：不能在这里调用 preventDefault()，因为事件监听器是 passive 的
-                  // 拖拽库会自动处理触摸事件
-                }}
-              >
-                {/* 主要按钮：始终可见 */}
-                {task.isRunning ? (
-                  task.isPaused ? (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* 按钮区域 */}
+                <div 
+                  className="flex gap-1 sm:gap-2 flex-wrap justify-end group-hover:show-secondary-buttons" 
+                  style={{ 
+                    zIndex: 10,
+                    // 确保按钮区域不会干扰拖拽
+                    touchAction: 'manipulation',
+                    // 防止按钮区域触发拖拽
+                    pointerEvents: 'auto'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                    // 注意：不能在这里调用 preventDefault()，因为事件监听器是 passive 的
+                    // 拖拽库会自动处理触摸事件
+                  }}
+                >
+                  {/* 主要按钮：始终可见 */}
+                  {task.isRunning ? (
+                    task.isPaused ? (
+                      <Button 
+                        onClick={() => resumeTimer(task.id)}
+                        size="sm"
+                        className={hasInstanceTag 
+                          ? "bg-orange-600 hover:bg-orange-700 text-white" 
+                          : "bg-green-600 hover:bg-green-700"
+                        }
+                      >
+                        继续
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => pauseTimer(task.id)}
+                        variant="outline"
+                        size="sm"
+                        className={hasInstanceTag 
+                          ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                          : ""
+                        }
+                      >
+                        暂停
+                      </Button>
+                    )
+                  ) : (
                     <Button 
-                      onClick={() => resumeTimer(task.id)}
+                      onClick={() => startTimer(task.id)}
                       size="sm"
                       className={hasInstanceTag 
                         ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                        : "bg-green-600 hover:bg-green-700"
+                        : "bg-blue-600 hover:bg-blue-700"
                       }
                     >
-                      继续
+                      开始
                     </Button>
-                  ) : (
-                    <Button 
-                      onClick={() => pauseTimer(task.id)}
-                      variant="outline"
-                      size="sm"
-                      className={hasInstanceTag 
-                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                        : ""
-                      }
-                    >
-                      暂停
-                    </Button>
-                  )
-                ) : (
+                  )}
+                  
+                  {/* 次要按钮：始终显示 */}
                   <Button 
-                    onClick={() => startTimer(task.id)}
+                    onClick={() => setShowAddChildDialog(task.id)}
+                    variant="outline"
                     size="sm"
+                    title="添加子任务"
                     className={hasInstanceTag 
-                      ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                      : "border-green-300 text-green-600 hover:bg-green-50"
                     }
                   >
-                    开始
+                    ➕
                   </Button>
-                )}
+                  
+                  <Button 
+                    onClick={() => deleteTimer(task.id)}
+                    variant="outline"
+                    size="sm"
+                    title="删除任务"
+                    className={hasInstanceTag 
+                      ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
+                      : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                    }
+                  >
+                    ➖
+                  </Button>
+                </div>
                 
-                {/* 次要按钮：始终显示 */}
-                <Button 
-                  onClick={() => setShowAddChildDialog(task.id)}
-                  variant="outline"
-                  size="sm"
-                  title="添加子任务"
-                  className={hasInstanceTag 
-                    ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                    : "border-green-300 text-green-600 hover:bg-green-50"
-                  }
+                {/* 移动端拖拽手柄 - 右侧 */}
+                <div 
+                  {...listeners}
+                  data-drag-handle
+                  className="sm:hidden flex-shrink-0 cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-gray-800/30 transition-colors duration-200 flex flex-col items-center justify-center opacity-40 hover:opacity-70"
+                  style={{
+                    // 移动端优化：确保触摸目标足够大
+                    minWidth: '32px',
+                    minHeight: '44px',
+                    touchAction: 'none', // 防止默认触摸行为干扰拖拽
+                    // 确保拖拽手柄区域不会触发其他手势
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                  title="长按拖拽排序"
                 >
-                  ➕
-                </Button>
-                
-                <Button 
-                  onClick={() => deleteTimer(task.id)}
-                  variant="outline"
-                  size="sm"
-                  title="删除任务"
-                  className={hasInstanceTag 
-                    ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
-                    : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
-                  }
-                >
-                  ➖
-                </Button>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="w-0.5 h-0.5 bg-gray-500 rounded-full"></div>
+                    <div className="w-0.5 h-0.5 bg-gray-500 rounded-full"></div>
+                    <div className="w-0.5 h-0.5 bg-gray-500 rounded-full"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

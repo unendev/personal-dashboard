@@ -802,9 +802,9 @@ export default function LogPage() {
           />
         </div>
 
-        {/* 移动端标签页导航 */}
+        {/* 移动端标签页导航 - 固定在标题下方 */}
         {isMobile && (
-          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50">
+          <div className="sticky top-16 z-40 mb-6 bg-gray-900/95 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50 shadow-lg">
             <div className="grid grid-cols-4 gap-1">
               <button
                 onClick={() => setActiveSection('timer')}
