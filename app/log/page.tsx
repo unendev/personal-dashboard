@@ -238,7 +238,7 @@ export default function LogPage() {
         name: taskName,
         categoryPath: categoryPath,
         instanceTag: instanceTagNames || null,
-        instanceTagNames: instanceTagNames ? instanceTagNames.split(',') : [],
+        instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
         elapsedTime: initialTime,
         initialTime: initialTime,
         isRunning: true, // 直接设置为运行状态，避免时序问题

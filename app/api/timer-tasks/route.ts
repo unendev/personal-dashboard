@@ -71,12 +71,17 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 验证通过，开始创建任务...');
     
+    // 清理 instanceTagNames 数组：去除空格和空字符串
+    const cleanedInstanceTagNames = instanceTagNames 
+      ? instanceTagNames.map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
+      : [];
+    
     const newTask = await TimerDB.addTask({
       userId,
       name,
       categoryPath,
       instanceTag: instanceTag || null, // 保留：向后兼容的实例标签字段
-      instanceTagNames: instanceTagNames || [], // 新增：事务项名称数组
+      instanceTagNames: cleanedInstanceTagNames, // 新增：事务项名称数组
       elapsedTime: elapsedTime,
       initialTime: initialTime,
       isRunning: isRunning || false,
