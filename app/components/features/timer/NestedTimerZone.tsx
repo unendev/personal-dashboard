@@ -51,6 +51,7 @@ interface NestedTimerZoneProps {
   tasks: TimerTask[];
   onTasksChange: (tasks: TimerTask[]) => void;
   onOperationRecord?: (action: string, taskName: string, details?: string) => void;
+  onTaskClone?: (task: TimerTask) => void; // 新增：任务复制创建回调
   level?: number;
   parentId?: string; // 添加父级ID用于区分不同层级的弹框
   collapsedTasks?: Set<string>; // 传递收缩状态
@@ -70,6 +71,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   tasks, 
   onTasksChange, 
   onOperationRecord,
+  onTaskClone,
   level = 0,
   collapsedTasks: externalCollapsedTasks,
   onToggleCollapse: externalOnToggleCollapse,
@@ -1028,7 +1030,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               </div>
               
               <div 
-                className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end" 
+                className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end group-hover:show-secondary-buttons" 
                 style={{ 
                   zIndex: 10,
                   // 确保按钮区域不会干扰拖拽
@@ -1044,6 +1046,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   // 拖拽库会自动处理触摸事件
                 }}
               >
+                {/* 主要按钮：始终可见 */}
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 
@@ -1082,30 +1085,94 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   </Button>
                 )}
                 
-                <Button 
-                  onClick={() => setShowAddChildDialog(task.id)}
-                  variant="outline"
-                  size="sm"
-                  title="添加子任务"
-                  className={hasInstanceTag 
-                    ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                    : ""
-                  }
-                >
-                  ➕
-                </Button>
+                {/* 次要按钮：桌面端hover显示，移动端始终显示 */}
+                <div className="hidden sm:flex gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* 复制创建按钮 */}
+                  {onTaskClone && level === 0 && (
+                    <Button 
+                      onClick={() => onTaskClone(task)}
+                      variant="outline"
+                      size="sm"
+                      title="复制创建任务"
+                      className={hasInstanceTag 
+                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                        : "border-blue-300 text-blue-600 hover:bg-blue-50"
+                      }
+                    >
+                      📋
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    onClick={() => setShowAddChildDialog(task.id)}
+                    variant="outline"
+                    size="sm"
+                    title="添加子任务"
+                    className={hasInstanceTag 
+                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                      : "border-green-300 text-green-600 hover:bg-green-50"
+                    }
+                  >
+                    ➕
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => deleteTimer(task.id)}
+                    variant="outline"
+                    size="sm"
+                    title="删除任务"
+                    className={hasInstanceTag 
+                      ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
+                      : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                    }
+                  >
+                    🗑️
+                  </Button>
+                </div>
                 
-                <Button 
-                  onClick={() => deleteTimer(task.id)}
-                  variant="outline"
-                  size="sm"
-                  className={hasInstanceTag 
-                    ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
-                    : "text-red-600 hover:text-red-700"
-                  }
-                >
-                  删除
-                </Button>
+                {/* 移动端：次要按钮始终显示 */}
+                <div className="flex sm:hidden gap-1">
+                  {onTaskClone && level === 0 && (
+                    <Button 
+                      onClick={() => onTaskClone(task)}
+                      variant="outline"
+                      size="sm"
+                      title="复制创建"
+                      className={hasInstanceTag 
+                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                        : "border-blue-300 text-blue-600"
+                      }
+                    >
+                      📋
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    onClick={() => setShowAddChildDialog(task.id)}
+                    variant="outline"
+                    size="sm"
+                    title="添加子任务"
+                    className={hasInstanceTag 
+                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                      : "border-green-300 text-green-600"
+                    }
+                  >
+                    ➕
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => deleteTimer(task.id)}
+                    variant="outline"
+                    size="sm"
+                    title="删除"
+                    className={hasInstanceTag 
+                      ? "text-red-400 border-red-400 hover:bg-red-800" 
+                      : "text-red-600 border-red-300"
+                    }
+                  >
+                    🗑️
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1130,6 +1197,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               onTasksChange(updateChildrenRecursive(tasks));
             }}
             onOperationRecord={onOperationRecord}
+            onTaskClone={onTaskClone}
             level={level + 1}
             parentId={task.id}
             collapsedTasks={collapsedTasks}

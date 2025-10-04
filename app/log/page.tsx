@@ -6,6 +6,8 @@ import { signOut } from 'next-auth/react';
 import { useDevSession } from '../hooks/useDevSession';
 import CreateLogModal from '@/app/components/features/log/CreateLogModal'
 import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
+import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper'
+import { QuickCreateData } from '@/app/components/features/timer/QuickCreateDialog'
 import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
 import DateFilter from '@/app/components/shared/DateFilter'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
@@ -299,6 +301,101 @@ export default function LogPage() {
       alert(`任务创建失败: ${errorMessage}\n\n请检查网络连接后重试`);
     } finally {
       // 无论成功还是失败，都要重置加载状态
+      setIsCreatingTask(false);
+    }
+  };
+
+  // 处理快速创建（来自分区头部的快速创建按钮）
+  const handleQuickCreate = async (data: QuickCreateData) => {
+    if (isCreatingTask) {
+      console.log('任务正在创建中，请稍候...');
+      return;
+    }
+
+    setIsCreatingTask(true);
+    
+    const newOrder = 0;
+    const tempTask = {
+      id: `temp-${Date.now()}`,
+      name: data.name,
+      categoryPath: data.categoryPath,
+      instanceTag: data.instanceTagNames.join(',') || null,
+      elapsedTime: data.initialTime,
+      initialTime: data.initialTime,
+      isRunning: data.autoStart,
+      startTime: data.autoStart ? Math.floor(Date.now() / 1000) : null,
+      isPaused: false,
+      pausedTime: 0,
+      order: newOrder,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setTimerTasks([tempTask, ...timerTasks]);
+    recordOperation('快速创建任务', data.name, `分类: ${data.categoryPath}`);
+
+    try {
+      const newTask = {
+        name: data.name,
+        categoryPath: data.categoryPath,
+        instanceTag: data.instanceTagNames.join(',') || null,
+        instanceTagNames: data.instanceTagNames,
+        elapsedTime: data.initialTime,
+        initialTime: data.initialTime,
+        isRunning: data.autoStart,
+        startTime: data.autoStart ? Math.floor(Date.now() / 1000) : null,
+        isPaused: false,
+        pausedTime: 0,
+        order: newOrder,
+        date: new Date().toISOString().split('T')[0],
+        userId: userId
+      };
+
+      const response = await fetch('/api/timer-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      if (response.ok) {
+        const createdTask = await response.json();
+        
+        setTimerTasks(prevTasks => {
+          return prevTasks.map(task => {
+            if (task.id !== tempTask.id) return task;
+            return {
+              ...createdTask,
+              isRunning: createdTask.isRunning,
+              isPaused: createdTask.isPaused,
+              startTime: createdTask.startTime,
+              elapsedTime: createdTask.elapsedTime,
+              order: createdTask.order ?? task.order,
+              instanceTag: createdTask.instanceTag ?? task.instanceTag
+            };
+          });
+        });
+        
+        console.log('快速创建任务成功:', createdTask.name);
+        if (data.autoStart) {
+          recordOperation('开始计时', createdTask.name, '自动开始');
+        }
+      } else {
+        throw new Error('Failed to create task');
+      }
+    } catch (error) {
+      console.error('Failed to quick create task:', error);
+      
+      setTimerTasks(prevTasks => 
+        prevTasks.filter(task => task.id !== tempTask.id)
+      );
+      
+      recordOperation('快速创建失败', data.name, `错误: ${error instanceof Error ? error.message : '未知错误'}`);
+      
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`快速创建任务失败: ${errorMessage}\n\n请检查网络连接后重试`);
+    } finally {
       setIsCreatingTask(false);
     }
   };
@@ -705,10 +802,18 @@ export default function LogPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <NestedTimerZone
+              <CategoryZoneWrapper
                 tasks={timerTasks}
-                onTasksChange={setTimerTasks}
-                onOperationRecord={recordOperation}
+                userId={userId}
+                onQuickCreate={handleQuickCreate}
+                renderTaskList={(tasks, onTaskClone) => (
+                  <NestedTimerZone
+                    tasks={tasks}
+                    onTasksChange={setTimerTasks}
+                    onOperationRecord={recordOperation}
+                    onTaskClone={onTaskClone}
+                  />
+                )}
               />
             </CardContent>
           </Card>
