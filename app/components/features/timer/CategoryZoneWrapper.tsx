@@ -69,7 +69,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   const ungroupedTasks = useMemo(() => {
     const filtered = tasks.filter(t => 
       !t.parentId && 
-      (t.categoryPath?.startsWith('时间黑洞') || t.categoryPath?.startsWith('身体锻炼'))
+      (t.categoryPath?.includes('时间黑洞') || t.categoryPath?.includes('身体锻炼'))
     );
     
     // 排序：运行中的任务在前，然后按创建时间降序

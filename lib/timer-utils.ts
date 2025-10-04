@@ -48,8 +48,8 @@ export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
   topLevelTasks.forEach(task => {
     const category = task.categoryPath || "未分类";
     
-    // 跳过不参与分组的分类
-    if (category.startsWith('时间黑洞') || category.startsWith('身体锻炼')) {
+    // 跳过不参与分组的分类（检查路径中是否包含这些关键词）
+    if (category.includes('时间黑洞') || category.includes('身体锻炼')) {
       return;
     }
     
