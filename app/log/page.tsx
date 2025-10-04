@@ -4,7 +4,6 @@ import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import { useDevSession } from '../hooks/useDevSession';
-import { isMobileDevice } from '@/lib/device-utils';
 import CreateLogModal from '@/app/components/features/log/CreateLogModal'
 import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
 import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper'
@@ -98,9 +97,16 @@ export default function LogPage() {
     setIsTreasureModalOpen(true);
   };
 
-  // 检测设备类型
+  // 检测屏幕尺寸（使用屏幕宽度而不是 UserAgent）
   useEffect(() => {
-    setIsMobile(isMobileDevice());
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // Tailwind md breakpoint
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   
   // 预加载分类和事务项数据
@@ -802,9 +808,9 @@ export default function LogPage() {
           />
         </div>
 
-        {/* 移动端标签页导航 - 固定在标题下方 */}
+        {/* 移动端标签页导航 */}
         {isMobile && (
-          <div className="sticky top-16 z-40 mb-6 bg-gray-900/95 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50 shadow-lg">
+          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50">
             <div className="grid grid-cols-4 gap-1">
               <button
                 onClick={() => setActiveSection('timer')}
