@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 // 公开读取缓存：无需登录，返回最近缓存的喜欢视频
 // 支持通过 ?userId= 指定用户；默认使用 PUBLIC_YOUTUBE_USER_ID 或 'user-1'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 interface YouTubeLikedVideo {
