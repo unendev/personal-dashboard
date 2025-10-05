@@ -363,8 +363,8 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={cn("relative", className)}>
-      {/* 时间线 - 浮动在左侧，不占据布局空间 */}
+    <div className={cn("relative flex", className)}>
+      {/* 时间线 - 浮动在左侧 */}
       <TreasureTimeline
         treasures={treasures.map(t => ({
           id: t.id,
@@ -380,82 +380,63 @@ export function TreasureList({ className }: TreasureListProps) {
         onClose={() => setShowTimeline(false)}
       />
 
-      {/* 右侧统计面板 - PC端 */}
-      <aside className="hidden xl:block fixed top-0 right-4 w-80 h-screen overflow-y-auto pt-4 z-20 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        <TreasureStatsPanel 
-          treasures={treasures.map(t => ({
-            id: t.id,
-            createdAt: t.createdAt,
-            tags: t.tags
-          }))}
-          onTagClick={setSelectedTag}
-          selectedTag={selectedTag}
-        />
-      </aside>
-
-      {/* 筛选面板 - 固定在时间线右侧顶部 */}
-      <div className="hidden lg:block fixed top-0 left-64 xl:left-72 z-30 w-80 xl:w-96 bg-black/40 backdrop-blur-xl border-b border-white/5 p-3">
-        <div className="space-y-2">
-          {/* 紧凑搜索框 */}
+      {/* 左侧搜索筛选栏 - 紧贴时间线 */}
+      <div className="hidden lg:block flex-shrink-0 w-48 xl:w-56 pl-64 xl:pl-72">
+        <div className="sticky top-0 pt-4 space-y-3">
+          {/* 搜索框 */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
             <input
               type="text"
-              placeholder="搜索..."
+              placeholder="搜索"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all"
+              className="w-full pl-8 pr-7 py-1 text-xs bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-white/10 rounded-full"
-              >
-                <X className="h-3.5 w-3.5 text-white/60" />
+              <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5">
+                <X className="h-3 w-3 text-white/60" />
               </button>
             )}
           </div>
 
-          {/* 筛选按钮和标签 */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "h-7 gap-1.5 px-2.5 text-xs border-white/20 text-white hover:bg-white/10",
-                showFilters && "bg-white/10"
-              )}
-            >
-              <Filter className="h-3.5 w-3.5" />
-              筛选
-            </Button>
+          {/* 筛选按钮 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn("w-full h-7 text-xs justify-start", showFilters && "bg-white/10")}
+          >
+            <Filter className="h-3 w-3 mr-1.5" />
+            筛选
+          </Button>
 
-            {selectedType && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300">
-                {selectedType === 'TEXT' && '文本'}
-                {selectedType === 'IMAGE' && '图片'}
-                {selectedType === 'MUSIC' && '音乐'}
-                <button onClick={() => setSelectedType('')} className="hover:bg-blue-500/30 rounded-full p-0.5">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            
-            {selectedTag && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded-full text-xs text-green-300">
-                {selectedTag}
-                <button onClick={() => setSelectedTag('')} className="hover:bg-green-500/30 rounded-full p-0.5">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-          </div>
+          {/* 活跃筛选 */}
+          {(selectedType || selectedTag) && (
+            <div className="space-y-1.5 text-xs">
+              {selectedType && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 rounded text-blue-300">
+                  {selectedType}
+                  <button onClick={() => setSelectedType('')} className="ml-auto">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {selectedTag && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded text-green-300">
+                  {selectedTag}
+                  <button onClick={() => setSelectedTag('')} className="ml-auto">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 主内容区域 - 保持原有布局，屏幕正中心 */}
-      <div className="space-y-0">
+      {/* 主内容区域 - 居中 */}
+      <div className="flex-1 min-w-0 space-y-0">
         {/* 移动端时间线唤出按钮 */}
         <button
           onClick={() => setShowTimeline(true)}
@@ -504,9 +485,9 @@ export function TreasureList({ className }: TreasureListProps) {
           </div>
         </div>
 
-        {/* 筛选面板 */}
+        {/* 筛选面板 - 移动端 */}
         <div className={cn(
-          "fixed top-12 left-64 xl:left-72 z-20 w-96 max-h-[80vh] overflow-y-auto",
+          "lg:hidden fixed inset-x-4 top-20 z-20 max-h-[60vh] overflow-y-auto",
           "bg-black/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl",
           "transition-all duration-300",
           showFilters ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-4"
@@ -619,7 +600,7 @@ export function TreasureList({ className }: TreasureListProps) {
           )}
         </div>
 
-      {/* 宝藏列表 - 虚拟滚动 */}
+        {/* 宝藏列表 - 虚拟滚动 */}
       {treasures.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-white/40 mb-4">
@@ -713,6 +694,21 @@ export function TreasureList({ className }: TreasureListProps) {
           />
         )}
       </div>
+
+      {/* 右侧统计栏 - 紧贴主内容 */}
+      <aside className="hidden xl:block flex-shrink-0 w-64 pr-4">
+        <div className="sticky top-0 pt-4">
+          <TreasureStatsPanel 
+            treasures={treasures.map(t => ({
+              id: t.id,
+              createdAt: t.createdAt,
+              tags: t.tags
+            }))}
+            onTagClick={setSelectedTag}
+            selectedTag={selectedTag}
+          />
+        </div>
+      </aside>
     </div>
   )
 }
