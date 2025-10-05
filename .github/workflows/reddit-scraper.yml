@@ -9,8 +9,7 @@ on:
 jobs:
   scrape-reddit:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # 允许推送代码
+    # 不需要写权限，数据直接存入 Neon 数据库
     
     steps:
       - name: 检出代码
@@ -35,12 +34,6 @@ jobs:
         run: |
           cd linuxdo-scraper/reddit_scraper
           python reddit_scraper_multi.py
-
-      - name: 提交生成的数据
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add linuxdo-scraper/reddit_scraper/data/
-          git add linuxdo-scraper/reddit_scraper/reports/
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 自动更新 Reddit 数据 $(date +'%Y-%m-%d %H:%M:%S')"
-          git push
+      
+      # 注意：数据已存入 Neon 数据库，前端直接从数据库读取
+      # 不需要提交 JSON/MD 文件到 GitHub
