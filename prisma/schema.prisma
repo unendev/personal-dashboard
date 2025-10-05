@@ -32,6 +32,7 @@ model User {
   timerTasks                  TimerTask[]
   todos                       Todo[]
   treasures                   Treasure[]
+  articles                    Article[]
   twitterUsers                TwitterUser[]
   layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
@@ -374,25 +375,26 @@ model spotify_cache {
 }
 
 model Treasure {
-  id            String          @id @default(cuid())
+  id            String              @id @default(cuid())
   title         String
   content       String?
   type          TreasureType
-  tags          String[]        @default([])
+  tags          String[]            @default([])
   userId        String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   musicTitle    String?
   musicArtist   String?
   musicAlbum    String?
   musicUrl      String?
   musicCoverUrl String?
   theme         String?
-  likesCount    Int             @default(0)
+  likesCount    Int                 @default(0)
   images        Image[]
   likes         TreasureLike[]
   answers       TreasureAnswer[]
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleRefs   TreasureReference[]
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("treasures")
 }
@@ -451,4 +453,56 @@ enum TreasureType {
   TEXT
   IMAGE
   MUSIC
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+  UNLISTED
+}
+
+model Article {
+  id               String            @id @default(cuid())
+  title            String
+  subtitle         String?
+  content          String            @db.Text
+  abstract         String?
+  coverImage       String?
+  status           ArticleStatus     @default(DRAFT)
+  visibility       Visibility        @default(PRIVATE)
+  sections         Json?
+  toc              Json?
+  tags             String[]          @default([])
+  slug             String            @unique
+  keywords         String[]          @default([])
+  wordCount        Int               @default(0)
+  readingTime      Int               @default(0)
+  authorId         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  publishedAt      DateTime?
+  author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  treasureRefs     TreasureReference[]
+
+  @@index([authorId, status])
+  @@index([slug])
+  @@map("articles")
+}
+
+model TreasureReference {
+  id         String   @id @default(cuid())
+  articleId  String
+  treasureId String
+  context    String?
+  createdAt  DateTime @default(now())
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
+
+  @@map("treasure_references")
 }

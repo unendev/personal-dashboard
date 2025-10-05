@@ -41,9 +41,30 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 NEON_DB_URL = os.getenv("DATABASE_URL")
 
 # asyncpg不支持URL中的查询参数，需要清理
-if NEON_DB_URL and '?' in NEON_DB_URL:
-    NEON_DB_URL = NEON_DB_URL.split('?')[0]
-    logger.info("已清理DATABASE_URL中的查询参数")
+if NEON_DB_URL:
+    original_url = NEON_DB_URL
+    if '?' in NEON_DB_URL:
+        NEON_DB_URL = NEON_DB_URL.split('?')[0]
+        logger.info("已清理DATABASE_URL中的查询参数")
+    
+    # 详细日志：显示URL格式（隐藏密码）
+    import re
+    safe_url = re.sub(r'://([^:]+):([^@]+)@', r'://\1:****@', NEON_DB_URL)
+    logger.info(f"DATABASE_URL格式: {safe_url}")
+    
+    # 解析URL各部分
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(NEON_DB_URL)
+        logger.info(f"  - 协议: {parsed.scheme}")
+        logger.info(f"  - 主机: {parsed.hostname}")
+        logger.info(f"  - 端口: {parsed.port}")
+        logger.info(f"  - 数据库: {parsed.path}")
+        logger.info(f"  - 用户名: {parsed.username}")
+    except Exception as e:
+        logger.error(f"解析DATABASE_URL失败: {e}")
+else:
+    logger.error("DATABASE_URL 为空！")
 
 # GitHub Actions环境检测（不使用代理）
 IS_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
@@ -259,10 +280,31 @@ async def create_posts_table():
     try:
         # Neon需要SSL连接
         logger.info(f"尝试连接数据库...")
+        
+        # 测试DNS解析
+        try:
+            from urllib.parse import urlparse
+            import socket
+            parsed = urlparse(NEON_DB_URL)
+            host = parsed.hostname
+            logger.info(f"  步骤1: 尝试DNS解析主机 {host}...")
+            ip = socket.gethostbyname(host)
+            logger.info(f"  ✓ DNS解析成功: {host} -> {ip}")
+        except socket.gaierror as e:
+            logger.error(f"  ✗ DNS解析失败: {e}")
+            logger.error(f"  可能原因: 1)主机名错误 2)网络问题 3)DNS服务器问题")
+            raise
+        except Exception as e:
+            logger.error(f"  ✗ DNS测试异常: {e}")
+            raise
+        
+        logger.info(f"  步骤2: 配置SSL上下文...")
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
+        logger.info(f"  ✓ SSL配置完成")
         
+        logger.info(f"  步骤3: 尝试建立数据库连接...")
         conn = await asyncpg.connect(
             dsn=NEON_DB_URL,
             ssl=ssl_context,

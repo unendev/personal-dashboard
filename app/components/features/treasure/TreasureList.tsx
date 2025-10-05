@@ -10,7 +10,6 @@ import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
 import { TreasureTimeline } from './TreasureTimeline'
 import { TreasureStatsPanel } from './TreasureStatsPanel'
-import { TreasureToolbar } from './TreasureToolbar'
 import { 
   Filter, 
   RefreshCw,
@@ -308,7 +307,7 @@ export function TreasureList({ className }: TreasureListProps) {
     }
   }, [treasures])
 
-  const renderTreasureCard = (treasure: Treasure) => {
+  const renderTreasureCard = (treasure: Treasure, isFirst: boolean) => {
     const hasComments = treasure._count?.answers && treasure._count.answers > 0
     
     return (
@@ -324,8 +323,28 @@ export function TreasureList({ className }: TreasureListProps) {
           />
         </div>
         
-        {/* 评论卡片 - 绝对定位在右侧 */}
-        {hasComments && (
+        {/* 热力图和标签云 - 绝对定位在第一个卡片右侧，sticky固定 */}
+        {isFirst && (
+          <div className="hidden xl:block absolute top-0 right-4 w-80 space-y-4">
+            <div className="sticky top-4">
+              {/* 热力图 */}
+              <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 border border-white/10 mb-4">
+                <TreasureStatsPanel 
+                  treasures={treasures.map(t => ({
+                    id: t.id,
+                    createdAt: t.createdAt,
+                    tags: t.tags
+                  }))}
+                  onTagClick={setSelectedTag}
+                  selectedTag={selectedTag}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* 评论卡片 - 绝对定位在右侧（当有评论且不是第一个卡片时，或者第一个卡片有评论时放在热力图下方）*/}
+        {hasComments && !isFirst && (
           <div className="hidden xl:block absolute top-0 right-4 w-80">
             <CommentsCard treasure={treasure} />
           </div>
@@ -436,8 +455,8 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       </div>
 
-      {/* 主内容区域 - 居中，右侧预留空间避免与滚轮冲突 */}
-      <div className="flex-1 min-w-0 space-y-0 pr-4">
+      {/* 主内容区域 - 居中 */}
+      <div className="flex-1 min-w-0 space-y-0">
         {/* 移动端时间线唤出按钮 */}
         <button
           onClick={() => setShowTimeline(true)}
@@ -446,21 +465,6 @@ export function TreasureList({ className }: TreasureListProps) {
         >
           <Calendar className="w-6 h-6" />
         </button>
-
-        {/* 顶部工具栏 - 紧贴内容 */}
-        <div className="hidden lg:block max-w-5xl mx-auto px-4">
-          <TreasureToolbar
-            treasures={treasures.map(t => ({
-              id: t.id,
-              createdAt: t.createdAt,
-              tags: t.tags
-            }))}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedTag={selectedTag}
-            onTagClick={setSelectedTag}
-          />
-        </div>
 
         {/* 移动端搜索和筛选栏 */}
         <div className="lg:hidden sticky top-0 z-10 backdrop-blur-lg bg-black/40 border-b border-white/10 pb-3 pt-2 px-4">
@@ -617,58 +621,57 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
 
         {/* 宝藏列表 - 虚拟滚动 */}
-        <div className="max-w-5xl mx-auto px-4">
-          {treasures.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-white/40 mb-4">
-                <Filter className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-white mb-2">
-                {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
-              </h3>
-              <p className="text-white/60 mb-4">
-                {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
-              </p>
-            </div>
-          ) : (
-            <div 
-              ref={parentRef}
-              className="h-[calc(100vh-16rem)] overflow-auto"
-              style={{
-                contain: 'strict',
-              }}
-            >
-              <div
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-                  width: '100%',
-                  position: 'relative',
-                }}
-              >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const treasure = treasures[virtualRow.index]
-                  return (
-                    <div
-                      key={treasure.id}
-                      data-index={virtualRow.index}
-                      ref={rowVirtualizer.measureElement}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                      className="pb-2"
-                    >
-                      {renderTreasureCard(treasure)}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+      {treasures.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-white/40 mb-4">
+            <Filter className="h-12 w-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-2">
+            {searchQuery || selectedTag || selectedType ? '没有找到匹配的宝藏' : '还没有宝藏'}
+          </h3>
+          <p className="text-white/60 mb-4">
+            {searchQuery || selectedTag || selectedType ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
+          </p>
         </div>
+      ) : (
+        <div 
+          ref={parentRef}
+          className="h-[calc(100vh-16rem)] overflow-auto"
+          style={{
+            contain: 'strict',
+          }}
+        >
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const treasure = treasures[virtualRow.index]
+              const isFirst = virtualRow.index === 0
+              return (
+                <div
+                  key={treasure.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className="pb-2"
+                >
+                  {renderTreasureCard(treasure, isFirst)}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
         {/* 悬浮创建按钮 */}
         <FloatingActionButton onCreateTreasure={handleCreateClick} />
@@ -713,8 +716,7 @@ export function TreasureList({ className }: TreasureListProps) {
         )}
       </div>
 
-      {/* 右侧统计栏 - 简化版（可选） */}
-      {/* 热力图和标签云已移至顶部工具栏，这里可以展示其他统计信息 */}
+      {/* 右侧统计信息现在通过绝对定位显示在第一个宝藏卡片旁边 */}
     </div>
   )
 }
