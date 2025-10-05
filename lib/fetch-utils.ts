@@ -75,9 +75,9 @@ function sleep(ms: number): Promise<void> {
 /**
  * 带重试的 JSON POST 请求
  */
-export async function postJSON<T = any>(
+export async function postJSON<T = unknown>(
   url: string,
-  data: any,
+  data: Record<string, unknown>,
   maxRetries: number = 3,
   onRetry?: (attempt: number, error: Error) => void
 ): Promise<T> {
@@ -105,9 +105,9 @@ export async function postJSON<T = any>(
 /**
  * 带重试的 JSON PUT 请求
  */
-export async function putJSON<T = any>(
+export async function putJSON<T = unknown>(
   url: string,
-  data: any,
+  data: Record<string, unknown>,
   maxRetries: number = 3,
   onRetry?: (attempt: number, error: Error) => void
 ): Promise<T> {

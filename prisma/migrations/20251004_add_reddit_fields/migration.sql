@@ -10,3 +10,4 @@ CREATE INDEX IF NOT EXISTS idx_reddit_posts_subreddit ON reddit_posts(subreddit)
 CREATE INDEX IF NOT EXISTS idx_reddit_posts_timestamp ON reddit_posts(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_reddit_posts_value ON reddit_posts(value_assessment);
 
+

@@ -15,10 +15,6 @@ interface TreasureStatsPanelProps {
 }
 
 export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: TreasureStatsPanelProps) {
-  // 如果没有数据，不渲染
-  if (treasures.length === 0) {
-    return null
-  }
   // 计算热力图数据（最近30天）
   const heatmapData = useMemo(() => {
     const days = 30
@@ -58,6 +54,11 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20) // 只显示前20个
   }, [treasures])
+
+  // 如果没有数据，不渲染
+  if (treasures.length === 0) {
+    return null
+  }
 
   // 计算热力图颜色
   const getHeatColor = (count: number) => {

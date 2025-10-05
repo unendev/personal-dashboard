@@ -79,7 +79,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const updateData: any = {};
+    const updateData: {
+      text?: string;
+      completed?: boolean;
+      priority?: string;
+      category?: string;
+      parentId?: string | null;
+    } = {};
     if (text !== undefined) updateData.text = text;
     if (completed !== undefined) updateData.completed = completed;
     if (priority !== undefined) updateData.priority = priority;

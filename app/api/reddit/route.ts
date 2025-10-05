@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
     const value = searchParams.get('value');
 
     // 构建查询条件
-    const where: any = {};
+    const where: {
+      subreddit?: string;
+      post_type?: string;
+      value_assessment?: string;
+    } = {};
     
     if (subreddit) {
       where.subreddit = subreddit;
