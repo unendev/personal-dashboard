@@ -40,6 +40,11 @@ POST_COUNT_PER_SUB = 5  # 每个subreddit取5个帖子
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 NEON_DB_URL = os.getenv("DATABASE_URL")
 
+# asyncpg不支持URL中的查询参数，需要清理
+if NEON_DB_URL and '?' in NEON_DB_URL:
+    NEON_DB_URL = NEON_DB_URL.split('?')[0]
+    logger.info("已清理DATABASE_URL中的查询参数")
+
 # GitHub Actions环境检测（不使用代理）
 IS_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 if not IS_GITHUB_ACTIONS and os.path.exists(".env"):
