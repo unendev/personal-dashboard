@@ -107,7 +107,7 @@ export function TreasureList({ className }: TreasureListProps) {
         },
         body: JSON.stringify(data)
       })
-
+      
       if (response.ok) {
         await fetchTreasures()
         setShowCreateModal(false)
@@ -258,46 +258,46 @@ export function TreasureList({ className }: TreasureListProps) {
         </div>
       )}
 
-      {/* 悬浮创建按钮 */}
-      <FloatingActionButton onCreateTreasure={handleCreateClick} />
+        {/* 悬浮创建按钮 */}
+        <FloatingActionButton onCreateTreasure={handleCreateClick} />
 
-      {/* 创建模态框 */}
-      <TreasureInputModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateTreasure}
-      />
-
-      {/* 编辑模态框 */}
-      {editingTreasure && (
+        {/* 创建模态框 */}
         <TreasureInputModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false)
-            setEditingTreasure(null)
-          }}
-          onSubmit={handleEditTreasure}
-          initialData={{
-            ...editingTreasure,
-            id: editingTreasure.id,
-            content: editingTreasure.content || ''
-          }}
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateTreasure}
         />
-      )}
+
+        {/* 编辑模态框 */}
+        {editingTreasure && (
+          <TreasureInputModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingTreasure(null)
+            }}
+            onSubmit={handleEditTreasure}
+            initialData={{
+              ...editingTreasure,
+              id: editingTreasure.id,
+              content: editingTreasure.content || ''
+            }}
+          />
+        )}
 
       {/* 评论模态框 */}
-      {selectedTreasureForComment && (
-        <CommentInputModal
-          isOpen={showCommentModal}
-          onClose={() => {
-            setShowCommentModal(false)
-            setSelectedTreasureForComment(null)
-          }}
-          treasureId={selectedTreasureForComment.id}
-          treasureTitle={selectedTreasureForComment.title}
-          onCommentAdded={handleCommentAdded}
-        />
-      )}
+        {selectedTreasureForComment && (
+          <CommentInputModal
+            isOpen={showCommentModal}
+            onClose={() => {
+              setShowCommentModal(false)
+              setSelectedTreasureForComment(null)
+            }}
+            treasureId={selectedTreasureForComment.id}
+            treasureTitle={selectedTreasureForComment.title}
+            onCommentAdded={handleCommentAdded}
+          />
+        )}
     </div>
   )
 }
