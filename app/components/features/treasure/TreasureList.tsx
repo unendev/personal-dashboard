@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
-import { CommentInputModal } from './CommentInputModal'
+// import { CommentInputModal } from './CommentInputModal' // 暂时隐藏评论功能
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
 import { 
@@ -47,8 +47,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [isMounted, setIsMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showCommentModal, setShowCommentModal] = useState(false)
-  const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null)
+  // const [showCommentModal, setShowCommentModal] = useState(false) // 暂时隐藏评论功能
+  // const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null) // 暂时隐藏评论功能
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   
@@ -133,14 +133,15 @@ export function TreasureList({ className }: TreasureListProps) {
     }
   }
 
-  const handleCommentClick = (treasure: Treasure) => {
-    setSelectedTreasureForComment(treasure)
-    setShowCommentModal(true)
-  }
+  // 暂时隐藏评论功能
+  // const handleCommentClick = (treasure: Treasure) => {
+  //   setSelectedTreasureForComment(treasure)
+  //   setShowCommentModal(true)
+  // }
 
-  const handleCommentAdded = () => {
-    fetchTreasures()
-  }
+  // const handleCommentAdded = () => {
+  //   fetchTreasures()
+  // }
 
   const handleEditClick = (id: string) => {
     const treasure = treasures.find(t => t.id === id)
@@ -247,8 +248,8 @@ export function TreasureList({ className }: TreasureListProps) {
                       treasure={treasure}
                       onEdit={handleEditClick}
                       onDelete={handleDeleteTreasure}
-                      onComment={handleCommentClick}
-                      hideComments={false}
+                      onComment={() => {}} // 暂时隐藏评论功能
+                      hideComments={true}
                     />
                   </div>
                 </div>
@@ -285,8 +286,8 @@ export function TreasureList({ className }: TreasureListProps) {
           />
         )}
 
-      {/* 评论模态框 */}
-        {selectedTreasureForComment && (
+      {/* 评论模态框 - 暂时隐藏 */}
+        {/* {selectedTreasureForComment && (
           <CommentInputModal
             isOpen={showCommentModal}
             onClose={() => {
@@ -297,7 +298,7 @@ export function TreasureList({ className }: TreasureListProps) {
             treasureTitle={selectedTreasureForComment.title}
             onCommentAdded={handleCommentAdded}
           />
-        )}
+        )} */}
     </div>
   )
 }
