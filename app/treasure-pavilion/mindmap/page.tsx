@@ -1,13 +1,10 @@
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+'use client'
 
-export default async function MindMapPage() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.email) {
-    redirect('/auth/signin')
-  }
+import { useDevSession } from '@/app/hooks/useDevSession'
+
+export default function MindMapPage() {
+  // 使用开发会话，支持自动登录示例账户
+  const { data: session, status } = useDevSession()
 
   return (
     <div className="p-8">
