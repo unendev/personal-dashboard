@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { TipTapEditor } from './TipTapEditor'
 
 interface ArticleEditorProps {
   articleId?: string
@@ -22,6 +23,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
   const [slug, setSlug] = useState('')
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT')
   const [showPreview, setShowPreview] = useState(false)
+  const [useRichEditor, setUseRichEditor] = useState(true) // 默认使用所见即所得
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(!!articleId)
 
@@ -40,7 +42,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         setSubtitle(data.subtitle || '')
         setContent(data.content)
         setAbstract(data.abstract || '')
-        setTags(data.tags)
+        setTags(data.tags || [])
         setSlug(data.slug)
         setStatus(data.status)
       }
@@ -131,12 +133,22 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
-                onClick={() => setShowPreview(!showPreview)}
-                className="text-white/60 hover:text-white"
+                onClick={() => setUseRichEditor(!useRichEditor)}
+                className="text-white/60 hover:text-white text-xs"
               >
-                {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                {showPreview ? '编辑' : '预览'}
+                {useRichEditor ? 'Markdown' : '所见即所得'}
               </Button>
+              
+              {!useRichEditor && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="text-white/60 hover:text-white"
+                >
+                  {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                  {showPreview ? '编辑' : '预览'}
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -164,41 +176,48 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 主编辑区 */}
           <div className="lg:col-span-2">
-            {showPreview ? (
-              /* 预览模式 */
+            {/* 标题输入区 */}
+            <div className="space-y-4 mb-6">
+              <input
+                type="text"
+                placeholder="专题标题"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-transparent text-4xl font-bold text-white outline-none border-b border-white/10 pb-2 placeholder-white/30"
+              />
+
+              <input
+                type="text"
+                placeholder="副标题（可选）"
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                className="w-full bg-transparent text-xl text-white/70 outline-none border-b border-white/10 pb-2 placeholder-white/30"
+              />
+            </div>
+
+            {/* 编辑器切换 */}
+            {useRichEditor ? (
+              /* 所见即所得编辑器 */
+              <TipTapEditor
+                content={content}
+                onChange={setContent}
+                placeholder="开始撰写你的专题内容..."
+              />
+            ) : showPreview ? (
+              /* Markdown 预览模式 */
               <div className="prose prose-invert max-w-none">
-                <h1 className="text-4xl font-bold mb-2">{title || '无标题'}</h1>
-                {subtitle && <p className="text-xl text-white/70 mb-8">{subtitle}</p>}
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content || '*暂无内容*'}
                 </ReactMarkdown>
               </div>
             ) : (
-              /* 编辑模式 */
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="专题标题"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-transparent text-4xl font-bold text-white outline-none border-b border-white/10 pb-2 placeholder-white/30"
-                />
-
-                <input
-                  type="text"
-                  placeholder="副标题（可选）"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  className="w-full bg-transparent text-xl text-white/70 outline-none border-b border-white/10 pb-2 placeholder-white/30"
-                />
-
-                <textarea
-                  placeholder="在这里用 Markdown 撰写你的专题内容..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-[600px] bg-white/5 border border-white/10 rounded-lg p-4 text-white outline-none focus:border-blue-500/50 resize-none font-mono text-sm"
-                />
-              </div>
+              /* Markdown 编辑模式 */
+              <textarea
+                placeholder="在这里用 Markdown 撰写你的专题内容..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full h-[600px] bg-white/5 border border-white/10 rounded-lg p-4 text-white outline-none focus:border-blue-500/50 resize-none font-mono text-sm"
+              />
             )}
           </div>
 
@@ -273,3 +292,4 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
     </div>
   )
 }
+

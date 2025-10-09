@@ -124,7 +124,11 @@ const RedditModal: React.FC<RedditModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-white">📅 选择查看日期</h3>
           <div className="text-sm text-white/60">
-            {selectedDate ? `当前查看: ${availableDates.find(d => d.date === selectedDate)?.label || selectedDate}` : '当前查看: 最新'}
+            当前查看: {selectedDate 
+              ? (availableDates.find(d => d.date === selectedDate)?.label || selectedDate)
+              : (report?.meta?.report_date 
+                  ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' })
+                  : availableDates[0]?.label || '加载中...')}
           </div>
         </div>
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-32 overflow-y-auto">
@@ -136,8 +140,16 @@ const RedditModal: React.FC<RedditModalProps> = ({ isOpen, onClose }) => {
                 : 'bg-white/5 hover:bg-white/10 text-white/70'
             }`}
           >
-            <div className="font-medium">最新</div>
-            <div className="text-xs opacity-60">今日</div>
+            <div className="font-medium">
+              {report?.meta?.report_date 
+                ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+                : availableDates[0]?.label || '...'}
+            </div>
+            <div className="text-xs opacity-60">
+              {report?.meta?.report_date 
+                ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { weekday: 'short' })
+                : ''}
+            </div>
           </button>
           {availableDates.map((dateInfo) => (
             <button
@@ -335,12 +347,31 @@ const RedditModal: React.FC<RedditModalProps> = ({ isOpen, onClose }) => {
                 🔍 深度数据分析
               </h3>
               
+              {/* Subreddit 分布 */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-white mb-3">🏛️ 板块分布统计</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {(report.meta?.subreddits || []).map((subreddit) => {
+                    const count = report.posts.filter(post => post.subreddit === subreddit).length;
+                    const percentage = ((count / report.posts.length) * 100).toFixed(1);
+                    return (
+                      <div key={subreddit} className="p-3 bg-white/5 rounded-lg border border-orange-500/20">
+                        <div className="text-xl font-bold text-orange-400">{count}</div>
+                        <div className="text-xs text-white/80 font-medium">r/{subreddit}</div>
+                        <div className="text-xs text-white/40">{percentage}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* 帖子类型分布 */}
               <div className="mb-6">
-                <h4 className="text-lg font-semibold text-white mb-3">📊 帖子类型分布</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {['求助', '讨论', '资源分享', '新闻资讯', '日常闲聊'].map((type) => {
+                <h4 className="text-lg font-semibold text-white mb-3">📊 内容类型分布</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {['技术讨论', '新闻分享', '问题求助', '观点讨论', '资源分享', '其他'].map((type) => {
                     const count = report.posts.filter(post => post.analysis.post_type === type).length;
+                    if (count === 0) return null;
                     const percentage = ((count / report.posts.length) * 100).toFixed(1);
                     return (
                       <div key={type} className="p-3 bg-white/5 rounded-lg text-center">
@@ -373,19 +404,21 @@ const RedditModal: React.FC<RedditModalProps> = ({ isOpen, onClose }) => {
 
               {/* 关键信息统计 */}
               <div>
-                <h4 className="text-lg font-semibold text-white mb-3">📝 关键信息统计</h4>
+                <h4 className="text-lg font-semibold text-white mb-3">📝 内容洞察统计</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-white/5 rounded-lg">
-                    <div className="text-lg font-bold text-orange-400">
+                    <div className="text-2xl font-bold text-orange-400">
                       {report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0)}
                     </div>
-                    <div className="text-sm text-white/60">总关键信息点</div>
+                    <div className="text-sm text-white/60">总关键点数</div>
+                    <div className="text-xs text-white/40 mt-1">涵盖所有帖子</div>
                   </div>
                   <div className="p-4 bg-white/5 rounded-lg">
-                    <div className="text-lg font-bold text-green-400">
+                    <div className="text-2xl font-bold text-cyan-400">
                       {(report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0) / report.posts.length).toFixed(1)}
                     </div>
-                    <div className="text-sm text-white/60">平均每帖关键点</div>
+                    <div className="text-sm text-white/60">平均信息密度</div>
+                    <div className="text-xs text-white/40 mt-1">每帖平均关键点</div>
                   </div>
                 </div>
               </div>

@@ -33,6 +33,7 @@ model User {
   todos                       Todo[]
   treasures                   Treasure[]
   articles                    Article[]
+  mindmaps                    MindMap[]
   twitterUsers                TwitterUser[]
   layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
@@ -169,13 +170,14 @@ model LogCategory {
 
 model InstanceTag {
   id         String                 @id @default(cuid())
-  name       String                 @unique
+  name       String
   userId     String
   createdAt  DateTime               @default(now())
   updatedAt  DateTime               @updatedAt
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   timerTasks TimerTaskInstanceTag[]
 
+  @@unique([userId, name])
   @@map("instance_tags")
 }
 
@@ -505,4 +507,17 @@ model TreasureReference {
   treasure   Treasure @relation(fields: [treasureId], references: [id], onDelete: Cascade)
 
   @@map("treasure_references")
+}
+
+model MindMap {
+  id        String   @id @default(cuid())
+  title     String
+  nodes     Json     @default("[]")
+  edges     Json     @default("[]")
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mindmaps")
 }

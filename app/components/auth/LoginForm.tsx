@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { clearManualLogout } from "@/app/hooks/useDevSession"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -33,7 +34,8 @@ export default function LoginForm() {
       if (result?.error) {
         setError("邮箱或密码错误")
       } else {
-        // 登录成功，重定向到日志页面
+        // 登录成功，清除手动登出标记，重定向到日志页面
+        clearManualLogout()
         router.push('/log')
       }
     } catch {
@@ -61,7 +63,8 @@ export default function LoginForm() {
       if (result?.error) {
         setError("示例账号登录失败")
       } else {
-        // 登录成功，重定向到首页
+        // 登录成功，清除手动登出标记，重定向到首页
+        clearManualLogout()
         router.push('/')
       }
     } catch {

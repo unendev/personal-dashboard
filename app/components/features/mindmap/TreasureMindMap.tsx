@@ -32,7 +32,7 @@ interface TreasureMindMapProps {
 }
 
 // 自定义节点组件
-function TreasureNode({ data }: { data: any }) {
+function TreasureNode({ data }: { data: { label: string; type?: string; count?: number; treasures?: unknown[]; createdAt?: string; title?: string; content?: string; tags?: string[] } }) {
   const typeIcons = {
     TEXT: '📝',
     IMAGE: '🖼️',
@@ -44,7 +44,7 @@ function TreasureNode({ data }: { data: any }) {
       <div className="flex items-center justify-between mb-2">
         <span className="text-lg">{typeIcons[data.type as keyof typeof typeIcons] || '📄'}</span>
         <span className="text-xs text-white/40">
-          {new Date(data.createdAt).toLocaleDateString()}
+          {data.createdAt ? new Date(data.createdAt).toLocaleDateString() : ''}
         </span>
       </div>
 
@@ -59,7 +59,7 @@ function TreasureNode({ data }: { data: any }) {
       )}
 
       <div className="flex flex-wrap gap-1">
-        {data.tags.slice(0, 3).map((tag: string) => (
+        {data.tags?.slice(0, 3).map((tag: string) => (
           <span
             key={tag}
             className="text-xs px-2 py-0.5 bg-white/10 rounded-full text-white/70"
@@ -67,7 +67,7 @@ function TreasureNode({ data }: { data: any }) {
             {tag}
           </span>
         ))}
-        {data.tags.length > 3 && (
+        {data.tags && data.tags.length > 3 && (
           <span className="text-xs text-white/40">+{data.tags.length - 3}</span>
         )}
       </div>
@@ -249,3 +249,11 @@ export function TreasureMindMap({ treasures }: TreasureMindMapProps) {
     </div>
   )
 }
+
+
+
+
+
+
+
+

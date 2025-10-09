@@ -105,7 +105,8 @@ const RedditWidget = () => {
     );
   }
 
-  const highValuePosts = report.posts.filter(post => post.analysis.value_assessment === '高');
+  const highValuePosts = (report.posts || []).filter(post => post.analysis?.value_assessment === '高');
+  const safePostsLength = (report.posts || []).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -120,7 +121,9 @@ const RedditWidget = () => {
                 : 'bg-white/5 hover:bg-white/10 text-white/70'
             }`}
           >
-            最新
+            {!selectedDate && report?.meta?.report_date
+              ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' })
+              : availableDates[0]?.label || '加载中...'}
           </button>
           {availableDates.slice(0, 8).map((dateInfo) => (
             <button
@@ -165,7 +168,7 @@ const RedditWidget = () => {
             {/* 数据统计 */}
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center p-3 bg-white/5 rounded-lg">
-                <div className="text-xl font-bold text-orange-400">{report.meta.post_count}</div>
+                <div className="text-xl font-bold text-orange-400">{report.meta?.post_count || 0}</div>
                 <div className="text-xs text-white/60">总帖子</div>
               </div>
               <div className="text-center p-3 bg-white/5 rounded-lg">
@@ -173,14 +176,14 @@ const RedditWidget = () => {
                 <div className="text-xs text-white/60">高价值</div>
               </div>
               <div className="text-center p-3 bg-white/5 rounded-lg">
-                <div className="text-xl font-bold text-blue-400">{report.meta.report_date.split('-')[2]}</div>
+                <div className="text-xl font-bold text-blue-400">{report.meta?.report_date?.split('-')[2] || '--'}</div>
                 <div className="text-xs text-white/60">日期</div>
               </div>
             </div>
 
             {/* 概览 */}
             <div className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
-              <p className="text-white/80 text-sm leading-relaxed">{report.summary.overview}</p>
+              <p className="text-white/80 text-sm leading-relaxed">{report.summary?.overview || '暂无概览数据'}</p>
             </div>
 
             {/* 社区亮点 */}
@@ -188,7 +191,7 @@ const RedditWidget = () => {
               <div className="p-3 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
                 <h4 className="text-sm font-bold text-orange-400 mb-2">🔥 热门讨论</h4>
                 <ul className="space-y-1.5">
-                  {report.summary.highlights.tech_savvy.map((item, index) => (
+                  {(report.summary?.highlights?.tech_savvy || []).map((item, index) => (
                     <li key={index} className="text-white/70 text-xs flex items-start gap-2">
                       <span className="text-orange-400 mt-0.5">•</span>
                       <span className="leading-relaxed">{item}</span>
@@ -200,7 +203,7 @@ const RedditWidget = () => {
               <div className="p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
                 <h4 className="text-sm font-bold text-green-400 mb-2">💎 优质内容</h4>
                 <ul className="space-y-1.5">
-                  {report.summary.highlights.resources_deals.map((item, index) => (
+                  {(report.summary?.highlights?.resources_deals || []).map((item, index) => (
                     <li key={index} className="text-white/70 text-xs flex items-start gap-2">
                       <span className="text-green-400 mt-0.5">•</span>
                       <span className="leading-relaxed">{item}</span>
@@ -212,7 +215,7 @@ const RedditWidget = () => {
               <div className="p-3 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
                 <h4 className="text-sm font-bold text-blue-400 mb-2">🌟 热门话题</h4>
                 <ul className="space-y-1.5">
-                  {report.summary.highlights.hot_topics.map((item, index) => (
+                  {(report.summary?.highlights?.hot_topics || []).map((item, index) => (
                     <li key={index} className="text-white/70 text-xs flex items-start gap-2">
                       <span className="text-blue-400 mt-0.5">•</span>
                       <span className="leading-relaxed">{item}</span>
@@ -225,14 +228,14 @@ const RedditWidget = () => {
             {/* 社区感悟 */}
             <div className="p-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
               <h3 className="text-sm font-bold text-orange-400 mb-2">💭 社区感悟</h3>
-              <p className="text-white/80 text-sm italic leading-relaxed">&ldquo;{report.summary.conclusion}&rdquo;</p>
+              <p className="text-white/80 text-sm italic leading-relaxed">&ldquo;{report.summary?.conclusion || '暂无总结'}&rdquo;</p>
             </div>
           </div>
         )}
 
         {activeTab === 'posts' && (
           <div className="space-y-3">
-            {report.posts.map((post, index) => (
+            {(report.posts || []).map((post, index) => (
               <a
                 key={post.id}
                 href={post.url}
@@ -244,22 +247,22 @@ const RedditWidget = () => {
                   <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
                     #{index + 1}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPostTypeColor(post.analysis.post_type)}`}>
-                    {post.analysis.post_type}
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPostTypeColor(post.analysis?.post_type)}`}>
+                    {post.analysis?.post_type || '未分类'}
                   </span>
-                  <span className={`text-xs font-medium ${getValueAssessmentColor(post.analysis.value_assessment)}`}>
-                    {post.analysis.value_assessment}
+                  <span className={`text-xs font-medium ${getValueAssessmentColor(post.analysis?.value_assessment)}`}>
+                    {post.analysis?.value_assessment || '未知'}
                   </span>
                 </div>
                 <h4 className="text-sm font-semibold text-white group-hover:text-white/90 mb-2 leading-relaxed">
-                  {post.title}
+                  {post.title || '无标题'}
                 </h4>
-                {post.analysis.core_issue && (
+                {post.analysis?.core_issue && (
                   <p className="text-white/70 mb-2 text-xs leading-relaxed line-clamp-2">
                     {post.analysis.core_issue}
                   </p>
                 )}
-                {post.analysis.key_info && post.analysis.key_info.length > 0 && (
+                {post.analysis?.key_info && post.analysis.key_info.length > 0 && (
                   <div className="text-xs text-white/40">
                     {post.analysis.key_info.length} 个关键点
                   </div>
@@ -271,13 +274,32 @@ const RedditWidget = () => {
 
         {activeTab === 'analysis' && (
           <div className="space-y-4">
+            {/* Subreddit 分布 */}
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-3">🏛️ 板块分布</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {(report.meta?.subreddits || []).map((subreddit) => {
+                  const count = (report.posts || []).filter(post => post.subreddit === subreddit).length;
+                  const percentage = safePostsLength > 0 ? ((count / safePostsLength) * 100).toFixed(1) : '0.0';
+                  return (
+                    <div key={subreddit} className="p-3 bg-white/5 rounded-lg border border-orange-500/20">
+                      <div className="text-lg font-bold text-orange-400">{count}</div>
+                      <div className="text-xs text-white/80 font-medium">r/{subreddit}</div>
+                      <div className="text-xs text-white/40">{percentage}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* 帖子类型分布 */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">📊 帖子类型分布</h4>
+              <h4 className="text-sm font-semibold text-white mb-3">📊 内容类型分布</h4>
               <div className="grid grid-cols-2 gap-2">
-                {['求助', '讨论', '资源分享', '新闻资讯', '日常闲聊'].map((type) => {
-                  const count = report.posts.filter(post => post.analysis.post_type === type).length;
-                  const percentage = ((count / report.posts.length) * 100).toFixed(1);
+                {['技术讨论', '新闻分享', '问题求助', '观点讨论', '资源分享', '其他'].map((type) => {
+                  const count = (report.posts || []).filter(post => post.analysis?.post_type === type).length;
+                  if (count === 0) return null;
+                  const percentage = safePostsLength > 0 ? ((count / safePostsLength) * 100).toFixed(1) : '0.0';
                   return (
                     <div key={type} className="p-3 bg-white/5 rounded-lg text-center">
                       <div className="text-lg font-bold text-white">{count}</div>
@@ -294,8 +316,8 @@ const RedditWidget = () => {
               <h4 className="text-sm font-semibold text-white mb-3">⭐ 价值评估</h4>
               <div className="grid grid-cols-3 gap-3">
                 {['高', '中', '低'].map((level) => {
-                  const count = report.posts.filter(post => post.analysis.value_assessment === level).length;
-                  const percentage = ((count / report.posts.length) * 100).toFixed(1);
+                  const count = (report.posts || []).filter(post => post.analysis?.value_assessment === level).length;
+                  const percentage = safePostsLength > 0 ? ((count / safePostsLength) * 100).toFixed(1) : '0.0';
                   return (
                     <div key={level} className="p-3 bg-white/5 rounded-lg text-center">
                       <div className={`text-xl font-bold ${getValueAssessmentColor(level)}`}>{count}</div>
@@ -309,19 +331,19 @@ const RedditWidget = () => {
 
             {/* 关键信息统计 */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">📝 关键信息</h4>
+              <h4 className="text-sm font-semibold text-white mb-3">📝 内容洞察</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-white/5 rounded-lg text-center">
                   <div className="text-lg font-bold text-orange-400">
-                    {report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0)}
+                    {(report.posts || []).reduce((sum, post) => sum + (post.analysis?.key_info?.length || 0), 0)}
                   </div>
-                  <div className="text-xs text-white/60">总信息点</div>
+                  <div className="text-xs text-white/60">总关键点</div>
                 </div>
                 <div className="p-3 bg-white/5 rounded-lg text-center">
-                  <div className="text-lg font-bold text-green-400">
-                    {(report.posts.reduce((sum, post) => sum + (post.analysis.key_info?.length || 0), 0) / report.posts.length).toFixed(1)}
+                  <div className="text-lg font-bold text-cyan-400">
+                    {safePostsLength > 0 ? ((report.posts || []).reduce((sum, post) => sum + (post.analysis?.key_info?.length || 0), 0) / safePostsLength).toFixed(1) : '0.0'}
                   </div>
-                  <div className="text-xs text-white/60">平均每帖</div>
+                  <div className="text-xs text-white/60">平均信息密度</div>
                 </div>
               </div>
             </div>

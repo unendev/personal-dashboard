@@ -2,6 +2,7 @@ export interface RedditPost {
   id: string;
   title: string;
   url: string;
+  subreddit?: string;
   analysis: {
     core_issue: string;
     key_info: string[];
@@ -16,6 +17,7 @@ export interface RedditReport {
     title: string;
     source: string;
     post_count: number;
+    subreddits?: string[];
   };
   summary: {
     overview: string;

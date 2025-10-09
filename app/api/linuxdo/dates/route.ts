@@ -54,26 +54,12 @@ export async function GET() {
   }
 }
 
-// 格式化日期标签
+// 格式化日期标签 - 统一使用日期格式
 function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const dateOnly = date.toISOString().split('T')[0];
-  const todayOnly = today.toISOString().split('T')[0];
-  const yesterdayOnly = yesterday.toISOString().split('T')[0];
-  
-  if (dateOnly === todayOnly) {
-    return '今天';
-  } else if (dateOnly === yesterdayOnly) {
-    return '昨天';
-  } else {
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      weekday: 'short'
-    });
-  }
+  return date.toLocaleDateString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short'
+  });
 }

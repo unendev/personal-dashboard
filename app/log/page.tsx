@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
+// import WeeklyReviewModal from '@/app/components/features/milestone/WeeklyReviewModal'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -66,6 +67,10 @@ export default function LogPage() {
   const [treasureModalType, setTreasureModalType] = useState<'TEXT' | 'IMAGE' | 'MUSIC'>('TEXT');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
+  // 每周回顾状态
+  const [isWeeklyReviewOpen, setIsWeeklyReviewOpen] = useState(false);
+  const [weeklyReviewDates, setWeeklyReviewDates] = useState({ startDate: '', endDate: '' });
+
   // 创建宝藏处理函数
   const handleCreateTreasure = async (data: CreateTreasureData) => {
     try {
@@ -95,6 +100,38 @@ export default function LogPage() {
   const handleTreasureTypeSelect = (type: 'TEXT' | 'IMAGE' | 'MUSIC') => {
     setTreasureModalType(type);
     setIsTreasureModalOpen(true);
+  };
+
+  // 计算本周日期范围
+  const getThisWeekDates = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 (周日) - 6 (周六)
+    
+    // 计算本周一
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    // 计算本周日
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    return {
+      startDate: monday.toISOString().split('T')[0],
+      endDate: sunday.toISOString().split('T')[0]
+    };
+  };
+
+  // 打开每周回顾
+  const handleOpenWeeklyReview = () => {
+    const dates = getThisWeekDates();
+    setWeeklyReviewDates(dates);
+    setIsWeeklyReviewOpen(true);
+  };
+
+  // 回顾确认后的回调
+  const handleWeeklyReviewConfirmed = () => {
+    // 可以在这里刷新数据或显示通知
+    alert('✅ 周报已成功保存！查看你的成长进度吧。');
   };
 
   // 检测屏幕尺寸（使用屏幕宽度而不是 UserAgent）
@@ -714,6 +751,15 @@ export default function LogPage() {
               </Link>
             )}
 
+            {/* 每周回顾按钮 */}
+            <button
+              onClick={handleOpenWeeklyReview}
+              className="bg-gradient-to-r from-purple-600/70 to-blue-600/70 backdrop-blur-sm border border-purple-500/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            >
+              <span className="text-lg">📊</span>
+              <span className="text-sm font-medium text-white">每周回顾</span>
+            </button>
+
             {/* 创建事物按钮 */}
             <button
               onClick={() => setIsCreateLogModalOpen(true)}
@@ -798,7 +844,16 @@ export default function LogPage() {
       />
 
       <div className="container mx-auto px-4 py-8 pt-20">
-        <h1 className="text-3xl font-bold text-gray-100 mb-8">每日日志</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-100">每日日志</h1>
+          <Link
+            href="/milestones"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+          >
+            <span>📊</span>
+            <span>成长里程碑</span>
+          </Link>
+        </div>
         
         {/* 日期过滤器 */}
         <div className="mb-8">
@@ -996,6 +1051,15 @@ export default function LogPage() {
         type={treasureModalType}
         onSubmit={handleCreateTreasure}
       />
+
+      {/* 每周回顾模态框 - 功能开发中 */}
+      {/* <WeeklyReviewModal
+        isOpen={isWeeklyReviewOpen}
+        onClose={() => setIsWeeklyReviewOpen(false)}
+        startDate={weeklyReviewDates.startDate}
+        endDate={weeklyReviewDates.endDate}
+        onConfirm={handleWeeklyReviewConfirmed}
+      /> */}
 
       {/* 成功通知 */}
       {showSuccessNotification && (

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { markManualLogout } from '@/app/hooks/useDevSession';
 
 interface YouTubeAuthCardProps {
   onAuthSuccess?: () => void;
@@ -28,6 +29,7 @@ const YouTubeAuthCard: React.FC<YouTubeAuthCardProps> = () => {
 
   const handleSignOut = async () => {
     try {
+      markManualLogout(); // 标记手动登出，防止自动重新登录
       await signOut({ redirect: false });
       window.location.reload();
     } catch (error) {

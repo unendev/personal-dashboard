@@ -12,3 +12,11 @@ export default async function NewArticlePage() {
 
   return <ArticleEditor />
 }
+
+
+
+
+
+
+
+

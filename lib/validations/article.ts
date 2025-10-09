@@ -21,3 +21,11 @@ export const articleUpdateSchema = articleSchema.partial().extend({
 })
 
 export type ArticleUpdateInput = z.infer<typeof articleUpdateSchema>
+
+
+
+
+
+
+
+

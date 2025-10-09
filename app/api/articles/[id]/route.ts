@@ -8,7 +8,7 @@ import { z } from 'zod'
 // GET /api/articles/[id] - 获取单个文章
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,8 +16,9 @@ export async function GET(
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
+    const { id } = await params
     const article = await prisma.article.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         author: {
           select: {
@@ -61,7 +62,7 @@ export async function GET(
 // PUT /api/articles/[id] - 更新文章
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -77,9 +78,10 @@ export async function PUT(
       return NextResponse.json({ error: '用户不存在' }, { status: 404 })
     }
 
+    const { id } = await params
     // 检查文章是否存在且属于当前用户
     const existing = await prisma.article.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -91,7 +93,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const validated = articleUpdateSchema.parse({ ...body, id: params.id })
+    const validated = articleUpdateSchema.parse({ ...body, id })
 
     // 如果修改了 slug，检查是否冲突
     if (validated.slug && validated.slug !== existing.slug) {
@@ -107,7 +109,7 @@ export async function PUT(
     }
 
     // 重新计算字数和阅读时间
-    let updateData: any = { ...validated }
+    const updateData: Record<string, unknown> = { ...validated }
     delete updateData.id
 
     if (validated.content) {
@@ -122,7 +124,7 @@ export async function PUT(
     }
 
     const article = await prisma.article.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         author: {
@@ -140,7 +142,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: '数据验证失败', details: error.errors },
+        { error: '数据验证失败', details: error.issues },
         { status: 400 }
       )
     }
@@ -155,7 +157,7 @@ export async function PUT(
 // DELETE /api/articles/[id] - 删除文章
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -171,9 +173,10 @@ export async function DELETE(
       return NextResponse.json({ error: '用户不存在' }, { status: 404 })
     }
 
+    const { id } = await params
     // 检查文章是否存在且属于当前用户
     const existing = await prisma.article.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -185,7 +188,7 @@ export async function DELETE(
     }
 
     await prisma.article.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ success: true })
@@ -227,3 +230,11 @@ function slugify(text: string): string {
     .replace(/^-+/, '')
     .replace(/-+$/, '')
 }
+
+
+
+
+
+
+
+

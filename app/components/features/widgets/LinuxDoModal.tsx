@@ -124,7 +124,11 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-white">📅 选择查看日期</h3>
           <div className="text-sm text-white/60">
-            {selectedDate ? `当前查看: ${availableDates.find(d => d.date === selectedDate)?.label || selectedDate}` : '当前查看: 最新'}
+            当前查看: {selectedDate 
+              ? (availableDates.find(d => d.date === selectedDate)?.label || selectedDate)
+              : (report?.meta?.report_date 
+                  ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' })
+                  : availableDates[0]?.label || '加载中...')}
           </div>
         </div>
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-32 overflow-y-auto">
@@ -136,8 +140,16 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
                 : 'bg-white/5 hover:bg-white/10 text-white/70'
             }`}
           >
-            <div className="font-medium">最新</div>
-            <div className="text-xs opacity-60">今日</div>
+            <div className="font-medium">
+              {report?.meta?.report_date 
+                ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+                : availableDates[0]?.label || '...'}
+            </div>
+            <div className="text-xs opacity-60">
+              {report?.meta?.report_date 
+                ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { weekday: 'short' })
+                : ''}
+            </div>
           </button>
           {availableDates.map((dateInfo) => (
             <button

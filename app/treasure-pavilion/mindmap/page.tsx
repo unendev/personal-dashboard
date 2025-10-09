@@ -1,9 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { TreasureMindMap } from '@/app/components/features/mindmap/TreasureMindMap'
-import { TreasurePavilionNav } from '@/app/components/features/treasure/TreasurePavilionNav'
-import { prisma } from '@/lib/prisma'
 
 export default async function MindMapPage() {
   const session = await getServerSession(authOptions)
@@ -12,32 +9,10 @@ export default async function MindMapPage() {
     redirect('/auth/signin')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email }
-  })
-
-  if (!user) {
-    redirect('/auth/signin')
-  }
-
-  // 获取所有宝藏
-  const treasures = await prisma.treasure.findMany({
-    where: { userId: user.id },
-    select: {
-      id: true,
-      title: true,
-      content: true,
-      type: true,
-      tags: true,
-      createdAt: true
-    },
-    orderBy: { createdAt: 'desc' }
-  })
-
   return (
-    <div>
-      <TreasurePavilionNav />
-      <TreasureMindMap treasures={treasures} />
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">思维导图功能开发中...</h1>
+      <p className="mt-4 text-gray-600">此功能正在开发中，敬请期待。</p>
     </div>
   )
 }

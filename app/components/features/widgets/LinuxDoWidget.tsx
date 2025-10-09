@@ -120,7 +120,9 @@ const LinuxDoWidget = () => {
                 : 'bg-white/5 hover:bg-white/10 text-white/70'
             }`}
           >
-            最新
+            {!selectedDate && report?.meta?.report_date
+              ? new Date(report.meta.report_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' })
+              : availableDates[0]?.label || '加载中...'}
           </button>
           {availableDates.slice(0, 8).map((dateInfo) => (
             <button
