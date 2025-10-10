@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, FileText, Clock, Eye } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import Link from 'next/link'
@@ -26,30 +26,60 @@ export function ArticleList() {
   const [articles, setArticles] = useState<Article[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  
+  // 组件挂载状态追踪
+  const isMountedRef = useRef(true)
+  
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
-    fetchArticles()
-  }, [statusFilter])
-
-  const fetchArticles = async () => {
-    try {
-      setIsLoading(true)
-      const params = new URLSearchParams()
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter)
+    const abortController = new AbortController()
+    
+    const fetchArticles = async () => {
+      try {
+        setIsLoading(true)
+        const params = new URLSearchParams()
+        if (statusFilter !== 'all') {
+          params.append('status', statusFilter)
+        }
+        
+        const response = await fetch(`/api/articles?${params.toString()}`, {
+          signal: abortController.signal
+        })
+        
+        if (!isMountedRef.current) return
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          if (!isMountedRef.current) return
+          
+          setArticles(data)
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('请求已取消')
+          return
+        }
+        if (isMountedRef.current) {
+          console.error('获取文章列表失败:', error)
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoading(false)
+        }
       }
-      
-      const response = await fetch(`/api/articles?${params.toString()}`)
-      if (response.ok) {
-        const data = await response.json()
-        setArticles(data)
-      }
-    } catch (error) {
-      console.error('获取文章列表失败:', error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+    
+    fetchArticles()
+    
+    return () => abortController.abort()
+  }, [statusFilter])
 
   const getStatusBadge = (status: string) => {
     const styles = {
