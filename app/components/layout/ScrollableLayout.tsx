@@ -15,8 +15,10 @@ const ScrollableLayout = () => {
   const [loading, setLoading] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<(LinuxDoPost | RedditPost) | null>(null);
   const [activeSource, setActiveSource] = useState<SourceType>('all');
+  const [activeSection, setActiveSection] = useState<string>('linuxdo');
   const [showAIChat, setShowAIChat] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
 
   // 获取数据
   useEffect(() => {
@@ -64,9 +66,30 @@ const ScrollableLayout = () => {
     }
   };
 
-  const closeDetail = () => {
+  const handleDetailPanelMouseLeave = () => {
     setHoveredPost(null);
   };
+
+  // 大纲跳转
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(id);
+    }
+  };
+
+  // 获取Reddit按板块分组
+  const groupedReddit = React.useMemo(() => {
+    if (!redditData) return {};
+    const groups: Record<string, RedditPost[]> = {};
+    redditData.posts.forEach(post => {
+      const subreddit = post.subreddit || 'other';
+      if (!groups[subreddit]) groups[subreddit] = [];
+      groups[subreddit].push(post);
+    });
+    return groups;
+  }, [redditData]);
 
   // 获取显示的帖子
   const displayedPosts = React.useMemo(() => {
@@ -107,8 +130,8 @@ const ScrollableLayout = () => {
 
   const getSourceBadge = (source: 'linuxdo' | 'reddit') => {
     return source === 'linuxdo' 
-      ? <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">🐧 Linux.do</span>
-      : <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴 Reddit</span>;
+      ? <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">🐧</span>
+      : <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴</span>;
   };
 
   if (loading) {
@@ -123,115 +146,198 @@ const ScrollableLayout = () => {
   }
 
   return (
-    <main className="w-full min-h-screen overflow-hidden">
-      {/* 顶部切换栏 */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-gray-900/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveSource('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSource === 'all'
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              📊 全部源
-            </button>
-            <button
-              onClick={() => setActiveSource('linuxdo')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSource === 'linuxdo'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              🐧 Linux.do
-            </button>
-            <button
-              onClick={() => setActiveSource('reddit')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSource === 'reddit'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              🔴 Reddit
-            </button>
-          </div>
+    <main className="w-full min-h-screen flex">
+      {/* 左侧：大纲导航 */}
+      <aside className="w-56 flex-shrink-0 border-r border-white/10 bg-gray-900/50 backdrop-blur-sm 
+                      fixed left-0 top-0 bottom-0 overflow-y-auto custom-scrollbar z-20">
+        <div className="p-4">
+          <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <span>📋</span>
+            大纲导航
+          </h2>
 
-          <div className="flex items-center gap-3 text-sm text-white/60">
-            <span>共 {displayedPosts.length} 篇</span>
-            <button
-              onClick={() => setShowAIChat(!showAIChat)}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
-                       text-purple-400 border border-purple-500/30 hover:border-purple-500/50 
-                       transition-all flex items-center gap-2"
-            >
-              <span>💬</span>
-              <span>AI助手</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 内容区域 */}
-      <div className="pt-16 px-6 pb-6 h-screen overflow-y-auto custom-scrollbar">
-        <div className="max-w-7xl mx-auto">
-          {/* 网格布局 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {displayedPosts.map((post) => (
-              <div
-                key={post.id}
-                onMouseEnter={(e) => handleMouseEnter(post, e)}
-                onMouseLeave={handleMouseLeave}
-                className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
-                         hover:border-white/20 transition-all duration-200 cursor-pointer group 
-                         hover:shadow-lg hover:scale-[1.02]"
+          {/* Linuxdo */}
+          {(activeSource === 'all' || activeSource === 'linuxdo') && linuxdoData && (
+            <div className="mb-6">
+              <div 
+                onClick={() => scrollToSection('linuxdo')}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
+                  activeSection === 'linuxdo' ? 'bg-blue-500/20 text-blue-400' : 'text-white/70 hover:bg-white/5'
+                }`}
               >
-                <div className="flex flex-col h-full">
-                  {/* 标签行 */}
-                  <div className="flex items-center gap-2 mb-3 flex-wrap">
-                    {getSourceBadge(post.source)}
-                    <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
-                      {post.analysis.post_type}
-                    </span>
-                    <span className="text-xs">
-                      {getValueIcon(post.analysis.value_assessment)}
-                    </span>
-                  </div>
-
-                  {/* 标题 */}
-                  <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
-                               transition-colors mb-2 line-clamp-2 flex-shrink-0">
-                    {post.title}
-                  </h3>
-
-                  {/* 核心问题 */}
-                  <p className="text-sm text-white/60 line-clamp-3 flex-1">
-                    {post.analysis.core_issue}
-                  </p>
-
-                  {/* 关键信息预览 */}
-                  {post.analysis.key_info && post.analysis.key_info.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <div className="flex items-center gap-2 text-xs text-white/40">
-                        <span>💡</span>
-                        <span>{post.analysis.key_info.length} 个关键点</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <span className="text-base">🐧</span>
+                <span className="font-medium">Linux.do</span>
+                <span className="ml-auto text-xs text-white/40">({linuxdoData.posts.length})</span>
               </div>
-            ))}
-          </div>
-
-          {/* 空状态 */}
-          {displayedPosts.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-white/40">暂无数据</p>
+              <div className="ml-6 mt-2 space-y-1">
+                {linuxdoData.posts.slice(0, 10).map((post, idx) => (
+                  <div
+                    key={post.id}
+                    onClick={() => scrollToSection(`post-${post.id}`)}
+                    className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate 
+                             transition-colors py-1 hover:bg-white/5 rounded px-2"
+                    title={post.title}
+                  >
+                    {idx + 1}. {post.title}
+                  </div>
+                ))}
+                {linuxdoData.posts.length > 10 && (
+                  <div className="text-xs text-white/30 px-2 py-1">
+                    还有 {linuxdoData.posts.length - 10} 篇...
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Reddit板块 */}
+          {(activeSource === 'all' || activeSource === 'reddit') && Object.entries(groupedReddit).map(([subreddit, posts]) => (
+            <div key={subreddit} className="mb-6">
+              <div
+                onClick={() => scrollToSection(`reddit-${subreddit}`)}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
+                  activeSection === `reddit-${subreddit}` ? 'bg-orange-500/20 text-orange-400' : 'text-white/70 hover:bg-white/5'
+                }`}
+              >
+                <span className="text-base">🔴</span>
+                <span className="font-medium">r/{subreddit}</span>
+                <span className="ml-auto text-xs text-white/40">({posts.length})</span>
+              </div>
+              <div className="ml-6 mt-2 space-y-1">
+                {posts.slice(0, 10).map((post, idx) => (
+                  <div
+                    key={post.id}
+                    onClick={() => scrollToSection(`post-${post.id}`)}
+                    className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate 
+                             transition-colors py-1 hover:bg-white/5 rounded px-2"
+                    title={post.title}
+                  >
+                    {idx + 1}. {post.title}
+                  </div>
+                ))}
+                {posts.length > 10 && (
+                  <div className="text-xs text-white/30 px-2 py-1">
+                    还有 {posts.length - 10} 篇...
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* 主内容区 */}
+      <div className="flex-1 ml-56 overflow-hidden flex flex-col">
+        {/* 顶部切换栏 */}
+        <div className="flex-shrink-0 bg-gray-900/80 backdrop-blur-md border-b border-white/10 z-10">
+          <div className="px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveSource('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeSource === 'all'
+                    ? 'bg-white/10 text-white border border-white/20'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                📊 全部源
+              </button>
+              <button
+                onClick={() => setActiveSource('linuxdo')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeSource === 'linuxdo'
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                🐧 Linux.do
+              </button>
+              <button
+                onClick={() => setActiveSource('reddit')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeSource === 'reddit'
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                🔴 Reddit
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 text-sm text-white/60">
+              <span>共 {displayedPosts.length} 篇</span>
+              <button
+                onClick={() => setShowAIChat(!showAIChat)}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
+                         text-purple-400 border border-purple-500/30 hover:border-purple-500/50 
+                         transition-all flex items-center gap-2"
+              >
+                <span>💬</span>
+                <span>AI助手</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 内容区域 */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6">
+          <div className="max-w-7xl mx-auto">
+            {/* 网格布局 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {displayedPosts.map((post) => (
+                <div
+                  key={post.id}
+                  id={`post-${post.id}`}
+                  onMouseEnter={(e) => handleMouseEnter(post, e)}
+                  onMouseLeave={handleMouseLeave}
+                  className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
+                           hover:border-white/20 transition-all duration-200 cursor-pointer group 
+                           hover:shadow-lg hover:scale-[1.02]"
+                >
+                  <div className="flex flex-col h-full">
+                    {/* 标签行 */}
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {getSourceBadge(post.source)}
+                      <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
+                        {post.analysis.post_type}
+                      </span>
+                      <span className="text-xs">
+                        {getValueIcon(post.analysis.value_assessment)}
+                      </span>
+                    </div>
+
+                    {/* 标题 */}
+                    <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
+                                 transition-colors mb-2 line-clamp-2 flex-shrink-0">
+                      {post.title}
+                    </h3>
+
+                    {/* 核心问题 */}
+                    <p className="text-sm text-white/60 line-clamp-3 flex-1">
+                      {post.analysis.core_issue}
+                    </p>
+
+                    {/* 关键信息预览 */}
+                    {post.analysis.key_info && post.analysis.key_info.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <div className="flex items-center gap-2 text-xs text-white/40">
+                          <span>💡</span>
+                          <span>{post.analysis.key_info.length} 个关键点</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 空状态 */}
+            {displayedPosts.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-white/40">暂无数据</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -298,17 +404,17 @@ const ScrollableLayout = () => {
       {/* 悬停详情面板 */}
       {hoveredPost && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={closeDetail}
+          ref={detailPanelRef}
+          onMouseLeave={handleDetailPanelMouseLeave}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
         >
           {/* 背景遮罩 */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"></div>
           
           {/* 内容面板 */}
           <div
-            onClick={(e) => e.stopPropagation()}
             className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
-                     max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
+                     max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in pointer-events-auto"
           >
             {/* 头部 */}
             <div className="flex-shrink-0 p-6 border-b border-white/10">
@@ -331,13 +437,6 @@ const ScrollableLayout = () => {
                     {hoveredPost.analysis.core_issue}
                   </p>
                 </div>
-                <button
-                  onClick={closeDetail}
-                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
-                           bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                >
-                  ✕
-                </button>
               </div>
             </div>
 
