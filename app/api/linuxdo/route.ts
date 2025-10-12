@@ -83,7 +83,8 @@ export async function GET(request: Request) {
         core_issue: post.core_issue || '',
         key_info: Array.isArray(post.key_info) ? post.key_info : [],
         post_type: post.post_type || '未知',
-        value_assessment: post.value_assessment || '中'
+        value_assessment: post.value_assessment || '中',
+        detailed_analysis: post.detailed_analysis || ''
       }
     }));
 

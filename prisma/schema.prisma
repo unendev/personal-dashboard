@@ -37,6 +37,7 @@ model User {
   twitterUsers                TwitterUser[]
   layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
+  milestones                  Milestone[]
 
   @@map("users")
 }
@@ -241,6 +242,8 @@ model Todo {
   order         Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  mdContent     String?  @db.Text
+  description   String?  @db.Text
   parent        Todo?    @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children      Todo[]   @relation("TodoHierarchy")
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -278,29 +281,31 @@ model AISummary {
 }
 
 model posts {
-  id               String    @id
-  title            String
-  url              String
-  core_issue       String?
-  key_info         Json?
-  post_type        String?
-  value_assessment String?
-  timestamp        DateTime? @default(now()) @db.Timestamptz(6)
+  id                String    @id
+  title             String
+  url               String
+  core_issue        String?
+  key_info          Json?
+  post_type         String?
+  value_assessment  String?
+  detailed_analysis String?   @db.Text
+  timestamp         DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 model reddit_posts {
-  id               String    @id @map("id")
-  title            String
-  title_cn         String?
-  url              String
-  core_issue       String?
-  key_info         Json?
-  post_type        String?
-  value_assessment String?
-  subreddit        String?
-  score            Int?
-  num_comments     Int?
-  timestamp        DateTime? @default(now()) @db.Timestamptz(6)
+  id                String    @id @map("id")
+  title             String
+  title_cn          String?
+  url               String
+  core_issue        String?
+  key_info          Json?
+  post_type         String?
+  value_assessment  String?
+  detailed_analysis String?   @db.Text
+  subreddit         String?
+  score             Int?
+  num_comments      Int?
+  timestamp         DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 model TwitterUser {
@@ -520,4 +525,30 @@ model MindMap {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("mindmaps")
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 回顾周期
+  startDate DateTime
+  endDate   DateTime
+  
+  // AI 生成内容
+  aiTitle              String   // AI生成的标题
+  aiFocus              String   @db.Text // 本周焦点描述
+  aiInsights           String[] // AI洞察列表
+  aiKeyAchievements    Json     // AI识别的关键成果 [{ taskId, taskName, duration, category }]
+  
+  // 用户确认内容
+  confirmedAchievements Json     // 用户勾选确认的成果
+  userNotes             String?  @db.Text // 用户补充的备注
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, startDate, endDate])
+  @@map("milestones")
 }

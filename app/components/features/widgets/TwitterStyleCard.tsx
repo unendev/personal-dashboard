@@ -236,7 +236,7 @@ function TwitterStyleCardComponent({
             )
           },
           pre: ({ children }) => (
-            <pre className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-3 my-2 text-sm overflow-x-auto">
+            <pre className="bg-[#0d1117] border border-white/10 rounded-lg p-3 my-2 text-sm overflow-x-auto">
               {children}
             </pre>
           ),
@@ -296,30 +296,73 @@ function TwitterStyleCardComponent({
   const renderMedia = () => {
     // 只要有图片就显示，不限制类型
     if (treasure.images && treasure.images.length > 0) {
-      if (treasure.images.length === 1) {
+      const imageCount = treasure.images.length
+      
+      // 1张图：大图完整展示，有冲击力
+      if (imageCount === 1) {
         return (
           <div 
-            className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer"
+            className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer group"
             onClick={() => setSelectedImageIndex(0)}
           >
             <Image
               src={treasure.images[0].url}
               alt={treasure.images[0].alt || treasure.title}
-              width={treasure.images[0].width || 800}
-              height={treasure.images[0].height || 600}
+              width={treasure.images[0].width || 1200}
+              height={treasure.images[0].height || 800}
               loading="lazy"
-              className="w-full max-h-96 object-contain hover:opacity-90 transition-opacity duration-300"
+              className="w-full max-h-[500px] object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
         )
-      } else if (treasure.images.length === 2) {
+      } 
+      // 2张图：左右平铺，完整展示
+      else if (imageCount === 2) {
         return (
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
             {treasure.images.map((image, index) => (
               <div 
                 key={image.id} 
-                className="relative h-48 bg-gray-900/20 flex items-center justify-center cursor-pointer"
+                className="relative h-64 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
                 onClick={() => setSelectedImageIndex(index)}
+              >
+                <Image
+                  src={image.url}
+                  alt={image.alt || treasure.title}
+                  width={image.width || 600}
+                  height={image.height || 400}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            ))}
+          </div>
+        )
+      } 
+      // 3张图：1大2小布局，完整展示
+      else if (imageCount === 3) {
+        return (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {/* 第一张大图 */}
+            <div 
+              className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+              onClick={() => setSelectedImageIndex(0)}
+            >
+              <Image
+                src={treasure.images[0].url}
+                alt={treasure.images[0].alt || treasure.title}
+                width={treasure.images[0].width || 1000}
+                height={treasure.images[0].height || 600}
+                loading="lazy"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            {/* 后两张小图 */}
+            {treasure.images.slice(1, 3).map((image, index) => (
+              <div 
+                key={image.id}
+                className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+                onClick={() => setSelectedImageIndex(index + 1)}
               >
                 <Image
                   src={image.url}
@@ -327,47 +370,38 @@ function TwitterStyleCardComponent({
                   width={image.width || 400}
                   height={image.height || 300}
                   loading="lazy"
-                  className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
             ))}
           </div>
         )
-      } else if (treasure.images.length === 3) {
+      } 
+      // 4+张图：展示前3张，第4张显示"+N"
+      else {
         return (
-          <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            {treasure.images.map((image, index) => (
+          <div className="mt-3">
+            <div className="grid grid-cols-2 gap-2">
+              {/* 第一张大图 */}
               <div 
-                key={image.id}
-                className="relative h-32 bg-gray-900/20 flex items-center justify-center cursor-pointer"
-                onClick={() => setSelectedImageIndex(index)}
+                className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+                onClick={() => setSelectedImageIndex(0)}
               >
                 <Image
-                  src={image.url}
-                  alt={image.alt || treasure.title}
-                  width={image.width || 200}
-                  height={image.height || 150}
+                  src={treasure.images[0].url}
+                  alt={treasure.images[0].alt || treasure.title}
+                  width={treasure.images[0].width || 1000}
+                  height={treasure.images[0].height || 600}
                   loading="lazy"
-                  className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-            ))}
-          </div>
-        )
-      } else {
-        // 4+ 图片：2x2 网格，显示前4张
-        return (
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border border-white/10">
-            {treasure.images.slice(0, 4).map((image, index) => {
-              const isLastWithMore = index === 3 && treasure.images.length > 4
-              return (
+              {/* 第2、3张小图 */}
+              {treasure.images.slice(1, 3).map((image, index) => (
                 <div 
-                  key={image.id} 
-                  className={cn(
-                    "relative bg-gray-900/20 flex items-center justify-center cursor-pointer",
-                    index === 0 ? "h-48" : "h-24"
-                  )}
-                  onClick={() => setSelectedImageIndex(index)}
+                  key={image.id}
+                  className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+                  onClick={() => setSelectedImageIndex(index + 1)}
                 >
                   <Image
                     src={image.url}
@@ -375,18 +409,20 @@ function TwitterStyleCardComponent({
                     width={image.width || 400}
                     height={image.height || 300}
                     loading="lazy"
-                    className="w-full h-full object-contain hover:opacity-90 transition-opacity duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  {isLastWithMore && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg">
-                      <span className="text-white font-bold text-2xl">
-                        +{treasure.images.length - 4}
-                      </span>
-                    </div>
-                  )}
                 </div>
-              )
-            })}
+              ))}
+            </div>
+            {/* 查看更多按钮 */}
+            <button
+              onClick={() => setSelectedImageIndex(0)}
+              className="mt-2 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/70 hover:text-white transition-all flex items-center justify-center gap-2 group"
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">查看全部 {imageCount} 张图片</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         )
       }
@@ -394,7 +430,7 @@ function TwitterStyleCardComponent({
 
     if (treasure.type === 'MUSIC' && treasure.musicTitle) {
       return (
-        <div className="mt-3 border border-white/20 rounded-2xl p-4 bg-white/5 backdrop-blur-sm">
+        <div className="mt-3 border border-white/20 rounded-2xl p-4 bg-[#0d1117]">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-xl flex items-center justify-center shadow-lg">
               <Music className="h-6 w-6 text-white" />
@@ -549,7 +585,8 @@ function TwitterStyleCardComponent({
   return (
     <>
       <article className={cn(
-        "border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
+        "relative border border-white/10 rounded-2xl bg-[#161b22] hover:bg-[#1c2128] transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
+        showActions && "z-10",
         className
       )}>
         {/* PC端：左右布局；移动端：上下布局 */}
@@ -733,7 +770,7 @@ function TwitterStyleCardComponent({
                   </Button>
                   
                   {showActions && (
-                    <div className="absolute right-0 top-8 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-xl py-1 z-50 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
                       {onEdit && (
                         <button
                           onClick={(e) => {
@@ -972,7 +1009,7 @@ function TwitterStyleCardComponent({
                         return (
                           <span
                             key={index}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 backdrop-blur-sm rounded-full text-xs border transition-colors bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-colors bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
                           >
                             <Tag className="h-3 w-3" />
                             {isHierarchical ? (
@@ -1047,7 +1084,7 @@ function TwitterStyleCardComponent({
                     </Button>
                     
                     {showActions && (
-                      <div className="absolute right-0 top-8 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
                         {onEdit && (
                           <button
                             onClick={(e) => {
@@ -1085,7 +1122,7 @@ function TwitterStyleCardComponent({
     {/* 图片预览模态框 */}
     {selectedImageIndex !== null && (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
         onClick={handleCloseImageModal}
       >
         {/* 关闭按钮 */}

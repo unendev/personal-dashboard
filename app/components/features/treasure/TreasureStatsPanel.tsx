@@ -65,11 +65,11 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
     const maxCount = Math.max(...heatmapData.map(d => d.count), 1)
     const intensity = count / maxCount
     
-    if (count === 0) return 'bg-white/5'
-    if (intensity < 0.25) return 'bg-blue-500/20'
-    if (intensity < 0.5) return 'bg-blue-500/40'
-    if (intensity < 0.75) return 'bg-blue-500/60'
-    return 'bg-blue-500/80'
+    if (count === 0) return 'bg-[#21262d] border border-white/10'
+    if (intensity < 0.25) return 'bg-blue-500/40 border border-blue-400/30'
+    if (intensity < 0.5) return 'bg-blue-500/60 border border-blue-400/40'
+    if (intensity < 0.75) return 'bg-blue-500/80 border border-blue-400/50'
+    return 'bg-blue-500 border border-blue-400'
   }
 
   // 计算标签字体大小
@@ -86,32 +86,28 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
   return (
     <div className="space-y-6 p-4">
       {/* 热力图 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+      <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="w-4 h-4 text-blue-400" />
           <h3 className="text-sm font-semibold text-white">创作热力图</h3>
           <span className="text-xs text-white/40 ml-auto">最近30天</span>
         </div>
         
-        <div className="grid grid-cols-10 gap-1">
-          {heatmapData.map((day, index) => {
-            const date = new Date(day.date)
-            const dayOfWeek = date.getDay()
-            
+        <div className="grid grid-cols-10 gap-1.5">
+          {heatmapData.map((day) => {
             return (
               <div
                 key={day.date}
                 className={cn(
-                  "aspect-square rounded-sm transition-all duration-200 hover:scale-110 cursor-pointer group relative",
+                  "aspect-square rounded transition-all duration-200 hover:scale-125 hover:z-10 cursor-pointer group relative",
                   getHeatColor(day.count)
                 )}
                 title={`${day.date}: ${day.count} 个宝藏`}
               >
                 {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
-                  {day.date}
-                  <br />
-                  {day.count} 个
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-black/95 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-20 shadow-lg border border-white/10">
+                  <div className="font-medium">{day.date}</div>
+                  <div className="text-blue-300">{day.count} 个宝藏</div>
                 </div>
               </div>
             )
@@ -119,21 +115,21 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
         </div>
         
         {/* 图例 */}
-        <div className="flex items-center gap-2 mt-3 text-xs text-white/50">
+        <div className="flex items-center gap-2 mt-4 text-xs text-white/50">
           <span>少</span>
-          <div className="flex gap-1">
-            <div className="w-3 h-3 rounded-sm bg-white/5" />
-            <div className="w-3 h-3 rounded-sm bg-blue-500/20" />
-            <div className="w-3 h-3 rounded-sm bg-blue-500/40" />
-            <div className="w-3 h-3 rounded-sm bg-blue-500/60" />
-            <div className="w-3 h-3 rounded-sm bg-blue-500/80" />
+          <div className="flex gap-1.5">
+            <div className="w-4 h-4 rounded bg-[#21262d] border border-white/10" />
+            <div className="w-4 h-4 rounded bg-blue-500/40 border border-blue-400/30" />
+            <div className="w-4 h-4 rounded bg-blue-500/60 border border-blue-400/40" />
+            <div className="w-4 h-4 rounded bg-blue-500/80 border border-blue-400/50" />
+            <div className="w-4 h-4 rounded bg-blue-500 border border-blue-400" />
           </div>
           <span>多</span>
         </div>
       </div>
 
       {/* 标签云 */}
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+      <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <TagIcon className="w-4 h-4 text-purple-400" />
           <h3 className="text-sm font-semibold text-white">热门标签</h3>
@@ -176,11 +172,11 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
 
       {/* 统计摘要 */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-white/5">
+        <div className="bg-[#161b22] rounded-lg p-3 border border-white/10">
           <div className="text-2xl font-bold text-white">{treasures.length}</div>
           <div className="text-xs text-white/60">总宝藏数</div>
         </div>
-        <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-white/5">
+        <div className="bg-[#161b22] rounded-lg p-3 border border-white/10">
           <div className="text-2xl font-bold text-white">{tagStats.length}</div>
           <div className="text-xs text-white/60">标签数</div>
         </div>

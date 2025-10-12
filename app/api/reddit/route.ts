@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
         key_info: true,
         post_type: true,
         value_assessment: true,
+        detailed_analysis: true,
         subreddit: true,
         timestamp: true
       }
@@ -149,7 +150,8 @@ export async function GET(request: NextRequest) {
           core_issue: p.core_issue,
           key_info: typeof p.key_info === 'string' ? JSON.parse(p.key_info) : p.key_info,
           post_type: p.post_type,
-          value_assessment: p.value_assessment
+          value_assessment: p.value_assessment,
+          detailed_analysis: p.detailed_analysis
         }
       }))
     });

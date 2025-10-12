@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createTreasureSchema } from '@/lib/validations/treasure';
 import { ZodError } from 'zod';
 
-// GET /api/treasures - 获取用户的所有宝藏（按时间倒序）
+// GET /api/treasures - 获取用户的所有宝藏（按时间倒序，支持分页）
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId(request);
@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag');
     const type = searchParams.get('type');
     const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
 
     const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
     
@@ -36,6 +38,9 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // 计算分页
+    const skip = (page - 1) * limit;
+
     const treasures = await prisma.treasure.findMany({
       where,
       include: {
@@ -49,7 +54,9 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     // 为每张图片生成签名 URL

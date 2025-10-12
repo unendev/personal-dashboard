@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { TwitterStyleCard } from '../widgets/TwitterStyleCard'
 // import { CommentInputModal } from './CommentInputModal' // 暂时隐藏评论功能
 import { FloatingActionButton } from '../../shared/FloatingActionButton'
 import { TreasureInputModal, TreasureData } from './treasure-input'
+import { TreasureStatsPanel } from './TreasureStatsPanel'
+import { TreasureOutline } from './TreasureOutline'
 import { 
   Search,
   X,
@@ -43,56 +44,156 @@ interface TreasureListProps {
 
 export function TreasureList({ className }: TreasureListProps) {
   const [treasures, setTreasures] = useState<Treasure[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTag, setSelectedTag] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   // const [showCommentModal, setShowCommentModal] = useState(false) // 暂时隐藏评论功能
   // const [selectedTreasureForComment, setSelectedTreasureForComment] = useState<Treasure | null>(null) // 暂时隐藏评论功能
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [activeId, setActiveId] = useState<string>('')
   
-  // 虚拟滚动相关
-  const parentRef = useRef<HTMLDivElement>(null)
+  // 分页相关
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const pageSize = 20
   
-  // 虚拟滚动配置
-  const rowVirtualizer = useVirtualizer({
-    count: treasures.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 400,
-    overscan: 2,
-  })
+  // 元素引用
+  const treasureRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // 确保组件在客户端挂载
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // 获取宝藏列表
+  // 获取宝藏列表（初始加载）
   const fetchTreasures = useCallback(async () => {
     try {
-      setIsLoading(true)
-      
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
+      if (selectedTag) params.append('tag', selectedTag)
+      params.append('page', '1')
+      params.append('limit', pageSize.toString())
       
       const response = await fetch(`/api/treasures?${params}`)
       if (response.ok) {
         const data = await response.json()
         setTreasures(data)
+        setPage(1)
+        setHasMore(data.length === pageSize)
       }
     } catch (error) {
       console.error('获取宝藏列表失败:', error)
-    } finally {
-      setIsLoading(false)
     }
-  }, [searchQuery])
+  }, [searchQuery, selectedTag, pageSize])
+
+  // 加载更多
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return
+    
+    try {
+      setIsLoadingMore(true)
+      
+      const params = new URLSearchParams()
+      if (searchQuery) params.append('search', searchQuery)
+      if (selectedTag) params.append('tag', selectedTag)
+      params.append('page', (page + 1).toString())
+      params.append('limit', pageSize.toString())
+      
+      const response = await fetch(`/api/treasures?${params}`)
+      if (response.ok) {
+        const newData = await response.json()
+        setTreasures(prev => [...prev, ...newData])
+        setPage(prev => prev + 1)
+        setHasMore(newData.length === pageSize)
+      }
+    } catch (error) {
+      console.error('加载更多失败:', error)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [isLoadingMore, hasMore, searchQuery, selectedTag, page, pageSize])
 
   useEffect(() => {
     if (isMounted) {
       fetchTreasures()
     }
   }, [isMounted, searchQuery, fetchTreasures])
+
+  // 监听窗口滚动，实现无限加载
+  useEffect(() => {
+    const handleScroll = () => {
+      // 计算距离页面底部的距离
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const scrollHeight = document.documentElement.scrollHeight
+      const clientHeight = window.innerHeight
+      
+      // 当滚动到距离底部 500px 时触发加载更多
+      if (scrollHeight - scrollTop - clientHeight < 500 && !isLoadingMore && hasMore) {
+        loadMore()
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [loadMore, isLoadingMore, hasMore])
+
+  // 视口追踪 - 使用 Intersection Observer 追踪当前可见的宝藏（基于窗口滚动）
+  useEffect(() => {
+    if (treasures.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 找到最靠近视口中心的元素
+        let closestEntry: IntersectionObserverEntry | undefined
+        let minDistance = Infinity
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const rect = entry.boundingClientRect
+            const viewportCenter = window.innerHeight / 2
+            const elementCenter = rect.top + rect.height / 2
+            const distance = Math.abs(elementCenter - viewportCenter)
+            
+            if (distance < minDistance) {
+              minDistance = distance
+              closestEntry = entry
+            }
+          }
+        })
+
+        if (closestEntry && closestEntry.target instanceof HTMLElement) {
+          const id = closestEntry.target.getAttribute('data-treasure-id')
+          if (id && id !== activeId) {
+            setActiveId(id)
+          }
+        }
+      },
+      {
+        root: null, // 使用窗口作为根
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: [0, 0.25, 0.5, 0.75, 1]
+      }
+    )
+
+    // 延迟观察，避免在初始渲染时触发
+    const timeoutId = setTimeout(() => {
+      treasureRefsMap.current.forEach((element) => {
+        if (element) {
+          observer.observe(element)
+        }
+      })
+    }, 200)
+
+    return () => {
+      clearTimeout(timeoutId)
+      observer.disconnect()
+    }
+  }, [treasures, activeId])
 
   const handleCreateClick = () => {
     setShowCreateModal(true)
@@ -177,87 +278,136 @@ export function TreasureList({ className }: TreasureListProps) {
     return null
   }
 
+  const handleTagClick = (tag: string) => {
+    setSelectedTag(tag === selectedTag ? '' : tag)
+  }
+
+  const scrollToTreasure = (id: string) => {
+    const element = treasureRefsMap.current.get(id)
+    if (element) {
+      // 立即更新高亮
+      setActiveId(id)
+      // 滚动到目标位置
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
   return (
-    <div className={`flex flex-col ${className}`}>
-      {/* 搜索栏 */}
-      <div className="sticky top-0 z-10 backdrop-blur-lg bg-black/40 border-b border-white/10 pb-4 pt-2 px-4 mb-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <input
-              type="text"
-              placeholder="搜索宝藏..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')} 
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded"
-              >
-                <X className="h-4 w-4 text-white/60" />
-              </button>
+    <div className={`flex gap-6 max-w-[1920px] mx-auto px-4 ${className}`}>
+      {/* 左侧大纲面板 - 跟随滚动 */}
+      <aside className="hidden xl:block w-72 flex-shrink-0">
+        <div className="sticky top-4">
+          <TreasureOutline
+            treasures={treasures.map(t => ({ id: t.id, title: t.title, type: t.type, createdAt: t.createdAt }))}
+            selectedId={activeId}
+            onTreasureClick={scrollToTreasure}
+          />
+        </div>
+      </aside>
+
+      {/* 中间内容区域 */}
+      <div className="flex-1 flex flex-col min-w-0 max-w-4xl mx-auto w-full pb-20">
+        {/* 搜索栏 */}
+        <div className="sticky top-0 z-10 pb-4 pt-2 px-4 mb-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+              <input
+                type="text"
+                placeholder="搜索宝藏..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 text-sm bg-transparent border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')} 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors"
+                >
+                  <X className="h-4 w-4 text-white/60" />
+                </button>
+              )}
+            </div>
+            {selectedTag && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-white/60">筛选:</span>
+                <button
+                  onClick={() => setSelectedTag('')}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300 hover:bg-blue-500/30 transition-colors"
+                >
+                  {selectedTag}
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             )}
           </div>
         </div>
+
+        {/* 宝藏列表 */}
+        {treasures.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-white/40 mb-4 text-6xl">💎</div>
+            <h3 className="text-lg font-medium text-white mb-2">
+              {searchQuery || selectedTag ? '没有找到匹配的宝藏' : '还没有宝藏'}
+            </h3>
+            <p className="text-white/60 mb-4">
+              {searchQuery || selectedTag ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
+            </p>
+          </div>
+        ) : (
+          <div className="px-4 space-y-4">
+            {treasures.map((treasure) => (
+              <div
+                key={treasure.id}
+                data-treasure-id={treasure.id}
+                ref={(el) => {
+                  if (el) {
+                    treasureRefsMap.current.set(treasure.id, el)
+                  }
+                }}
+              >
+                <div className="max-w-2xl mx-auto">
+                  <TwitterStyleCard
+                    treasure={treasure}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteTreasure}
+                    onComment={() => {}} // 暂时隐藏评论功能
+                    hideComments={true}
+                  />
+                </div>
+              </div>
+            ))}
+            
+            {/* 加载更多指示器 */}
+            {isLoadingMore && (
+              <div className="flex justify-center items-center py-8">
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="text-sm">加载中...</span>
+                </div>
+              </div>
+            )}
+            
+            {/* 没有更多提示 */}
+            {!hasMore && treasures.length > 0 && (
+              <div className="flex justify-center items-center py-8 pb-20">
+                <span className="text-sm text-white/40">没有更多内容了</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 宝藏列表 */}
-      {treasures.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-white/40 mb-4 text-6xl">💎</div>
-          <h3 className="text-lg font-medium text-white mb-2">
-            {searchQuery ? '没有找到匹配的宝藏' : '还没有宝藏'}
-          </h3>
-          <p className="text-white/60 mb-4">
-            {searchQuery ? '尝试调整搜索条件' : '点击右下角按钮创建你的第一个宝藏'}
-          </p>
+      {/* 右侧统计面板 - 跟随滚动 */}
+      <aside className="hidden xl:block w-80 flex-shrink-0">
+        <div className="sticky top-4">
+          <TreasureStatsPanel 
+            treasures={treasures.map(t => ({ id: t.id, createdAt: t.createdAt, tags: t.tags }))}
+            onTagClick={handleTagClick}
+            selectedTag={selectedTag}
+          />
         </div>
-      ) : (
-        <div 
-          ref={parentRef}
-          className="flex-1 overflow-auto px-4"
-          style={{ height: 'calc(100vh - 12rem)' }}
-        >
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const treasure = treasures[virtualRow.index]
-              return (
-                <div
-                  key={treasure.id}
-                  data-index={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  className="pb-4"
-                >
-                  <div className="max-w-2xl mx-auto">
-                    <TwitterStyleCard
-                      treasure={treasure}
-                      onEdit={handleEditClick}
-                      onDelete={handleDeleteTreasure}
-                      onComment={() => {}} // 暂时隐藏评论功能
-                      hideComments={true}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      </aside>
 
         {/* 悬浮创建按钮 */}
         <FloatingActionButton onCreateTreasure={handleCreateClick} />
@@ -278,10 +428,20 @@ export function TreasureList({ className }: TreasureListProps) {
               setEditingTreasure(null)
             }}
             onSubmit={handleEditTreasure}
+            mode="edit"
             initialData={{
               ...editingTreasure,
               id: editingTreasure.id,
-              content: editingTreasure.content || ''
+              title: editingTreasure.title,
+              content: editingTreasure.content || '',
+              type: editingTreasure.type,
+              tags: editingTreasure.tags,
+              images: editingTreasure.images || [],
+              musicTitle: editingTreasure.musicTitle,
+              musicArtist: editingTreasure.musicArtist,
+              musicAlbum: editingTreasure.musicAlbum,
+              musicUrl: editingTreasure.musicUrl,
+              musicCoverUrl: editingTreasure.musicCoverUrl
             }}
           />
         )}

@@ -168,13 +168,14 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
         excerpt = "（无详细内容）"
 
     prompt = f"""
-你是一名专业的社交媒体内容分析师。请分析以下Reddit帖子，并**完全用中文**返回分析结果。
+你是一名专业的Reddit技术内容分析师。请分析以下帖子，并生成一份**深度中文分析报告**，让读者无需查看原文即可全面理解。
 
 **重要要求**：
 1. 将英文标题翻译成通俗易懂的中文
 2. 所有分析内容必须是中文
-3. 保持专业性和准确性
-4. 返回格式必须是纯JSON，不要包含```json```标记
+3. 对于技术类帖子，深入分析技术细节、方案和代码要点
+4. 对于游戏开发类，关注开发技巧、工具和最佳实践
+5. 返回格式必须是纯JSON，不要包含```json```标记
 
 **原始帖子信息**：
 - 标题（英文）: {post['title']}
@@ -187,10 +188,12 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
   "core_issue": "用一句话概括这个帖子的核心议题（中文）",
   "key_info": [
     "关键信息点1（中文）",
-    "关键信息点2（中文）"
+    "关键信息点2（中文）",
+    "关键信息点3（中文）"
   ],
   "post_type": "从[技术讨论, 新闻分享, 问题求助, 观点讨论, 资源分享, 教程指南, 项目展示, 其他]中选择一个",
-  "value_assessment": "从[高, 中, 低]中选择一个"
+  "value_assessment": "从[高, 中, 低]中选择一个",
+  "detailed_analysis": "生成300-800字的深度中文分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题的背景和重要性\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容，包括关键观点、数据或事实\\n\\n## 💡 技术/开发细节（如适用）\\n- 具体的技术方案、工具、引擎或框架\\n- 实现方法、代码思路或架构设计\\n- 性能优化或最佳实践\\n\\n## 🔧 实用价值\\n- 如何应用这些信息到实际开发中\\n- 相关工具、库或资源推荐\\n- 注意事项、坑点或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考"
 }}
 """
     
@@ -202,8 +205,8 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
     data = {
         "model": "deepseek-chat",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 500,
-        "temperature": 0.3
+        "max_tokens": 2000,
+        "temperature": 0.5
     }
     
     proxies = {}
@@ -368,13 +371,14 @@ async def insert_posts_into_db(posts_data):
                 key_info = json.dumps(analysis.get('key_info', []), ensure_ascii=False)
                 post_type = analysis.get('post_type')
                 value_assessment = analysis.get('value_assessment')
+                detailed_analysis = analysis.get('detailed_analysis')
                 subreddit = post.get('subreddit')
                 score = post.get('score', 0)
                 num_comments = post.get('num_comments', 0)
 
                 await conn.execute("""
-                    INSERT INTO reddit_posts (id, title, title_cn, url, core_issue, key_info, post_type, value_assessment, subreddit, score, num_comments)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    INSERT INTO reddit_posts (id, title, title_cn, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, subreddit, score, num_comments)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                     ON CONFLICT (id) DO UPDATE SET
                         title = EXCLUDED.title,
                         title_cn = EXCLUDED.title_cn,
@@ -383,11 +387,12 @@ async def insert_posts_into_db(posts_data):
                         key_info = EXCLUDED.key_info,
                         post_type = EXCLUDED.post_type,
                         value_assessment = EXCLUDED.value_assessment,
+                        detailed_analysis = EXCLUDED.detailed_analysis,
                         subreddit = EXCLUDED.subreddit,
                         score = EXCLUDED.score,
                         num_comments = EXCLUDED.num_comments,
                         timestamp = CURRENT_TIMESTAMP;
-                """, post_id, title, title_cn, url, core_issue, key_info, post_type, value_assessment, subreddit, score, num_comments)
+                """, post_id, title, title_cn, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, subreddit, score, num_comments)
                 
                 success_count += 1
                 

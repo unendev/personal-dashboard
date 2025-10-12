@@ -167,7 +167,7 @@ export default function TimerPage() {
       <div className="fixed top-4 left-4 z-40">
         <Link
           href="/"
-          className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          className="w-12 h-12 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center border border-gray-700 transition-all duration-200"
         >
           <span className="text-white font-bold text-xl">←</span>
         </Link>
@@ -177,7 +177,6 @@ export default function TimerPage() {
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex space-x-6">
           <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 font-medium pb-2">🏆 技能树</Link>
-          <Link href="/tools" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📋 任务清单</Link>
           <Link href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</Link>
           <Link href="/timer" className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-2">⏱️ 计时器</Link>
         </div>

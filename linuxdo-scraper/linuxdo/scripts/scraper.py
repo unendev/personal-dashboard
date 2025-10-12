@@ -73,9 +73,9 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
                 "core_issue": "N/A", "key_info": [], "post_type": "未知", "value_assessment": "低"
             }
 
-        # 使用DeepSeek API进行分析
+        # 使用DeepSeek API进行深度分析
         prompt = f"""
-        你是一名信息提取专家。请分析以下论坛帖子内容，并严格按照指定的JSON格式返回结果。
+        你是一名资深的论坛内容分析师。请仔细分析以下帖子内容，并生成一份**深度分析报告**，让读者无需查看原文即可全面理解。
         你的回复必须是一个有效的JSON对象，不要包含任何解释性文字或Markdown的```json ```标记。
 
         **帖子标题**: {post['title']}
@@ -83,13 +83,15 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
 
         **请输出以下结构的JSON**:
         {{
-          "core_issue": "这里用一句话概括帖子的核心议题",
+          "core_issue": "用一句话概括帖子的核心议题",
           "key_info": [
             "关键信息或解决方案点1",
-            "关键信息或解决方案点2"
+            "关键信息或解决方案点2",
+            "关键信息或解决方案点3"
           ],
           "post_type": "从[技术问答, 资源分享, 新闻资讯, 优惠活动, 日常闲聊, 求助, 讨论, 产品评测]中选择一个",
-          "value_assessment": "从[高, 中, 低]中选择一个"
+          "value_assessment": "从[高, 中, 低]中选择一个",
+          "detailed_analysis": "生成300-800字的深度分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题为什么重要、相关背景信息\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容和关键信息点\\n\\n## 💡 技术细节（如适用）\\n- 具体的技术方案、工具、代码要点\\n- 实现步骤或架构设计\\n- 性能优化或配置方法\\n\\n## 🔧 实用价值\\n- 如何应用这些信息\\n- 相关资源链接或推荐\\n- 注意事项或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考"
         }}
         """
         
@@ -103,8 +105,8 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 400,
-            "temperature": 0.3
+            "max_tokens": 2000,
+            "temperature": 0.5
         }
         
         response = requests.post(
@@ -423,10 +425,11 @@ async def insert_posts_into_db(posts_data):
                 key_info = json.dumps(analysis.get('key_info', []))
                 post_type = analysis.get('post_type')
                 value_assessment = analysis.get('value_assessment')
+                detailed_analysis = analysis.get('detailed_analysis')
 
                 await conn.execute("""
-                    INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                     ON CONFLICT (id) DO UPDATE SET
                         title = EXCLUDED.title,
                         url = EXCLUDED.url,
@@ -434,8 +437,9 @@ async def insert_posts_into_db(posts_data):
                         key_info = EXCLUDED.key_info,
                         post_type = EXCLUDED.post_type,
                         value_assessment = EXCLUDED.value_assessment,
+                        detailed_analysis = EXCLUDED.detailed_analysis,
                         timestamp = CURRENT_TIMESTAMP;
-                """, post_id, title, url, core_issue, key_info, post_type, value_assessment)
+                """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
                 
                 logger.info(f"  - 帖子 '{title[:30]}...' (ID: {post_id}) 已插入/更新。")
                 success_count += 1

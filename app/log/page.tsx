@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
-import { useDevSession } from '../hooks/useDevSession';
+import { useDevSession, markManualLogout } from '../hooks/useDevSession';
 import CreateLogModal from '@/app/components/features/log/CreateLogModal'
 import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
 import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper'
@@ -11,12 +11,12 @@ import { QuickCreateData } from '@/app/components/features/timer/QuickCreateDial
 import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
 import DateFilter from '@/app/components/shared/DateFilter'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
-import DateBasedTodoList from '@/app/components/features/todo/DateBasedTodoList'
+import MarkdownTodoEditor from '@/app/components/features/todo/MarkdownTodoEditor'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
-// import WeeklyReviewModal from '@/app/components/features/milestone/WeeklyReviewModal'
+import WeeklyReviewModal from '@/app/components/features/milestone/WeeklyReviewModal'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -577,14 +577,13 @@ export default function LogPage() {
         <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
           <div className="flex space-x-6">
             <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 font-medium pb-2">🏆 技能树</Link>
-            <Link href="/tools" className="text-gray-300 hover:text-gray-100 font-medium pb-2">📋 任务清单</Link>
             <Link href="/log" className="text-yellow-400 font-medium border-b-2 border-yellow-400 pb-2">📝 每日日志</Link>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-8">
           {/* 访客欢迎信息 */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl border border-blue-700/50 backdrop-blur-sm">
+          <div className="mb-8 p-6 bg-blue-900/20 rounded-xl border border-blue-700/50">
             <div className="flex items-center gap-4">
               <div className="text-4xl">🎯</div>
               <div>
@@ -686,7 +685,7 @@ export default function LogPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="p-4 bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-lg border border-purple-700/50 backdrop-blur-sm">
+                <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
                   <h3 className="font-semibold text-gray-200 mb-2">今日学习总结</h3>
                   <p className="text-gray-300 text-sm leading-relaxed">
                     今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
@@ -733,8 +732,9 @@ export default function LogPage() {
                 </span>
                 <button
                   onClick={async () => {
+                    markManualLogout(); // 标记手动登出，防止自动重新登录
                     await signOut({ redirect: false });
-                    window.location.reload();
+                    window.location.href = '/auth/signin'; // 重定向到登录页
                   }}
                   className="text-gray-400 hover:text-gray-200 text-sm"
                   title="登出"
@@ -754,7 +754,7 @@ export default function LogPage() {
             {/* 每周回顾按钮 */}
             <button
               onClick={handleOpenWeeklyReview}
-              className="bg-gradient-to-r from-purple-600/70 to-blue-600/70 backdrop-blur-sm border border-purple-500/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-500 border border-blue-500/50 rounded-lg px-4 py-2 transition-colors flex items-center gap-2"
             >
               <span className="text-lg">📊</span>
               <span className="text-sm font-medium text-white">每周回顾</span>
@@ -844,14 +844,20 @@ export default function LogPage() {
       />
 
       <div className="container mx-auto px-4 py-8 pt-20">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-100">每日日志</h1>
-          <Link
-            href="/milestones"
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+        <div className="flex items-center justify-end gap-3 mb-8">
+          <button
+            onClick={handleOpenWeeklyReview}
+            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
-            <span>📊</span>
-            <span>成长里程碑</span>
+            <span>📝</span>
+            <span>每周回顾</span>
+          </button>
+          <Link
+            href="/progress"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span>🏛️</span>
+            <span>人生阁</span>
           </Link>
         </div>
         
@@ -934,7 +940,7 @@ export default function LogPage() {
                     计时器
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="max-h-[600px] overflow-y-auto">
                   <CategoryZoneWrapper
                     tasks={timerTasks}
                     userId={userId}
@@ -955,7 +961,17 @@ export default function LogPage() {
 
             {activeSection === 'todo' && (
               <div className="mb-8">
-                <DateBasedTodoList userId={userId} />
+                <Card className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-xl">📋</span>
+                      任务清单
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <MarkdownTodoEditor userId={userId} />
+                  </CardContent>
+                </Card>
               </div>
             )}
 
@@ -994,7 +1010,7 @@ export default function LogPage() {
                     计时器
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="max-h-[600px] overflow-y-auto">
                   <CategoryZoneWrapper
                     tasks={timerTasks}
                     userId={userId}
@@ -1014,7 +1030,17 @@ export default function LogPage() {
 
               {/* 任务清单 */}
               <div className="order-2 lg:order-1">
-                <DateBasedTodoList userId={userId} />
+                <Card className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-xl">📋</span>
+                      任务清单
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <MarkdownTodoEditor userId={userId} />
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
@@ -1052,14 +1078,14 @@ export default function LogPage() {
         onSubmit={handleCreateTreasure}
       />
 
-      {/* 每周回顾模态框 - 功能开发中 */}
-      {/* <WeeklyReviewModal
+      {/* 每周回顾模态框 */}
+      <WeeklyReviewModal
         isOpen={isWeeklyReviewOpen}
         onClose={() => setIsWeeklyReviewOpen(false)}
         startDate={weeklyReviewDates.startDate}
         endDate={weeklyReviewDates.endDate}
-        onConfirm={handleWeeklyReviewConfirmed}
-      /> */}
+        onConfirmed={handleWeeklyReviewConfirmed}
+      />
 
       {/* 成功通知 */}
       {showSuccessNotification && (

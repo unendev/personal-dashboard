@@ -87,7 +87,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  background: #0d1117;
   background-attachment: fixed;
   min-height: 100vh;
   margin: 0;
@@ -97,7 +97,21 @@ body {
 
 /* 自定义滚动条样式 */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 ::-webkit-scrollbar-track {
@@ -591,4 +605,278 @@ body {
   height: auto;
   border-radius: 0.5em;
   margin: 1em 0;
+}
+
+/* ===== 主页重构：Markdown内容样式 ===== */
+.markdown-content {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.75;
+}
+
+.markdown-content h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-content h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+}
+
+.markdown-content p {
+  margin-bottom: 1em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-content li {
+  margin: 0.5em 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.markdown-content ul li::marker {
+  color: rgba(99, 102, 241, 0.8);
+}
+
+.markdown-content ol li::marker {
+  color: rgba(99, 102, 241, 0.8);
+  font-weight: 600;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.markdown-content code {
+  background-color: rgba(99, 102, 241, 0.1);
+  color: rgb(168, 204, 255);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.markdown-content pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 0.5em;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content pre code {
+  background: none;
+  color: rgba(255, 255, 255, 0.95);
+  padding: 0;
+  border: none;
+  font-size: 0.875em;
+  line-height: 1.6;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid rgba(99, 102, 241, 0.5);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  background-color: rgba(99, 102, 241, 0.05);
+  padding: 0.5em 1em;
+  border-radius: 0.25em;
+}
+
+.markdown-content a {
+  color: rgb(99, 179, 255);
+  text-decoration: underline;
+  text-decoration-color: rgba(99, 179, 255, 0.3);
+  transition: all 0.2s;
+}
+
+.markdown-content a:hover {
+  color: rgb(147, 201, 255);
+  text-decoration-color: rgba(147, 201, 255, 0.6);
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2em 0;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5em;
+  margin: 1.5em 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75em 1em;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: rgba(99, 102, 241, 0.1);
+  font-weight: 600;
+  color: #fff;
+}
+
+.markdown-content tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* 代码高亮主题（使用highlight.js默认暗色主题） */
+.markdown-content .hljs {
+  background: rgba(0, 0, 0, 0.3);
+  color: #e6e6e6;
+}
+
+.markdown-content .hljs-comment,
+.markdown-content .hljs-quote {
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.markdown-content .hljs-keyword,
+.markdown-content .hljs-selector-tag,
+.markdown-content .hljs-subst {
+  color: #f92672;
+}
+
+.markdown-content .hljs-number,
+.markdown-content .hljs-literal,
+.markdown-content .hljs-variable {
+  color: #ae81ff;
+}
+
+.markdown-content .hljs-string,
+.markdown-content .hljs-doctag {
+  color: #a6e22e;
+}
+
+.markdown-content .hljs-title,
+.markdown-content .hljs-section,
+.markdown-content .hljs-selector-id {
+  color: #66d9ef;
+  font-weight: bold;
+}
+
+.markdown-content .hljs-function {
+  color: #66d9ef;
+}
+
+.markdown-content .hljs-params {
+  color: #fd971f;
+}
+
+/* 紧凑列表悬停动画 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.compact-post-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* 板块展开/收起动画 */
+.board-group-content {
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.board-group-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.board-group-content.expanded {
+  max-height: 100vh;
+  opacity: 1;
+}
+
+/* 悬停详情动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 紧凑布局优化 */
+body {
+  overflow: hidden; /* 防止双滚动条 */
+}
+
+/* 大纲导航样式增强 */
+aside::-webkit-scrollbar {
+  width: 4px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

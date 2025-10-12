@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { clearManualLogout } from "@/app/hooks/useDevSession"
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("")
@@ -54,6 +55,8 @@ export default function RegisterForm() {
         if (result?.error) {
           setError("注册成功，但登录失败")
         } else {
+          // 登录成功，清除手动登出标记
+          clearManualLogout()
           router.push('/log')
         }
       } else {

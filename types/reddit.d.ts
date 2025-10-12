@@ -8,6 +8,7 @@ export interface RedditPost {
     key_info: string[];
     post_type: string;
     value_assessment: string;
+    detailed_analysis?: string;
   };
 }
 
