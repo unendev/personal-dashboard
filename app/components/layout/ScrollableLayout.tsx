@@ -7,15 +7,16 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 
+type SourceType = 'all' | 'linuxdo' | 'reddit';
+
 const ScrollableLayout = () => {
   const [linuxdoData, setLinuxdoData] = useState<LinuxDoReport | null>(null);
   const [redditData, setRedditData] = useState<RedditReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<(LinuxDoPost | RedditPost) | null>(null);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-  const [activeSection, setActiveSection] = useState<string>('linuxdo');
+  const [activeSource, setActiveSource] = useState<SourceType>('all');
+  const [showAIChat, setShowAIChat] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
 
   // 获取数据
   useEffect(() => {
@@ -53,10 +54,8 @@ const ScrollableLayout = () => {
     }
     
     hoverTimeoutRef.current = setTimeout(() => {
-      const rect = event.currentTarget.getBoundingClientRect();
-      setHoverPosition({ x: rect.left, y: rect.top });
       setHoveredPost(post);
-    }, 300); // 300ms延迟，避免误触
+    }, 300);
   };
 
   const handleMouseLeave = () => {
@@ -69,26 +68,24 @@ const ScrollableLayout = () => {
     setHoveredPost(null);
   };
 
-  // 大纲跳转
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveSection(id);
+  // 获取显示的帖子
+  const displayedPosts = React.useMemo(() => {
+    const allPosts: Array<(LinuxDoPost | RedditPost) & { source: 'linuxdo' | 'reddit' }> = [];
+    
+    if (activeSource === 'all' || activeSource === 'linuxdo') {
+      linuxdoData?.posts.forEach(post => {
+        allPosts.push({ ...post, source: 'linuxdo' as const });
+      });
     }
-  };
-
-  // 获取Reddit按板块分组
-  const groupedReddit = React.useMemo(() => {
-    if (!redditData) return {};
-    const groups: Record<string, RedditPost[]> = {};
-    redditData.posts.forEach(post => {
-      const subreddit = post.subreddit || 'other';
-      if (!groups[subreddit]) groups[subreddit] = [];
-      groups[subreddit].push(post);
-    });
-    return groups;
-  }, [redditData]);
+    
+    if (activeSource === 'all' || activeSource === 'reddit') {
+      redditData?.posts.forEach(post => {
+        allPosts.push({ ...post, source: 'reddit' as const });
+      });
+    }
+    
+    return allPosts;
+  }, [linuxdoData, redditData, activeSource]);
 
   const getPostTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -108,6 +105,12 @@ const ScrollableLayout = () => {
     return value === '高' ? '⭐' : value === '中' ? '◆' : '○';
   };
 
+  const getSourceBadge = (source: 'linuxdo' | 'reddit') => {
+    return source === 'linuxdo' 
+      ? <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">🐧 Linux.do</span>
+      : <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴 Reddit</span>;
+  };
+
   if (loading) {
     return (
       <main className="w-full min-h-screen flex items-center justify-center">
@@ -120,178 +123,143 @@ const ScrollableLayout = () => {
   }
 
   return (
-    <main className="w-full min-h-screen flex">
-      {/* 左侧：大纲导航 */}
-      <aside className="w-64 flex-shrink-0 border-r border-white/10 bg-gray-900/50 backdrop-blur-sm fixed left-0 top-0 bottom-0 overflow-y-auto custom-scrollbar">
-        <div className="p-4">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <span>📋</span>
-            大纲导航
-          </h2>
-
-          {/* Linuxdo */}
-          <div className="mb-6">
-            <div 
-              onClick={() => scrollToSection('linuxdo')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                activeSection === 'linuxdo' ? 'bg-blue-500/20 text-blue-400' : 'text-white/70 hover:bg-white/5'
+    <main className="w-full min-h-screen overflow-hidden">
+      {/* 顶部切换栏 */}
+      <div className="fixed top-0 left-0 right-0 z-30 bg-gray-900/80 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActiveSource('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSource === 'all'
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
-              <span>🐧</span>
-              <span className="text-sm font-medium">Linux.do ({linuxdoData?.posts.length || 0})</span>
-            </div>
-            <div className="ml-6 mt-2 space-y-1">
-              {linuxdoData?.posts.map((post, idx) => (
-                <div
-                  key={post.id}
-                  onClick={() => scrollToSection(`post-${post.id}`)}
-                  className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate transition-colors py-1"
-                  title={post.title}
-                >
-                  {idx + 1}. {post.title}
-                </div>
-              ))}
-            </div>
+              📊 全部源
+            </button>
+            <button
+              onClick={() => setActiveSource('linuxdo')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSource === 'linuxdo'
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              🐧 Linux.do
+            </button>
+            <button
+              onClick={() => setActiveSource('reddit')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSource === 'reddit'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              🔴 Reddit
+            </button>
           </div>
 
-          {/* Reddit板块 */}
-          {Object.entries(groupedReddit).map(([subreddit, posts]) => (
-            <div key={subreddit} className="mb-6">
-              <div
-                onClick={() => scrollToSection(`reddit-${subreddit}`)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                  activeSection === `reddit-${subreddit}` ? 'bg-orange-500/20 text-orange-400' : 'text-white/70 hover:bg-white/5'
-                }`}
-              >
-                <span>🔴</span>
-                <span className="text-sm font-medium">r/{subreddit} ({posts.length})</span>
-              </div>
-              <div className="ml-6 mt-2 space-y-1">
-                {posts.map((post, idx) => (
-                  <div
-                    key={post.id}
-                    onClick={() => scrollToSection(`post-${post.id}`)}
-                    className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate transition-colors py-1"
-                    title={post.title}
-                  >
-                    {idx + 1}. {post.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      {/* 中间：内容区域 */}
-      <div className="flex-1 ml-64 mr-80 overflow-y-auto custom-scrollbar">
-        <div className="max-w-6xl mx-auto p-6">
-          {/* 页面标题 */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Intelligence Hub
-            </h1>
-            <p className="text-sm text-white/60">情报中心 · 深度解读 · 鼠标悬停查看详情</p>
+          <div className="flex items-center gap-3 text-sm text-white/60">
+            <span>共 {displayedPosts.length} 篇</span>
+            <button
+              onClick={() => setShowAIChat(!showAIChat)}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
+                       text-purple-400 border border-purple-500/30 hover:border-purple-500/50 
+                       transition-all flex items-center gap-2"
+            >
+              <span>💬</span>
+              <span>AI助手</span>
+            </button>
           </div>
-
-          {/* Linuxdo社区 */}
-          <section id="linuxdo" className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3 sticky top-0 bg-gray-900/80 backdrop-blur-sm py-3 z-10">
-              <span>🐧</span>
-              Linux.do 社区
-              <span className="text-sm text-white/40">({linuxdoData?.posts.length || 0}篇)</span>
-            </h2>
-            
-            <div className="space-y-2">
-              {linuxdoData?.posts.map((post) => (
-                <div
-                  key={post.id}
-                  id={`post-${post.id}`}
-                  onMouseEnter={(e) => handleMouseEnter(post, e)}
-                  onMouseLeave={handleMouseLeave}
-                  className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 hover:border-white/20 
-                           transition-all duration-200 cursor-pointer group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
-                          {post.analysis.post_type}
-                        </span>
-                        <span className="text-xs">
-                          {getValueIcon(post.analysis.value_assessment)}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-semibold text-white group-hover:text-blue-400 transition-colors mb-1">
-                        {post.title}
-                      </h3>
-                      <p className="text-xs text-white/60 line-clamp-2">
-                        {post.analysis.core_issue}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Reddit板块 */}
-          {Object.entries(groupedReddit).map(([subreddit, posts]) => (
-            <section key={subreddit} id={`reddit-${subreddit}`} className="mb-12">
-              <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3 sticky top-0 bg-gray-900/80 backdrop-blur-sm py-3 z-10">
-                <span>🔴</span>
-                r/{subreddit}
-                <span className="text-sm text-white/40">({posts.length}篇)</span>
-              </h2>
-              
-              <div className="space-y-2">
-                {posts.map((post) => (
-                  <div
-                    key={post.id}
-                    id={`post-${post.id}`}
-                    onMouseEnter={(e) => handleMouseEnter(post, e)}
-                    onMouseLeave={handleMouseLeave}
-                    className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 hover:border-white/20 
-                             transition-all duration-200 cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
-                            {post.analysis.post_type}
-                          </span>
-                          <span className="text-xs">
-                            {getValueIcon(post.analysis.value_assessment)}
-                          </span>
-                        </div>
-                        <h3 className="text-base font-semibold text-white group-hover:text-orange-400 transition-colors mb-1">
-                          {post.title}
-                        </h3>
-                        <p className="text-xs text-white/60 line-clamp-2">
-                          {post.analysis.core_issue}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
         </div>
       </div>
 
-      {/* 右侧：在线对话占位 */}
-      <aside className="w-80 flex-shrink-0 border-l border-white/10 bg-gray-900/50 backdrop-blur-sm fixed right-0 top-0 bottom-0">
-        <div className="p-4 h-full flex flex-col">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <span>💬</span>
-            AI 对话助手
-          </h2>
-          
-          <div className="flex-1 flex items-center justify-center">
+      {/* 内容区域 */}
+      <div className="pt-16 px-6 pb-6 h-screen overflow-y-auto custom-scrollbar">
+        <div className="max-w-7xl mx-auto">
+          {/* 网格布局 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {displayedPosts.map((post) => (
+              <div
+                key={post.id}
+                onMouseEnter={(e) => handleMouseEnter(post, e)}
+                onMouseLeave={handleMouseLeave}
+                className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
+                         hover:border-white/20 transition-all duration-200 cursor-pointer group 
+                         hover:shadow-lg hover:scale-[1.02]"
+              >
+                <div className="flex flex-col h-full">
+                  {/* 标签行 */}
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    {getSourceBadge(post.source)}
+                    <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
+                      {post.analysis.post_type}
+                    </span>
+                    <span className="text-xs">
+                      {getValueIcon(post.analysis.value_assessment)}
+                    </span>
+                  </div>
+
+                  {/* 标题 */}
+                  <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
+                               transition-colors mb-2 line-clamp-2 flex-shrink-0">
+                    {post.title}
+                  </h3>
+
+                  {/* 核心问题 */}
+                  <p className="text-sm text-white/60 line-clamp-3 flex-1">
+                    {post.analysis.core_issue}
+                  </p>
+
+                  {/* 关键信息预览 */}
+                  {post.analysis.key_info && post.analysis.key_info.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="flex items-center gap-2 text-xs text-white/40">
+                        <span>💡</span>
+                        <span>{post.analysis.key_info.length} 个关键点</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 空状态 */}
+          {displayedPosts.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-white/40">暂无数据</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* AI对话悬浮窗 */}
+      {showAIChat && (
+        <div className="fixed bottom-6 right-6 z-40 w-96 h-[600px] bg-gray-900 rounded-2xl 
+                      border border-white/20 shadow-2xl overflow-hidden flex flex-col animate-fade-in">
+          {/* 头部 */}
+          <div className="flex-shrink-0 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 
+                        border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🤖</span>
+              <span className="text-white font-semibold">AI 对话助手</span>
+            </div>
+            <button
+              onClick={() => setShowAIChat(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-full 
+                       bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 内容区 */}
+          <div className="flex-1 p-6 flex items-center justify-center">
             <div className="text-center space-y-4">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full 
-                            flex items-center justify-center border-2 border-purple-500/30">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 
+                            rounded-full flex items-center justify-center border-2 border-purple-500/30">
                 <span className="text-4xl">🤖</span>
               </div>
               <div>
@@ -306,13 +274,30 @@ const ScrollableLayout = () => {
               </div>
             </div>
           </div>
+
+          {/* 底部输入框占位 */}
+          <div className="flex-shrink-0 p-4 border-t border-white/10">
+            <div className="flex items-center gap-2 px-4 py-3 bg-white/5 rounded-lg border border-white/10">
+              <input
+                type="text"
+                placeholder="即将开放..."
+                disabled
+                className="flex-1 bg-transparent text-white/40 text-sm outline-none"
+              />
+              <button
+                disabled
+                className="px-3 py-1 bg-purple-500/20 text-purple-400/50 rounded-lg text-sm"
+              >
+                发送
+              </button>
+            </div>
+          </div>
         </div>
-      </aside>
+      )}
 
       {/* 悬停详情面板 */}
       {hoveredPost && (
         <div
-          ref={detailRef}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={closeDetail}
         >

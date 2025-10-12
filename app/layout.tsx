@@ -16,11 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className="antialiased bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen font-sans"
+        className="antialiased bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 font-sans"
       >
-        <div className="relative flex w-full h-full">
+        <div className="relative flex w-full min-h-screen">
           <Sidebar />
-          <div className="flex-1 relative overflow-y-auto">
+          <div className="flex-1 relative">
             {/* 背景装饰 */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
