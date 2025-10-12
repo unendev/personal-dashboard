@@ -135,7 +135,7 @@ const ScrollableLayout = () => {
   };
 
   if (loading) {
-    return (
+  return (
       <main className="w-full min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/60 mx-auto mb-4"></div>
@@ -231,7 +231,7 @@ const ScrollableLayout = () => {
         {/* 顶部切换栏 */}
         <div className="flex-shrink-0 bg-gray-900/80 backdrop-blur-md border-b border-white/10 z-10">
           <div className="px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveSource('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -276,8 +276,8 @@ const ScrollableLayout = () => {
                 <span>AI助手</span>
               </button>
             </div>
-          </div>
-        </div>
+                      </div>
+                    </div>
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6">
@@ -337,9 +337,9 @@ const ScrollableLayout = () => {
                 <p className="text-white/40">暂无数据</p>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+                    </div>
+                  </div>
+                </div>
 
       {/* AI对话悬浮窗 */}
       {showAIChat && (
@@ -351,7 +351,7 @@ const ScrollableLayout = () => {
             <div className="flex items-center gap-2">
               <span className="text-xl">🤖</span>
               <span className="text-white font-semibold">AI 对话助手</span>
-            </div>
+                    </div>
             <button
               onClick={() => setShowAIChat(false)}
               className="w-8 h-8 flex items-center justify-center rounded-full 
@@ -359,7 +359,7 @@ const ScrollableLayout = () => {
             >
               ✕
             </button>
-          </div>
+                </div>
 
           {/* 内容区 */}
           <div className="flex-1 p-6 flex items-center justify-center">
@@ -371,15 +371,15 @@ const ScrollableLayout = () => {
               <div>
                 <p className="text-white/70 text-sm mb-2">AI对话功能</p>
                 <p className="text-white/40 text-xs">即将推出</p>
-              </div>
+                    </div>
               <div className="text-xs text-white/30 space-y-1">
                 <p>✨ 智能问答</p>
                 <p>📚 内容总结</p>
                 <p>🔍 深度解析</p>
                 <p>💡 个性推荐</p>
-              </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                </div>
 
           {/* 底部输入框占位 */}
           <div className="flex-shrink-0 p-4 border-t border-white/10">
@@ -397,24 +397,24 @@ const ScrollableLayout = () => {
                 发送
               </button>
             </div>
-          </div>
-        </div>
+                      </div>
+                      </div>
       )}
 
       {/* 悬停详情面板 */}
       {hoveredPost && (
         <div
-          ref={detailPanelRef}
-          onMouseLeave={handleDetailPanelMouseLeave}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
           {/* 背景遮罩 */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           
           {/* 内容面板 */}
           <div
+            ref={detailPanelRef}
+            onMouseLeave={handleDetailPanelMouseLeave}
             className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
-                     max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in pointer-events-auto"
+                     max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
             {/* 头部 */}
             <div className="flex-shrink-0 p-6 border-b border-white/10">
@@ -437,8 +437,15 @@ const ScrollableLayout = () => {
                     {hoveredPost.analysis.core_issue}
                   </p>
                 </div>
-              </div>
-            </div>
+                <button
+                  onClick={() => setHoveredPost(null)}
+                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
+                           bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+                  </div>
+                </div>
 
             {/* 内容 */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
@@ -470,7 +477,7 @@ const ScrollableLayout = () => {
                   </ul>
                 </div>
               )}
-            </div>
+              </div>
 
             {/* 底部 */}
             <div className="flex-shrink-0 p-4 border-t border-white/10 flex justify-end">
