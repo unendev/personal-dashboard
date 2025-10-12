@@ -858,10 +858,8 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
-/* 紧凑布局优化 */
-body {
-  overflow: hidden; /* 防止双滚动条 */
-}
+/* 紧凑布局优化 - 移除全局 overflow:hidden，允许页面滚动 */
+/* 如果需要防止双滚动条，请在具体页面组件中设置 */
 
 /* 大纲导航样式增强 */
 aside::-webkit-scrollbar {
