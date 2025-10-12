@@ -69,6 +69,19 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
       
       // 自动保存（防抖）
       debouncedSave(html);
+      
+      // 延迟更新已完成任务的显示状态（等待DOM更新）
+      setTimeout(() => {
+        const editorElement = editor.view.dom;
+        const allTaskItems = editorElement.querySelectorAll('li[data-type="taskItem"]');
+        
+        allTaskItems.forEach(taskItem => {
+          const checkbox = taskItem.querySelector('input[type="checkbox"]') as HTMLInputElement;
+          if (checkbox && checkbox.checked && !showCompleted) {
+            (taskItem as HTMLElement).style.display = 'none';
+          }
+        });
+      }, 10);
     },
     editorProps: {
       attributes: {
@@ -103,6 +116,28 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
     },
   });
 
+  // 手动控制已完成任务的显示/隐藏
+  const toggleCompletedTasksVisibility = useCallback(() => {
+    if (!editor) return;
+    
+    const editorElement = editor.view.dom;
+    const allTaskItems = editorElement.querySelectorAll('li[data-type="taskItem"]');
+    
+    allTaskItems.forEach(taskItem => {
+      const checkbox = taskItem.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      if (checkbox && checkbox.checked) {
+        (taskItem as HTMLElement).style.display = showCompleted ? 'flex' : 'none';
+      } else {
+        (taskItem as HTMLElement).style.display = 'flex';
+      }
+    });
+  }, [editor, showCompleted]);
+
+  // 监听showCompleted状态变化
+  useEffect(() => {
+    toggleCompletedTasksVisibility();
+  }, [showCompleted, toggleCompletedTasksVisibility]);
+
   // 从数据库加载内容
   const loadContent = useCallback(async () => {
     try {
@@ -131,11 +166,15 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
           editor.commands.setContent(htmlContent);
           setMdContent(htmlContent);
           updateStats(htmlContent);
+          // 加载后应用隐藏逻辑
+          setTimeout(() => toggleCompletedTasksVisibility(), 100);
         } else if (content && editor) {
           // 已经是HTML格式
           editor.commands.setContent(content);
           setMdContent(content);
           updateStats(content);
+          // 加载后应用隐藏逻辑
+          setTimeout(() => toggleCompletedTasksVisibility(), 100);
         }
       }
     } catch (error) {
@@ -722,14 +761,33 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
                   color: #e5e7eb !important;
                 }
                 
-                /* 已完成任务 - 默认隐藏（优先级最高） */
+                /* 已完成任务 - 默认隐藏（通过checkbox的checked状态判断） */
                 ${!showCompleted ? `
+                .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]:has(input[type="checkbox"]:checked) {
+                  display: none !important;
+                }
+                /* 兼容旧版浏览器的备用方案 */
                 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] {
+                  display: none !important;
+                }
+                .ProseMirror ul[data-type="taskList"] li.checked {
                   display: none !important;
                 }
                 ` : ''}
                 
-                /* 已完成任务样式（显示时） */
+                /* 已完成任务样式（显示时）- 通过checkbox状态 */
+                .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]:has(input[type="checkbox"]:checked) {
+                  background: rgba(107, 114, 128, 0.08) !important;
+                  border-color: rgba(107, 114, 128, 0.2) !important;
+                  opacity: 0.6 !important;
+                }
+                
+                .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]:has(input[type="checkbox"]:checked) > div > p {
+                  text-decoration: line-through !important;
+                  color: #9ca3af !important;
+                }
+                
+                /* 兼容旧版本的备用样式 */
                 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] {
                   background: rgba(107, 114, 128, 0.08) !important;
                   border-color: rgba(107, 114, 128, 0.2) !important;
