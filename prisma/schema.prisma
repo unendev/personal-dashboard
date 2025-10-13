@@ -37,7 +37,9 @@ model User {
   twitterUsers                TwitterUser[]
   layout                      UserLayout?
   youtubeVideoCache           YouTubeVideoCache[]
-  milestones                  Milestone[]
+  dailyProgress               DailyProgress[]
+  skillProfiles               SkillProfile[]
+  projectProfiles             ProjectProfile[]
 
   @@map("users")
 }
@@ -527,28 +529,91 @@ model MindMap {
   @@map("mindmaps")
 }
 
-model Milestone {
+// 每日进度记录
+model DailyProgress {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // 回顾周期
-  startDate DateTime
-  endDate   DateTime
+  date      String   // "2025-10-12" 进度所属日期（前一天）
   
-  // AI 生成内容
-  aiTitle              String   // AI生成的标题
-  aiFocus              String   @db.Text // 本周焦点描述
-  aiInsights           String[] // AI洞察列表
-  aiKeyAchievements    Json     // AI识别的关键成果 [{ taskId, taskName, duration, category }]
+  // AI 初步分析
+  aiAnalysis          Json     // AI的初步分析结果
+  aiExtractedSkills   Json     // 提取的技能 [{ skill, level, delta, isNew }]
+  aiExtractedProjects Json     // 识别的项目 [{ name, hours }]
+  aiInsights          String[] // AI洞察
   
-  // 用户确认内容
-  confirmedAchievements Json     // 用户勾选确认的成果
-  userNotes             String?  @db.Text // 用户补充的备注
+  // 对话历史
+  conversationHistory Json     // 用户反馈和AI调整的对话记录
+  iterations          Int      @default(1) // 迭代次数
+  
+  // 用户最终确认
+  finalAnalysis       Json?    // 最终确认的分析结果
+  userNotes           String?  @db.Text
+  isConfirmed         Boolean  @default(false)
+  
+  // 统计数据
+  totalHours          Float
+  newSkillsCount      Int      @default(0)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@unique([userId, startDate, endDate])
-  @@map("milestones")
+  @@unique([userId, date])
+  @@map("daily_progress")
+}
+
+// 技能档案（累积追踪）
+model SkillProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  skillName    String   // "React"
+  category     String?  // "前端开发"
+  
+  // 熟练度数据
+  proficiency  Float    @default(0) // 0-100
+  totalHours   Float    @default(0)
+  occurrences  Int      @default(0) // 使用次数
+  
+  // 时间追踪
+  firstUsed    DateTime
+  lastUsed     DateTime
+  
+  // 成长趋势（存储每周数据点）
+  weeklyTrend  Json     @default("[]") // [{ week, hours, proficiency }]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, skillName])
+  @@map("skill_profiles")
+}
+
+// 项目档案
+model ProjectProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  projectName  String   // "#个人门户"
+  
+  // 统计数据
+  totalHours   Float    @default(0)
+  taskCount    Int      @default(0)
+  
+  // 时间追踪
+  startDate    DateTime
+  lastActive   DateTime
+  
+  // 项目数据
+  milestones   Json     @default("[]") // 里程碑列表
+  skillsUsed   String[] @default([])   // 用到的技能
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, projectName])
+  @@map("project_profiles")
 }

@@ -15,8 +15,6 @@ interface TreasureStatsPanelProps {
 }
 
 export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: TreasureStatsPanelProps) {
-  const [snakePath, setSnakePath] = useState<number[]>([])
-  const [isSnakeAnimating, setIsSnakeAnimating] = useState(false)
   const [showSnakeSvg, setShowSnakeSvg] = useState(false)
 
   // 计算热力图数据（最近12周，每周7天）
@@ -104,35 +102,32 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
     return () => clearTimeout(startDelay)
   }, [treasures.length])
   
-  // 生成贪吃蛇 SVG 路径
+  // 生成贪吃蛇 SVG 路径（蛇形遍历：从左到右，从上到下，像贪吃蛇一样）
   const snakeSvgPath = useMemo(() => {
-    if (!weeklyData || weeklyData.length === 0) return ''
+    if (!weeklyData || weeklyData.length === 0 || !weeklyData[0]) return ''
     
-    const cellSize = 12 + 3 // 12px (w-3) + 3px gap
-    const startX = 0
-    const startY = 0
-    
-    const path: string[] = []
+    const cellSize = 15 // 12px (w-3) + 3px gap
     const points: Array<{ x: number; y: number }> = []
     
-    // 生成所有单元格的中心点坐标（从左到右，从上到下）
-    weeklyData[0]?.forEach((_, colIndex) => {
-      weeklyData.forEach((row, rowIndex) => {
-        const cell = row[colIndex]
+    // 蛇形遍历：每列从上到下，然后移动到下一列
+    for (let colIndex = 0; colIndex < weeklyData[0].length; colIndex++) {
+      for (let rowIndex = 0; rowIndex < weeklyData.length; rowIndex++) {
+        const cell = weeklyData[rowIndex][colIndex]
         if (cell) {
-          const x = startX + colIndex * cellSize + 6 // 中心点
-          const y = startY + rowIndex * cellSize + 6 // 中心点
+          // 计算中心点坐标（考虑到有左侧的星期标签）
+          const x = colIndex * cellSize + cellSize / 2
+          const y = rowIndex * cellSize + cellSize / 2
           points.push({ x, y })
         }
-      })
-    })
+      }
+    }
     
     // 构建 SVG 路径
-    if (points.length > 0) {
-      path.push(`M ${points[0].x} ${points[0].y}`)
-      for (let i = 1; i < points.length; i++) {
-        path.push(`L ${points[i].x} ${points[i].y}`)
-      }
+    if (points.length === 0) return ''
+    
+    const path = [`M ${points[0].x} ${points[0].y}`]
+    for (let i = 1; i < points.length; i++) {
+      path.push(`L ${points[i].x} ${points[i].y}`)
     }
     
     return path.join(' ')
@@ -154,15 +149,9 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
   }
 
   // 计算热力图颜色（GitHub 风格）
-  const getHeatColor = (count: number, index: number) => {
-    const isInSnakePath = snakePath.includes(index)
+  const getHeatColor = (count: number) => {
     const maxCount = Math.max(...heatmapData.map(d => d.count), 1)
     const intensity = count / maxCount
-    
-    // 贪吃蛇效果
-    if (isInSnakePath) {
-      return 'bg-green-500 border border-green-400 animate-pulse'
-    }
     
     // GitHub 风格配色
     if (count === 0) return 'bg-[#161b22] border border-white/5'
@@ -195,7 +184,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
         
         {/* 周视图网格 */}
         <div className="overflow-x-auto">
-          <div className="flex gap-[3px] min-w-max">
+          <div className="flex gap-[3px] min-w-max relative">
             {/* 星期标签 */}
             <div className="flex flex-col gap-[3px] pr-2">
               <div className="h-3 text-[10px] text-white/40 leading-3">日</div>
@@ -221,9 +210,8 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
                       key={rowIndex}
                       className={cn(
                         "w-3 h-3 rounded-sm transition-all duration-200 hover:scale-150 hover:z-10 cursor-pointer group relative",
-                        getHeatColor(cell.count, cell.index)
+                        getHeatColor(cell.count)
                       )}
-                      onClick={() => !isSnakeAnimating && setIsSnakeAnimating(true)}
                       title={`${cell.date}: ${cell.count} 个宝藏`}
                     >
                       {/* Tooltip */}
@@ -236,30 +224,69 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
                 })}
               </div>
             ))}
+            
+            {/* 贪吃蛇 SVG 动画 - GitHub 风格 */}
+            {showSnakeSvg && snakeSvgPath && weeklyData[0] && (
+              <svg 
+                className="absolute left-0 top-0 pointer-events-none"
+                style={{ 
+                  width: `${weeklyData[0].length * 15}px`, 
+                  height: `${weeklyData.length * 15}px`,
+                  opacity: 0.9
+                }}
+                viewBox={`0 0 ${weeklyData[0].length * 15} ${weeklyData.length * 15}`}
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                    <stop offset="30%" stopColor="#22c55e" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="1" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d={snakeSvgPath}
+                  stroke="url(#snakeGradient)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  strokeDasharray={pathLength}
+                  strokeDashoffset={pathLength}
+                  style={{ filter: 'drop-shadow(0 0 4px rgba(34, 197, 94, 0.6))' }}
+                >
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from={pathLength}
+                    to="0"
+                    dur="8s"
+                    repeatCount="indefinite"
+                  />
+                </path>
+                {/* 蛇头圆点 */}
+                <circle r="3" fill="#22c55e" style={{ filter: 'drop-shadow(0 0 3px rgba(34, 197, 94, 0.8))' }}>
+                  <animateMotion
+                    dur="8s"
+                    repeatCount="indefinite"
+                    path={snakeSvgPath}
+                  />
+                </circle>
+              </svg>
+            )}
           </div>
         </div>
         
-        {/* 图例和控制 */}
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-2 text-xs text-white/50">
-            <span>少</span>
-            <div className="flex gap-1">
-              <div className="w-3 h-3 rounded-sm bg-[#161b22] border border-white/5" />
-              <div className="w-3 h-3 rounded-sm bg-green-900/40 border border-green-700/30" />
-              <div className="w-3 h-3 rounded-sm bg-green-700/60 border border-green-600/40" />
-              <div className="w-3 h-3 rounded-sm bg-green-600/80 border border-green-500/50" />
-              <div className="w-3 h-3 rounded-sm bg-green-500 border border-green-400" />
-            </div>
-            <span>多</span>
+        {/* 图例 */}
+        <div className="flex items-center gap-2 text-xs text-white/50 mt-4">
+          <span>少</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 rounded-sm bg-[#161b22] border border-white/5" />
+            <div className="w-3 h-3 rounded-sm bg-green-900/40 border border-green-700/30" />
+            <div className="w-3 h-3 rounded-sm bg-green-700/60 border border-green-600/40" />
+            <div className="w-3 h-3 rounded-sm bg-green-600/80 border border-green-500/50" />
+            <div className="w-3 h-3 rounded-sm bg-green-500 border border-green-400" />
           </div>
-          
-          <button
-            onClick={() => setIsSnakeAnimating(true)}
-            disabled={isSnakeAnimating}
-            className="text-[10px] px-2 py-1 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded text-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSnakeAnimating ? '贪吃蛇中...' : '🐍 贪吃蛇'}
-          </button>
+          <span>多</span>
         </div>
       </div>
 

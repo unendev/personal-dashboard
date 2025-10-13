@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
-import WeeklyReviewModal from '@/app/components/features/milestone/WeeklyReviewModal'
+import DailyProgressModal from '@/app/components/features/progress/DailyProgressModal'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -67,9 +67,9 @@ export default function LogPage() {
   const [treasureModalType, setTreasureModalType] = useState<'TEXT' | 'IMAGE' | 'MUSIC'>('TEXT');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
-  // 每周回顾状态
-  const [isWeeklyReviewOpen, setIsWeeklyReviewOpen] = useState(false);
-  const [weeklyReviewDates, setWeeklyReviewDates] = useState({ startDate: '', endDate: '' });
+  // 每日进度审核状态
+  const [isDailyProgressOpen, setIsDailyProgressOpen] = useState(false);
+  const [progressTargetDate, setProgressTargetDate] = useState('');
 
   // 创建宝藏处理函数
   const handleCreateTreasure = async (data: CreateTreasureData) => {
@@ -121,17 +121,18 @@ export default function LogPage() {
     };
   };
 
-  // 打开每周回顾
-  const handleOpenWeeklyReview = () => {
-    const dates = getThisWeekDates();
-    setWeeklyReviewDates(dates);
-    setIsWeeklyReviewOpen(true);
+  // 打开每日进度审核（分析前一天）
+  const handleOpenDailyProgress = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0];
+    setProgressTargetDate(dateStr);
+    setIsDailyProgressOpen(true);
   };
 
-  // 回顾确认后的回调
-  const handleWeeklyReviewConfirmed = () => {
-    // 可以在这里刷新数据或显示通知
-    alert('✅ 周报已成功保存！查看你的成长进度吧。');
+  // 进度确认后的回调
+  const handleProgressConfirmed = () => {
+    alert('✅ 进度已成功存档！');
   };
 
   // 检测屏幕尺寸（使用屏幕宽度而不是 UserAgent）
@@ -846,11 +847,11 @@ export default function LogPage() {
       <div className="container mx-auto px-4 py-8 pt-20">
         <div className="flex items-center justify-end gap-3 mb-8">
           <button
-            onClick={handleOpenWeeklyReview}
+            onClick={handleOpenDailyProgress}
             className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
-            <span>📝</span>
-            <span>每周回顾</span>
+            <span>📊</span>
+            <span>昨日进度</span>
           </button>
           <Link
             href="/progress"
@@ -1078,13 +1079,12 @@ export default function LogPage() {
         onSubmit={handleCreateTreasure}
       />
 
-      {/* 每周回顾模态框 */}
-      <WeeklyReviewModal
-        isOpen={isWeeklyReviewOpen}
-        onClose={() => setIsWeeklyReviewOpen(false)}
-        startDate={weeklyReviewDates.startDate}
-        endDate={weeklyReviewDates.endDate}
-        onConfirmed={handleWeeklyReviewConfirmed}
+      {/* 每日进度审核模态框 */}
+      <DailyProgressModal
+        isOpen={isDailyProgressOpen}
+        onClose={() => setIsDailyProgressOpen(false)}
+        targetDate={progressTargetDate}
+        onConfirmed={handleProgressConfirmed}
       />
 
       {/* 成功通知 */}
