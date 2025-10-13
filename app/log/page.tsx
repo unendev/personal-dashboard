@@ -11,8 +11,10 @@ import { QuickCreateData } from '@/app/components/features/timer/QuickCreateDial
 import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
 import DateFilter from '@/app/components/shared/DateFilter'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
-import MarkdownTodoEditor from '@/app/components/features/todo/MarkdownTodoEditor'
+import NestedTodoList from '@/app/components/features/todo/NestedTodoList'
+import SimpleMdEditor from '@/app/components/features/notes/SimpleMdEditor'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
+import { Button } from '@/app/components/ui/button'
 import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
@@ -26,6 +28,9 @@ export default function LogPage() {
   // 移动端区域切换
   const [activeSection, setActiveSection] = useState<'timer' | 'todo' | 'stats' | 'ai'>('timer');
   const [isMobile, setIsMobile] = useState(false);
+  
+  // 待办清单/笔记视图切换
+  const [todoView, setTodoView] = useState<'todo' | 'notes'>('todo');
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
@@ -133,6 +138,11 @@ export default function LogPage() {
   // 进度确认后的回调
   const handleProgressConfirmed = () => {
     alert('✅ 进度已成功存档！');
+  };
+
+  // 每周回顾（占位）
+  const handleOpenWeeklyReview = () => {
+    alert('📊 每周回顾功能正在开发中...');
   };
 
   // 检测屏幕尺寸（使用屏幕宽度而不是 UserAgent）
@@ -963,14 +973,44 @@ export default function LogPage() {
             {activeSection === 'todo' && (
               <div className="mb-8">
                 <Card className="hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="text-xl">📋</span>
-                      任务清单
-                    </CardTitle>
+                  <CardHeader className="border-b border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="text-xl">📋</span>
+                        任务管理
+                      </CardTitle>
+                    </div>
+                    
+                    {/* 视图切换按钮 */}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant={todoView === 'todo' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTodoView('todo')}
+                        className="flex-1"
+                      >
+                        📋 待办清单
+                      </Button>
+                      <Button
+                        variant={todoView === 'notes' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTodoView('notes')}
+                        className="flex-1"
+                      >
+                        📝 笔记
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <MarkdownTodoEditor userId={userId} />
+                  <CardContent className="p-0">
+                    {todoView === 'todo' ? (
+                      <div className="p-4">
+                        <NestedTodoList />
+                      </div>
+                    ) : (
+                      <div className="p-4">
+                        <SimpleMdEditor />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1029,17 +1069,47 @@ export default function LogPage() {
                 </CardContent>
               </Card>
 
-              {/* 任务清单 */}
+              {/* 任务管理 */}
               <div className="order-2 lg:order-1">
                 <Card className="hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="text-xl">📋</span>
-                      任务清单
-                    </CardTitle>
+                  <CardHeader className="border-b border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="text-xl">📋</span>
+                        任务管理
+                      </CardTitle>
+                    </div>
+                    
+                    {/* 视图切换按钮 */}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant={todoView === 'todo' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTodoView('todo')}
+                        className="flex-1"
+                      >
+                        📋 待办清单
+                      </Button>
+                      <Button
+                        variant={todoView === 'notes' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTodoView('notes')}
+                        className="flex-1"
+                      >
+                        📝 笔记
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <MarkdownTodoEditor userId={userId} />
+                  <CardContent className="p-0">
+                    {todoView === 'todo' ? (
+                      <div className="p-4">
+                        <NestedTodoList />
+                      </div>
+                    ) : (
+                      <div className="p-4">
+                        <SimpleMdEditor />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

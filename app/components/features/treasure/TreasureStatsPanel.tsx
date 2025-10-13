@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { BarChart3, Tag as TagIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -15,8 +15,6 @@ interface TreasureStatsPanelProps {
 }
 
 export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: TreasureStatsPanelProps) {
-  const [showSnakeSvg, setShowSnakeSvg] = useState(false)
-
   // 计算热力图数据（最近12周，每周7天）
   const heatmapData = useMemo(() => {
     const weeks = 12
@@ -90,59 +88,6 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
       .slice(0, 20) // 只显示前20个
   }, [treasures])
 
-  // 贪吃蛇动画逻辑 - 自动循环播放
-  useEffect(() => {
-    if (treasures.length === 0) return
-    
-    // 初始延迟2秒后开始动画
-    const startDelay = setTimeout(() => {
-      setShowSnakeSvg(true)
-    }, 2000)
-    
-    return () => clearTimeout(startDelay)
-  }, [treasures.length])
-  
-  // 生成贪吃蛇 SVG 路径（蛇形遍历：从左到右，从上到下，像贪吃蛇一样）
-  const snakeSvgPath = useMemo(() => {
-    if (!weeklyData || weeklyData.length === 0 || !weeklyData[0]) return ''
-    
-    const cellSize = 15 // 12px (w-3) + 3px gap
-    const points: Array<{ x: number; y: number }> = []
-    
-    // 蛇形遍历：每列从上到下，然后移动到下一列
-    for (let colIndex = 0; colIndex < weeklyData[0].length; colIndex++) {
-      for (let rowIndex = 0; rowIndex < weeklyData.length; rowIndex++) {
-        const cell = weeklyData[rowIndex][colIndex]
-        if (cell) {
-          // 计算中心点坐标（考虑到有左侧的星期标签）
-          const x = colIndex * cellSize + cellSize / 2
-          const y = rowIndex * cellSize + cellSize / 2
-          points.push({ x, y })
-        }
-      }
-    }
-    
-    // 构建 SVG 路径
-    if (points.length === 0) return ''
-    
-    const path = [`M ${points[0].x} ${points[0].y}`]
-    for (let i = 1; i < points.length; i++) {
-      path.push(`L ${points[i].x} ${points[i].y}`)
-    }
-    
-    return path.join(' ')
-  }, [weeklyData])
-  
-  // 计算路径总长度用于动画
-  const pathLength = useMemo(() => {
-    if (!snakeSvgPath) return 0
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path.setAttribute('d', snakeSvgPath)
-    svg.appendChild(path)
-    return path.getTotalLength()
-  }, [snakeSvgPath])
-
   // 如果没有数据，不渲染
   if (treasures.length === 0) {
     return null
@@ -184,7 +129,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
         
         {/* 周视图网格 */}
         <div className="overflow-x-auto">
-          <div className="flex gap-[3px] min-w-max relative">
+          <div className="flex gap-[3px] min-w-max">
             {/* 星期标签 */}
             <div className="flex flex-col gap-[3px] pr-2">
               <div className="h-3 text-[10px] text-white/40 leading-3">日</div>
@@ -224,55 +169,6 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
                 })}
               </div>
             ))}
-            
-            {/* 贪吃蛇 SVG 动画 - GitHub 风格 */}
-            {showSnakeSvg && snakeSvgPath && weeklyData[0] && (
-              <svg 
-                className="absolute left-0 top-0 pointer-events-none"
-                style={{ 
-                  width: `${weeklyData[0].length * 15}px`, 
-                  height: `${weeklyData.length * 15}px`,
-                  opacity: 0.9
-                }}
-                viewBox={`0 0 ${weeklyData[0].length * 15} ${weeklyData.length * 15}`}
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
-                    <stop offset="30%" stopColor="#22c55e" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="1" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d={snakeSvgPath}
-                  stroke="url(#snakeGradient)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  strokeDasharray={pathLength}
-                  strokeDashoffset={pathLength}
-                  style={{ filter: 'drop-shadow(0 0 4px rgba(34, 197, 94, 0.6))' }}
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from={pathLength}
-                    to="0"
-                    dur="8s"
-                    repeatCount="indefinite"
-                  />
-                </path>
-                {/* 蛇头圆点 */}
-                <circle r="3" fill="#22c55e" style={{ filter: 'drop-shadow(0 0 3px rgba(34, 197, 94, 0.8))' }}>
-                  <animateMotion
-                    dur="8s"
-                    repeatCount="indefinite"
-                    path={snakeSvgPath}
-                  />
-                </circle>
-              </svg>
-            )}
           </div>
         </div>
         

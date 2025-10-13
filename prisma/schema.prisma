@@ -31,6 +31,7 @@ model User {
   skills                      Skill[]
   timerTasks                  TimerTask[]
   todos                       Todo[]
+  notes                       Note[]
   treasures                   Treasure[]
   articles                    Article[]
   mindmaps                    MindMap[]
@@ -246,10 +247,17 @@ model Todo {
   updatedAt     DateTime @updatedAt
   mdContent     String?  @db.Text
   description   String?  @db.Text
+  
+  // 新增：分组支持
+  groupId       String?
+  isGroup       Boolean  @default(false)
+  collapsed     Boolean  @default(false)
+  
   parent        Todo?    @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children      Todo[]   @relation("TodoHierarchy")
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([groupId])
   @@map("todos")
 }
 
@@ -616,4 +624,18 @@ model ProjectProfile {
   
   @@unique([userId, projectName])
   @@map("project_profiles")
+}
+
+// 笔记（纯Markdown）
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("notes")
 }

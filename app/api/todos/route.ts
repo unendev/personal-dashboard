@@ -26,11 +26,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/todos - 创建新任务
+// POST /api/todos - 创建新任务或分组
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, priority = 'medium', category, parentId } = body;
+    const { 
+      text, 
+      priority = 'medium', 
+      category, 
+      parentId, 
+      groupId,
+      isGroup = false 
+    } = body;
 
     if (!text) {
       return NextResponse.json({ error: 'text is required' }, { status: 400 });
@@ -43,7 +50,8 @@ export async function POST(request: NextRequest) {
     const minOrder = await prisma.todo.findFirst({
       where: {
         userId,
-        parentId: parentId || null
+        parentId: parentId || null,
+        groupId: groupId || null
       },
       orderBy: { order: 'asc' },
       select: { order: true }
@@ -57,6 +65,8 @@ export async function POST(request: NextRequest) {
         category,
         date: new Date().toISOString().split('T')[0], // 保留date字段用于记录创建日期，但不用于过滤
         parentId: parentId || null,
+        groupId: groupId || null,
+        isGroup,
         order: Math.max(0, (minOrder?.order || 0) - 1), // 新任务获得更小的order值，排在最前面
         createdAtUnix: Math.floor(Date.now() / 1000)
       }
@@ -73,7 +83,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, text, completed, priority, category, parentId } = body;
+    const { id, text, completed, priority, category, parentId, groupId, collapsed } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -85,12 +95,16 @@ export async function PUT(request: NextRequest) {
       priority?: string;
       category?: string;
       parentId?: string | null;
+      groupId?: string | null;
+      collapsed?: boolean;
     } = {};
     if (text !== undefined) updateData.text = text;
     if (completed !== undefined) updateData.completed = completed;
     if (priority !== undefined) updateData.priority = priority;
     if (category !== undefined) updateData.category = category;
     if (parentId !== undefined) updateData.parentId = parentId; // 支持更新 parentId
+    if (groupId !== undefined) updateData.groupId = groupId; // 支持更新 groupId
+    if (collapsed !== undefined) updateData.collapsed = collapsed; // 支持折叠/展开
 
     const todo = await prisma.todo.update({
       where: { id },
