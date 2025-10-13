@@ -60,6 +60,9 @@ export function TreasureList({ className }: TreasureListProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const pageSize = 20
   
+  // 全局统计数据（用于热力图和标签云）
+  const [statsData, setStatsData] = useState<Array<{ id: string; createdAt: string; tags: string[] }>>([])
+  
   // 元素引用
   const treasureRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
 
@@ -67,6 +70,25 @@ export function TreasureList({ className }: TreasureListProps) {
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // 获取全局统计数据（只在初始化时获取一次）
+  useEffect(() => {
+    const fetchStatsData = async () => {
+      try {
+        const response = await fetch('/api/treasures?stats=true')
+        if (response.ok) {
+          const data = await response.json()
+          setStatsData(data)
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error)
+      }
+    }
+
+    if (isMounted) {
+      fetchStatsData()
+    }
+  }, [isMounted])
 
   // 获取宝藏列表（初始加载）
   const fetchTreasures = useCallback(async () => {
@@ -105,7 +127,14 @@ export function TreasureList({ className }: TreasureListProps) {
       const response = await fetch(`/api/treasures?${params}`)
       if (response.ok) {
         const newData = await response.json()
-        setTreasures(prev => [...prev, ...newData])
+        
+        // 数据去重：过滤掉已存在的 ID
+        setTreasures(prev => {
+          const existingIds = new Set(prev.map(t => t.id))
+          const uniqueNewData = newData.filter((t: Treasure) => !existingIds.has(t.id))
+          return [...prev, ...uniqueNewData]
+        })
+        
         setPage(prev => prev + 1)
         setHasMore(newData.length === pageSize)
       }
@@ -122,23 +151,35 @@ export function TreasureList({ className }: TreasureListProps) {
     }
   }, [isMounted, searchQuery, fetchTreasures])
 
-  // 监听窗口滚动，实现无限加载
+  // 监听窗口滚动，实现无限加载（使用节流防止频繁触发）
   useEffect(() => {
+    let throttleTimer: NodeJS.Timeout | null = null
+    
     const handleScroll = () => {
-      // 计算距离页面底部的距离
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      const scrollHeight = document.documentElement.scrollHeight
-      const clientHeight = window.innerHeight
+      // 节流：200ms 内只触发一次
+      if (throttleTimer) return
       
-      // 当滚动到距离底部 500px 时触发加载更多
-      if (scrollHeight - scrollTop - clientHeight < 500 && !isLoadingMore && hasMore) {
-        loadMore()
-      }
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null
+        
+        // 计算距离页面底部的距离
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        const scrollHeight = document.documentElement.scrollHeight
+        const clientHeight = window.innerHeight
+        
+        // 当滚动到距离底部 300px 时触发加载更多
+        if (scrollHeight - scrollTop - clientHeight < 300 && !isLoadingMore && hasMore) {
+          loadMore()
+        }
+      }, 200)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', handleScroll)
+      if (throttleTimer) {
+        clearTimeout(throttleTimer)
+      }
     }
   }, [loadMore, isLoadingMore, hasMore])
 
@@ -210,8 +251,15 @@ export function TreasureList({ className }: TreasureListProps) {
       })
       
       if (response.ok) {
+        const newTreasure = await response.json()
         await fetchTreasures()
         setShowCreateModal(false)
+        
+        // 更新统计数据
+        setStatsData(prev => [
+          { id: newTreasure.id, createdAt: newTreasure.createdAt, tags: newTreasure.tags },
+          ...prev
+        ])
       }
     } catch (error) {
       console.error('创建宝藏失败:', error)
@@ -228,6 +276,9 @@ export function TreasureList({ className }: TreasureListProps) {
 
       if (response.ok) {
         await fetchTreasures()
+        
+        // 更新统计数据
+        setStatsData(prev => prev.filter(item => item.id !== id))
       }
     } catch (error) {
       console.error('删除宝藏失败:', error)
@@ -265,12 +316,42 @@ export function TreasureList({ className }: TreasureListProps) {
       })
 
       if (response.ok) {
-        await fetchTreasures()
+        const updatedTreasure = await response.json()
+        
+        // 为图片生成签名 URL
+        if (updatedTreasure.images && updatedTreasure.images.length > 0) {
+          const signedImages = await Promise.all(
+            updatedTreasure.images.map(async (image: { url: string; id: string; alt?: string; width?: number; height?: number }) => {
+              try {
+                const signResponse = await fetch('/api/upload/oss/sign-url', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: image.url })
+                })
+                if (signResponse.ok) {
+                  const { signedUrl } = await signResponse.json()
+                  return { ...image, url: signedUrl }
+                }
+              } catch (err) {
+                console.error('签名图片失败:', err)
+              }
+              return image
+            })
+          )
+          updatedTreasure.images = signedImages
+        }
+        
+        // 直接更新本地状态中的宝藏数据，保留点赞和评论计数
+        setTreasures(prev => prev.map(t => 
+          t.id === editingTreasure.id ? { ...updatedTreasure, _count: t._count } : t
+        ))
+        
         setShowEditModal(false)
         setEditingTreasure(null)
       }
     } catch (error) {
       console.error('更新宝藏失败:', error)
+      alert('更新失败，请重试')
     }
   }
 
@@ -296,7 +377,7 @@ export function TreasureList({ className }: TreasureListProps) {
     <div className={`flex gap-6 max-w-[1920px] mx-auto px-4 ${className}`}>
       {/* 左侧大纲面板 - 跟随滚动 */}
       <aside className="hidden xl:block w-72 flex-shrink-0">
-        <div className="sticky top-4">
+        <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto bg-[#0d1117] rounded-xl border border-white/10">
           <TreasureOutline
             treasures={treasures.map(t => ({ id: t.id, title: t.title, type: t.type, createdAt: t.createdAt }))}
             selectedId={activeId}
@@ -400,9 +481,9 @@ export function TreasureList({ className }: TreasureListProps) {
 
       {/* 右侧统计面板 - 跟随滚动 */}
       <aside className="hidden xl:block w-80 flex-shrink-0">
-        <div className="sticky top-4">
+        <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
           <TreasureStatsPanel 
-            treasures={treasures.map(t => ({ id: t.id, createdAt: t.createdAt, tags: t.tags }))}
+            treasures={statsData}
             onTagClick={handleTagClick}
             selectedTag={selectedTag}
           />

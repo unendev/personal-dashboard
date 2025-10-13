@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -110,6 +110,24 @@ function TwitterStyleCardComponent({
   const [newAnswer, setNewAnswer] = useState('')
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
   const [showInput, setShowInput] = useState(false) // 输入框默认隐藏
+  const actionsRef = useRef<HTMLDivElement>(null)
+
+  // 点击外部关闭更多菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+        setShowActions(false)
+      }
+    }
+
+    if (showActions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showActions])
 
   // 获取回答列表
   const fetchAnswers = useCallback(async () => {
@@ -293,6 +311,13 @@ function TwitterStyleCardComponent({
     )
   }
 
+  // 判断图片是否应该使用 object-contain（竖图或小图）
+  const shouldUseContain = (image: { width?: number; height?: number }) => {
+    if (!image.width || !image.height) return false
+    // 竖图：高度大于宽度，或者宽高比 < 0.8
+    return image.height > image.width || (image.width / image.height) < 0.8
+  }
+
   const renderMedia = () => {
     // 只要有图片就显示，不限制类型
     if (treasure.images && treasure.images.length > 0) {
@@ -300,18 +325,24 @@ function TwitterStyleCardComponent({
       
       // 1张图：大图完整展示，有冲击力
       if (imageCount === 1) {
+        const firstImage = treasure.images[0]
+        const useContain = shouldUseContain(firstImage)
+        
         return (
           <div 
             className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer group"
             onClick={() => setSelectedImageIndex(0)}
           >
             <Image
-              src={treasure.images[0].url}
-              alt={treasure.images[0].alt || treasure.title}
-              width={treasure.images[0].width || 1200}
-              height={treasure.images[0].height || 800}
+              src={firstImage.url}
+              alt={firstImage.alt || treasure.title}
+              width={firstImage.width || 1200}
+              height={firstImage.height || 800}
               loading="lazy"
-              className="w-full max-h-[500px] object-cover group-hover:scale-105 transition-transform duration-300"
+              className={cn(
+                "w-full max-h-[500px] transition-transform duration-300",
+                useContain ? "object-contain" : "object-cover group-hover:scale-105"
+              )}
             />
           </div>
         )
@@ -320,32 +351,40 @@ function TwitterStyleCardComponent({
       else if (imageCount === 2) {
         return (
           <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
-            {treasure.images.map((image, index) => (
-              <div 
-                key={image.id} 
-                className="relative h-64 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
-                onClick={() => setSelectedImageIndex(index)}
-              >
-                <Image
-                  src={image.url}
-                  alt={image.alt || treasure.title}
-                  width={image.width || 600}
-                  height={image.height || 400}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
+            {treasure.images.map((image, index) => {
+              const useContain = shouldUseContain(image)
+              return (
+                <div 
+                  key={image.id} 
+                  className="relative h-64 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                  onClick={() => setSelectedImageIndex(index)}
+                >
+                  <Image
+                    src={image.url}
+                    alt={image.alt || treasure.title}
+                    width={image.width || 600}
+                    height={image.height || 400}
+                    loading="lazy"
+                    className={cn(
+                      "w-full h-full transition-transform duration-300",
+                      useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                    )}
+                  />
+                </div>
+              )
+            })}
           </div>
         )
       } 
       // 3张图：1大2小布局，完整展示
       else if (imageCount === 3) {
+        const firstImageUseContain = shouldUseContain(treasure.images[0])
+        
         return (
           <div className="mt-3 grid grid-cols-2 gap-2">
             {/* 第一张大图 */}
             <div 
-              className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+              className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
               onClick={() => setSelectedImageIndex(0)}
             >
               <Image
@@ -354,53 +393,19 @@ function TwitterStyleCardComponent({
                 width={treasure.images[0].width || 1000}
                 height={treasure.images[0].height || 600}
                 loading="lazy"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className={cn(
+                  "w-full h-full transition-transform duration-300",
+                  firstImageUseContain ? "object-contain" : "object-cover group-hover:scale-105"
+                )}
               />
             </div>
             {/* 后两张小图 */}
-            {treasure.images.slice(1, 3).map((image, index) => (
-              <div 
-                key={image.id}
-                className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
-                onClick={() => setSelectedImageIndex(index + 1)}
-              >
-                <Image
-                  src={image.url}
-                  alt={image.alt || treasure.title}
-                  width={image.width || 400}
-                  height={image.height || 300}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
-        )
-      } 
-      // 4+张图：展示前3张，第4张显示"+N"
-      else {
-        return (
-          <div className="mt-3">
-            <div className="grid grid-cols-2 gap-2">
-              {/* 第一张大图 */}
-              <div 
-                className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
-                onClick={() => setSelectedImageIndex(0)}
-              >
-                <Image
-                  src={treasure.images[0].url}
-                  alt={treasure.images[0].alt || treasure.title}
-                  width={treasure.images[0].width || 1000}
-                  height={treasure.images[0].height || 600}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              {/* 第2、3张小图 */}
-              {treasure.images.slice(1, 3).map((image, index) => (
+            {treasure.images.slice(1, 3).map((image, index) => {
+              const useContain = shouldUseContain(image)
+              return (
                 <div 
                   key={image.id}
-                  className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+                  className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
                   onClick={() => setSelectedImageIndex(index + 1)}
                 >
                   <Image
@@ -409,10 +414,64 @@ function TwitterStyleCardComponent({
                     width={image.width || 400}
                     height={image.height || 300}
                     loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className={cn(
+                      "w-full h-full transition-transform duration-300",
+                      useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                    )}
                   />
                 </div>
-              ))}
+              )
+            })}
+          </div>
+        )
+      } 
+      // 4+张图：展示前3张，第4张显示"+N"
+      else {
+        const firstImageUseContain = shouldUseContain(treasure.images[0])
+        
+        return (
+          <div className="mt-3">
+            <div className="grid grid-cols-2 gap-2">
+              {/* 第一张大图 */}
+              <div 
+                className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                onClick={() => setSelectedImageIndex(0)}
+              >
+                <Image
+                  src={treasure.images[0].url}
+                  alt={treasure.images[0].alt || treasure.title}
+                  width={treasure.images[0].width || 1000}
+                  height={treasure.images[0].height || 600}
+                  loading="lazy"
+                  className={cn(
+                    "w-full h-full transition-transform duration-300",
+                    firstImageUseContain ? "object-contain" : "object-cover group-hover:scale-105"
+                  )}
+                />
+              </div>
+              {/* 第2、3张小图 */}
+              {treasure.images.slice(1, 3).map((image, index) => {
+                const useContain = shouldUseContain(image)
+                return (
+                  <div 
+                    key={image.id}
+                    className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                    onClick={() => setSelectedImageIndex(index + 1)}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={image.alt || treasure.title}
+                      width={image.width || 400}
+                      height={image.height || 300}
+                      loading="lazy"
+                      className={cn(
+                        "w-full h-full transition-transform duration-300",
+                        useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                      )}
+                    />
+                  </div>
+                )
+              })}
             </div>
             {/* 查看更多按钮 */}
             <button
@@ -756,7 +815,7 @@ function TwitterStyleCardComponent({
                 </Button>
 
                 {/* 更多操作 */}
-                <div className="relative">
+                <div className="relative" ref={actionsRef}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -775,6 +834,7 @@ function TwitterStyleCardComponent({
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
+                            setShowActions(false)
                             onEdit(treasure.id)
                           }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
@@ -787,6 +847,7 @@ function TwitterStyleCardComponent({
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
+                            setShowActions(false)
                             onDelete(treasure.id)
                           }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
@@ -1070,7 +1131,7 @@ function TwitterStyleCardComponent({
                   </Button>
 
                   {/* 更多操作 */}
-                  <div className="relative">
+                  <div className="relative" ref={actionsRef}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1084,11 +1145,12 @@ function TwitterStyleCardComponent({
                     </Button>
                     
                     {showActions && (
-                      <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-lg py-1 z-10 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-xl py-1 z-50 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
                         {onEdit && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
+                              setShowActions(false)
                               onEdit(treasure.id)
                             }}
                             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
@@ -1101,6 +1163,7 @@ function TwitterStyleCardComponent({
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
+                              setShowActions(false)
                               onDelete(treasure.id)
                             }}
                             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"

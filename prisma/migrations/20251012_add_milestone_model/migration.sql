@@ -25,3 +25,7 @@ CREATE UNIQUE INDEX "milestones_userId_startDate_endDate_key" ON "milestones"("u
 ALTER TABLE "milestones" ADD CONSTRAINT "milestones_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+
+
+
+

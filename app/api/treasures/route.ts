@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const statsOnly = searchParams.get('stats') === 'true'; // 只返回统计数据
 
     const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
     
@@ -36,6 +37,21 @@ export async function GET(request: NextRequest) {
         { title: { contains: search, mode: 'insensitive' } },
         { content: { contains: search, mode: 'insensitive' } }
       ];
+    }
+
+    // 如果只需要统计数据，返回所有宝藏的创建日期和标签
+    if (statsOnly) {
+      const statsData = await prisma.treasure.findMany({
+        where: { userId }, // 统计数据不受筛选影响
+        select: {
+          id: true,
+          createdAt: true,
+          tags: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      return NextResponse.json(statsData);
     }
 
     // 计算分页

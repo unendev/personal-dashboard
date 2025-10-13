@@ -436,7 +436,7 @@ const ScrollableLayout = () => {
                   <p className="text-sm text-white/70">
                     {hoveredPost.analysis.core_issue}
                   </p>
-                </div>
+                      </div>
                 <button
                   onClick={() => setHoveredPost(null)}
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
