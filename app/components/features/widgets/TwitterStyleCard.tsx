@@ -90,6 +90,7 @@ interface TwitterStyleCardProps {
   onComment?: (treasure: TwitterStyleCardProps['treasure']) => void
   className?: string
   hideComments?: boolean  // 是否隐藏评论区域
+  hideCategoryAvatar?: boolean // 是否隐藏卡片内的分类头像区域
 }
 
 function TwitterStyleCardComponent({ 
@@ -98,7 +99,8 @@ function TwitterStyleCardComponent({
   onDelete,
   onComment,
   className,
-  hideComments = false 
+  hideComments = false, 
+  hideCategoryAvatar = false
 }: TwitterStyleCardProps) {
   const [showActions, setShowActions] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -656,6 +658,7 @@ function TwitterStyleCardComponent({
           {/* 头部信息 */}
           <div className="flex items-start gap-3">
             {/* 头像区域 - 包含分类名称和头像 */}
+            {!hideCategoryAvatar && (
             <div className="flex flex-col items-center gap-1">
               {/* 分类名称 */}
               {(() => {
@@ -698,6 +701,7 @@ function TwitterStyleCardComponent({
                 })()}
               </div>
             </div>
+            )}
 
             {/* 内容区域 */}
             <div className="flex-1 min-w-0">
@@ -972,6 +976,7 @@ function TwitterStyleCardComponent({
             {/* 头部信息 */}
             <div className="flex items-start gap-3">
             {/* 头像区域 - 包含分类名称和头像 */}
+            {!hideCategoryAvatar && (
             <div className="flex flex-col items-center gap-1">
               {/* 分类名称 */}
               {(() => {
@@ -1014,6 +1019,7 @@ function TwitterStyleCardComponent({
                 })()}
               </div>
             </div>
+            )}
 
             {/* 内容区域 */}
             <div className="flex-1 min-w-0">

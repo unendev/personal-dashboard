@@ -94,7 +94,7 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
           ],
           "post_type": "从[技术问答, 资源分享, 新闻资讯, 优惠活动, 日常闲聊, 求助, 讨论, 产品评测]中选择一个",
           "value_assessment": "从[高, 中, 低]中选择一个",
-          "detailed_analysis": "生成200-400字的适度详细分析（用markdown格式）：\\n\\n## 📋 内容概述\\n简要说明这个话题的背景和要点（2-3句话）\\n\\n## 💡 主要内容\\n展开帖子的核心内容、关键观点或解决方案（100-150字）\\n\\n## 💬 讨论要点\\n如果内容中提到评论或社区反馈，简要总结；否则说明帖子的实用性或适用场景（50-100字）\\n\\n## 🔧 实用价值\\n这个信息对读者有什么帮助，如何应用或参考（50-100字）"
+          "detailed_analysis": "生成200-400字的适度详细分析（用markdown格式）：\\n\\n## 📋 内容概述\\n简要说明这个话题的背景和要点（2-3句话）\\n\\n## 💡 主要内容\\n展开帖子的核心内容、关键观点或解决方案（100-150字）\\n\\n## 💬 讨论要点\\n说明帖子的实用性、适用场景或可能引发的讨论方向（50-100字）\\n\\n## 🔧 实用价值\\n这个信息对读者有什么帮助，如何应用或参考（50-100字）"
         }}
         """
         
@@ -337,13 +337,27 @@ async def fetch_linuxdo_posts_improved():
 
                 # 清理RSS描述内容（移除HTML标签和多余空白）
                 if rss_content:
+                    # 提取互动数据："X 个帖子 - Y 位参与者"
+                    replies_count = 0
+                    participants_count = 0
+                    try:
+                        match = re.search(r'(\d+)\s*个帖子\s*-\s*(\d+)\s*位参与者', rss_content)
+                        if match:
+                            replies_count = int(match.group(1))
+                            participants_count = int(match.group(2))
+                    except Exception:
+                        pass
+
                     clean_content = re.sub(r'<[^>]+>', ' ', rss_content)
+                    clean_content = re.sub(r'\d+\s*个帖子\s*-\s*\d+\s*位参与者', '', clean_content)
                     clean_content = ' '.join(clean_content.split())
                     clean_content = clean_content.replace('\n', ' ').replace('\r', ' ')
                     clean_content = ' '.join(clean_content.split())
 
                     if len(clean_content.strip()) > 10:
                         post['content'] = clean_content
+                        post['replies_count'] = replies_count
+                        post['participants_count'] = participants_count
                         posts_with_content.append(post)
                         logger.info(f"    + 使用RSS描述内容 (长度: {len(clean_content)} 字符)")
                     else:
@@ -430,19 +444,40 @@ async def insert_posts_into_db(posts_data):
                 value_assessment = analysis.get('value_assessment')
                 detailed_analysis = analysis.get('detailed_analysis')
 
-                await conn.execute("""
-                    INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    ON CONFLICT (id) DO UPDATE SET
-                        title = EXCLUDED.title,
-                        url = EXCLUDED.url,
-                        core_issue = EXCLUDED.core_issue,
-                        key_info = EXCLUDED.key_info,
-                        post_type = EXCLUDED.post_type,
-                        value_assessment = EXCLUDED.value_assessment,
-                        detailed_analysis = EXCLUDED.detailed_analysis,
-                        timestamp = CURRENT_TIMESTAMP;
-                """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                replies_count = int(post.get('replies_count') or 0)
+                participants_count = int(post.get('participants_count') or 0)
+
+                try:
+                    await conn.execute("""
+                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                        ON CONFLICT (id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            url = EXCLUDED.url,
+                            core_issue = EXCLUDED.core_issue,
+                            key_info = EXCLUDED.key_info,
+                            post_type = EXCLUDED.post_type,
+                            value_assessment = EXCLUDED.value_assessment,
+                            detailed_analysis = EXCLUDED.detailed_analysis,
+                            replies_count = EXCLUDED.replies_count,
+                            participants_count = EXCLUDED.participants_count,
+                            timestamp = CURRENT_TIMESTAMP;
+                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                except Exception as insert_err:
+                    logger.warning(f"posts 表缺少新列，回退旧插入语句: {insert_err}")
+                    await conn.execute("""
+                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        ON CONFLICT (id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            url = EXCLUDED.url,
+                            core_issue = EXCLUDED.core_issue,
+                            key_info = EXCLUDED.key_info,
+                            post_type = EXCLUDED.post_type,
+                            value_assessment = EXCLUDED.value_assessment,
+                            detailed_analysis = EXCLUDED.detailed_analysis,
+                            timestamp = CURRENT_TIMESTAMP;
+                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
                 
                 logger.info(f"  - 帖子 '{title[:30]}...' (ID: {post_id}) 已插入/更新。")
                 success_count += 1

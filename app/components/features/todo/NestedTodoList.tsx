@@ -12,7 +12,11 @@ import {
   Edit2,
   Check,
   X,
+  Search,
+  Filter,
+  Clock,
 } from 'lucide-react'
+import useSWR from 'swr'
 
 interface Todo {
   id: string
@@ -33,6 +37,7 @@ interface TodoItemProps {
   onDelete: (id: string) => void
   onUpdate: (id: string, updates: Partial<Todo>) => void
   onCreateTask: (groupId: string) => void
+  onStartTimer?: (taskName: string, category: string) => void
   level: number
 }
 
@@ -43,6 +48,7 @@ function TodoItem({
   onDelete,
   onUpdate,
   onCreateTask,
+  onStartTimer,
   level,
 }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
@@ -156,6 +162,18 @@ function TodoItem({
         {/* 操作按钮 */}
         {!isEditing && (
           <div className="flex items-center gap-1">
+            {/* 启动计时器按钮（仅任务） */}
+            {!todo.isGroup && !todo.completed && onStartTimer && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onStartTimer(todo.text, todo.category || '工作')}
+                title="启动计时器"
+                className="text-blue-400 hover:text-blue-300"
+              >
+                <Clock className="h-4 w-4" />
+              </Button>
+            )}
             {todo.isGroup && (
               <Button
                 size="sm"
@@ -200,6 +218,7 @@ function TodoItem({
                 onDelete={onDelete}
                 onUpdate={onUpdate}
                 onCreateTask={onCreateTask}
+                onStartTimer={onStartTimer}
                 level={level + 1}
               />
             ))}
@@ -209,29 +228,28 @@ function TodoItem({
   )
 }
 
-export default function NestedTodoList() {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [loading, setLoading] = useState(true)
+interface NestedTodoListProps {
+  onStartTimer?: (taskName: string, category: string) => void
+}
+
+// SWR fetcher
+const fetcher = (url: string) => fetch(url).then(res => res.json())
+
+export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {}) {
   const [newItemText, setNewItemText] = useState('')
   const [newItemType, setNewItemType] = useState<'group' | 'task'>('task')
+  
+  // 搜索和过滤状态
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPriority, setFilterPriority] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('all')
 
-  useEffect(() => {
-    loadTodos()
-  }, [])
-
-  const loadTodos = async () => {
-    try {
-      const response = await fetch('/api/todos')
-      if (response.ok) {
-        const data = await response.json()
-        setTodos(data)
-      }
-    } catch (error) {
-      console.error('加载待办清单失败:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // 使用 SWR 获取待办清单（1分钟缓存）
+  const { data: todos = [], error, mutate, isLoading } = useSWR('/api/todos', fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 60 * 1000, // 1分钟内不重复请求
+  })
 
   const handleCreate = async () => {
     if (!newItemText.trim()) return
@@ -249,11 +267,13 @@ export default function NestedTodoList() {
 
       if (response.ok) {
         const newTodo = await response.json()
-        setTodos([...todos, newTodo])
+        // 乐观更新：立即添加到列表
+        mutate([...todos, newTodo], false)
         setNewItemText('')
       }
     } catch (error) {
       console.error('创建失败:', error)
+      mutate() // 失败时重新验证
     }
   }
 
@@ -275,16 +295,21 @@ export default function NestedTodoList() {
 
       if (response.ok) {
         const newTodo = await response.json()
-        setTodos([...todos, newTodo])
+        mutate([...todos, newTodo], false)
       }
     } catch (error) {
       console.error('创建任务失败:', error)
+      mutate()
     }
   }
 
   const handleToggle = async (id: string) => {
     const todo = todos.find(t => t.id === id)
     if (!todo) return
+
+    // 乐观更新
+    const updatedTodos = todos.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
+    mutate(updatedTodos, false)
 
     try {
       const response = await fetch('/api/todos', {
@@ -296,15 +321,20 @@ export default function NestedTodoList() {
         }),
       })
 
-      if (response.ok) {
-        setTodos(todos.map(t => (t.id === id ? { ...t, completed: !t.completed } : t)))
+      if (!response.ok) {
+        throw new Error('更新失败')
       }
     } catch (error) {
       console.error('更新失败:', error)
+      mutate() // 失败时回滚
     }
   }
 
   const handleUpdate = async (id: string, updates: Partial<Todo>) => {
+    // 乐观更新
+    const updatedTodos = todos.map(t => (t.id === id ? { ...t, ...updates } : t))
+    mutate(updatedTodos, false)
+
     try {
       const response = await fetch('/api/todos', {
         method: 'PUT',
@@ -312,16 +342,21 @@ export default function NestedTodoList() {
         body: JSON.stringify({ id, ...updates }),
       })
 
-      if (response.ok) {
-        setTodos(todos.map(t => (t.id === id ? { ...t, ...updates } : t)))
+      if (!response.ok) {
+        throw new Error('更新失败')
       }
     } catch (error) {
       console.error('更新失败:', error)
+      mutate() // 失败时回滚
     }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除吗？')) return
+
+    // 乐观更新：立即移除
+    const updatedTodos = todos.filter(t => t.id !== id && t.groupId !== id)
+    mutate(updatedTodos, false)
 
     try {
       const response = await fetch(`/api/todos?id=${id}`, {
@@ -329,37 +364,179 @@ export default function NestedTodoList() {
       })
 
       if (response.ok) {
-        setTodos(todos.filter(t => t.id !== id && t.groupId !== id))
-        await loadTodos() // 重新加载以确保级联删除生效
+        // 删除成功，重新验证以确保级联删除生效
+        mutate()
+      } else {
+        throw new Error('删除失败')
       }
     } catch (error) {
       console.error('删除失败:', error)
+      mutate() // 失败时回滚
     }
   }
 
+  // 过滤和搜索逻辑
+  const getFilteredTodos = () => {
+    let filtered = [...todos]
+    
+    // 搜索过滤
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(t => 
+        t.text.toLowerCase().includes(query)
+      )
+    }
+    
+    // 优先级过滤
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(t => 
+        t.isGroup || t.priority === filterPriority
+      )
+    }
+    
+    // 状态过滤
+    if (filterStatus === 'active') {
+      filtered = filtered.filter(t => t.isGroup || !t.completed)
+    } else if (filterStatus === 'completed') {
+      filtered = filtered.filter(t => t.isGroup || t.completed)
+    }
+    
+    return filtered
+  }
+
+  const filteredTodos = getFilteredTodos()
+  
   // 过滤出根级项目（没有 groupId 的）
-  const rootTodos = todos.filter(t => !t.groupId).sort((a, b) => a.order - b.order)
+  const rootTodos = filteredTodos.filter(t => !t.groupId).sort((a, b) => a.order - b.order)
 
   // 统计
   const totalTasks = todos.filter(t => !t.isGroup).length
   const completedTasks = todos.filter(t => !t.isGroup && t.completed).length
+  const highPriorityTasks = todos.filter(t => !t.isGroup && t.priority === 'high' && !t.completed).length
 
-  if (loading) {
+  // 加载状态
+  if (isLoading) {
     return (
       <div className="p-8 text-center text-gray-400">
-        加载中...
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+        加载待办清单...
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-400">
+        加载失败，请刷新重试
       </div>
     )
   }
 
   return (
     <div>
-      {/* 统计和创建区域 */}
-      <div className="border-b border-gray-700 pb-4 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-400">
-            {completedTasks} / {totalTasks} 已完成
+      {/* 统计面板 */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">
+          <div className="text-xs text-blue-300 mb-1">总任务</div>
+          <div className="text-2xl font-bold text-blue-400">{totalTasks}</div>
+        </div>
+        <div className="bg-green-900/20 rounded-lg p-3 border border-green-700/30">
+          <div className="text-xs text-green-300 mb-1">已完成</div>
+          <div className="text-2xl font-bold text-green-400">
+            {completedTasks}
+            <span className="text-sm ml-1 text-gray-400">
+              ({totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%)
+            </span>
           </div>
+        </div>
+        <div className="bg-red-900/20 rounded-lg p-3 border border-red-700/30">
+          <div className="text-xs text-red-300 mb-1">高优先级</div>
+          <div className="text-2xl font-bold text-red-400">{highPriorityTasks}</div>
+        </div>
+      </div>
+
+      {/* 搜索和过滤区域 */}
+      <div className="border-b border-gray-700 pb-4 mb-4 space-y-3">
+        {/* 搜索框 */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索任务..."
+            className="pl-10"
+          />
+        </div>
+
+        {/* 过滤器 */}
+        <div className="flex gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <Filter className="h-3 w-3" />
+            <span>状态:</span>
+          </div>
+          <Button
+            size="sm"
+            variant={filterStatus === 'all' ? 'default' : 'ghost'}
+            onClick={() => setFilterStatus('all')}
+            className="h-7"
+          >
+            全部
+          </Button>
+          <Button
+            size="sm"
+            variant={filterStatus === 'active' ? 'default' : 'ghost'}
+            onClick={() => setFilterStatus('active')}
+            className="h-7"
+          >
+            进行中
+          </Button>
+          <Button
+            size="sm"
+            variant={filterStatus === 'completed' ? 'default' : 'ghost'}
+            onClick={() => setFilterStatus('completed')}
+            className="h-7"
+          >
+            已完成
+          </Button>
+          
+          <div className="w-px h-6 bg-gray-700 mx-1" />
+          
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <span>优先级:</span>
+          </div>
+          <Button
+            size="sm"
+            variant={filterPriority === 'all' ? 'default' : 'ghost'}
+            onClick={() => setFilterPriority('all')}
+            className="h-7"
+          >
+            全部
+          </Button>
+          <Button
+            size="sm"
+            variant={filterPriority === 'high' ? 'default' : 'ghost'}
+            onClick={() => setFilterPriority('high')}
+            className="h-7"
+          >
+            ⚡高
+          </Button>
+          <Button
+            size="sm"
+            variant={filterPriority === 'medium' ? 'default' : 'ghost'}
+            onClick={() => setFilterPriority('medium')}
+            className="h-7"
+          >
+            📌中
+          </Button>
+          <Button
+            size="sm"
+            variant={filterPriority === 'low' ? 'default' : 'ghost'}
+            onClick={() => setFilterPriority('low')}
+            className="h-7"
+          >
+            📝低
+          </Button>
         </div>
 
         {/* 创建新项 */}
@@ -397,7 +574,29 @@ export default function NestedTodoList() {
       <div className="max-h-[500px] overflow-y-auto">
         {rootTodos.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            暂无待办事项，创建一个开始吧！
+            {searchQuery || filterPriority !== 'all' || filterStatus !== 'all' ? (
+              <>
+                <div className="text-4xl mb-2">🔍</div>
+                <div>未找到匹配的任务</div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setFilterPriority('all')
+                    setFilterStatus('all')
+                  }}
+                  className="mt-2"
+                >
+                  清除筛选
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl mb-2">📝</div>
+                <div>暂无待办事项，创建一个开始吧！</div>
+              </>
+            )}
           </div>
         ) : (
           rootTodos.map((todo) => (
@@ -409,6 +608,7 @@ export default function NestedTodoList() {
               onDelete={handleDelete}
               onUpdate={handleUpdate}
               onCreateTask={handleCreateTask}
+              onStartTimer={onStartTimer}
               level={0}
             />
           ))

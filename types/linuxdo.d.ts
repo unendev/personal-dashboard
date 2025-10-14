@@ -2,6 +2,8 @@ export interface LinuxDoPost {
   id: string;
   title: string;
   url: string;
+  replies_count?: number;
+  participants_count?: number;
   analysis: {
     core_issue: string;
     key_info: string[];

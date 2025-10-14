@@ -148,8 +148,6 @@ export const revalidate = 0; // 不缓存，每次都获取最新数据
 
 export async function GET() {
   try {
-    // 确保 Prisma 连接
-    await prisma.$connect()
     
     // 检查用户是否已登录
     const session = await getServerSession(authOptions);

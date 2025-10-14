@@ -24,8 +24,10 @@ import asyncpg
 # 配置区域 - 根据你的环境修改
 # =============================================================================
 
-# 加载环境变量
-load_dotenv()
+# 加载环境变量（从项目根目录）
+import pathlib
+env_path = pathlib.Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # 代理配置（如果不需要代理，设置为 None）
 PROXY_URL = os.getenv("PROXY_URL", "http://127.0.0.1:10809")  # 默认代理地址
@@ -163,14 +165,13 @@ def analyze_single_post_with_deepseek(post):
                 "detailed_analysis": ""
             }
 
-        # 构建AI分析提示词（包含评论区考虑）
+        # 构建AI分析提示词
         prompt = f"""
         你是一名资深的论坛内容分析师。请仔细分析以下帖子内容，并生成一份**深度分析报告**，让读者无需查看原文即可全面理解。
         你的回复必须是一个有效的JSON对象，不要包含任何解释性文字或Markdown的```json ```标记。
 
         **帖子标题**: {post['title']}
         **内容节选**: {excerpt}
-        **提示**: 该帖子可能有评论区讨论，评论往往包含实用建议、不同观点和额外信息
 
         **请输出以下结构的JSON**:
         {{
@@ -182,7 +183,7 @@ def analyze_single_post_with_deepseek(post):
           ],
           "post_type": "从[技术问答, 资源分享, 新闻资讯, 优惠活动, 日常闲聊, 求助, 讨论, 产品评测]中选择一个",
           "value_assessment": "从[高, 中, 低]中选择一个",
-          "detailed_analysis": "生成300-800字的深度分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题为什么重要、相关背景信息\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容和关键信息点\\n\\n## 💡 技术细节（如适用）\\n- 具体的技术方案、工具、代码要点\\n- 实现步骤或架构设计\\n- 性能优化或配置方法\\n\\n## 💬 社区讨论要点\\n- 这个话题可能引发的讨论\\n- 社区可能关注的焦点\\n- 常见的疑问或争议点\\n- 评论区可能包含的补充信息和不同观点\\n\\n## 🔧 实用价值\\n- 如何应用这些信息\\n- 相关资源链接或推荐\\n- 注意事项或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考（热门帖子建议查看评论区获取更多社区观点）"
+          "detailed_analysis": "生成300-800字的深度分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题为什么重要、相关背景信息\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容和关键信息点\\n\\n## 💡 技术细节（如适用）\\n- 具体的技术方案、工具、代码要点\\n- 实现步骤或架构设计\\n- 性能优化或配置方法\\n\\n## 💬 讨论价值\\n- 这个话题可能引发的讨论方向\\n- 社区可能关注的焦点\\n- 常见的疑问或争议点\\n\\n## 🔧 实用价值\\n- 如何应用这些信息\\n- 相关资源链接或推荐\\n- 注意事项或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考"
         }}
         """
         
@@ -208,7 +209,7 @@ def analyze_single_post_with_deepseek(post):
             headers=headers,
             json=data,
             proxies=proxies,
-            timeout=30
+            timeout=90  # 增加超时时间，因为需要生成更长的深度分析
         )
         
         if response.status_code == 200:
@@ -419,12 +420,26 @@ async def fetch_linuxdo_posts():
                 rss_content = post.get('description', '')
 
                 if rss_content:
-                    # 清理HTML标签
+                    # 提取互动数据："X 个帖子 - Y 位参与者"
+                    replies_count = 0
+                    participants_count = 0
+                    try:
+                        match = re.search(r'(\d+)\s*个帖子\s*-\s*(\d+)\s*位参与者', rss_content)
+                        if match:
+                            replies_count = int(match.group(1))
+                            participants_count = int(match.group(2))
+                    except Exception:
+                        pass
+
+                    # 清理HTML标签，并移除互动统计语句
                     clean_content = re.sub(r'<[^>]+>', ' ', rss_content)
+                    clean_content = re.sub(r'\d+\s*个帖子\s*-\s*\d+\s*位参与者', '', clean_content)
                     clean_content = ' '.join(clean_content.split())
 
                     if len(clean_content.strip()) > 10:
                         post['content'] = clean_content
+                        post['replies_count'] = replies_count
+                        post['participants_count'] = participants_count
                         logger.info(f"  [{i+1}/{len(all_posts)}] {post['title'][:50]}... ({len(clean_content)} 字符)")
                     else:
                         post['content'] = f"帖子标题：{post['title']}"
@@ -506,19 +521,42 @@ async def insert_posts_into_db(posts_data):
                 value_assessment = analysis.get('value_assessment')
                 detailed_analysis = analysis.get('detailed_analysis')
 
-                await conn.execute("""
-                    INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    ON CONFLICT (id) DO UPDATE SET
-                        title = EXCLUDED.title,
-                        url = EXCLUDED.url,
-                        core_issue = EXCLUDED.core_issue,
-                        key_info = EXCLUDED.key_info,
-                        post_type = EXCLUDED.post_type,
-                        value_assessment = EXCLUDED.value_assessment,
-                        detailed_analysis = EXCLUDED.detailed_analysis,
-                        timestamp = CURRENT_TIMESTAMP;
-                """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                # 新字段（若存在）：replies_count / participants_count
+                replies_count = int(post.get('replies_count') or 0)
+                participants_count = int(post.get('participants_count') or 0)
+
+                # 优先尝试插入包含新列的语句；如果失败则回退到旧语句（兼容未迁移的表结构）
+                try:
+                    await conn.execute("""
+                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                        ON CONFLICT (id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            url = EXCLUDED.url,
+                            core_issue = EXCLUDED.core_issue,
+                            key_info = EXCLUDED.key_info,
+                            post_type = EXCLUDED.post_type,
+                            value_assessment = EXCLUDED.value_assessment,
+                            detailed_analysis = EXCLUDED.detailed_analysis,
+                            replies_count = EXCLUDED.replies_count,
+                            participants_count = EXCLUDED.participants_count,
+                            timestamp = CURRENT_TIMESTAMP;
+                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                except Exception as insert_err:
+                    logger.warning(f"posts 表缺少新列，回退旧插入语句: {insert_err}")
+                    await conn.execute("""
+                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        ON CONFLICT (id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            url = EXCLUDED.url,
+                            core_issue = EXCLUDED.core_issue,
+                            key_info = EXCLUDED.key_info,
+                            post_type = EXCLUDED.post_type,
+                            value_assessment = EXCLUDED.value_assessment,
+                            detailed_analysis = EXCLUDED.detailed_analysis,
+                            timestamp = CURRENT_TIMESTAMP;
+                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
                 
                 success_count += 1
                 

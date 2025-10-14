@@ -3,7 +3,8 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { 
   Bold, 
@@ -24,8 +25,56 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [initialContent, setInitialContent] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(true)
+  const isLoadingContent = useRef(false) // 防止循环更新
+  const [showOutline, setShowOutline] = useState(true)
+
+  type OutlineItem = {
+    id: string
+    text: string
+    level: number
+    pos: number
+  }
+  const [outline, setOutline] = useState<OutlineItem[]>([])
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
+
+  const slugify = (text: string) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 80)
+
+  const buildOutline = useCallback((ed: TiptapEditor): OutlineItem[] => {
+    const items: OutlineItem[] = []
+    ed.state.doc.descendants((node, pos) => {
+      // 仅收集标题节点
+      if (node.type.name === 'heading') {
+        const level = (node.attrs as any)?.level ?? 1
+        const text = node.textContent || ''
+        const id = `${slugify(text) || 'heading'}-${pos}`
+        items.push({ id, text, level, pos })
+      }
+    })
+    return items
+  }, [])
+
+  const updateOutline = useCallback((e: TiptapEditor) => {
+    const items = buildOutline(e)
+    setOutline(items)
+    // 根据当前选区，计算激活标题
+    const from = e.state.selection.from
+    const current = items
+      .filter((i) => i.pos <= from)
+      .sort((a, b) => b.pos - a.pos)[0]
+    setActiveHeadingId(current ? current.id : (items[0]?.id ?? null))
+  }, [buildOutline])
 
   const editor = useEditor({
+    immediatelyRender: false,
+    content: initialContent, // 使用初始内容
     extensions: [
       StarterKit.configure({
         heading: {
@@ -42,7 +91,14 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       },
     },
     onUpdate: ({ editor }) => {
+      // 如果正在加载内容，不触发保存
+      if (isLoadingContent.current) {
+        console.log('🔄 正在加载内容，跳过自动保存')
+        return
+      }
+      
       // 自动保存（debounce 1秒）
+      console.log('✏️ 内容变化，准备自动保存...')
       if (saveTimeout) {
         clearTimeout(saveTimeout)
       }
@@ -50,30 +106,64 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         saveContent(editor.getHTML())
       }, 1000)
       setSaveTimeout(timeout)
+
+      // 更新大纲
+      updateOutline(editor)
+    },
+    onSelectionUpdate: ({ editor }) => {
+      // 选区变化时更新激活标题
+      updateOutline(editor)
+    },
+    onCreate: ({ editor }) => {
+      // 初始化时构建大纲
+      updateOutline(editor)
     },
   })
 
-  // 加载内容
+  // 首次加载笔记内容
   useEffect(() => {
-    loadContent()
-  }, [])
+    const loadNote = async () => {
+      try {
+        console.log('📖 开始加载笔记...')
+        const response = await fetch('/api/notes')
+        if (response.ok) {
+          const note = await response.json()
+          console.log('✅ 加载笔记成功:', note.id, '内容长度:', note.content?.length || 0)
+          
+          if (editor && note.content) {
+            isLoadingContent.current = true // 标记正在加载
+            editor.commands.setContent(note.content)
+            setInitialContent(note.content)
+            console.log('📝 内容已设置到编辑器')
+            
+            // 100ms后解除加载标记
+            setTimeout(() => {
+              isLoadingContent.current = false
+              console.log('✅ 加载完成，恢复自动保存')
+            }, 100)
 
-  const loadContent = async () => {
-    try {
-      const response = await fetch('/api/notes')
-      if (response.ok) {
-        const note = await response.json()
-        if (editor && note.content) {
-          editor.commands.setContent(note.content)
+            // 设置完内容后刷新大纲
+            updateOutline(editor)
+          }
+        } else {
+          console.error('❌ 加载笔记失败:', response.status)
         }
+      } catch (error) {
+        console.error('❌ 加载笔记错误:', error)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('加载笔记失败:', error)
     }
-  }
+
+    if (editor) {
+      loadNote()
+    }
+  }, [editor]) // 只在editor初始化后执行一次
 
   const saveContent = useCallback(async (content: string) => {
     setIsSaving(true)
+    console.log('💾 开始保存笔记，内容长度:', content?.length || 0)
+    
     try {
       const response = await fetch('/api/notes', {
         method: 'POST',
@@ -82,10 +172,17 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       })
 
       if (response.ok) {
+        const savedNote = await response.json()
         setLastSaved(new Date())
+        setInitialContent(content) // 更新初始内容
+        console.log('✅ 笔记保存成功:', savedNote.id)
+      } else {
+        console.error('❌ 保存失败:', response.status, response.statusText)
+        alert('保存失败，请检查网络连接')
       }
     } catch (error) {
-      console.error('保存笔记失败:', error)
+      console.error('❌ 保存笔记失败:', error)
+      alert('保存失败：' + (error instanceof Error ? error.message : '未知错误'))
     } finally {
       setIsSaving(false)
     }
@@ -97,8 +194,21 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }
   }
 
-  if (!editor) {
-    return null
+  // 加载状态
+  if (isLoading || !editor) {
+    return (
+      <div className={`${className} flex items-center justify-center p-8`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-400">加载笔记中...</span>
+      </div>
+    )
+  }
+
+  const handleGotoHeading = (item: OutlineItem) => {
+    if (!editor) return
+    editor.chain().focus().setTextSelection(item.pos).run()
+    editor.commands.scrollIntoView()
+    setActiveHeadingId(item.id)
   }
 
   return (
@@ -186,10 +296,64 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         </div>
       </div>
 
-      {/* 编辑器 */}
-      <div>
-        <EditorContent editor={editor} />
-        
+      {/* 编辑区（大纲悬浮在编辑器内部） */}
+      <div className="flex">
+        <div className="flex-1 min-w-0 relative">
+          {/* 可滚动编辑区域，设置固定高度 */}
+          <div 
+            className="overflow-y-auto"
+            style={{ height: 'calc(100vh - 220px)' }}
+          >
+            <EditorContent editor={editor} />
+          </div>
+
+          {/* 悬浮大纲 - 展开态（编辑器内部右上角） */}
+          {showOutline && (
+            <div className="absolute right-2 top-2 z-40 w-64 max-h-[60vh] overflow-auto rounded-md border border-gray-800 bg-[#111827]/95 backdrop-blur px-2 py-2 shadow-xl hidden md:block">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-gray-400">大纲</div>
+                <button
+                  className="text-xs text-gray-400 hover:text-gray-200 px-2 py-1 rounded hover:bg-gray-800"
+                  onClick={() => setShowOutline(false)}
+                >
+                  收起
+                </button>
+              </div>
+              {outline.length === 0 ? (
+                <div className="text-gray-500 text-sm px-1 pb-1">无标题，使用 H1/H2/H3 自动生成</div>
+              ) : (
+                <ul className="space-y-1">
+                  {outline.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        className={`w-full text-left text-sm truncate px-2 py-1 rounded hover:bg-gray-800/60 ${
+                          activeHeadingId === item.id ? 'bg-gray-800 text-blue-300' : 'text-gray-300'
+                        }`}
+                        style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
+                        onClick={() => handleGotoHeading(item)}
+                        title={item.text}
+                      >
+                        {item.text || '（无标题文本）'}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* 悬浮大纲 - 收起态标签（贴在编辑器右上） */}
+          {!showOutline && (
+            <button
+              className="absolute right-2 top-2 z-40 hidden md:flex items-center gap-1 bg-gray-800/90 hover:bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded shadow"
+              onClick={() => setShowOutline(true)}
+              title="展开目录"
+            >
+              目录
+            </button>
+          )}
+        </div>
+
         {/* 编辑器样式 */}
         <style jsx global>{`
           .ProseMirror {

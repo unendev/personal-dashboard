@@ -8,10 +8,10 @@ const envSchema = z.object({
   // ==========================================
   // 数据库配置 (必需)
   // ==========================================
-  DATABASE_URL: z
-    .string()
-    .min(1, '数据库连接字符串不能为空')
-    .url('DATABASE_URL 必须是有效的 URL'),
+  // 允许三种来源之一：DATABASE_URL / POSTGRES_PRISMA_URL / POSTGRES_URL_NON_POOLING
+  DATABASE_URL: z.string().optional(),
+  POSTGRES_PRISMA_URL: z.string().optional(),
+  POSTGRES_URL_NON_POOLING: z.string().optional(),
 
   // ==========================================
   // NextAuth 配置 (必需)
@@ -83,6 +83,25 @@ const envSchema = z.object({
  * 验证环境变量
  * 如果验证失败，会抛出详细的错误信息
  */
+function pickDatabaseUrl(env: Record<string, string | undefined>): string {
+  // 优先级：POSTGRES_PRISMA_URL > DATABASE_URL > POSTGRES_URL_NON_POOLING
+  const candidates = [env.POSTGRES_PRISMA_URL, env.DATABASE_URL, env.POSTGRES_URL_NON_POOLING].filter(Boolean)
+  if (!candidates.length) {
+    throw new Error('未找到数据库连接：请配置 POSTGRES_PRISMA_URL 或 DATABASE_URL 或 POSTGRES_URL_NON_POOLING')
+  }
+  const url = candidates[0] as string
+  try {
+    // 基本 URL 校验
+    const parsed = new URL(url)
+    if (!/^postgres/.test(parsed.protocol)) {
+      throw new Error('数据库连接必须使用 postgresql 协议')
+    }
+    return url
+  } catch (e) {
+    throw new Error('数据库连接字符串不是有效的 URL')
+  }
+}
+
 function validateEnv() {
   try {
     const parsed = envSchema.safeParse(process.env)
@@ -93,7 +112,10 @@ function validateEnv() {
       throw new Error('环境变量配置错误，请检查 .env 文件')
     }
 
-    return parsed.data
+    const data = parsed.data as Record<string, any>
+    // 归一化 DATABASE_URL，供 Prisma 使用
+    const normalizedDatabaseUrl = pickDatabaseUrl(process.env as Record<string, string | undefined>)
+    return { ...data, DATABASE_URL: normalizedDatabaseUrl }
   } catch (error) {
     console.error('环境变量验证错误:', error)
     throw error

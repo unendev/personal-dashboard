@@ -291,15 +291,17 @@ model AISummary {
 }
 
 model posts {
-  id                String    @id
-  title             String
-  url               String
-  core_issue        String?
-  key_info          Json?
-  post_type         String?
-  value_assessment  String?
-  detailed_analysis String?   @db.Text
-  timestamp         DateTime? @default(now()) @db.Timestamptz(6)
+  id                 String    @id
+  title              String
+  url                String
+  core_issue         String?
+  key_info           Json?
+  post_type          String?
+  value_assessment   String?
+  detailed_analysis  String?   @db.Text
+  replies_count      Int?      @default(0)
+  participants_count Int?      @default(0)
+  timestamp          DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 model reddit_posts {

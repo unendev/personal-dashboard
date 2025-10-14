@@ -65,6 +65,9 @@ export function TreasureList({ className }: TreasureListProps) {
   
   // 元素引用
   const treasureRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
+  
+  // 记录上次触发加载时的滚动位置，防止加载完成后立即再次触发
+  const lastLoadScrollTop = useRef<number>(0)
 
   // 确保组件在客户端挂载
   useEffect(() => {
@@ -105,6 +108,9 @@ export function TreasureList({ className }: TreasureListProps) {
         setTreasures(data)
         setPage(1)
         setHasMore(data.length === pageSize)
+        
+        // 重置加载位置记录，因为列表已重新加载
+        lastLoadScrollTop.current = 0
       }
     } catch (error) {
       console.error('获取宝藏列表失败:', error)
@@ -166,9 +172,21 @@ export function TreasureList({ className }: TreasureListProps) {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop
         const scrollHeight = document.documentElement.scrollHeight
         const clientHeight = window.innerHeight
+        const distanceToBottom = scrollHeight - scrollTop - clientHeight
         
-        // 当滚动到距离底部 300px 时触发加载更多
-        if (scrollHeight - scrollTop - clientHeight < 300 && !isLoadingMore && hasMore) {
+        // 检查是否需要加载更多
+        // 1. 距离底部小于 300px
+        // 2. 没有正在加载
+        // 3. 还有更多数据
+        // 4. 必须从上次加载位置向下滚动了至少 150px（防止加载完立即再次触发）
+        const shouldLoad = 
+          distanceToBottom < 300 && 
+          !isLoadingMore && 
+          hasMore &&
+          (scrollTop - lastLoadScrollTop.current >= 150 || lastLoadScrollTop.current === 0)
+        
+        if (shouldLoad) {
+          lastLoadScrollTop.current = scrollTop
           loadMore()
         }
       }, 200)
@@ -448,12 +466,47 @@ export function TreasureList({ className }: TreasureListProps) {
                 }}
               >
                 <div className="max-w-2xl mx-auto">
+                  {/* 外置分类头像与信息区域（社媒风格） */}
+                  <div className="flex items-center gap-3 mb-2 px-1">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
+                      {(() => {
+                        const primaryCategory = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
+                        if (primaryCategory) {
+                          const categoryEmoji: Record<string, string> = {
+                            'Life': '🌱',
+                            'Knowledge': '📚',
+                            'Thought': '💭',
+                            'Root': '🌳'
+                          }
+                          return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                        }
+                        return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
+                      })()}
+                    </div>
+                    <div className="flex flex-col">
+                      {(() => {
+                        const primaryCategory = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
+                        if (primaryCategory) {
+                          const categoryLabel: Record<string, string> = {
+                            'Life': '生活',
+                            'Knowledge': '知识',
+                            'Thought': '思考',
+                            'Root': '根源'
+                          }
+                          return <span className="text-sm font-medium text-white/90">{categoryLabel[primaryCategory]}</span>
+                        }
+                        return <span className="text-sm font-medium text-white/90">未分类</span>
+                      })()}
+                      <span className="text-xs text-white/40">{new Date(treasure.createdAt).toLocaleString()}</span>
+                    </div>
+                  </div>
                   <TwitterStyleCard
                     treasure={treasure}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteTreasure}
                     onComment={() => {}} // 暂时隐藏评论功能
                     hideComments={true}
+                    hideCategoryAvatar={true}
                   />
                 </div>
               </div>

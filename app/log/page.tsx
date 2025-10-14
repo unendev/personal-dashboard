@@ -30,7 +30,7 @@ export default function LogPage() {
   const [isMobile, setIsMobile] = useState(false);
   
   // 待办清单/笔记视图切换
-  const [todoView, setTodoView] = useState<'todo' | 'notes'>('todo');
+  const [todoView, setTodoView] = useState<'todo' | 'notes'>('notes');
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
