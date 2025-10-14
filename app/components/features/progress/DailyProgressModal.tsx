@@ -69,6 +69,8 @@ export default function DailyProgressModal({
   };
 
   const handleConfirm = async () => {
+    if (!progress?.id) return;
+    
     setConfirming(true);
     try {
       await fetch('/api/progress/confirm', {
@@ -97,7 +99,7 @@ export default function DailyProgressModal({
 
   if (!isOpen) return null;
 
-  const analysis = progress?.aiAnalysis;
+  const analysis = progress?.aiAnalysis as Record<string, unknown> | undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -112,22 +114,22 @@ export default function DailyProgressModal({
           {analysis && (
             <>
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">总投入: {analysis.totalHours.toFixed(1)}小时</h3>
+                <h3 className="font-semibold mb-2">总投入: {((analysis as Record<string, unknown>)?.totalHours as number || 0).toFixed(1)}小时</h3>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-3">🤖 AI 分析</h4>
                 <div className="space-y-3">
-                  {analysis.taskAnalyses?.map((task: { taskName: string; extractedSkills: string[]; hours: number }, i: number) => (
+                  {((analysis as Record<string, unknown>)?.taskAnalyses as Array<Record<string, unknown>>)?.map((task: Record<string, unknown>, i: number) => (
                     <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded p-3">
-                      <div className="font-medium">{task.taskName}</div>
+                      <div className="font-medium">{task.taskName as string}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        技能: {task.extractedSkills.join(', ')}
+                        技能: {(task.extractedSkills as string[])?.join(', ') || ''}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        成长: {task.growthType} ({task.actionType})
+                        成长: {task.growthType as string} ({task.actionType as string})
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">{task.reasoning}</div>
+                      <div className="text-xs text-gray-500 mt-1">{task.reasoning as string}</div>
                     </div>
                   ))}
                 </div>
@@ -136,7 +138,7 @@ export default function DailyProgressModal({
               <div>
                 <h4 className="font-semibold mb-2">✨ AI 洞察</h4>
                 <ul className="space-y-1">
-                  {analysis.insights?.map((insight: string, i: number) => (
+                  {((analysis as Record<string, unknown>)?.insights as string[])?.map((insight: string, i: number) => (
                     <li key={i} className="text-gray-700 dark:text-gray-300">• {insight}</li>
                   ))}
                 </ul>

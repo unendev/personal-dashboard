@@ -345,7 +345,14 @@ ${data.tasks.filter(task => task.elapsedTime > 0).map(task =>
     };
   }
 
-  private static async callDeepSeekForWeeklyReview(data: { tasks: unknown[]; totalHours: number; startDate: string; endDate: string }): Promise<WeeklyReviewData> {
+  private static async callDeepSeekForWeeklyReview(data: { 
+    startDate: string; 
+    endDate: string; 
+    totalTime: number; 
+    taskCount: number; 
+    categories: Record<string, number>; 
+    keyTasks: Array<{ id: string; name: string; categoryPath: string; duration: number }> 
+  }): Promise<WeeklyReviewData> {
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {

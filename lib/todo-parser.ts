@@ -100,7 +100,7 @@ export function assignParentIds(todos: ParsedTodo[]): Array<ParsedTodo & { paren
     
     result.push({
       ...todo,
-      parentId: parentIndex !== undefined ? (result[parentIndex] as { id: string }).id : null
+      parentId: parentIndex !== undefined ? `temp-${parentIndex}` : null
     });
     
     stack.push({ level: todo.level, index: result.length - 1 });

@@ -277,9 +277,9 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
     const processed = new Set<string>();
     
     // 按优先级分组
-    const highPriority = sortedTodos.filter(t => !t.parentId && t.priority === 'high');
-    const mediumPriority = sortedTodos.filter(t => !t.parentId && t.priority === 'medium');
-    const lowPriority = sortedTodos.filter(t => !t.parentId && t.priority === 'low');
+    const highPriority = sortedTodos.filter(t => !t.groupId && t.priority === 'high');
+    const mediumPriority = sortedTodos.filter(t => !t.groupId && t.priority === 'medium');
+    const lowPriority = sortedTodos.filter(t => !t.groupId && t.priority === 'low');
     
     // 递归处理任务
     const processTodo = (todo: { id: string; text: string; completed: boolean; priority: string; isGroup: boolean; groupId?: string | null }, level: number = 0): void => {
@@ -290,12 +290,12 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
       const checkbox = todo.completed ? '[x]' : '[ ]';
       
       // 分类标签
-      const categoryTag = todo.category ? ` #${todo.category}` : '';
+      const categoryTag = (todo as Record<string, unknown>).category ? ` #${(todo as Record<string, unknown>).category}` : '';
       
       markdown += `${indent}- ${checkbox} ${todo.text}${categoryTag}\n`;
       
       // 处理子任务
-      const children = sortedTodos.filter(t => t.parentId === todo.id);
+      const children = sortedTodos.filter(t => t.groupId === todo.id);
       children.forEach(child => processTodo(child, level + 1));
     };
     
