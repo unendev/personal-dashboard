@@ -79,8 +79,8 @@ export async function GET(request: Request) {
       id: post.id,
       title: post.title,
       url: post.url,
-      replies_count: (post as any).replies_count ?? 0,
-      participants_count: (post as any).participants_count ?? 0,
+      replies_count: (post as { replies_count?: number }).replies_count ?? 0,
+      participants_count: (post as { participants_count?: number }).participants_count ?? 0,
       analysis: {
         core_issue: post.core_issue || '',
         key_info: Array.isArray(post.key_info) ? post.key_info : [],

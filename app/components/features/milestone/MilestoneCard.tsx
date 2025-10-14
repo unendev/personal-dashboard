@@ -84,7 +84,7 @@ export default function MilestoneCard({ milestone }: MilestoneCardProps) {
                 🎯 关键成果
               </h4>
               <ul className="space-y-2">
-                {confirmedAchievements.map((achievement: any, index: number) => (
+                {confirmedAchievements.map((achievement: { description: string; impact: string; taskName?: string; duration?: number; categoryPath?: string }, index: number) => (
                   <li
                     key={index}
                     className="flex items-start text-sm bg-gray-50 dark:bg-gray-700/50 rounded p-2"
@@ -95,7 +95,7 @@ export default function MilestoneCard({ milestone }: MilestoneCardProps) {
                         {achievement.taskName}
                       </div>
                       <div className="text-gray-600 dark:text-gray-400 text-xs mt-1">
-                        {formatDuration(achievement.duration)} • {achievement.categoryPath}
+                        {achievement.duration ? formatDuration(achievement.duration) : '未知时长'} • {achievement.categoryPath || '未知分类'}
                       </div>
                     </div>
                   </li>

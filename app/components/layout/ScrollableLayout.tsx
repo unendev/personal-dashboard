@@ -327,11 +327,11 @@ const ScrollableLayout = () => {
                     {/* 社区互动数据 */}
                     {('replies_count' in post || 'participants_count' in post) && (
                       <div className="mt-2 flex items-center gap-3 text-xs text-white/40">
-                        {'replies_count' in post && (post as any).replies_count > 0 && (
-                          <span className="flex items-center gap-1">💬 {(post as any).replies_count} 条回复</span>
+                        {'replies_count' in post && (post as { replies_count: number }).replies_count > 0 && (
+                          <span className="flex items-center gap-1">💬 {(post as { replies_count: number }).replies_count} 条回复</span>
                         )}
-                        {'participants_count' in post && (post as any).participants_count > 0 && (
-                          <span className="flex items-center gap-1">👥 {(post as any).participants_count} 人参与</span>
+                        {'participants_count' in post && (post as { participants_count: number }).participants_count > 0 && (
+                          <span className="flex items-center gap-1">👥 {(post as { participants_count: number }).participants_count} 人参与</span>
                         )}
                       </div>
                     )}

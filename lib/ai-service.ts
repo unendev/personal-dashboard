@@ -345,7 +345,7 @@ ${data.tasks.filter(task => task.elapsedTime > 0).map(task =>
     };
   }
 
-  private static async callDeepSeekForWeeklyReview(data: any): Promise<WeeklyReviewData> {
+  private static async callDeepSeekForWeeklyReview(data: { tasks: unknown[]; totalHours: number; startDate: string; endDate: string }): Promise<WeeklyReviewData> {
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
@@ -385,14 +385,14 @@ ${data.tasks.filter(task => task.elapsedTime > 0).map(task =>
 
 时间分配：
 ${Object.entries(data.categories)
-  .sort(([, a]: any, [, b]: any) => b - a)
-  .map(([category, time]: any) => `- ${category}: ${Math.floor(time / 3600)}小时${Math.floor((time % 3600) / 60)}分钟 (${Math.round((time / data.totalTime) * 100)}%)`)
+  .sort(([, a], [, b]) => (b as number) - (a as number))
+  .map(([category, time]) => `- ${category}: ${Math.floor((time as number) / 3600)}小时${Math.floor(((time as number) % 3600) / 60)}分钟 (${Math.round(((time as number) / data.totalTime) * 100)}%)`)
   .join('\n')}
 
 关键任务（时长>=1小时）：
 ${data.keyTasks
   .map(
-    (task: any) =>
+    (task: { name: string; categoryPath: string; duration: number }) =>
       `- ${task.name} (${task.categoryPath}): ${Math.floor(task.duration / 3600)}小时${Math.floor((task.duration % 3600) / 60)}分钟`
   )
   .join('\n')}`;

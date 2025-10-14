@@ -269,7 +269,7 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
   };
 
   // 生成Markdown（从旧Todo格式）
-  const generateMarkdownFromTodos = (todos: any[]): string => {
+  const generateMarkdownFromTodos = (todos: Array<{ id: string; text: string; completed: boolean; priority: string; order: number; groupId?: string | null; isGroup: boolean }>): string => {
     // 按order排序
     const sortedTodos = [...todos].sort((a, b) => a.order - b.order);
     
@@ -282,7 +282,7 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
     const lowPriority = sortedTodos.filter(t => !t.parentId && t.priority === 'low');
     
     // 递归处理任务
-    const processTodo = (todo: any, level: number = 0): void => {
+    const processTodo = (todo: { id: string; text: string; completed: boolean; priority: string; isGroup: boolean; groupId?: string | null }, level: number = 0): void => {
       if (processed.has(todo.id)) return;
       processed.add(todo.id);
       
@@ -370,7 +370,7 @@ export default function MarkdownTodoEditor({ userId, className = '' }: MarkdownT
     const doc = parser.parseFromString(content, 'text/html');
     const taskItems = doc.querySelectorAll('li[data-type="taskItem"]');
     
-    let total = taskItems.length;
+    const total = taskItems.length;
     let completed = 0;
     
     taskItems.forEach(item => {
@@ -1054,7 +1054,7 @@ function ToolbarButton({
 }
 
 // 防抖函数
-function debounce<T extends (...args: any[]) => any>(
+function debounce<T extends (...args: never[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

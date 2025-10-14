@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       data: {
         isConfirmed: true,
         userNotes: userNotes || null,
-        finalAnalysis: progress.aiAnalysis as any,
+        finalAnalysis: JSON.parse(JSON.stringify(progress.aiAnalysis)),
         updatedAt: new Date(),
       },
     });

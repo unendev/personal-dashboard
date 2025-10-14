@@ -5,11 +5,6 @@ const nextConfig: NextConfig = {
   // 禁用静态优化，避免构建时执行数据库查询
   output: 'standalone',
   
-  // 暂时跳过 ESLint 检查以便快速构建
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
   // 配置图片域名
   images: {
     remotePatterns: [

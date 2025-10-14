@@ -16,7 +16,7 @@ export default function DailyProgressModal({
   onConfirmed,
 }: DailyProgressModalProps) {
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<any>(null);
+  const [progress, setProgress] = useState<Record<string, unknown> | null>(null);
   const [userFeedback, setUserFeedback] = useState('');
   const [refining, setRefining] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -118,7 +118,7 @@ export default function DailyProgressModal({
               <div>
                 <h4 className="font-semibold mb-3">🤖 AI 分析</h4>
                 <div className="space-y-3">
-                  {analysis.taskAnalyses?.map((task: any, i: number) => (
+                  {analysis.taskAnalyses?.map((task: { taskName: string; extractedSkills: string[]; hours: number }, i: number) => (
                     <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded p-3">
                       <div className="font-medium">{task.taskName}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">

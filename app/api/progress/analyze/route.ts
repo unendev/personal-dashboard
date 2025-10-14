@@ -45,9 +45,9 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         date: targetDate,
-        aiAnalysis: analysis as any,
-        aiExtractedSkills: analysis.extractedSkills as any,
-        aiExtractedProjects: analysis.extractedProjects as any,
+        aiAnalysis: JSON.parse(JSON.stringify(analysis)),
+        aiExtractedSkills: JSON.parse(JSON.stringify(analysis.extractedSkills)),
+        aiExtractedProjects: JSON.parse(JSON.stringify(analysis.extractedProjects)),
         aiInsights: analysis.insights,
         conversationHistory: [],
         totalHours: analysis.totalHours,

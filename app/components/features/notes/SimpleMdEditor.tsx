@@ -306,49 +306,62 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             <EditorContent editor={editor} />
           </div>
 
-          {/* 悬浮大纲 - 展开态（编辑器内部右上角） */}
-          {showOutline && (
-            <div className="absolute right-2 top-2 z-40 w-64 max-h-[60vh] overflow-auto rounded-md border border-gray-800 bg-[#111827]/95 backdrop-blur px-2 py-2 shadow-xl hidden md:block">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs text-gray-400">大纲</div>
+        </div>
+
+        {/* 右侧大纲侧栏 - 居中位置 */}
+        <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+          {showOutline ? (
+            <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl max-h-[70vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+                <div className="text-sm font-medium text-gray-300">文档大纲</div>
                 <button
-                  className="text-xs text-gray-400 hover:text-gray-200 px-2 py-1 rounded hover:bg-gray-800"
                   onClick={() => setShowOutline(false)}
+                  className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-gray-200 transition-colors"
+                  title="收起大纲"
                 >
-                  收起
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
-              {outline.length === 0 ? (
-                <div className="text-gray-500 text-sm px-1 pb-1">无标题，使用 H1/H2/H3 自动生成</div>
-              ) : (
-                <ul className="space-y-1">
-                  {outline.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        className={`w-full text-left text-sm truncate px-2 py-1 rounded hover:bg-gray-800/60 ${
-                          activeHeadingId === item.id ? 'bg-gray-800 text-blue-300' : 'text-gray-300'
-                        }`}
-                        style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
-                        onClick={() => handleGotoHeading(item)}
-                        title={item.text}
-                      >
-                        {item.text || '（无标题文本）'}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="flex-1 overflow-y-auto p-4">
+                {outline.length === 0 ? (
+                  <div className="text-gray-500 text-sm text-center py-8">
+                    无标题
+                    <br />
+                    <span className="text-xs">使用 H1/H2/H3 自动生成</span>
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {outline.map((item) => (
+                      <li key={item.id}>
+                        <button
+                          className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${
+                            activeHeadingId === item.id 
+                              ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-400' 
+                              : 'text-gray-300 hover:bg-gray-800/60 hover:text-gray-200'
+                          }`}
+                          style={{ paddingLeft: `${(item.level - 1) * 16 + 12}px` }}
+                          onClick={() => handleGotoHeading(item)}
+                          title={item.text}
+                        >
+                          <span className="block truncate">{item.text || '（无标题文本）'}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* 悬浮大纲 - 收起态标签（贴在编辑器右上） */}
-          {!showOutline && (
+          ) : (
             <button
-              className="absolute right-2 top-2 z-40 hidden md:flex items-center gap-1 bg-gray-800/90 hover:bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded shadow"
               onClick={() => setShowOutline(true)}
-              title="展开目录"
+              className="bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 p-3 shadow-lg hover:bg-gray-800/95 transition-colors group"
+              title="展开大纲"
             >
-              目录
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           )}
         </div>

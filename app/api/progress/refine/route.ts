@@ -37,24 +37,24 @@ export async function POST(request: Request) {
 
     // AI调整分析
     const refined = await ProgressAIService.refineAnalysisWithFeedback(
-      progress.aiAnalysis as any,
+      progress.aiAnalysis as unknown as import('@/lib/progress-ai-service').DailyAnalysisResult,
       userFeedback,
-      history as any
+      history as Array<{ role: string; content: string }>
     );
 
     // 更新进度
     const updated = await prisma.dailyProgress.update({
       where: { id: progressId },
       data: {
-        aiAnalysis: refined as any,
-        aiExtractedSkills: refined.extractedSkills as any,
-        aiExtractedProjects: refined.extractedProjects as any,
+        aiAnalysis: JSON.parse(JSON.stringify(refined)),
+        aiExtractedSkills: JSON.parse(JSON.stringify(refined.extractedSkills)),
+        aiExtractedProjects: JSON.parse(JSON.stringify(refined.extractedProjects)),
         aiInsights: refined.insights,
-        conversationHistory: [
+        conversationHistory: JSON.parse(JSON.stringify([
           ...history,
           { role: 'user', content: userFeedback },
           { role: 'assistant', content: JSON.stringify(refined) },
-        ] as any,
+        ])),
         iterations: progress.iterations + 1,
         updatedAt: new Date(),
       },

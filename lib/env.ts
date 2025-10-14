@@ -112,7 +112,7 @@ function validateEnv() {
       throw new Error('环境变量配置错误，请检查 .env 文件')
     }
 
-    const data = parsed.data as Record<string, any>
+    const data = parsed.data as Record<string, string | undefined>
     // 归一化 DATABASE_URL，供 Prisma 使用
     const normalizedDatabaseUrl = pickDatabaseUrl(process.env as Record<string, string | undefined>)
     return { ...data, DATABASE_URL: normalizedDatabaseUrl }

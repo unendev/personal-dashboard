@@ -78,9 +78,16 @@ function TodoItem({
     <div className="mb-1">
       <div
         className={`
-          flex items-center gap-2 p-2 rounded
-          ${todo.isGroup ? 'bg-gray-700/50' : 'bg-gray-800/30'}
-          hover:bg-gray-700/70 transition-colors
+          flex items-center gap-2 p-3 rounded-lg border transition-all duration-200
+          ${todo.isGroup 
+            ? 'bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-700/30 hover:from-blue-900/30 hover:to-purple-900/30' 
+            : todo.completed
+              ? 'bg-green-900/20 border-green-700/30 hover:bg-green-900/30'
+              : 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/70'
+          }
+          ${todo.priority === 'high' ? 'border-l-4 border-l-red-500' : ''}
+          ${todo.priority === 'medium' ? 'border-l-4 border-l-yellow-500' : ''}
+          shadow-sm hover:shadow-md
         `}
         style={{ marginLeft: `${level * 24}px` }}
       >
@@ -433,7 +440,7 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
   }
 
   return (
-    <div>
+    <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
       {/* 统计面板 */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700/30">

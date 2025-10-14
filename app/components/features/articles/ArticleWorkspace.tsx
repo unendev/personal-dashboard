@@ -87,7 +87,7 @@ export function ArticleWorkspace() {
   }, [])
   
   // 防抖保存函数
-  const debouncedSave = useCallback(async (articleId: string, data: any) => {
+  const debouncedSave = useCallback(async (articleId: string, data: { title?: string; subtitle?: string; content?: string; tags?: string[]; slug?: string }) => {
     if (!isMountedRef.current) return
     
     setIsSaving(true)

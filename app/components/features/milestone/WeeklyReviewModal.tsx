@@ -55,7 +55,7 @@ export default function WeeklyReviewModal({
 
       // 默认全选所有成果
       if (data.aiKeyAchievements && data.aiKeyAchievements.length > 0) {
-        setSelectedAchievements(data.aiKeyAchievements.map((a: any) => a.taskId));
+        setSelectedAchievements(data.aiKeyAchievements.map((a: { taskId: string }) => a.taskId));
       }
     } catch (err) {
       console.error('Error loading draft:', err);
@@ -78,7 +78,7 @@ export default function WeeklyReviewModal({
     setError(null);
 
     try {
-      const confirmedAchievements = draft.aiKeyAchievements.filter((a: any) =>
+      const confirmedAchievements = draft.aiKeyAchievements.filter((a: { taskId: string }) =>
         selectedAchievements.includes(a.taskId)
       );
 
@@ -195,7 +195,7 @@ export default function WeeklyReviewModal({
                     🎯 关键成果（请勾选你认可的成果）
                   </h4>
                   <div className="space-y-2">
-                    {draft.aiKeyAchievements.map((achievement: any) => (
+                    {draft.aiKeyAchievements.map((achievement: { taskId: string; taskName: string; categoryPath: string; duration: number; reason?: string }) => (
                       <label
                         key={achievement.taskId}
                         className="flex items-start p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
