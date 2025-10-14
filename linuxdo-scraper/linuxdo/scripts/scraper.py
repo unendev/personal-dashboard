@@ -31,7 +31,10 @@ os.environ['HTTPS_PROXY'] = proxy_for_all
 logger.info(f"--- 脚本已配置使用 HTTP 代理: {proxy_for_all} ---")
 
 # --- 配置 ---
-load_dotenv()
+# 加载环境变量（从项目根目录）
+import pathlib
+env_path = pathlib.Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 WARM_UP_URL = "https://linux.do/" 
 RSS_URL = "https://linux.do/latest.rss" 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
@@ -73,19 +76,17 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
                 "core_issue": "N/A", "key_info": [], "post_type": "未知", "value_assessment": "低"
             }
 
-        # 使用DeepSeek API进行深度分析（包含评论区考虑）
-        # 注意：Linux.do评论需要额外爬取，当前版本暂不支持，但提示AI考虑评论区的潜在价值
+        # 使用DeepSeek API进行分析
         prompt = f"""
-        你是一名资深的论坛内容分析师。请仔细分析以下帖子内容，并生成一份**深度分析报告**，让读者无需查看原文即可全面理解。
+        你是一名信息提取专家。请分析以下论坛帖子内容，并严格按照指定的JSON格式返回结果。
         你的回复必须是一个有效的JSON对象，不要包含任何解释性文字或Markdown的```json ```标记。
 
         **帖子标题**: {post['title']}
         **内容节选**: {excerpt}
-        **提示**: 该帖子可能有评论区讨论，评论往往包含实用建议、不同观点和额外信息
 
         **请输出以下结构的JSON**:
         {{
-          "core_issue": "用一句话概括帖子的核心议题",
+          "core_issue": "这里用一句话概括帖子的核心议题",
           "key_info": [
             "关键信息或解决方案点1",
             "关键信息或解决方案点2",
@@ -93,7 +94,7 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
           ],
           "post_type": "从[技术问答, 资源分享, 新闻资讯, 优惠活动, 日常闲聊, 求助, 讨论, 产品评测]中选择一个",
           "value_assessment": "从[高, 中, 低]中选择一个",
-          "detailed_analysis": "生成300-800字的深度分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题为什么重要、相关背景信息\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容和关键信息点\\n\\n## 💡 技术细节（如适用）\\n- 具体的技术方案、工具、代码要点\\n- 实现步骤或架构设计\\n- 性能优化或配置方法\\n\\n## 💬 潜在讨论方向\\n- 这个话题可能引发的讨论\\n- 社区可能关注的焦点\\n- 常见的疑问或争议点\\n\\n## 🔧 实用价值\\n- 如何应用这些信息\\n- 相关资源链接或推荐\\n- 注意事项或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考（热门帖子建议查看评论区获取更多社区观点）"
+          "detailed_analysis": "生成200-400字的适度详细分析（用markdown格式）：\\n\\n## 📋 内容概述\\n简要说明这个话题的背景和要点（2-3句话）\\n\\n## 💡 主要内容\\n展开帖子的核心内容、关键观点或解决方案（100-150字）\\n\\n## 💬 讨论要点\\n如果内容中提到评论或社区反馈，简要总结；否则说明帖子的实用性或适用场景（50-100字）\\n\\n## 🔧 实用价值\\n这个信息对读者有什么帮助，如何应用或参考（50-100字）"
         }}
         """
         
@@ -107,8 +108,8 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 2000,
-            "temperature": 0.5
+            "max_tokens": 400,
+            "temperature": 0.3
         }
         
         response = requests.post(

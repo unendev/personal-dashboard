@@ -60,16 +60,6 @@ const ScrollableLayout = () => {
     }, 300);
   };
 
-  const handleMouseLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-  };
-
-  const handleDetailPanelMouseLeave = () => {
-    setHoveredPost(null);
-  };
-
   // 大纲跳转
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -405,6 +395,7 @@ const ScrollableLayout = () => {
       {hoveredPost && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setHoveredPost(null)}
         >
           {/* 背景遮罩 */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -412,7 +403,7 @@ const ScrollableLayout = () => {
           {/* 内容面板 */}
           <div
             ref={detailPanelRef}
-            onMouseLeave={handleDetailPanelMouseLeave}
+            onClick={(e) => e.stopPropagation()}
             className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
                      max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
