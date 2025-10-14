@@ -15,3 +15,6 @@ tqdm==4.67.1
 # Optional: For enhanced functionality
 aiohttp==3.9.5
 asyncio-throttle==1.0.2
+
+# Reddit API
+praw==7.7.1

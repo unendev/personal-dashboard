@@ -299,10 +299,10 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       {/* 编辑区（大纲悬浮在编辑器内部） */}
       <div className="flex">
         <div className="flex-1 min-w-0 relative">
-          {/* 可滚动编辑区域，设置固定高度 */}
+          {/* 可滚动编辑区域，设置合适的固定高度 */}
           <div 
             className="overflow-y-auto"
-            style={{ height: 'calc(100vh - 220px)' }}
+            style={{ height: '400px' }}
           >
             <EditorContent editor={editor} />
           </div>
