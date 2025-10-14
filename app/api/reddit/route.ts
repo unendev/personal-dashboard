@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
             key_info: true,
             post_type: true,
             value_assessment: true,
+            detailed_analysis: true,
             subreddit: true,
             timestamp: true
           }

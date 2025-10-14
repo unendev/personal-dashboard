@@ -13,7 +13,6 @@ import {
   ListOrdered, 
   Heading1, 
   Heading2,
-  Link as LinkIcon,
   Save
 } from 'lucide-react'
 
@@ -52,7 +51,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     ed.state.doc.descendants((node, pos) => {
       // 仅收集标题节点
       if (node.type.name === 'heading') {
-        const level = (node.attrs as any)?.level ?? 1
+        const level = (node.attrs as { level?: number })?.level ?? 1
         const text = node.textContent || ''
         const id = `${slugify(text) || 'heading'}-${pos}`
         items.push({ id, text, level, pos })
@@ -158,7 +157,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     if (editor) {
       loadNote()
     }
-  }, [editor]) // 只在editor初始化后执行一次
+  }, [editor, updateOutline]) // 添加 updateOutline 依赖
 
   const saveContent = useCallback(async (content: string) => {
     setIsSaving(true)

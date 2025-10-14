@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import {
   ChevronDown,
   ChevronRight,
-  FolderPlus,
   Plus,
   Trash2,
   Edit2,
@@ -304,11 +303,11 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
   }
 
   const handleToggle = async (id: string) => {
-    const todo = todos.find(t => t.id === id)
+    const todo = todos.find((t: Todo) => t.id === id)
     if (!todo) return
 
     // 乐观更新
-    const updatedTodos = todos.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
+    const updatedTodos = todos.map((t: Todo) => (t.id === id ? { ...t, completed: !t.completed } : t))
     mutate(updatedTodos, false)
 
     try {
@@ -332,7 +331,7 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
 
   const handleUpdate = async (id: string, updates: Partial<Todo>) => {
     // 乐观更新
-    const updatedTodos = todos.map(t => (t.id === id ? { ...t, ...updates } : t))
+    const updatedTodos = todos.map((t: Todo) => (t.id === id ? { ...t, ...updates } : t))
     mutate(updatedTodos, false)
 
     try {
@@ -355,7 +354,7 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
     if (!confirm('确定要删除吗？')) return
 
     // 乐观更新：立即移除
-    const updatedTodos = todos.filter(t => t.id !== id && t.groupId !== id)
+    const updatedTodos = todos.filter((t: Todo) => t.id !== id && t.groupId !== id)
     mutate(updatedTodos, false)
 
     try {
@@ -410,9 +409,9 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
   const rootTodos = filteredTodos.filter(t => !t.groupId).sort((a, b) => a.order - b.order)
 
   // 统计
-  const totalTasks = todos.filter(t => !t.isGroup).length
-  const completedTasks = todos.filter(t => !t.isGroup && t.completed).length
-  const highPriorityTasks = todos.filter(t => !t.isGroup && t.priority === 'high' && !t.completed).length
+  const totalTasks = todos.filter((t: Todo) => !t.isGroup).length
+  const completedTasks = todos.filter((t: Todo) => !t.isGroup && t.completed).length
+  const highPriorityTasks = todos.filter((t: Todo) => !t.isGroup && t.priority === 'high' && !t.completed).length
 
   // 加载状态
   if (isLoading) {

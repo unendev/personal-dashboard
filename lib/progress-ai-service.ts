@@ -164,7 +164,7 @@ ${JSON.stringify(previousAnalysis, null, 2)}
    * 调用AI进行任务分析
    */
   private static async callAIForAnalysis(
-    tasks: any[],
+    tasks: Array<{ name: string; elapsedTime: number; categoryPath: string }>,
     skillMap: Map<string, number>,
     date: string
   ): Promise<DailyAnalysisResult> {

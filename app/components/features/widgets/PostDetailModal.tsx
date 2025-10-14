@@ -55,7 +55,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
   const hasDetailedAnalysis = post.analysis.detailed_analysis && post.analysis.detailed_analysis.trim().length > 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} title="帖子详情">
       <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* 头部 */}
         <div className="flex-shrink-0 p-6 border-b border-white/10">
