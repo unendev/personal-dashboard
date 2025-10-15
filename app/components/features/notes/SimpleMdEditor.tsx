@@ -6,6 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
 import Image from '@tiptap/extension-image'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { 
@@ -596,6 +597,15 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             padding: 0;
           }
           
+          .ProseMirror img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            margin: 1em 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          
           .ProseMirror p.is-editor-empty:first-child::before {
             content: attr(data-placeholder);
             float: left;
@@ -613,9 +623,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       {/* 常规编辑器视图 */}
       {renderEditorContent(false)}
 
-      {/* 全屏模态框 */}
-      {isFullscreenModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95">
+      {/* 全屏模态框 - 使用 Portal 渲染到 body */}
+      {isFullscreenModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/95">
           {/* 背景遮罩 */}
           <div 
             className="absolute inset-0"
@@ -623,7 +633,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           />
           
           {/* 模态框内容 - 全屏编辑器 */}
-          <div className="w-full h-full flex flex-col p-6">
+          <div className="relative w-full h-full flex flex-col p-6">
             {/* 顶部关闭按钮 */}
             <div className="flex justify-end mb-4 flex-shrink-0">
               <button
@@ -640,7 +650,8 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
               {renderEditorContent(true)}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
