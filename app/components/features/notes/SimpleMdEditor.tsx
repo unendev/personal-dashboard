@@ -620,12 +620,12 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
 
   return (
     <>
-      {/* 常规编辑器视图 */}
-      {renderEditorContent(false)}
+      {/* 常规编辑器视图 - 全屏时隐藏 */}
+      {!isFullscreenModalOpen && renderEditorContent(false)}
 
       {/* 全屏模态框 - 使用 Portal 渲染到 body */}
       {isFullscreenModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/95">
+        <div className="fixed inset-0 z-[9999] bg-gray-900">
           {/* 背景遮罩 */}
           <div 
             className="absolute inset-0"
