@@ -46,6 +46,8 @@ export function TreasureList({ className }: TreasureListProps) {
   const [treasures, setTreasures] = useState<Treasure[]>([])
   const [isMounted, setIsMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
   const [selectedTag, setSelectedTag] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   // const [showCommentModal, setShowCommentModal] = useState(false) // 暂时隐藏评论功能
@@ -74,6 +76,23 @@ export function TreasureList({ className }: TreasureListProps) {
     setIsMounted(true)
   }, [])
 
+  // 搜索防抖：300ms 后更新实际搜索词
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+      if (searchQuery !== debouncedSearchQuery) {
+        setIsSearching(false)
+      }
+    }, 300)
+
+    // 如果用户正在输入，显示搜索中状态
+    if (searchQuery !== debouncedSearchQuery) {
+      setIsSearching(true)
+    }
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, debouncedSearchQuery])
+
   // 获取全局统计数据（只在初始化时获取一次）
   useEffect(() => {
     const fetchStatsData = async () => {
@@ -96,8 +115,9 @@ export function TreasureList({ className }: TreasureListProps) {
   // 获取宝藏列表（初始加载）
   const fetchTreasures = useCallback(async () => {
     try {
+      setIsSearching(true)
       const params = new URLSearchParams()
-      if (searchQuery) params.append('search', searchQuery)
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
       if (selectedTag) params.append('tag', selectedTag)
       params.append('page', '1')
       params.append('limit', pageSize.toString())
@@ -114,8 +134,10 @@ export function TreasureList({ className }: TreasureListProps) {
       }
     } catch (error) {
       console.error('获取宝藏列表失败:', error)
+    } finally {
+      setIsSearching(false)
     }
-  }, [searchQuery, selectedTag, pageSize])
+  }, [debouncedSearchQuery, selectedTag, pageSize])
 
   // 加载更多
   const loadMore = useCallback(async () => {
@@ -125,7 +147,7 @@ export function TreasureList({ className }: TreasureListProps) {
       setIsLoadingMore(true)
       
       const params = new URLSearchParams()
-      if (searchQuery) params.append('search', searchQuery)
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
       if (selectedTag) params.append('tag', selectedTag)
       params.append('page', (page + 1).toString())
       params.append('limit', pageSize.toString())
@@ -149,13 +171,13 @@ export function TreasureList({ className }: TreasureListProps) {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [isLoadingMore, hasMore, searchQuery, selectedTag, page, pageSize])
+  }, [isLoadingMore, hasMore, debouncedSearchQuery, selectedTag, page, pageSize])
 
   useEffect(() => {
     if (isMounted) {
       fetchTreasures()
     }
-  }, [isMounted, searchQuery, fetchTreasures])
+  }, [isMounted, debouncedSearchQuery, fetchTreasures])
 
   // 监听窗口滚动，实现无限加载（使用节流防止频繁触发）
   useEffect(() => {
@@ -418,14 +440,21 @@ export function TreasureList({ className }: TreasureListProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-2.5 text-sm bg-transparent border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
               />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')} 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors"
-                >
-                  <X className="h-4 w-4 text-white/60" />
-                </button>
-              )}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {/* 搜索 loading 指示器 */}
+                {isSearching && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {/* 清除按钮 */}
+                {searchQuery && !isSearching && (
+                  <button 
+                    onClick={() => setSearchQuery('')} 
+                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                  >
+                    <X className="h-4 w-4 text-white/60" />
+                  </button>
+                )}
+              </div>
             </div>
             {selectedTag && (
               <div className="mt-2 flex items-center gap-2">

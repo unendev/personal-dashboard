@@ -74,6 +74,14 @@ function TodoItem({
     low: 'text-green-400',
   }
 
+  // 优先级循环切换
+  const handlePriorityToggle = () => {
+    const priorityOrder: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high']
+    const currentIndex = priorityOrder.indexOf(todo.priority as 'low' | 'medium' | 'high')
+    const nextPriority = priorityOrder[(currentIndex + 1) % priorityOrder.length]
+    onUpdate(todo.id, { priority: nextPriority })
+  }
+
   return (
     <div className="mb-1">
       <div
@@ -152,17 +160,19 @@ function TodoItem({
           </span>
         )}
 
-        {/* 优先级标签（仅任务） */}
+        {/* 优先级标签（仅任务，可点击切换） */}
         {!todo.isGroup && !isEditing && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded ${
+          <button
+            onClick={handlePriorityToggle}
+            className={`text-xs px-2 py-0.5 rounded transition-all hover:scale-110 hover:bg-white/5 cursor-pointer ${
               priorityColors[todo.priority as keyof typeof priorityColors] || 'text-gray-400'
             }`}
+            title="点击切换优先级"
           >
             {todo.priority === 'high' && '⚡高'}
             {todo.priority === 'medium' && '📌中'}
             {todo.priority === 'low' && '📝低'}
-          </span>
+          </button>
         )}
 
         {/* 操作按钮 */}
@@ -244,6 +254,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {}) {
   const [newItemText, setNewItemText] = useState('')
   const [newItemType, setNewItemType] = useState<'group' | 'task'>('task')
+  const [isCreating, setIsCreating] = useState(false)
   
   // 搜索和过滤状态
   const [searchQuery, setSearchQuery] = useState('')
@@ -258,8 +269,9 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
   })
 
   const handleCreate = async () => {
-    if (!newItemText.trim()) return
+    if (!newItemText.trim() || isCreating) return
 
+    setIsCreating(true)
     try {
       const response = await fetch('/api/todos', {
         method: 'POST',
@@ -273,13 +285,15 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
 
       if (response.ok) {
         const newTodo = await response.json()
-        // 乐观更新：立即添加到列表
-        mutate([...todos, newTodo], false)
+        // 立即更新本地状态并重新验证，确保显示最新数据
+        await mutate()
         setNewItemText('')
       }
     } catch (error) {
       console.error('创建失败:', error)
       mutate() // 失败时重新验证
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -300,8 +314,8 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
       })
 
       if (response.ok) {
-        const newTodo = await response.json()
-        mutate([...todos, newTodo], false)
+        // 立即重新获取数据确保显示
+        await mutate()
       }
     } catch (error) {
       console.error('创建任务失败:', error)
@@ -566,12 +580,17 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
           <Input
             value={newItemText}
             onChange={(e) => setNewItemText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            onKeyDown={(e) => e.key === 'Enter' && !isCreating && handleCreate()}
             placeholder={newItemType === 'group' ? '新建分组...' : '新建任务...'}
             className="flex-1"
+            disabled={isCreating}
           />
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4" />
+          <Button onClick={handleCreate} disabled={isCreating}>
+            {isCreating ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>

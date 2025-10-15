@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Typography from '@tiptap/extension-typography'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
@@ -81,8 +82,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         },
       }),
       Placeholder.configure({
-        placeholder: '开始写笔记...',
+        placeholder: '开始写笔记...（支持 *斜体* 和 **粗体** Markdown 语法）',
       }),
+      Typography,
     ],
     editorProps: {
       attributes: {

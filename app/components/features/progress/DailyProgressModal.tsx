@@ -17,6 +17,7 @@ export default function DailyProgressModal({
 }: DailyProgressModalProps) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [userFeedback, setUserFeedback] = useState('');
   const [refining, setRefining] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -30,16 +31,24 @@ export default function DailyProgressModal({
 
   const analyzeProgress = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/progress/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetDate }),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
       setProgress(data);
     } catch (error) {
       console.error('Analysis failed:', error);
+      setError(error instanceof Error ? error.message : '分析失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -92,6 +101,7 @@ export default function DailyProgressModal({
 
   const handleClose = () => {
     setProgress(null);
+    setError(null);
     setUserFeedback('');
     setUserNotes('');
     onClose();
@@ -110,6 +120,18 @@ export default function DailyProgressModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {loading && <div className="text-center py-12">⏳ AI 正在分析...</div>}
+
+          {error && (
+            <div className="text-center py-12">
+              <div className="text-red-500 mb-4">❌ {error}</div>
+              <button
+                onClick={analyzeProgress}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                🔄 重新分析
+              </button>
+            </div>
+          )}
 
           {analysis && (
             <>

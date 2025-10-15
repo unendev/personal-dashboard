@@ -5,3 +5,5 @@ ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "replies_count" INTEGER DEFAULT 0;
 ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "participants_count" INTEGER DEFAULT 0;
 
 
+
+

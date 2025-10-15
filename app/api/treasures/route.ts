@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       where.type = type as 'TEXT' | 'IMAGE' | 'MUSIC';
     }
 
-    // 搜索功能
+    // 搜索功能 - 标题和内容都搜索
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     // 计算分页
     const skip = (page - 1) * limit;
 
-    const treasures = await prisma.treasure.findMany({
+    let treasures = await prisma.treasure.findMany({
       where,
       include: {
         images: {
@@ -74,6 +74,22 @@ export async function GET(request: NextRequest) {
       skip,
       take: limit
     });
+
+    // 如果有搜索关键词，对结果进行二次排序：标题匹配的排在前面
+    if (search && treasures.length > 0) {
+      const searchLower = search.toLowerCase();
+      treasures = treasures.sort((a, b) => {
+        const aTitleMatch = a.title.toLowerCase().includes(searchLower);
+        const bTitleMatch = b.title.toLowerCase().includes(searchLower);
+        
+        // 标题匹配的优先
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        
+        // 都匹配或都不匹配，按创建时间排序
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
 
     // 为每张图片生成签名 URL
     const treasuresWithSignedUrls = treasures.map(treasure => ({
