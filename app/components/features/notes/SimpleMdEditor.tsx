@@ -615,7 +615,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
 
       {/* 全屏模态框 */}
       {isFullscreenModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
+        <div className="fixed inset-0 z-50 bg-black/95">
           {/* 背景遮罩 */}
           <div 
             className="absolute inset-0"
@@ -623,7 +623,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           />
           
           {/* 模态框内容 - 全屏编辑器 */}
-          <div className="relative w-full h-full max-w-full max-h-full p-6 flex flex-col">
+          <div className="w-full h-full flex flex-col p-6">
             {/* 顶部关闭按钮 */}
             <div className="flex justify-end mb-4 flex-shrink-0">
               <button
