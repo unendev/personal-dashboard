@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
+import Image from '@tiptap/extension-image'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
@@ -14,7 +15,9 @@ import {
   ListOrdered, 
   Heading1, 
   Heading2,
-  Save
+  Save,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 
 interface SimpleMdEditorProps {
@@ -28,7 +31,10 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const [initialContent, setInitialContent] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const isLoadingContent = useRef(false) // 防止循环更新
-  const [showOutline, setShowOutline] = useState(true)
+  const [showOutline, setShowOutline] = useState(false) // 默认不显示
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const outlineTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   type OutlineItem = {
     id: string
@@ -38,6 +44,68 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   }
   const [outline, setOutline] = useState<OutlineItem[]>([])
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
+
+  // 上传图片到 OSS
+  const uploadImageToOSS = async (file: File): Promise<string> => {
+    setIsUploadingImage(true)
+    try {
+      // 1. 获取上传签名
+      const signatureUrl = new URL('/api/upload/oss/signature', window.location.origin)
+      signatureUrl.searchParams.set('filename', file.name)
+      signatureUrl.searchParams.set('contentType', file.type)
+      
+      const signatureRes = await fetch(signatureUrl.toString())
+      if (!signatureRes.ok) {
+        const errorData = await signatureRes.json()
+        throw new Error(`获取上传签名失败: ${errorData.error || signatureRes.statusText}`)
+      }
+      
+      const signatureData = await signatureRes.json()
+      
+      // 检查是否配置了 OSS
+      if (signatureData.error) {
+        console.warn('OSS 未配置，使用本地预览')
+        // 返回 base64 作为降级方案
+        return new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+      }
+
+      // 2. 构建表单数据
+      const formData = new FormData()
+      formData.append('key', signatureData.key)
+      formData.append('policy', signatureData.policy)
+      formData.append('OSSAccessKeyId', signatureData.accessKeyId)
+      formData.append('signature', signatureData.signature)
+      formData.append('success_action_status', '200')
+      formData.append('file', file)
+
+      // 3. 上传到 OSS
+      const uploadRes = await fetch(signatureData.endpoint, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadRes.ok) {
+        throw new Error('OSS上传失败')
+      }
+
+      // 4. 构建图片 URL
+      const baseUrl = (signatureData.cdnUrl || signatureData.endpoint).trim().replace(/\/+$/, '')
+      const normalizedKey = signatureData.key.replace(/^\/+/, '')
+      const imageUrl = `${baseUrl}/${normalizedKey}`
+      
+      return imageUrl
+    } catch (error) {
+      console.error('图片上传失败:', error)
+      alert('图片上传失败：' + (error instanceof Error ? error.message : '未知错误'))
+      throw error
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
 
   const slugify = (text: string) =>
     text
@@ -82,9 +150,13 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         },
       }),
       Placeholder.configure({
-        placeholder: '开始写笔记...（支持 *斜体* 和 **粗体** Markdown 语法）',
+        placeholder: '开始写笔记...（支持 *斜体* 和 **粗体** Markdown 语法，可直接粘贴图片）',
       }),
       Typography,
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+      }),
     ],
     editorProps: {
       attributes: {
@@ -112,6 +184,32 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           dispatch(tr)
           
           return true
+        }
+        return false
+      },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items
+        if (!items) return false
+
+        // 查找图片项
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i]
+          if (item.type.indexOf('image') === 0) {
+            event.preventDefault()
+            const file = item.getAsFile()
+            if (file) {
+              // 异步上传图片
+              uploadImageToOSS(file).then((url) => {
+                const { state, dispatch } = view
+                const node = state.schema.nodes.image.create({ src: url })
+                const transaction = state.tr.replaceSelectionWith(node)
+                dispatch(transaction)
+              }).catch(() => {
+                // 上传失败已在 uploadImageToOSS 中处理
+              })
+            }
+            return true
+          }
         }
         return false
       },
@@ -220,6 +318,17 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }
   }
 
+  // ESC键退出全屏
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
+
   // 加载状态
   if (isLoading || !editor) {
     return (
@@ -237,14 +346,33 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     setActiveHeadingId(item.id)
   }
 
+  // 大纲鼠标悬浮展开
+  const handleOutlineMouseEnter = () => {
+    if (outlineTimeoutRef.current) {
+      clearTimeout(outlineTimeoutRef.current)
+    }
+    setShowOutline(true)
+  }
+
+  // 大纲鼠标移出收起
+  const handleOutlineMouseLeave = () => {
+    if (outlineTimeoutRef.current) {
+      clearTimeout(outlineTimeoutRef.current)
+    }
+    outlineTimeoutRef.current = setTimeout(() => {
+      setShowOutline(false)
+    }, 300) // 300ms 延迟
+  }
+
   return (
-    <div className={className}>
+    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-6 overflow-auto' : className}>
       {/* 状态栏 */}
       <div className="flex items-center justify-end gap-2 text-sm text-gray-400 mb-3">
         {lastSaved && (
           <span>已保存 {lastSaved.toLocaleTimeString()}</span>
         )}
         {isSaving && <span className="text-blue-400">保存中...</span>}
+        {isUploadingImage && <span className="text-green-400">上传图片中...</span>}
       </div>
 
       {/* 工具栏 */}
@@ -308,7 +436,15 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             <ListOrdered className="h-4 w-4" />
           </Button>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? '退出全屏 (ESC)' : '全屏编辑'}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -328,28 +464,24 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           {/* 可滚动编辑区域，设置合适的固定高度 */}
           <div 
             className="overflow-y-auto"
-            style={{ height: '400px' }}
+            style={{ height: isFullscreen ? 'calc(100vh - 160px)' : '400px' }}
           >
             <EditorContent editor={editor} />
           </div>
 
         </div>
 
-        {/* 右侧大纲侧栏 - 居中位置 */}
-        <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+        {/* 右侧大纲侧栏 - 居中位置，鼠标悬浮展开 */}
+        <div 
+          className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-40"
+          onMouseEnter={handleOutlineMouseEnter}
+          onMouseLeave={handleOutlineMouseLeave}
+        >
           {showOutline ? (
-            <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl max-h-[70vh] overflow-hidden flex flex-col transition-all">
               <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
                 <div className="text-sm font-medium text-gray-300">文档大纲</div>
-                <button
-                  onClick={() => setShowOutline(false)}
-                  className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-gray-200 transition-colors"
-                  title="收起大纲"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                <div className="text-xs text-gray-500">鼠标移出自动收起</div>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
                 {outline.length === 0 ? (
@@ -381,15 +513,14 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowOutline(true)}
-              className="bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 p-3 shadow-lg hover:bg-gray-800/95 transition-colors group"
-              title="展开大纲"
+            <div
+              className="bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 p-3 shadow-lg hover:bg-gray-800/95 transition-all group rounded-l-lg"
+              title="悬浮展开大纲"
             >
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200 transform rotate-180 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </div>
           )}
         </div>
 
