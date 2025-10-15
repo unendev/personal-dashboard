@@ -854,21 +854,23 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      <div className="container mx-auto px-4 py-8 pt-20">
-        <div className="flex items-center justify-end gap-3 mb-8">
+      <div className="w-full max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8 pt-20">
+        <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8">
           <button
             onClick={handleOpenDailyProgress}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-purple-600 hover:bg-purple-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
           >
-            <span>📊</span>
-            <span>昨日进度</span>
+            <span className="text-lg md:text-xl">📊</span>
+            <span className="hidden sm:inline">昨日进度</span>
+            <span className="sm:hidden">进度</span>
           </button>
           <Link
             href="/progress"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
           >
-            <span>🏛️</span>
-            <span>人生阁</span>
+            <span className="text-lg md:text-xl">🏛️</span>
+            <span className="hidden sm:inline">人生阁</span>
+            <span className="sm:hidden">阁</span>
           </Link>
         </div>
         
@@ -882,58 +884,58 @@ export default function LogPage() {
 
         {/* 移动端标签页导航 */}
         {isMobile && (
-          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 border border-gray-700/50">
-            <div className="grid grid-cols-4 gap-1">
+          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1.5 border border-gray-700/50">
+            <div className="grid grid-cols-4 gap-1.5">
               <button
                 onClick={() => setActiveSection('timer')}
-                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'timer'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">⏱️</span>
-                  <span className="text-xs">计时器</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-2xl">⏱️</span>
+                  <span className="text-sm">计时器</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('todo')}
-                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'todo'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">📋</span>
-                  <span className="text-xs">任务</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-2xl">📋</span>
+                  <span className="text-sm">任务</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('stats')}
-                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'stats'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">📊</span>
-                  <span className="text-xs">统计</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-2xl">📊</span>
+                  <span className="text-sm">统计</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('ai')}
-                className={`px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'ai'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">🤖</span>
-                  <span className="text-xs">AI</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-2xl">🤖</span>
+                  <span className="text-sm">AI</span>
                 </div>
               </button>
             </div>
@@ -944,14 +946,14 @@ export default function LogPage() {
         {isMobile ? (
           <>
             {activeSection === 'timer' && (
-              <Card className="hover:shadow-lg transition-shadow duration-200 mb-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">⏱️</span>
+              <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8">
+                <CardHeader className="px-4 py-4">
+                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                    <span className="text-2xl">⏱️</span>
                     计时器
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-[600px] overflow-y-auto">
+                <CardContent className="max-h-[600px] overflow-y-auto px-3 md:px-6">
                   <CategoryZoneWrapper
                     tasks={timerTasks}
                     userId={userId}
@@ -971,12 +973,12 @@ export default function LogPage() {
             )}
 
             {activeSection === 'todo' && (
-              <div className="mb-8">
+              <div className="mb-6 md:mb-8">
                 <Card className="hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="border-b border-gray-700">
+                  <CardHeader className="border-b border-gray-700 px-4 py-4">
                     <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="flex items-center gap-2">
-                        <span className="text-xl">📋</span>
+                      <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                        <span className="text-2xl">📋</span>
                         任务管理
                       </CardTitle>
                     </div>
@@ -1003,11 +1005,11 @@ export default function LogPage() {
                   </CardHeader>
                   <CardContent className="p-0">
                     {todoView === 'todo' ? (
-                      <div className="p-4">
+                      <div className="p-3 md:p-4">
                         <NestedTodoList />
                       </div>
                     ) : (
-                      <div className="p-4">
+                      <div className="p-3 md:p-4">
                         <SimpleMdEditor />
                       </div>
                     )}
@@ -1017,21 +1019,21 @@ export default function LogPage() {
             )}
 
             {activeSection === 'stats' && (
-              <Card className="hover:shadow-lg transition-shadow duration-200 mb-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">📊</span>
+              <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8">
+                <CardHeader className="px-4 py-4">
+                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                    <span className="text-2xl">📊</span>
                     时间统计
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 md:px-6">
                   <TimeStatsChart tasks={timerTasks} userId={userId} />
                 </CardContent>
               </Card>
             )}
 
             {activeSection === 'ai' && (
-              <div className="mb-8">
+              <div className="mb-6 md:mb-8">
                 <CollapsibleAISummary 
                   userId={userId}
                   date={selectedDate}
@@ -1042,7 +1044,7 @@ export default function LogPage() {
         ) : (
           /* 桌面端：保持原有布局 */
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6 lg:mb-8">
               {/* 计时器 */}
               <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
                 <CardHeader>
@@ -1116,11 +1118,11 @@ export default function LogPage() {
             </div>
 
             {/* 时间统计 */}
-            <div className="mb-8">
+            <div className="mb-6 lg:mb-8">
               <Card className="hover:shadow-lg transition-shadow duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">📊</span>
+                    <span className="text-xl md:text-2xl">📊</span>
                     时间统计
                   </CardTitle>
                 </CardHeader>
@@ -1131,7 +1133,7 @@ export default function LogPage() {
             </div>
 
             {/* AI总结 */}
-            <div className="mb-8">
+            <div className="mb-6 lg:mb-8">
               <CollapsibleAISummary 
                 userId={userId}
                 date={selectedDate}
