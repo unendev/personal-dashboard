@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LinuxDoReport } from '@/types/linuxdo';
+import React, { useState, useEffect, useMemo } from 'react';
+import { LinuxDoReport, LinuxDoPost } from '@/types/linuxdo';
 import Modal from '../../shared/Modal';
+import { FloatingTOC } from '../../shared/FloatingTOC';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AvailableDate {
   date: string;
@@ -22,6 +25,8 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'analysis'>('overview');
+  const [activeSection, setActiveSection] = useState<string>('');
+  const [selectedPost, setSelectedPost] = useState<LinuxDoPost | null>(null);
 
   // 获取可用日期列表
   useEffect(() => {
@@ -79,6 +84,28 @@ const LinuxDoModal: React.FC<LinuxDoModalProps> = ({ isOpen, onClose }) => {
       case '新闻资讯': return 'bg-orange-500/20 text-orange-400';
       case '日常闲聊': return 'bg-gray-500/20 text-gray-400';
       default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  // 从markdown中提取章节作为大纲
+  const tocSections = useMemo(() => {
+    const sections = [
+      { id: 'background', title: '话题背景', icon: '📋' },
+      { id: 'core-content', title: '核心内容', icon: '🎯' },
+      { id: 'tips', title: '实用技巧/资源', icon: '💡' },
+      { id: 'community', title: '社区风向', icon: '💬' },
+      { id: 'practical', title: '实用价值', icon: '🔧' },
+      { id: 'summary', title: '一句话总结', icon: '🚀' },
+    ];
+    return sections;
+  }, []);
+
+  // 处理章节跳转
+  const handleSectionClick = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(sectionId);
     }
   };
 

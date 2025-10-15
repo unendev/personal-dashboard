@@ -365,9 +365,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   }
 
   return (
-    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-6 overflow-auto' : className}>
+    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-6 flex flex-col' : className}>
       {/* 状态栏 */}
-      <div className="flex items-center justify-end gap-2 text-sm text-gray-400 mb-3">
+      <div className="flex items-center justify-end gap-2 text-sm text-gray-400 mb-3 flex-shrink-0">
         {lastSaved && (
           <span>已保存 {lastSaved.toLocaleTimeString()}</span>
         )}
@@ -376,7 +376,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       </div>
 
       {/* 工具栏 */}
-      <div className="border-b border-gray-700 pb-3 mb-3">
+      <div className="border-b border-gray-700 pb-3 mb-3 flex-shrink-0">
         <div className="flex flex-wrap gap-1">
           <Button
             variant="ghost"
@@ -459,12 +459,12 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       </div>
 
       {/* 编辑区（大纲悬浮在编辑器内部） */}
-      <div className="flex">
+      <div className={isFullscreen ? 'flex flex-1 min-h-0' : 'flex'}>
         <div className="flex-1 min-w-0 relative">
           {/* 可滚动编辑区域，设置合适的固定高度 */}
           <div 
             className="overflow-y-auto"
-            style={{ height: isFullscreen ? 'calc(100vh - 160px)' : '400px' }}
+            style={{ height: isFullscreen ? '100%' : '400px' }}
           >
             <EditorContent editor={editor} />
           </div>

@@ -160,31 +160,62 @@ def fetch_all_reddit_posts():
     logger.info(f"=== 总计获取 {len(all_posts)} 个帖子 ===")
     return all_posts
 
-# --- AI分析函数 (优化中文输出) ---
-def analyze_single_post_with_deepseek(post, retry_count=0):
-    """使用DeepSeek分析Reddit帖子并输出完整中文"""
+# --- AI分析函数 (优化中文输出 + 评论集成) ---
+async def fetch_post_comments(post_id):
+    """从数据库获取帖子的高质量评论"""
+    try:
+        conn = await asyncpg.connect(NEON_DB_URL)
+        # 获取评分最高的前5条评论
+        comments = await conn.fetch("""
+            SELECT author, body, score 
+            FROM reddit_comments 
+            WHERE post_id = $1 
+            ORDER BY score DESC 
+            LIMIT 5
+        """, post_id)
+        await conn.close()
+        return [dict(c) for c in comments]
+    except:
+        return []
+
+def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
+    """使用DeepSeek分析Reddit帖子并输出完整中文（包含评论精华）"""
     excerpt = post.get('content', '')[:1000]
     if not excerpt.strip():
         excerpt = "（无详细内容）"
     
-    # 注意：当前RSS源不包含评论内容
-    num_comments = post.get('num_comments', 0)
-    comment_hint = f"\n- 评论数量: {num_comments}条" if num_comments > 0 else ""
+    # 构建评论摘要
+    comment_section = ""
+    if comments and len(comments) > 0:
+        comment_section = "\n\n**社区讨论精华**（高赞评论）：\n"
+        for i, comment in enumerate(comments[:3], 1):
+            comment_body = comment['body'][:200]
+            comment_section += f"{i}. [{comment['author']}] (👍{comment['score']}): {comment_body}...\n"
+    else:
+        num_comments = post.get('num_comments', 0)
+        comment_section = f"\n- 评论数量: {num_comments}条（暂无评论内容）" if num_comments > 0 else ""
 
     prompt = f"""
-你是一名专业的Reddit技术内容分析师。请分析以下帖子，并生成一份**深度中文分析报告**，让读者无需查看原文即可全面理解。
+你是一名专业的Reddit技术内容分析专家。请深度分析以下帖子（包含社区讨论），生成一份**专业技术分析报告**。
+
+**分析角色定位**：
+- 技术深度：深入剖析技术原理、架构设计、工程实践
+- 专业视角：关注最佳实践、性能优化、创新方向
+- 实战价值：提供可落地的建议和解决方案
+- 社区洞察：整合评论区的技术讨论和不同观点
 
 **重要要求**：
-1. 将英文标题翻译成通俗易懂的中文
+1. 标题翻译成专业、准确的中文
 2. 所有分析内容必须是中文
-3. 对于技术类帖子，深入分析技术细节、方案和代码要点
-4. 对于游戏开发类，关注开发技巧、工具和最佳实践
-5. 返回格式必须是纯JSON，不要包含```json```标记
+3. 技术类帖子：深入分析原理、架构、代码要点、性能优化
+4. 游戏开发类：关注引擎、工具、算法、渲染技术
+5. 评论整合：提炼社区讨论的技术要点、争议和共识
+6. 返回格式必须是纯JSON，不要包含```json```标记
 
 **原始帖子信息**：
 - 标题（英文）: {post['title']}
 - 来源板块: r/{post['subreddit']}
-- 内容摘要: {excerpt}{comment_hint}
+- 内容摘要: {excerpt}{comment_section}
 
 **请严格按以下JSON格式输出**：
 {{
@@ -197,7 +228,7 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
   ],
   "post_type": "从[技术讨论, 新闻分享, 问题求助, 观点讨论, 资源分享, 教程指南, 项目展示, 其他]中选择一个",
   "value_assessment": "从[高, 中, 低]中选择一个",
-  "detailed_analysis": "生成300-800字的深度中文分析，包含以下内容（用markdown格式）：\\n\\n## 📋 背景介绍\\n简要说明这个话题的背景和重要性\\n\\n## 🎯 核心内容\\n详细展开帖子的主要内容，包括关键观点、数据或事实\\n\\n## 💡 技术/开发细节（如适用）\\n- 具体的技术方案、工具、引擎或框架\\n- 实现方法、代码思路或架构设计\\n- 性能优化或最佳实践\\n\\n## 💬 讨论价值\\n- 这个话题可能引发的讨论方向\\n- 社区可能关注的焦点\\n- 潜在的不同观点或争议\\n\\n## 🔧 实用价值\\n- 如何应用这些信息到实际开发中\\n- 相关工具、库或资源推荐\\n- 注意事项、坑点或限制\\n\\n## 🚀 总结与建议\\n趋势分析、个人建议或延伸思考"
+  "detailed_analysis": "生成600-1200字的**专业深度技术分析**，包含以下结构（用markdown格式）：\\n\\n## 📋 技术背景\\n阐述技术背景、问题起源、行业现状。说明为什么这个话题重要、解决了什么痛点。\\n\\n## 🎯 核心技术方案\\n深入剖析技术原理、架构设计、实现思路。包括：\\n- 技术选型和理由\\n- 系统架构或算法设计\\n- 关键代码逻辑或API使用\\n- 数据流和状态管理\\n\\n## 💡 工程实践细节\\n**技术要点**：\\n- 性能优化策略（时间/空间复杂度、缓存、并发）\\n- 最佳实践和设计模式\\n- 常见陷阱和解决方案\\n- 兼容性和边界情况处理\\n\\n**工具链**：\\n- 推荐的框架、库、工具\\n- 开发环境配置\\n- 测试和调试方法\\n\\n## 💬 社区讨论与争议\\n基于评论区讨论，分析：\\n- 技术方案的不同观点和替代方案\\n- 社区共识和争议点\\n- 实际应用中遇到的问题\\n- 经验分享和建议\\n\\n## 🔧 实战应用指南\\n**适用场景**：什么情况下应该使用这个方案\\n**实施步骤**：具体的实现路径和注意事项\\n**资源推荐**：官方文档、教程、开源项目链接\\n**避坑指南**：常见错误、性能瓶颈、安全隐患\\n\\n## 🚀 技术趋势与展望\\n- 该技术在行业中的发展趋势\\n- 与其他技术的对比和演进方向\\n- 未来可能的应用场景\\n- 对开发者的建议和学习路径"
 }}
 """
     
@@ -415,17 +446,22 @@ async def insert_posts_into_db(posts_data):
             await conn.close()
 
 # --- AI整体洞察报告 ---
-def generate_ai_summary_report(posts_data):
-    """生成整体分析报告"""
+async def generate_ai_summary_report(posts_data):
+    """生成整体分析报告（异步版本，支持评论查询）"""
     processed_posts = []
     post_summaries = []
 
-    logger.info("=== 开始AI分析 ===")
+    logger.info("=== 开始AI分析（包含评论）===")
 
     for i, post in enumerate(posts_data):
         logger.info(f"[{i+1}/{len(posts_data)}] 分析: r/{post['subreddit']} - {post['title'][:40]}...")
         
-        analysis = analyze_single_post_with_deepseek(post)
+        # 尝试获取评论
+        comments = await fetch_post_comments(post.get('id'))
+        if comments:
+            logger.info(f"  → 获取到 {len(comments)} 条高质量评论")
+        
+        analysis = analyze_single_post_with_deepseek(post, comments=comments)
         
         if analysis:
             processed_posts.append({
@@ -684,8 +720,8 @@ async def main():
         
         logger.info(f"✓ 共获取 {len(posts_data)} 个帖子")
         
-        # 生成AI报告
-        report_data = generate_ai_summary_report(posts_data)
+        # 生成AI报告（包含评论分析）
+        report_data = await generate_ai_summary_report(posts_data)
         
         # 插入数据库
         if report_data.get('processed_posts'):
