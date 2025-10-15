@@ -45,6 +45,12 @@ WARM_UP_URL = "https://linux.do/"
 RSS_URL = "https://linux.do/latest.rss"
 POST_COUNT_LIMIT = int(os.getenv("POST_COUNT_LIMIT", "30"))  # 爬取帖子数量
 
+# 评论抓取配置
+REQUEST_INTERVAL = 2  # 帖子间隔时间（秒）
+PAGE_LOAD_WAIT = 2  # 页面加载等待时间（秒）
+COMMENT_SUMMARY_LENGTH = 150  # 评论摘要长度
+TOP_COMMENTS_LIMIT = 10  # 高赞评论数量限制
+
 # 重试配置
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -147,10 +153,11 @@ def retry_on_failure(max_retries=3, delay=5):
 # =============================================================================
 
 def analyze_single_post_with_deepseek(post):
-    """使用DeepSeek对单个帖子进行深度分析"""
+    """使用DeepSeek对单个帖子进行深度分析（包含真实评论）"""
     try:
-        # 清理内容
-        clean_content = re.sub(r'<.*?>', ' ', post.get('content', ''))
+        # 清理楼主内容
+        main_content = post.get('content', '')
+        clean_content = re.sub(r'<.*?>', ' ', main_content)
         clean_content = re.sub(r'\s+', ' ', clean_content).strip()
         excerpt = (clean_content[:800] + '...') if len(clean_content) > 800 else clean_content
 
@@ -165,25 +172,50 @@ def analyze_single_post_with_deepseek(post):
                 "detailed_analysis": ""
             }
 
-        # 构建AI分析提示词（社区风向观察版）
+        # 构建评论摘要（真实评论）
+        comments_section = ""
+        comments = post.get('comments', [])
+        comment_count = len(comments)
+        
+        if comment_count > 0:
+            # 按点赞数排序，取前N条
+            top_comments = sorted(comments, key=lambda x: x.get('likes', 0), reverse=True)[:TOP_COMMENTS_LIMIT]
+            
+            comments_summary = []
+            for i, comment in enumerate(top_comments, 1):
+                author = comment.get('author', '匿名')
+                content = comment.get('content', '')[:COMMENT_SUMMARY_LENGTH]  # 限制长度
+                likes = comment.get('likes', 0)
+                comments_summary.append(f"{i}. [{author}] (👍{likes}): {content}...")
+            
+            comments_section = f"""
+
+**评论区讨论** ({comment_count}条真实评论)：
+{chr(10).join(comments_summary)}
+"""
+        else:
+            comments_section = "\n（暂无评论）"
+
+        # 构建AI分析提示词（社区风向观察版 + 真实评论整合）
         prompt = f"""
-你是一名Linux.do社区观察员，擅长捕捉社区热点、资源分享和实用技巧。请分析以下帖子，生成一份**轻快实用的分析报告**。
+你是一名Linux.do社区观察员，擅长捕捉社区热点、资源分享和实用技巧。请基于**楼主内容和评论区真实讨论**，生成一份**轻快实用的分析报告**。
 
 **分析角色定位**：
-- 社区风向观察：关注热点话题、讨论趋势、群体情绪
-- 实用资源挖掘：发现有价值的工具、教程、优惠、技巧
+- 社区风向观察：基于真实评论分析讨论趋势、群体情绪
+- 实用资源挖掘：从帖子和评论中发现有价值的工具、教程、优惠、技巧
 - 接地气表达：通俗易懂，贴近用户实际需求
-- 快速获取要点：让读者3分钟了解核心内容
+- 快速获取要点：让读者3分钟了解核心内容和社区讨论
 
 **重要要求**：
 1. 语言轻快、口语化，避免过于学术
 2. 重点突出实用性和可操作性
-3. 关注社区讨论热度和情绪
-4. 返回格式必须是纯JSON，不要包含```json```标记
+3. **基于真实评论**分析社区讨论热度和情绪（不是推测！）
+4. 提炼评论中的有价值观点和解决方案
+5. 返回格式必须是纯JSON，不要包含```json```标记
 
 **帖子内容**：
 - 标题: {post['title']}
-- 内容: {excerpt}
+- 楼主内容: {excerpt}{comments_section}
 
 **请严格按以下JSON格式输出**：
 {{
@@ -195,7 +227,7 @@ def analyze_single_post_with_deepseek(post):
   ],
   "post_type": "从[技术问答, 资源分享, 新闻资讯, 优惠活动, 日常闲聊, 求助, 讨论, 产品评测]中选择一个",
   "value_assessment": "从[高, 中, 低]中选择一个",
-  "detailed_analysis": "生成400-700字的轻快分析，包含以下内容（用markdown格式）：\\n\\n## 📋 话题背景\\n简要说明这个话题为什么火、为什么重要（2-3句话）\\n\\n## 🎯 核心内容\\n用通俗语言展开帖子的主要内容，突出关键点和有用信息\\n\\n## 💡 实用技巧/资源（如适用）\\n**工具/资源**：具体的工具、网站、软件推荐\\n**操作方法**：简单的使用步骤或配置方法\\n**注意事项**：常见坑点和避免方法\\n\\n## 💬 社区风向\\n**讨论热度**：社区对此的关注程度和讨论方向\\n**情绪倾向**：支持/反对/中立的声音\\n**延伸话题**：可能引发的相关讨论\\n\\n## 🔧 实用价值\\n**适用人群**：谁最需要这个信息\\n**使用场景**：什么时候能用上\\n**推荐理由**：为什么值得关注\\n\\n## 🚀 一句话总结\\n用最简洁的话概括这个帖子的价值"
+  "detailed_analysis": "生成500-800字的轻快分析，包含以下内容（用markdown格式）：\\n\\n## 📋 话题背景\\n简要说明这个话题为什么火、为什么重要（2-3句话）\\n\\n## 🎯 核心内容\\n用通俗语言展开楼主帖子的主要内容，突出关键点和有用信息\\n\\n## 💡 实用技巧/资源（如适用）\\n**工具/资源**：从帖子和评论中提取的具体工具、网站、软件推荐\\n**操作方法**：简单的使用步骤或配置方法\\n**注意事项**：评论中提到的常见坑点和避免方法\\n\\n## 💬 社区风向（基于{comment_count}条真实评论）\\n**讨论热度**：评论数量和活跃度（高/中/低），主要讨论方向\\n**情绪倾向**：统计评论中支持/反对/中立的比例，引用典型观点\\n**热门观点**：总结高赞评论的核心观点（2-3条，注明点赞数）\\n**争议焦点**：评论区的主要分歧和不同看法（如有）\\n**实用建议**：评论中提供的解决方案或经验分享\\n\\n## 🔧 实用价值\\n**适用人群**：谁最需要这个信息\\n**使用场景**：什么时候能用上\\n**推荐理由**：为什么值得关注（结合评论反馈）\\n\\n## 🚀 一句话总结\\n用最简洁的话概括这个帖子的价值和社区共识"
 }}
 """
         
@@ -280,6 +312,156 @@ def analyze_single_post_with_deepseek(post):
 # =============================================================================
 # 爬虫核心函数
 # =============================================================================
+
+async def fetch_post_replies(page, post_url, post_title):
+    """
+    访问帖子详情页并提取真实评论
+    
+    Args:
+        page: Playwright页面对象
+        post_url: 帖子URL
+        post_title: 帖子标题（用于日志）
+    
+    Returns:
+        dict: 包含楼主内容和评论列表的字典
+    """
+    try:
+        logger.info(f"  ⏳ 访问帖子: {post_title[:40]}...")
+        await page.goto(post_url, wait_until="domcontentloaded", timeout=30000)
+        await asyncio.sleep(PAGE_LOAD_WAIT)  # 等待动态内容加载
+        
+        # 提取所有帖子容器（Discourse标准结构）
+        posts_elements = await page.query_selector_all('.topic-post')
+        
+        if not posts_elements or len(posts_elements) == 0:
+            logger.warning(f"    ⚠️ 未找到帖子容器")
+            return None
+        
+        logger.info(f"    ✓ 找到 {len(posts_elements)} 个帖子（1楼主 + {len(posts_elements)-1}评论）")
+        
+        # 提取楼主内容（第一个.topic-post）
+        main_post_elem = posts_elements[0]
+        main_content = ""
+        
+        try:
+            content_elem = await main_post_elem.query_selector('.cooked')
+            if content_elem:
+                main_content = await content_elem.text_content()
+                main_content = main_content.strip()
+        except:
+            pass
+        
+        # 提取评论（从第2个开始）
+        comments = []
+        for i in range(1, len(posts_elements)):
+            try:
+                reply_elem = posts_elements[i]
+                
+                # 提取作者
+                author = ""
+                author_elem = await reply_elem.query_selector('.username')
+                if author_elem:
+                    author = (await author_elem.text_content()).strip()
+                
+                # 提取内容
+                content = ""
+                content_elem = await reply_elem.query_selector('.cooked')
+                if content_elem:
+                    content = (await content_elem.text_content()).strip()
+                
+                # 提取点赞数
+                likes = 0
+                try:
+                    likes_elem = await reply_elem.query_selector('.likes')
+                    if likes_elem:
+                        likes_text = await likes_elem.text_content()
+                        likes = int(''.join(filter(str.isdigit, likes_text)) or '0')
+                except:
+                    pass
+                
+                # 提取时间
+                time_str = ""
+                try:
+                    time_elem = await reply_elem.query_selector('.post-date')
+                    if time_elem:
+                        time_str = await time_elem.get_attribute('title') or ""
+                except:
+                    pass
+                
+                if content:  # 只保存有内容的评论
+                    comments.append({
+                        'author': author,
+                        'content': content,
+                        'likes': likes,
+                        'time': time_str
+                    })
+            
+            except Exception as e:
+                logger.warning(f"      ⚠️ 提取评论{i}失败: {e}")
+                continue
+        
+        logger.info(f"    ✓ 成功提取 {len(comments)} 条评论")
+        
+        return {
+            'main_content': main_content,
+            'comments': comments,
+            'total_replies': len(comments)
+        }
+    
+    except Exception as e:
+        logger.error(f"    ❌ 访问帖子详情页失败: {e}")
+        return None
+
+async def fetch_posts_with_replies(page, posts):
+    """
+    为每个帖子抓取真实评论
+    
+    Args:
+        page: Playwright页面对象
+        posts: 帖子列表
+    
+    Returns:
+        list: 包含评论的帖子列表
+    """
+    logger.info(f"\n{'='*60}")
+    logger.info(f"🔍 开始抓取帖子详情页（真实评论）")
+    logger.info(f"{'='*60}\n")
+    
+    enhanced_posts = []
+    
+    for i, post in enumerate(posts):
+        logger.info(f"[{i+1}/{len(posts)}] 处理: {post['title'][:50]}...")
+        
+        # 访问帖子详情页获取评论
+        replies_data = await fetch_post_replies(page, post['link'], post['title'])
+        
+        if replies_data:
+            # 合并数据
+            post['main_content'] = replies_data['main_content']
+            post['comments'] = replies_data['comments']
+            post['total_replies'] = replies_data['total_replies']
+            
+            # 如果原来的content是从RSS来的，现在替换为真实内容
+            if replies_data['main_content']:
+                post['content'] = replies_data['main_content']
+        else:
+            # 如果获取失败，保持原有的RSS description
+            post['main_content'] = post.get('content', '')
+            post['comments'] = []
+            post['total_replies'] = 0
+            logger.warning(f"    ⚠️ 使用RSS描述作为降级方案")
+        
+        enhanced_posts.append(post)
+        
+        # 请求间隔，避免被封
+        if i < len(posts) - 1:
+            await asyncio.sleep(REQUEST_INTERVAL)
+    
+    logger.info(f"\n✅ 完成帖子详情抓取")
+    logger.info(f"   总帖子数: {len(enhanced_posts)}")
+    logger.info(f"   总评论数: {sum(p.get('total_replies', 0) for p in enhanced_posts)}\n")
+    
+    return enhanced_posts
 
 @retry_on_failure(max_retries=MAX_RETRIES, delay=RETRY_DELAY)
 async def fetch_linuxdo_posts():
@@ -463,8 +645,12 @@ async def fetch_linuxdo_posts():
                 if i < len(all_posts) - 1:
                     await asyncio.sleep(1)
 
-            logger.info(f"✓ 获取到 {len(posts_with_content)} 篇帖子内容")
-            return posts_with_content
+            logger.info(f"✓ 获取到 {len(posts_with_content)} 篇帖子（仅RSS描述）")
+            
+            # 新增：访问每个帖子详情页抓取真实评论
+            posts_with_replies = await fetch_posts_with_replies(page, posts_with_content)
+            
+            return posts_with_replies
 
         except Exception as e:
             logger.error(f"❌ 爬取失败: {e}")

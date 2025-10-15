@@ -32,7 +32,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const [isLoading, setIsLoading] = useState(true)
   const isLoadingContent = useRef(false) // 防止循环更新
   const [showOutline, setShowOutline] = useState(false) // 默认不显示
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isFullscreenModalOpen, setIsFullscreenModalOpen] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const outlineTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -318,16 +318,16 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }
   }
 
-  // ESC键退出全屏
+  // ESC键处理（模态框内部会处理）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false)
+      if (e.key === 'Escape' && isFullscreenModalOpen) {
+        setIsFullscreenModalOpen(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
+  }, [isFullscreenModalOpen])
 
   // 加载状态
   if (isLoading || !editor) {
@@ -364,8 +364,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }, 300) // 300ms 延迟
   }
 
-  return (
-    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-6 flex flex-col' : className}>
+  // 渲染编辑器内容（常规和模态框共用）
+  const renderEditorContent = (isModal = false) => (
+    <div className={isModal ? 'h-full flex flex-col' : className}>
       {/* 状态栏 */}
       <div className="flex items-center justify-end gap-2 text-sm text-gray-400 mb-3 flex-shrink-0">
         {lastSaved && (
@@ -440,10 +441,10 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? '退出全屏 (ESC)' : '全屏编辑'}
+              onClick={() => setIsFullscreenModalOpen(true)}
+              title="全屏编辑"
             >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              <Maximize2 className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -459,12 +460,12 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       </div>
 
       {/* 编辑区（大纲悬浮在编辑器内部） */}
-      <div className={isFullscreen ? 'flex flex-1 min-h-0' : 'flex'}>
+      <div className={isModal ? 'flex flex-1 min-h-0' : 'flex'}>
         <div className="flex-1 min-w-0 relative">
           {/* 可滚动编辑区域，设置合适的固定高度 */}
           <div 
             className="overflow-y-auto"
-            style={{ height: isFullscreen ? '100%' : '400px' }}
+            style={{ height: isModal ? '100%' : '400px' }}
           >
             <EditorContent editor={editor} />
           </div>
@@ -473,7 +474,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
 
         {/* 右侧大纲侧栏 - 居中位置，鼠标悬浮展开 */}
         <div 
-          className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-40"
+          className={`hidden md:block ${isModal ? 'absolute' : 'fixed'} right-0 top-1/2 -translate-y-1/2 z-40`}
           onMouseEnter={handleOutlineMouseEnter}
           onMouseLeave={handleOutlineMouseLeave}
         >
@@ -605,6 +606,43 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         `}</style>
       </div>
     </div>
+  )
+
+  return (
+    <>
+      {/* 常规编辑器视图 */}
+      {renderEditorContent(false)}
+
+      {/* 全屏模态框 */}
+      {isFullscreenModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
+          {/* 背景遮罩 */}
+          <div 
+            className="absolute inset-0"
+            onClick={() => setIsFullscreenModalOpen(false)}
+          />
+          
+          {/* 模态框内容 - 全屏编辑器 */}
+          <div className="relative w-full h-full max-w-full max-h-full p-6 flex flex-col">
+            {/* 顶部关闭按钮 */}
+            <div className="flex justify-end mb-4 flex-shrink-0">
+              <button
+                onClick={() => setIsFullscreenModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                title="退出全屏 (ESC)"
+              >
+                <Minimize2 className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
+              </button>
+            </div>
+            
+            {/* 模态框内的编辑器 */}
+            <div className="flex-1 min-h-0">
+              {renderEditorContent(true)}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
