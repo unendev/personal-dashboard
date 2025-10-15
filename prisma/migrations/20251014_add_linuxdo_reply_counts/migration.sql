@@ -7,3 +7,4 @@ ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "participants_count" INTEGER DEFAUL
 
 
 
+

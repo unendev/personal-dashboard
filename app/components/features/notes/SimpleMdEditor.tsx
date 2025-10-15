@@ -90,6 +90,31 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       attributes: {
         class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] px-4 py-3',
       },
+      handleKeyDown: (view, event) => {
+        // Ctrl+D (Windows/Linux) 或 Cmd+D (Mac) 删除当前行
+        if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+          event.preventDefault()
+          
+          const { state, dispatch } = view
+          const { selection } = state
+          const { $from, $to } = selection
+          
+          // 找到当前行的起始和结束位置
+          const lineStart = $from.start()
+          const lineEnd = $to.end()
+          
+          // 如果选中了多行，删除选中的所有行
+          const from = Math.min($from.before(), lineStart)
+          const to = Math.max($to.after(), lineEnd)
+          
+          // 删除行内容
+          const tr = state.tr.delete(from, to)
+          dispatch(tr)
+          
+          return true
+        }
+        return false
+      },
     },
     onUpdate: ({ editor }) => {
       // 如果正在加载内容，不触发保存

@@ -49,22 +49,39 @@ const ScrollableLayout = () => {
     fetchData();
   }, []);
 
-  // 处理鼠标悬停
-  const handleMouseEnter = (post: LinuxDoPost | RedditPost, event: React.MouseEvent) => {
+  // 处理点击展开详情
+  const handleClick = (post: LinuxDoPost | RedditPost) => {
+    setHoveredPost(post);
+  };
+
+  // 处理鼠标离开 - 延迟关闭
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // 延迟 200ms 关闭，给用户时间移动到详情面板
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredPost(null);
+    }, 200);
+  };
+
+  // 详情面板鼠标进入 - 取消关闭
+  const handleDetailPanelEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  };
+
+  // 详情面板鼠标离开 - 关闭详情
+  const handleDetailPanelLeave = () => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
     
     hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredPost(post);
-    }, 300);
-  };
-
-  // 处理鼠标离开
-  const handleMouseLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
+      setHoveredPost(null);
+    }, 200);
   };
 
   // 大纲跳转
@@ -285,7 +302,7 @@ const ScrollableLayout = () => {
                 <div
                   key={post.id}
                   id={`post-${post.id}`}
-                  onMouseEnter={(e) => handleMouseEnter(post, e)}
+                  onClick={() => handleClick(post)}
                   onMouseLeave={handleMouseLeave}
                   className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
                            hover:border-white/20 transition-all duration-200 cursor-pointer group 
@@ -423,6 +440,8 @@ const ScrollableLayout = () => {
           <div
             ref={detailPanelRef}
             onClick={(e) => e.stopPropagation()}
+            onMouseEnter={handleDetailPanelEnter}
+            onMouseLeave={handleDetailPanelLeave}
             className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
                      max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
