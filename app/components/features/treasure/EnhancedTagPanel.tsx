@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, Hash, Sparkles, User, Calendar, Layers } from 'lucide-react'
+import { ChevronDown, ChevronRight, Hash, Sparkles, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
 import { detectTagType } from '@/lib/tag-utils'
@@ -18,41 +18,28 @@ interface EnhancedTagPanelProps {
 }
 
 export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagPanelProps) {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['hierarchy', 'emotion']))
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['navigation', 'free']))
 
-  // 按类型分组标签
+  // 按类型分组标签（只有两类：导航 vs 自由）
   const groupedTags = useMemo(() => {
     const groups = {
-      hierarchy: [] as TagWithCount[],
-      emotion: [] as TagWithCount[],
-      person: [] as TagWithCount[],
-      year: [] as TagWithCount[],
-      normal: [] as TagWithCount[]
+      navigation: [] as TagWithCount[],
+      free: [] as TagWithCount[]
     }
 
     tags.forEach(tag => {
       const type = detectTagType(tag.name)
-      if (type === 'hierarchical') {
-        groups.hierarchy.push(tag)
-      } else if (type === 'emotion') {
-        groups.emotion.push(tag)
-      } else if (type === 'person') {
-        groups.person.push(tag)
-      } else if (type === 'year') {
-        groups.year.push(tag)
-      } else {
-        groups.normal.push(tag)
-      }
+      groups[type].push(tag)
     })
 
     return groups
   }, [tags])
 
-  // 构建层级树
-  const hierarchyTree = useMemo(() => {
+  // 构建导航标签树
+  const navigationTree = useMemo(() => {
     const tree: Record<string, Record<string, string[]>> = {}
 
-    groupedTags.hierarchy.forEach(tag => {
+    groupedTags.navigation.forEach(tag => {
       const parts = tag.name.split('/')
       if (parts.length === 1) {
         // 一级标签
@@ -70,7 +57,7 @@ export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagP
     })
 
     return tree
-  }, [groupedTags.hierarchy])
+  }, [groupedTags.navigation])
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
@@ -100,26 +87,26 @@ export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagP
 
   return (
     <div className="space-y-4">
-      {/* 层级标签树 */}
-      {Object.keys(hierarchyTree).length > 0 && (
+      {/* 导航标签树 */}
+      {Object.keys(navigationTree).length > 0 && (
         <div className="bg-[#0d1117] rounded-xl p-4 border border-white/10">
           <button
-            onClick={() => toggleGroup('hierarchy')}
+            onClick={() => toggleGroup('navigation')}
             className="flex items-center gap-2 mb-3 w-full hover:opacity-80 transition-opacity"
           >
-            {expandedGroups.has('hierarchy') ? (
+            {expandedGroups.has('navigation') ? (
               <ChevronDown className="w-4 h-4 text-blue-400" />
             ) : (
               <ChevronRight className="w-4 h-4 text-blue-400" />
             )}
             <Layers className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-semibold text-white">层级标签树</h3>
-            <span className="text-xs text-white/40 ml-auto">{groupedTags.hierarchy.length} 个</span>
+            <h3 className="text-sm font-semibold text-white">导航标签</h3>
+            <span className="text-xs text-white/40 ml-auto">{groupedTags.navigation.length} 个</span>
           </button>
 
-          {expandedGroups.has('hierarchy') && (
+          {expandedGroups.has('navigation') && (
             <div className="space-y-1 pl-2">
-              {Object.entries(hierarchyTree).map(([level1, level2s]) => (
+              {Object.entries(navigationTree).map(([level1, level2s]) => (
                 <div key={level1} className="space-y-1">
                   <button
                     onClick={() => {
@@ -192,128 +179,26 @@ export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagP
         </div>
       )}
 
-      {/* 感受标签 */}
-      {groupedTags.emotion.length > 0 && (
+      {/* 自由标签云 */}
+      {groupedTags.free.length > 0 && (
         <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
           <button
-            onClick={() => toggleGroup('emotion')}
+            onClick={() => toggleGroup('free')}
             className="flex items-center gap-2 mb-3 w-full hover:opacity-80 transition-opacity"
           >
-            {expandedGroups.has('emotion') ? (
-              <ChevronDown className="w-4 h-4 text-amber-400" />
+            {expandedGroups.has('free') ? (
+              <ChevronDown className="w-4 h-4 text-emerald-400" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-amber-400" />
+              <ChevronRight className="w-4 h-4 text-emerald-400" />
             )}
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-white">感受标签</h3>
-            <span className="text-xs text-white/40 ml-auto">{groupedTags.emotion.length} 个</span>
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-semibold text-white">自由标签</h3>
+            <span className="text-xs text-white/40 ml-auto">{groupedTags.free.length} 个</span>
           </button>
 
-          {expandedGroups.has('emotion') && (
+          {expandedGroups.has('free') && (
             <div className="flex flex-wrap gap-2">
-              {groupedTags.emotion.map(tag => (
-                <HierarchicalTag
-                  key={tag.name}
-                  tag={tag.name}
-                  variant="cloud"
-                  size="sm"
-                  isSelected={selectedTag === tag.name}
-                  onClick={() => onTagClick(tag.name)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 人物标签 */}
-      {groupedTags.person.length > 0 && (
-        <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
-          <button
-            onClick={() => toggleGroup('person')}
-            className="flex items-center gap-2 mb-3 w-full hover:opacity-80 transition-opacity"
-          >
-            {expandedGroups.has('person') ? (
-              <ChevronDown className="w-4 h-4 text-purple-400" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-purple-400" />
-            )}
-            <User className="w-4 h-4 text-purple-400" />
-            <h3 className="text-sm font-semibold text-white">人物标签</h3>
-            <span className="text-xs text-white/40 ml-auto">{groupedTags.person.length} 个</span>
-          </button>
-
-          {expandedGroups.has('person') && (
-            <div className="flex flex-wrap gap-2">
-              {groupedTags.person.map(tag => (
-                <HierarchicalTag
-                  key={tag.name}
-                  tag={tag.name}
-                  variant="cloud"
-                  size="sm"
-                  isSelected={selectedTag === tag.name}
-                  onClick={() => onTagClick(tag.name)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 年代标签 */}
-      {groupedTags.year.length > 0 && (
-        <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
-          <button
-            onClick={() => toggleGroup('year')}
-            className="flex items-center gap-2 mb-3 w-full hover:opacity-80 transition-opacity"
-          >
-            {expandedGroups.has('year') ? (
-              <ChevronDown className="w-4 h-4 text-teal-400" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-teal-400" />
-            )}
-            <Calendar className="w-4 h-4 text-teal-400" />
-            <h3 className="text-sm font-semibold text-white">年代标签</h3>
-            <span className="text-xs text-white/40 ml-auto">{groupedTags.year.length} 个</span>
-          </button>
-
-          {expandedGroups.has('year') && (
-            <div className="flex flex-wrap gap-2">
-              {groupedTags.year.sort((a, b) => b.name.localeCompare(a.name)).map(tag => (
-                <HierarchicalTag
-                  key={tag.name}
-                  tag={tag.name}
-                  variant="cloud"
-                  size="sm"
-                  isSelected={selectedTag === tag.name}
-                  onClick={() => onTagClick(tag.name)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 普通标签 */}
-      {groupedTags.normal.length > 0 && (
-        <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
-          <button
-            onClick={() => toggleGroup('normal')}
-            className="flex items-center gap-2 mb-3 w-full hover:opacity-80 transition-opacity"
-          >
-            {expandedGroups.has('normal') ? (
-              <ChevronDown className="w-4 h-4 text-green-400" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-green-400" />
-            )}
-            <Hash className="w-4 h-4 text-green-400" />
-            <h3 className="text-sm font-semibold text-white">通用标签</h3>
-            <span className="text-xs text-white/40 ml-auto">{groupedTags.normal.length} 个</span>
-          </button>
-
-          {expandedGroups.has('normal') && (
-            <div className="flex flex-wrap gap-2">
-              {groupedTags.normal.map(tag => (
+              {groupedTags.free.map(tag => (
                 <HierarchicalTag
                   key={tag.name}
                   tag={tag.name}
