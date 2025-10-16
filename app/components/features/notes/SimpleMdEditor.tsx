@@ -155,7 +155,6 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       }),
       Typography,
       Image.configure({
-        inline: true,
         allowBase64: true,
       }),
     ],
@@ -201,12 +200,15 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             if (file) {
               // 异步上传图片
               uploadImageToOSS(file).then((url) => {
+                console.log('📸 图片上传成功，URL:', url)
                 const { state, dispatch } = view
                 const node = state.schema.nodes.image.create({ src: url })
+                console.log('📝 创建图片节点:', node)
                 const transaction = state.tr.replaceSelectionWith(node)
                 dispatch(transaction)
-              }).catch(() => {
-                // 上传失败已在 uploadImageToOSS 中处理
+                console.log('✅ 图片插入完成')
+              }).catch((error) => {
+                console.error('❌ 图片上传失败:', error)
               })
             }
             return true
