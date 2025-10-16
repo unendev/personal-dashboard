@@ -5,6 +5,38 @@
 export type TagType = 'hierarchical' | 'emotion' | 'person' | 'year' | 'normal'
 
 /**
+ * 自定义标签颜色配置
+ * 在这里添加您想要自定义颜色的标签
+ */
+export const CUSTOM_TAG_COLORS: Record<string, {
+  bg: string
+  border: string
+  text: string
+  hover: string
+}> = {
+  // 示例：为"小约翰可汗"设置特定颜色
+  '小约翰可汗': {
+    bg: 'bg-gradient-to-r from-rose-500/20 to-red-500/20',
+    border: 'border-rose-500/30',
+    text: 'text-rose-300',
+    hover: 'hover:bg-rose-500/30'
+  },
+  '迷思': {
+    bg: 'bg-gradient-to-r from-indigo-500/20 to-violet-500/20',
+    border: 'border-indigo-500/30',
+    text: 'text-indigo-300',
+    hover: 'hover:bg-indigo-500/30'
+  },
+  '时光机': {
+    bg: 'bg-gradient-to-r from-cyan-500/20 to-sky-500/20',
+    border: 'border-cyan-500/30',
+    text: 'text-cyan-300',
+    hover: 'hover:bg-cyan-500/30'
+  },
+  // 在此添加更多自定义标签...
+}
+
+/**
  * 检测标签类型
  */
 export function detectTagType(tag: string): TagType {
@@ -40,9 +72,15 @@ export function detectTagType(tag: string): TagType {
 }
 
 /**
- * 获取标签类型对应的颜色方案
+ * 获取标签颜色方案（优先使用自定义颜色）
  */
-export function getTagColorScheme(type: TagType) {
+export function getTagColorScheme(type: TagType, tagName?: string) {
+  // 优先检查是否有自定义颜色
+  if (tagName && CUSTOM_TAG_COLORS[tagName]) {
+    return CUSTOM_TAG_COLORS[tagName]
+  }
+  
+  // 否则使用类型默认颜色
   switch (type) {
     case 'hierarchical':
       return {

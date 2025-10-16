@@ -10,6 +10,7 @@ import { TreasureOutline } from './TreasureOutline'
 import { 
   Search,
   X,
+  Hash,
 } from 'lucide-react'
 
 interface Treasure {
@@ -484,16 +485,33 @@ export function TreasureList({ className }: TreasureListProps) {
                 )}
               </div>
             </div>
-            {selectedTag && (
-              <div className="mt-2 flex items-center gap-2">
+            {/* 显示当前筛选条件 */}
+            {(selectedTag || (searchQuery && searchQuery.startsWith('#'))) && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-white/60">筛选:</span>
-                <button
-                  onClick={() => setSelectedTag('')}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300 hover:bg-blue-500/30 transition-colors"
-                >
-                  {selectedTag}
-                  <X className="h-3 w-3" />
-                </button>
+                
+                {/* 从搜索框来的标签筛选 */}
+                {searchQuery && searchQuery.startsWith('#') && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-300 hover:bg-purple-500/30 transition-colors"
+                  >
+                    <Hash className="h-3 w-3" />
+                    {searchQuery.slice(1)}
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+                
+                {/* 从标签云来的筛选 */}
+                {selectedTag && (
+                  <button
+                    onClick={() => setSelectedTag('')}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300 hover:bg-blue-500/30 transition-colors"
+                  >
+                    {selectedTag}
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             )}
           </div>

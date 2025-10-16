@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
-import { BarChart3, Tag as TagIcon, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BarChart3, Tag as TagIcon, X, Grid3x3, List } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
+import { EnhancedTagPanel } from './EnhancedTagPanel'
 
 interface TreasureStatsPanelProps {
   treasures: Array<{
@@ -16,6 +17,9 @@ interface TreasureStatsPanelProps {
 }
 
 export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: TreasureStatsPanelProps) {
+  // 标签视图模式：cloud（标签云） 或 tree（分组树）
+  const [tagViewMode, setTagViewMode] = useState<'cloud' | 'tree'>('tree')
+  
   // 计算热力图数据（最近12周，每周7天）
   const heatmapData = useMemo(() => {
     const weeks = 12
@@ -187,27 +191,56 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
         </div>
       </div>
 
-      {/* 标签云 */}
+      {/* 标签区域 */}
       <div className="bg-[#161b22] rounded-xl p-4 border border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <TagIcon className="w-4 h-4 text-purple-400" />
-          <h3 className="text-sm font-semibold text-white">热门标签</h3>
+          <h3 className="text-sm font-semibold text-white">标签导航</h3>
+          
+          {/* 视图切换按钮 */}
+          <div className="ml-auto flex items-center gap-1 bg-white/5 rounded-lg p-1">
+            <button
+              onClick={() => setTagViewMode('tree')}
+              className={cn(
+                "p-1 rounded transition-colors",
+                tagViewMode === 'tree' 
+                  ? "bg-purple-500/30 text-purple-300" 
+                  : "text-white/40 hover:text-white/60"
+              )}
+              title="分组树视图"
+            >
+              <List className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setTagViewMode('cloud')}
+              className={cn(
+                "p-1 rounded transition-colors",
+                tagViewMode === 'cloud' 
+                  ? "bg-purple-500/30 text-purple-300" 
+                  : "text-white/40 hover:text-white/60"
+              )}
+              title="标签云视图"
+            >
+              <Grid3x3 className="w-3 h-3" />
+            </button>
+          </div>
+          
           {selectedTag && (
             <button
               onClick={() => onTagClick?.('')}
-              className="ml-auto text-xs text-white/60 hover:text-white/90 flex items-center gap-1"
+              className="text-xs text-white/60 hover:text-white/90 flex items-center gap-1"                                                             
             >
               <X className="w-3 h-3" />
-              清除
             </button>
           )}
         </div>
-        
+
         {tagStats.length === 0 ? (
           <div className="text-center py-8 text-white/40 text-sm">
             暂无标签
           </div>
-        ) : (
+        ) : tagViewMode === 'cloud' ? (
+          /* 标签云视图 */
           <div className="flex flex-wrap gap-2 items-center justify-center">    
             {tagStats.map(([tag, count]) => (
               <HierarchicalTag
@@ -220,6 +253,13 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
               />
             ))}
           </div>
+        ) : (
+          /* 分组树视图 */
+          <EnhancedTagPanel
+            tags={tagStats.map(([name, count]) => ({ name, count }))}
+            selectedTag={selectedTag}
+            onTagClick={onTagClick || (() => {})}
+          />
         )}
       </div>
 

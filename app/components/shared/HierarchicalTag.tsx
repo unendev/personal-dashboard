@@ -30,7 +30,7 @@ export function HierarchicalTag({
 }: HierarchicalTagProps) {
   // 检测标签类型
   const tagType = detectTagType(tag)
-  const colorScheme = getTagColorScheme(tagType)
+  const colorScheme = getTagColorScheme(tagType, tag) // 传入标签名以支持自定义颜色
   const typeLabel = getTagTypeLabel(tagType)
   
   // 检测层级标签（包含斜杠）
