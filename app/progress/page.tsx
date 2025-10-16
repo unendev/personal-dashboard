@@ -40,7 +40,7 @@ export default function ProgressPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 space-y-6">
+      <div className="w-full container-padding container-padding-y space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">🏛️ 人生阁</h1>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -52,7 +52,7 @@ export default function ProgressPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 space-y-6">
+      <div className="w-full container-padding container-padding-y space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">🏛️ 人生阁</h1>
         <div className="text-center py-12">
           <p className="text-gray-600 dark:text-gray-400">请先登录以查看你的成长轨迹</p>

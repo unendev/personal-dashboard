@@ -592,7 +592,7 @@ export default function LogPage() {
           </div>
         </div>
 
-        <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-8">
+        <div className="w-full container-padding py-8">
           {/* 访客欢迎信息 */}
           <div className="mb-8 p-6 bg-blue-900/20 rounded-xl border border-blue-700/50">
             <div className="flex items-center gap-4">
@@ -854,7 +854,7 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 md:py-8 pt-16 md:pt-20 overflow-x-hidden">
+      <div className="w-full container-padding container-padding-y pt-16 md:pt-20 overflow-x-hidden">
         <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8 flex-wrap">
           <button
             onClick={handleOpenDailyProgress}
