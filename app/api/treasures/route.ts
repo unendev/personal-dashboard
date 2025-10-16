@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createTreasureSchema } from '@/lib/validations/treasure';
 import { ZodError } from 'zod';
 import { findMatchingTags, invalidateUserTagCache } from '@/lib/tag-cache';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 // GET /api/treasures - 获取用户的所有宝藏（按时间倒序，支持分页）
 export async function GET(request: NextRequest) {

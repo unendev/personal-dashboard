@@ -23,7 +23,7 @@ const Sidebar = () => {
       {/* 背景遮罩 */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}

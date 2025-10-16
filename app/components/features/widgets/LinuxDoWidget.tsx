@@ -68,7 +68,7 @@ const LinuxDoWidget = () => {
   const getPostTypeColor = (type: string) => {
     switch (type) {
       case '求助': return 'bg-blue-500/20 text-blue-400';
-      case '讨论': return 'bg-purple-500/20 text-purple-400';
+      case '讨论': return 'bg-blue-500/20 text-blue-400';
       case '资源分享': return 'bg-green-500/20 text-green-400';
       case '新闻资讯': return 'bg-orange-500/20 text-orange-400';
       case '日常闲聊': return 'bg-gray-500/20 text-gray-400';
@@ -181,7 +181,7 @@ const LinuxDoWidget = () => {
             </div>
 
             {/* 概览 */}
-            <div className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
+            <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#2d2d2d]">
               <p className="text-white/80 text-sm leading-relaxed">{report.summary.overview}</p>
             </div>
 
@@ -225,8 +225,8 @@ const LinuxDoWidget = () => {
             </div>
 
             {/* 社区感悟 */}
-            <div className="p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
-              <h3 className="text-sm font-bold text-purple-400 mb-2">💭 社区感悟</h3>
+            <div className="p-3 bg-[#1e1e1e] rounded-lg border border-[#2d2d2d]">
+              <h3 className="text-sm font-bold text-blue-400 mb-2">💭 社区感悟</h3>
               <p className="text-white/80 text-sm italic leading-relaxed">&ldquo;{report.summary.conclusion}&rdquo;</p>
             </div>
           </div>

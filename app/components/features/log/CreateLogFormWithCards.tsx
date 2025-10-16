@@ -53,14 +53,12 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       {/* 网格布局 - 移动端单列，大屏幕双列 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* 左上：快速分类创建 */}
-        <div className="bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50/30 dark:from-gray-800/80 dark:via-gray-700/60 dark:to-gray-600/40 rounded-xl md:rounded-2xl p-3 md:p-5 border border-blue-200/50 dark:border-gray-600/50 lg:col-span-2 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-          {/* 装饰性背景 */}
-          <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 dark:from-blue-400/20 dark:to-purple-400/20 rounded-full -translate-y-12 md:-translate-y-16 translate-x-12 md:translate-x-16"></div>
+        <div className="bg-[#1e1e1e] dark:from-gray-800/80 dark:via-gray-700/60 dark:to-gray-600/40 rounded-xl md:rounded-2xl p-3 md:p-5 border border-[#2d2d2d] dark:border-gray-600/50 lg:col-span-2 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-20 md:w-24 h-20 md:h-24 bg-gradient-to-tr from-indigo-400/10 to-blue-400/10 dark:from-indigo-400/20 dark:to-blue-400/20 rounded-full translate-y-10 md:translate-y-12 -translate-x-10 md:-translate-x-12"></div>
           
           <div className="relative">
             <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-              <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white text-xs md:text-sm">📋</span>
               </div>
               <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">快速分类创建</h3>
@@ -70,7 +68,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
               onAddToTimer={onAddToTimer}
               className="mb-3 md:mb-4"
             />
-            <div className="flex items-center gap-2 text-xs md:text-sm text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-900/30 backdrop-blur-sm rounded-lg md:rounded-xl p-2 md:p-3 border border-blue-200/50 dark:border-blue-700/50">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-900/30 rounded-lg md:rounded-xl p-2 md:p-3 border border-blue-200/50 dark:border-blue-700/50">
               <span className="text-base md:text-lg">💡</span>
               <span className="font-medium">点击分类按钮快速创建任务</span>
             </div>
@@ -95,9 +93,9 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
                 onChange={(e) => setLogContent(e.target.value)}
                 rows={3}
                 placeholder="在这里输入你想做的事情..."
-                className="w-full text-sm md:text-base border-green-200 dark:border-gray-600 focus:border-green-400 dark:focus:border-green-500 focus:ring-green-400 dark:focus:ring-green-500 rounded-lg md:rounded-xl resize-none bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm shadow-sm focus:shadow-md transition-all duration-200 text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-sm md:text-base border-green-200 dark:border-gray-600 focus:border-green-400 dark:focus:border-green-500 focus:ring-green-400 dark:focus:ring-green-500 rounded-lg md:rounded-xl resize-none bg-white/80 dark:bg-gray-700/80 shadow-sm focus:shadow-md transition-all duration-200 text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400"
               />
-              <div className="flex items-center gap-2 text-xs md:text-sm text-green-700 dark:text-green-300 bg-green-100/80 dark:bg-green-900/30 backdrop-blur-sm rounded-lg md:rounded-xl p-2 md:p-3 border border-green-200/50 dark:border-green-700/50">
+              <div className="flex items-center gap-2 text-xs md:text-sm text-green-700 dark:text-green-300 bg-green-100/80 dark:bg-green-900/30 rounded-lg md:rounded-xl p-2 md:p-3 border border-green-200/50 dark:border-green-700/50">
                 <span className="text-base md:text-lg">⚡</span>
                 <span className="font-medium">输入内容后点击按钮</span>
               </div>
@@ -106,13 +104,11 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         </div>
 
         {/* 右下：操作按钮区域 */}
-        <div className="bg-gradient-to-br from-purple-50 via-pink-50/50 to-rose-50/30 dark:from-gray-800/80 dark:via-gray-700/60 dark:to-gray-600/40 rounded-xl md:rounded-2xl p-3 md:p-5 border border-purple-200/50 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-center">
-          {/* 装饰性背景 */}
-          <div className="absolute top-0 left-0 w-20 md:w-24 h-20 md:h-24 bg-gradient-to-br from-purple-400/10 to-pink-400/10 dark:from-purple-400/20 dark:to-pink-400/20 rounded-full -translate-y-10 md:-translate-y-12 -translate-x-10 md:-translate-x-12"></div>
+        <div className="bg-[#1e1e1e] dark:from-gray-800/80 dark:via-gray-700/60 dark:to-gray-600/40 rounded-xl md:rounded-2xl p-3 md:p-5 border border-[#2d2d2d] dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-center">
           
           <div className="relative">
             <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-              <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white text-xs md:text-sm">⚡</span>
               </div>
               <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">快速操作</h3>
@@ -121,7 +117,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading || !logContent.trim()}
-                className="w-full px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-semibold rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 size="default"
               >
                 {isLoading ? (
@@ -136,7 +132,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
                   </div>
                 )}
               </Button>
-              <div className="text-xs md:text-sm text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-900/30 backdrop-blur-sm rounded-lg md:rounded-xl p-2 md:p-3 border border-purple-200/50 dark:border-purple-700/50">
+              <div className="text-xs md:text-sm text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-900/30 rounded-lg md:rounded-xl p-2 md:p-3 border border-blue-200/50 dark:border-blue-700/50">
                 <div className="flex items-center gap-2">
                   <span className="text-base md:text-lg">🎯</span>
                   <span className="font-medium">点击按钮添加任务</span>

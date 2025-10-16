@@ -204,7 +204,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
               className={cn(
                 "p-1 rounded transition-colors",
                 tagViewMode === 'tree' 
-                  ? "bg-purple-500/30 text-purple-300" 
+                  ? "bg-blue-500/30 text-blue-300" 
                   : "text-white/40 hover:text-white/60"
               )}
               title="分组树视图"
@@ -216,7 +216,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
               className={cn(
                 "p-1 rounded transition-colors",
                 tagViewMode === 'cloud' 
-                  ? "bg-purple-500/30 text-purple-300" 
+                  ? "bg-blue-500/30 text-blue-300" 
                   : "text-white/40 hover:text-white/60"
               )}
               title="标签云视图"

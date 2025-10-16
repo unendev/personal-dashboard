@@ -161,6 +161,9 @@ export function TreasureList({ className }: TreasureListProps) {
     try {
       setIsLoadingMore(true)
       
+      // 🔧 记录加载前的滚动位置，用于加载完成后恢复
+      const scrollBeforeLoad = window.scrollY
+      
       const params = new URLSearchParams()
       
       // 检测 # 标签语法
@@ -194,6 +197,12 @@ export function TreasureList({ className }: TreasureListProps) {
         
         setPage(prev => prev + 1)
         setHasMore(newData.length === pageSize)
+        
+        // 🔧 等待 DOM 更新后，恢复滚动位置（向下偏移一点，避免用户停留在底部）
+        requestAnimationFrame(() => {
+          // 恢复到加载前的位置 + 150px 偏移，确保用户不在底部触发区域
+          window.scrollTo(0, scrollBeforeLoad + 150)
+        })
       }
     } catch (error) {
       console.error('加载更多失败:', error)
@@ -211,6 +220,7 @@ export function TreasureList({ className }: TreasureListProps) {
   // 监听窗口滚动，实现无限加载（使用节流防止频繁触发）
   useEffect(() => {
     let throttleTimer: NodeJS.Timeout | null = null
+    let lastScrollTop = 0
     
     const handleScroll = () => {
       // 节流：200ms 内只触发一次
@@ -225,16 +235,22 @@ export function TreasureList({ className }: TreasureListProps) {
         const clientHeight = window.innerHeight
         const distanceToBottom = scrollHeight - scrollTop - clientHeight
         
+        // 🔧 检查滚动方向
+        const isScrollingDown = scrollTop > lastScrollTop
+        lastScrollTop = scrollTop
+        
         // 检查是否需要加载更多
         // 1. 距离底部小于 300px
         // 2. 没有正在加载
         // 3. 还有更多数据
-        // 4. 必须从上次加载位置向下滚动了至少 150px（防止加载完立即再次触发）
+        // 4. 正在向下滚动（防止上滑时触发）
+        // 5. 必须从上次加载位置向下滚动了至少 200px（防止加载完立即再次触发）
         const shouldLoad = 
           distanceToBottom < 300 && 
           !isLoadingMore && 
           hasMore &&
-          (scrollTop - lastLoadScrollTop.current >= 150 || lastLoadScrollTop.current === 0)
+          isScrollingDown &&
+          (scrollTop - lastLoadScrollTop.current >= 200 || lastLoadScrollTop.current === 0)
         
         if (shouldLoad) {
           lastLoadScrollTop.current = scrollTop
@@ -443,10 +459,10 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={`flex gap-6 max-w-[1920px] mx-auto px-4 ${className}`}>
+    <div className={`flex gap-6 max-w-[1920px] mx-auto px-4 pb-8 ${className}`}>
       {/* 左侧大纲面板 - 固定滚动 */}
-      <aside className="hidden xl:block w-72 flex-shrink-0">
-        <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto bg-[#0d1117] rounded-xl border border-white/10">
+      <aside className="hidden xl:block w-72 flex-shrink-0 self-start sticky top-4">
+        <div className="max-h-[calc(100vh-2rem)] overflow-y-auto bg-[#0d1117] rounded-xl border border-white/10">
           <TreasureOutline
             treasures={treasures.map(t => ({ id: t.id, title: t.title, type: t.type, createdAt: t.createdAt }))}
             selectedId={activeId}
@@ -494,7 +510,7 @@ export function TreasureList({ className }: TreasureListProps) {
                 {searchQuery && searchQuery.startsWith('#') && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-300 hover:bg-purple-500/30 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300 hover:bg-blue-500/30 transition-colors"
                   >
                     <Hash className="h-3 w-3" />
                     {searchQuery.slice(1)}
@@ -540,7 +556,7 @@ export function TreasureList({ className }: TreasureListProps) {
                   }
                 }}
               >
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-3xl mx-auto">
                   {/* 外置分类头像与信息区域（社媒风格） */}
                   <div className="flex items-center gap-3 mb-2 px-1">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
@@ -608,8 +624,8 @@ export function TreasureList({ className }: TreasureListProps) {
       </div>
 
       {/* 右侧统计面板 - 固定滚动 */}
-      <aside className="hidden xl:block w-80 flex-shrink-0">
-        <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+      <aside className="hidden xl:block w-80 flex-shrink-0 self-start sticky top-4">
+        <div className="max-h-[calc(100vh-2rem)] overflow-y-auto">
           <TreasureStatsPanel 
             treasures={statsData}
             onTagClick={handleTagClick}

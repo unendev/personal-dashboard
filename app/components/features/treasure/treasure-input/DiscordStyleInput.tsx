@@ -709,7 +709,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
           <Button
             onClick={handleSubmit}
             disabled={(!content.trim() && images.length === 0) || isSubmitting || uploadingImages.length > 0}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
           >
             {isSubmitting ? (
               <>

@@ -48,7 +48,7 @@ const Modal: React.FC<ModalProps> = ({
       />
       
       {/* 模态框内容 */}
-      <div className={`relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl border border-white/20 max-w-7xl w-full mx-4 modal-content flex flex-col ${className}`}>
+      <div className={`relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-[#2d2d2d] max-w-7xl w-full mx-4 modal-content flex flex-col ${className}`}>
         {/* 标题栏 */}
         <div className="flex items-center justify-between p-6 border-b border-white/10 flex-shrink-0">
           <h2 className="text-2xl font-bold text-white">{title}</h2>

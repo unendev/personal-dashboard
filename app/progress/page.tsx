@@ -40,7 +40,7 @@ export default function ProgressPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">🏛️ 人生阁</h1>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -52,7 +52,7 @@ export default function ProgressPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">🏛️ 人生阁</h1>
         <div className="text-center py-12">
           <p className="text-gray-600 dark:text-gray-400">请先登录以查看你的成长轨迹</p>
@@ -62,7 +62,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6 max-w-5xl">
+    <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-6 space-y-6">
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
@@ -106,7 +106,7 @@ export default function ProgressPage() {
           {/* 时间线 */}
           <div className="relative">
             {/* 垂直线 */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500"></div>
+            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-[#3d3d3d]"></div>
 
             {/* 里程碑卡片 */}
             <div className="space-y-8">

@@ -9,7 +9,7 @@ export default function TreasurePavilionPage() {
 
   return (
     <div className="log-page-layout">
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full px-6 md:px-8 lg:px-10 xl:px-12 py-8">
         {/* 宝藏列表 */}
         <TreasureList />
       </div>
