@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
-import { X, Hash, ChevronDown } from 'lucide-react'
+import { Hash, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
 
 interface TagInputProps {
   tags: string[]
@@ -133,51 +134,15 @@ export function TagInput({
       >
         <div className="flex flex-wrap gap-2 items-center">
           {/* 已选标签 */}
-          {tags.map((tag, index) => {
-            // 检测层级标签（包含斜杠）
-            const isHierarchical = tag.includes('/')
-            const parts = isHierarchical ? tag.split('/') : [tag]
-            
-            return (
-              <span
-                key={index}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md",
-                  isHierarchical 
-                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30"
-                    : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30",
-                  isHierarchical ? "text-blue-300" : "text-green-300",
-                  "text-sm",
-                  "animate-in fade-in-0 zoom-in-95 duration-200"
-                )}
-                title={isHierarchical ? `层级标签：${parts.join(' → ')}` : undefined}
-              >
-                <Hash className="h-3 w-3" />
-                {isHierarchical ? (
-                  <span className="flex items-center gap-1">
-                    {parts.map((part, i) => (
-                      <span key={i} className="inline-flex items-center">
-                        {i > 0 && <span className="mx-0.5 text-blue-400/60">/</span>}
-                        <span>{part}</span>
-                      </span>
-                    ))}
-                  </span>
-                ) : (
-                  tag
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeTag(index)}
-                  className={cn(
-                    "rounded-full p-0.5 transition-colors",
-                    isHierarchical ? "hover:bg-blue-500/30" : "hover:bg-green-500/30"
-                  )}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )
-          })}
+          {tags.map((tag, index) => (
+            <HierarchicalTag
+              key={index}
+              tag={tag}
+              variant="default"
+              size="sm"
+              onRemove={() => removeTag(index)}
+            />
+          ))}
           
           {/* 输入框 */}
           {tags.length < maxTags && (

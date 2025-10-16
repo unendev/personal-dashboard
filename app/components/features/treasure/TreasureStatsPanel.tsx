@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { BarChart3, Tag as TagIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
 
 interface TreasureStatsPanelProps {
   treasures: Array<{
@@ -107,14 +108,14 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
   }
 
   // 计算标签字体大小
-  const getTagSize = (count: number) => {
+  const getTagSize = (count: number): 'sm' | 'md' | 'lg' | 'xl' => {
     const maxCount = Math.max(...tagStats.map(t => t[1]), 1)
     const ratio = count / maxCount
-    
-    if (ratio > 0.75) return 'text-xl'
-    if (ratio > 0.5) return 'text-lg'
-    if (ratio > 0.25) return 'text-base'
-    return 'text-sm'
+
+    if (ratio > 0.75) return 'xl'
+    if (ratio > 0.5) return 'lg'
+    if (ratio > 0.25) return 'md'
+    return 'sm'
   }
 
   return (
@@ -208,39 +209,16 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
           </div>
         ) : (
           <div className="flex flex-wrap gap-2 items-center justify-center">    
-            {tagStats.map(([tag, count]) => {
-              const isHierarchical = tag.includes('/')
-              const parts = isHierarchical ? tag.split('/') : [tag]
-              
-              return (
-                <button
-                  key={tag}
-                  onClick={() => onTagClick?.(tag)}
-                  className={cn(
-                    "transition-all duration-200 hover:scale-110 font-medium inline-flex items-center gap-1",    
-                    getTagSize(count),
-                    selectedTag === tag
-                      ? isHierarchical ? "text-blue-300" : "text-purple-300"
-                      : isHierarchical ? "text-blue-400/80 hover:text-blue-300" : "text-white/70 hover:text-white/90"
-                  )}
-                  title={`${count} 个宝藏${isHierarchical ? ' (层级标签)' : ''}`}
-                >
-                  <span>#</span>
-                  {isHierarchical ? (
-                    <span className="inline-flex items-center gap-0.5">
-                      {parts.map((part, i) => (
-                        <span key={i} className="inline-flex items-center">
-                          {i > 0 && <span className="mx-0.5 opacity-50">/</span>}
-                          <span>{part}</span>
-                        </span>
-                      ))}
-                    </span>
-                  ) : (
-                    tag
-                  )}
-                </button>
-              )
-            })}
+            {tagStats.map(([tag, count]) => (
+              <HierarchicalTag
+                key={tag}
+                tag={tag}
+                variant="cloud"
+                size={getTagSize(count) as 'sm' | 'md' | 'lg' | 'xl'}
+                isSelected={selectedTag === tag}
+                onClick={() => onTagClick?.(tag)}
+              />
+            ))}
           </div>
         )}
       </div>

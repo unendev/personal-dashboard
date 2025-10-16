@@ -4,6 +4,8 @@ import { generateSignedUrl, extractOssKey } from '../../../lib/oss-utils';
 import { prisma } from '@/lib/prisma';
 import { createTreasureSchema } from '@/lib/validations/treasure';
 import { ZodError } from 'zod';
+import { findMatchingTags, invalidateUserTagCache } from '@/lib/tag-cache';
+import type { Prisma } from '@prisma/client';
 
 // GET /api/treasures - 获取用户的所有宝藏（按时间倒序，支持分页）
 export async function GET(request: NextRequest) {
@@ -17,24 +19,12 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const statsOnly = searchParams.get('stats') === 'true'; // 只返回统计数据
 
-    const where: { userId: string; tags?: { has?: string; hasSome?: string[] }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
+    const where: Prisma.TreasureWhereInput = { userId };
     
-    // 标签筛选 - 支持父标签聚合检索
+    // 标签筛选 - 支持父标签聚合检索（使用缓存优化）
     if (tag) {
-      // 查询用户所有宝藏的标签，找出匹配的子标签
-      const allTreasures = await prisma.treasure.findMany({
-        where: { userId },
-        select: { tags: true }
-      });
-      
-      // 收集所有唯一标签
-      const allTags = new Set<string>();
-      allTreasures.forEach(t => t.tags.forEach(tag => allTags.add(tag)));
-      
-      // 找出匹配的标签：精确匹配或以"父标签/"开头
-      const matchingTags = Array.from(allTags).filter(t => 
-        t === tag || t.startsWith(tag + '/')
-      );
+      // 使用缓存查找匹配的标签
+      const matchingTags = await findMatchingTags(tag, userId);
       
       // 如果有匹配的标签，使用 hasSome；否则使用 has（避免返回空结果）
       if (matchingTags.length > 0) {
@@ -50,14 +40,14 @@ export async function GET(request: NextRequest) {
     
     // 类型筛选
     if (type && ['TEXT', 'IMAGE', 'MUSIC'].includes(type)) {
-      where.type = type as 'TEXT' | 'IMAGE' | 'MUSIC';
+      where.type = type as Prisma.EnumTreasureTypeFilter;
     }
 
     // 搜索功能 - 标题和内容都搜索
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
+        { content: { contains: search, mode: Prisma.QueryMode.insensitive } }
       ];
     }
 
@@ -186,6 +176,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // 使缓存失效
+    invalidateUserTagCache(userId);
+
     return NextResponse.json(treasure, { status: 201 });
   } catch (error) {
     // Zod 验证错误
@@ -232,6 +225,11 @@ export async function PUT(request: NextRequest) {
       }
     });
 
+    // 如果更新了标签，使缓存失效
+    if (validated.tags) {
+      invalidateUserTagCache(userId);
+    }
+
     return NextResponse.json(treasure);
   } catch (error) {
     // Zod 验证错误
@@ -271,6 +269,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.treasure.delete({
       where: { id }
     });
+
+    // 使缓存失效
+    invalidateUserTagCache(userId);
 
     return NextResponse.json({ message: 'Treasure deleted successfully' });
   } catch (error) {
