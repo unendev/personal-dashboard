@@ -221,9 +221,25 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
                 const { state, dispatch } = view
                 const node = state.schema.nodes.image.create({ src: url })
                 console.log('📝 创建图片节点:', node)
+                console.log('📝 节点属性:', node.attrs)
+                console.log('📝 节点类型:', node.type.name)
                 const transaction = state.tr.replaceSelectionWith(node)
                 dispatch(transaction)
                 console.log('✅ 图片插入完成')
+                
+                // 调试：检查实际渲染的 HTML
+                setTimeout(() => {
+                  const proseMirror = document.querySelector('.ProseMirror')
+                  const images = proseMirror?.querySelectorAll('img')
+                  console.log('🖼️ 页面上的图片元素:', images)
+                  images?.forEach((img, index) => {
+                    console.log(`  图片 ${index}:`, {
+                      src: img.getAttribute('src'),
+                      class: img.className,
+                      style: img.style.cssText
+                    })
+                  })
+                }, 100)
               }).catch((error) => {
                 console.error('❌ 图片上传失败:', error)
               })
