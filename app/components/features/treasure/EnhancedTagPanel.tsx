@@ -82,7 +82,17 @@ export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagP
   }
 
   const getTagCount = (tagName: string) => {
-    return tags.find(t => t.name === tagName)?.count || 0
+    // 精确匹配
+    const exactMatch = tags.find(t => t.name === tagName)
+    if (exactMatch) return exactMatch.count
+    
+    // 如果没有精确匹配，累加所有子标签的数量
+    // 例如："视野" 应该统计 "视野/xxx" 的所有数量
+    const childrenCount = tags
+      .filter(t => t.name.startsWith(tagName + '/'))
+      .reduce((sum, t) => sum + t.count, 0)
+    
+    return childrenCount
   }
 
   return (

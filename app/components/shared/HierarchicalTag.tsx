@@ -50,10 +50,10 @@ export function HierarchicalTag({
     // 默认样式（标签输入）- 使用类型颜色
     default: `${colorScheme.bg} border ${colorScheme.border} ${colorScheme.text}`,
     
-    // 标签云样式
+    // 标签云样式 - 使用更亮的白色
     cloud: isSelected
       ? colorScheme.text
-      : `${colorScheme.text.replace('300', '400/80')} hover:${colorScheme.text}`
+      : 'text-white/80 hover:text-white'
   }
 
   // 悬停按钮样式
