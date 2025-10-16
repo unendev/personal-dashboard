@@ -227,7 +227,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
                 dispatch(transaction)
                 console.log('✅ 图片插入完成')
                 
-                // 调试：检查实际渲染的 HTML
+                // 调试：检查实际渲染的 HTML 和图片加载状态
                 setTimeout(() => {
                   // 直接使用 view.dom 访问编辑器 DOM
                   const editorDom = view.dom
@@ -244,9 +244,28 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
                       style: img.style.cssText,
                       width: img.width,
                       height: img.height,
+                      naturalWidth: img.naturalWidth,
+                      naturalHeight: img.naturalHeight,
+                      complete: img.complete,
                       display: window.getComputedStyle(img).display,
                       visibility: window.getComputedStyle(img).visibility
                     })
+                    
+                    // 监听加载事件
+                    if (!img.complete) {
+                      console.log(`  ⏳ 图片 ${index} 正在加载...`)
+                      img.onload = () => {
+                        console.log(`  ✅ 图片 ${index} 加载成功！尺寸: ${img.naturalWidth}x${img.naturalHeight}`)
+                      }
+                      img.onerror = (error) => {
+                        console.error(`  ❌ 图片 ${index} 加载失败！`, error)
+                        console.error(`  ❌ 失败的 URL: ${img.src}`)
+                      }
+                    } else if (img.naturalWidth === 0) {
+                      console.error(`  ❌ 图片 ${index} 加载失败（naturalWidth = 0）`)
+                    } else {
+                      console.log(`  ✅ 图片 ${index} 已加载，尺寸: ${img.naturalWidth}x${img.naturalHeight}`)
+                    }
                   })
                   
                   // 同时检查是否有其他意外的元素
