@@ -229,16 +229,29 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
                 
                 // 调试：检查实际渲染的 HTML
                 setTimeout(() => {
-                  const proseMirror = document.querySelector('.ProseMirror')
-                  const images = proseMirror?.querySelectorAll('img')
-                  console.log('🖼️ 页面上的图片元素:', images)
-                  images?.forEach((img, index) => {
+                  // 直接使用 view.dom 访问编辑器 DOM
+                  const editorDom = view.dom
+                  console.log('📦 编辑器 DOM:', editorDom)
+                  console.log('📦 编辑器 HTML:', editorDom.innerHTML.substring(0, 500))
+                  
+                  const images = editorDom.querySelectorAll('img')
+                  console.log('🖼️ 找到的图片元素数量:', images.length)
+                  images.forEach((img, index) => {
                     console.log(`  图片 ${index}:`, {
+                      tagName: img.tagName,
                       src: img.getAttribute('src'),
                       class: img.className,
-                      style: img.style.cssText
+                      style: img.style.cssText,
+                      width: img.width,
+                      height: img.height,
+                      display: window.getComputedStyle(img).display,
+                      visibility: window.getComputedStyle(img).visibility
                     })
                   })
+                  
+                  // 同时检查是否有其他意外的元素
+                  const allChildren = editorDom.querySelectorAll('*')
+                  console.log('📊 编辑器内所有元素类型:', Array.from(allChildren).map(el => el.tagName))
                 }, 100)
               }).catch((error) => {
                 console.error('❌ 图片上传失败:', error)
