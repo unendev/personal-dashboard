@@ -17,13 +17,35 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const statsOnly = searchParams.get('stats') === 'true'; // 只返回统计数据
 
-    const where: { userId: string; tags?: { has: string }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
+    const where: { userId: string; tags?: { has?: string; hasSome?: string[] }; type?: 'TEXT' | 'IMAGE' | 'MUSIC'; OR?: Array<{ title?: { contains: string; mode: 'insensitive' }; content?: { contains: string; mode: 'insensitive' } }> } = { userId };
     
-    // 标签筛选
+    // 标签筛选 - 支持父标签聚合检索
     if (tag) {
-      where.tags = {
-        has: tag
-      };
+      // 查询用户所有宝藏的标签，找出匹配的子标签
+      const allTreasures = await prisma.treasure.findMany({
+        where: { userId },
+        select: { tags: true }
+      });
+      
+      // 收集所有唯一标签
+      const allTags = new Set<string>();
+      allTreasures.forEach(t => t.tags.forEach(tag => allTags.add(tag)));
+      
+      // 找出匹配的标签：精确匹配或以"父标签/"开头
+      const matchingTags = Array.from(allTags).filter(t => 
+        t === tag || t.startsWith(tag + '/')
+      );
+      
+      // 如果有匹配的标签，使用 hasSome；否则使用 has（避免返回空结果）
+      if (matchingTags.length > 0) {
+        where.tags = {
+          hasSome: matchingTags
+        };
+      } else {
+        where.tags = {
+          has: tag
+        };
+      }
     }
     
     // 类型筛选

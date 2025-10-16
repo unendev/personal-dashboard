@@ -207,23 +207,40 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
             暂无标签
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 items-center justify-center">
-            {tagStats.map(([tag, count]) => (
-              <button
-                key={tag}
-                onClick={() => onTagClick?.(tag)}
-                className={cn(
-                  "transition-all duration-200 hover:scale-110 font-medium",
-                  getTagSize(count),
-                  selectedTag === tag
-                    ? "text-purple-300"
-                    : "text-white/70 hover:text-white/90"
-                )}
-                title={`${count} 个宝藏`}
-              >
-                #{tag}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-2 items-center justify-center">    
+            {tagStats.map(([tag, count]) => {
+              const isHierarchical = tag.includes('/')
+              const parts = isHierarchical ? tag.split('/') : [tag]
+              
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onTagClick?.(tag)}
+                  className={cn(
+                    "transition-all duration-200 hover:scale-110 font-medium inline-flex items-center gap-1",    
+                    getTagSize(count),
+                    selectedTag === tag
+                      ? isHierarchical ? "text-blue-300" : "text-purple-300"
+                      : isHierarchical ? "text-blue-400/80 hover:text-blue-300" : "text-white/70 hover:text-white/90"
+                  )}
+                  title={`${count} 个宝藏${isHierarchical ? ' (层级标签)' : ''}`}
+                >
+                  <span>#</span>
+                  {isHierarchical ? (
+                    <span className="inline-flex items-center gap-0.5">
+                      {parts.map((part, i) => (
+                        <span key={i} className="inline-flex items-center">
+                          {i > 0 && <span className="mx-0.5 opacity-50">/</span>}
+                          <span>{part}</span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    tag
+                  )}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

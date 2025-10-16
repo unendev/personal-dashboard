@@ -133,27 +133,51 @@ export function TagInput({
       >
         <div className="flex flex-wrap gap-2 items-center">
           {/* 已选标签 */}
-          {tags.map((tag, index) => (
-            <span
-              key={index}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md",
-                "bg-gradient-to-r from-green-500/20 to-emerald-500/20",
-                "border border-green-500/30 text-green-300 text-sm",
-                "animate-in fade-in-0 zoom-in-95 duration-200"
-              )}
-            >
-              <Hash className="h-3 w-3" />
-              {tag}
-              <button
-                type="button"
-                onClick={() => removeTag(index)}
-                className="hover:bg-green-500/30 rounded-full p-0.5 transition-colors"
+          {tags.map((tag, index) => {
+            // 检测层级标签（包含斜杠）
+            const isHierarchical = tag.includes('/')
+            const parts = isHierarchical ? tag.split('/') : [tag]
+            
+            return (
+              <span
+                key={index}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md",
+                  isHierarchical 
+                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30"
+                    : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30",
+                  isHierarchical ? "text-blue-300" : "text-green-300",
+                  "text-sm",
+                  "animate-in fade-in-0 zoom-in-95 duration-200"
+                )}
+                title={isHierarchical ? `层级标签：${parts.join(' → ')}` : undefined}
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
+                <Hash className="h-3 w-3" />
+                {isHierarchical ? (
+                  <span className="flex items-center gap-1">
+                    {parts.map((part, i) => (
+                      <span key={i} className="inline-flex items-center">
+                        {i > 0 && <span className="mx-0.5 text-blue-400/60">/</span>}
+                        <span>{part}</span>
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  tag
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeTag(index)}
+                  className={cn(
+                    "rounded-full p-0.5 transition-colors",
+                    isHierarchical ? "hover:bg-blue-500/30" : "hover:bg-green-500/30"
+                  )}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )
+          })}
           
           {/* 输入框 */}
           {tags.length < maxTags && (
@@ -210,12 +234,17 @@ export function TagInput({
       {/* 提示文本 */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center gap-2">
-          <span>💡 输入后按 Enter 或空格添加</span>
+          <span>💡 Enter 或空格添加</span>
+          <span className="text-gray-600">|</span>
+          <span className="text-purple-400">支持 / 创建层级标签</span>
           {filteredSuggestions.length > 0 && showSuggestions && (
-            <span className="flex items-center gap-1 text-blue-400">
-              <ChevronDown className="h-3 w-3" />
-              {filteredSuggestions.length} 个建议
-            </span>
+            <>
+              <span className="text-gray-600">|</span>
+              <span className="flex items-center gap-1 text-blue-400">
+                <ChevronDown className="h-3 w-3" />
+                {filteredSuggestions.length} 个建议
+              </span>
+            </>
           )}
         </div>
         {tags.length >= maxTags && (
