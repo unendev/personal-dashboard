@@ -459,9 +459,9 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={`flex gap-6 max-w-[1920px] mx-auto px-4 pb-8 ${className}`}>
-      {/* 左侧大纲面板 - 固定滚动 */}
-      <aside className="hidden xl:block w-72 flex-shrink-0 self-start sticky top-4">
+    <div className={`flex gap-6 w-full mx-auto px-4 pb-8 ${className}`}>
+      {/* 左侧大纲面板 */}
+      <aside className="hidden xl:block w-72 flex-shrink-0 self-start">
         <div className="max-h-[calc(100vh-2rem)] overflow-y-auto bg-[#0d1117] rounded-xl border border-white/10">
           <TreasureOutline
             treasures={treasures.map(t => ({ id: t.id, title: t.title, type: t.type, createdAt: t.createdAt }))}
@@ -472,10 +472,10 @@ export function TreasureList({ className }: TreasureListProps) {
       </aside>
 
       {/* 中间内容区域 */}
-      <div className="flex-1 flex flex-col min-w-0 max-w-4xl mx-auto w-full pb-20">
+      <div className="flex-1 flex flex-col min-w-0 max-w-6xl mx-auto w-full pb-20">
         {/* 搜索栏 */}
         <div className="sticky top-0 z-10 pb-4 pt-2 px-4 mb-4">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <input
@@ -556,7 +556,7 @@ export function TreasureList({ className }: TreasureListProps) {
                   }
                 }}
               >
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-4xl mx-auto">
                   {/* 外置分类头像与信息区域（社媒风格） */}
                   <div className="flex items-center gap-3 mb-2 px-1">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
@@ -623,8 +623,8 @@ export function TreasureList({ className }: TreasureListProps) {
         )}
       </div>
 
-      {/* 右侧统计面板 - 固定滚动 */}
-      <aside className="hidden xl:block w-80 flex-shrink-0 self-start sticky top-4">
+      {/* 右侧统计面板 */}
+      <aside className="hidden xl:block w-80 flex-shrink-0 self-start">
         <div className="max-h-[calc(100vh-2rem)] overflow-y-auto">
           <TreasureStatsPanel 
             treasures={statsData}

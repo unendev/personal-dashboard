@@ -93,7 +93,12 @@
 
 html,
 body {
-  background: var(--bg-primary);
+  background: radial-gradient(
+    ellipse 150% 100% at 50% 0%,
+    #111111 0%,
+    #0a0a0a 40%,
+    #060606 100%
+  );
   background-attachment: fixed;
   min-height: 100vh;
   margin: 0;
