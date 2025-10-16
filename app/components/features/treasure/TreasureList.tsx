@@ -117,7 +117,21 @@ export function TreasureList({ className }: TreasureListProps) {
     try {
       setIsSearching(true)
       const params = new URLSearchParams()
-      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
+      
+      // 检测 # 标签语法
+      if (debouncedSearchQuery) {
+        if (debouncedSearchQuery.startsWith('#')) {
+          // #标签语法 → 作为标签筛选
+          const tagQuery = debouncedSearchQuery.slice(1).trim()
+          if (tagQuery) {
+            params.append('tag', tagQuery)
+          }
+        } else {
+          // 普通文本 → 作为内容搜索
+          params.append('search', debouncedSearchQuery)
+        }
+      }
+      
       if (selectedTag) params.append('tag', selectedTag)
       params.append('page', '1')
       params.append('limit', pageSize.toString())
@@ -147,7 +161,21 @@ export function TreasureList({ className }: TreasureListProps) {
       setIsLoadingMore(true)
       
       const params = new URLSearchParams()
-      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
+      
+      // 检测 # 标签语法
+      if (debouncedSearchQuery) {
+        if (debouncedSearchQuery.startsWith('#')) {
+          // #标签语法 → 作为标签筛选
+          const tagQuery = debouncedSearchQuery.slice(1).trim()
+          if (tagQuery) {
+            params.append('tag', tagQuery)
+          }
+        } else {
+          // 普通文本 → 作为内容搜索
+          params.append('search', debouncedSearchQuery)
+        }
+      }
+      
       if (selectedTag) params.append('tag', selectedTag)
       params.append('page', (page + 1).toString())
       params.append('limit', pageSize.toString())
@@ -435,7 +463,7 @@ export function TreasureList({ className }: TreasureListProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <input
                 type="text"
-                placeholder="搜索宝藏..."
+                placeholder="搜索宝藏...（输入 #标签 可筛选标签）"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-2.5 text-sm bg-transparent border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"

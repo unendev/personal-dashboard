@@ -2,10 +2,12 @@
  * 层级标签组件 - 统一显示普通标签和层级标签
  * 
  * 支持斜杠分隔的层级标签，自动识别并美化显示
+ * 支持多种标签类型：层级、感受、人物、年代、普通
  */
 
 import { cn } from '@/lib/utils'
 import { Hash, X } from 'lucide-react'
+import { detectTagType, getTagColorScheme, getTagTypeLabel } from '@/lib/tag-utils'
 
 interface HierarchicalTagProps {
   tag: string
@@ -26,6 +28,11 @@ export function HierarchicalTag({
   onClick,
   className
 }: HierarchicalTagProps) {
+  // 检测标签类型
+  const tagType = detectTagType(tag)
+  const colorScheme = getTagColorScheme(tagType)
+  const typeLabel = getTagTypeLabel(tagType)
+  
   // 检测层级标签（包含斜杠）
   const isHierarchical = tag.includes('/')
   const parts = isHierarchical ? tag.split('/') : [tag]
@@ -40,19 +47,17 @@ export function HierarchicalTag({
 
   // 变体样式映射
   const variantStyles = {
-    // 默认样式（标签输入）
-    default: isHierarchical
-      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 text-blue-300'
-      : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-300',
+    // 默认样式（标签输入）- 使用类型颜色
+    default: `${colorScheme.bg} border ${colorScheme.border} ${colorScheme.text}`,
     
     // 标签云样式
     cloud: isSelected
-      ? (isHierarchical ? 'text-blue-300' : 'text-purple-300')
-      : (isHierarchical ? 'text-blue-400/80 hover:text-blue-300' : 'text-white/70 hover:text-white/90')
+      ? colorScheme.text
+      : `${colorScheme.text.replace('300', '400/80')} hover:${colorScheme.text}`
   }
 
   // 悬停按钮样式
-  const hoverButtonStyle = isHierarchical ? 'hover:bg-blue-500/30' : 'hover:bg-green-500/30'
+  const hoverButtonStyle = colorScheme.hover
 
   if (variant === 'cloud') {
     // 标签云样式（简化版，无边框无背景）
@@ -65,7 +70,7 @@ export function HierarchicalTag({
           variantStyles.cloud,
           className
         )}
-        title={`${isHierarchical ? `层级标签：${parts.join(' → ')}` : tag}`}
+        title={`${typeLabel}${isHierarchical ? `：${parts.join(' → ')}` : ''}`}
       >
         <span>#</span>
         {isHierarchical ? (
@@ -96,7 +101,7 @@ export function HierarchicalTag({
         className
       )}
       onClick={onClick}
-      title={isHierarchical ? `层级标签：${parts.join(' → ')}` : undefined}
+      title={`${typeLabel}${isHierarchical ? `：${parts.join(' → ')}` : ''}`}
     >
       <Hash className="h-3 w-3" />
       {isHierarchical ? (
