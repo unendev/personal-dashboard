@@ -312,7 +312,7 @@ export default function LogPage() {
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
-        date: new Date().toISOString().split('T')[0],
+        date: selectedDate, // 使用用户当前选中的日期
         userId: userId
       };
 

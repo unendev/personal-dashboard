@@ -62,6 +62,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // 追踪初始化状态，防止编辑时重复初始化
+  const isInitializedRef = useRef(false)
+  const lastTreasureIdRef = useRef<string | undefined>(undefined)
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -92,6 +96,24 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   // 初始化编辑数据
   useEffect(() => {
     if (initialData && mode === 'edit') {
+      const currentId = initialData.id || 'new'
+      
+      // 防止重复初始化同一个宝藏
+      if (lastTreasureIdRef.current === currentId && isInitializedRef.current) {
+        console.log('[DiscordStyleInput] 跳过重复初始化', { currentId, lastId: lastTreasureIdRef.current })
+        return
+      }
+      
+      console.log('[DiscordStyleInput] 初始化编辑数据', { 
+        currentId, 
+        lastId: lastTreasureIdRef.current,
+        title: initialData.title 
+      })
+      
+      // 记录当前初始化的宝藏 ID
+      lastTreasureIdRef.current = currentId
+      isInitializedRef.current = true
+      
       // 构建完整的内容
       let fullContent = ''
       
@@ -150,6 +172,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       }
     } else if (!initialData) {
       // 重置所有状态（创建模式）
+      console.log('[DiscordStyleInput] 重置为创建模式')
+      isInitializedRef.current = false
+      lastTreasureIdRef.current = undefined
+      
       setContent('')
       setImages([])
       setPrimaryCategory('')
@@ -163,7 +189,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         coverUrl: ''
       })
     }
-  }, [initialData, mode])
+  }, [initialData?.id, mode])
 
   // 自动聚焦
   useEffect(() => {
@@ -540,7 +566,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   }
 
   const charCount = content.length
-  const maxChars = 2000
+  const maxChars = 10000
 
   return (
     <div 
