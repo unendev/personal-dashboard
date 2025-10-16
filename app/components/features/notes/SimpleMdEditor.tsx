@@ -8,6 +8,7 @@ import Image from '@tiptap/extension-image'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
+import { mergeAttributes } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { 
   Bold, 
@@ -20,6 +21,19 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react'
+
+// 自定义 Image 扩展，确保正确渲染
+const CustomImage = Image.extend({
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'img',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        draggable: 'false',
+        contenteditable: 'false',
+      }),
+    ]
+  },
+})
 
 interface SimpleMdEditorProps {
   className?: string
@@ -154,8 +168,11 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         placeholder: '开始写笔记...（支持 *斜体* 和 **粗体** Markdown 语法，可直接粘贴图片）',
       }),
       Typography,
-      Image.configure({
+      CustomImage.configure({
         allowBase64: true,
+        HTMLAttributes: {
+          class: 'tiptap-image',
+        },
       }),
     ],
     editorProps: {
@@ -599,13 +616,16 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             padding: 0;
           }
           
-          .ProseMirror img {
+          .ProseMirror img,
+          .ProseMirror .tiptap-image {
             max-width: 100%;
-            height: auto;
-            display: block;
+            height: auto !important;
+            display: block !important;
             border-radius: 4px;
             margin: 1em 0;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            min-height: 100px;
+            object-fit: contain;
           }
           
           .ProseMirror p.is-editor-empty:first-child::before {
