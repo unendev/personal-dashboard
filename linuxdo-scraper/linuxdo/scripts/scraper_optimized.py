@@ -327,15 +327,33 @@ async def fetch_post_replies(page, post_url, post_title):
     """
     try:
         logger.info(f"  ⏳ 访问帖子: {post_title[:40]}...")
-        await page.goto(post_url, wait_until="domcontentloaded", timeout=30000)
-        await asyncio.sleep(PAGE_LOAD_WAIT)  # 等待动态内容加载
+        await page.goto(post_url, wait_until="networkidle", timeout=30000)
+        
+        # 等待关键元素出现（最多10秒）
+        try:
+            await page.wait_for_selector('.topic-post', timeout=10000)
+            logger.info(f"    ✓ 页面加载成功")
+        except Exception as e:
+            logger.warning(f"    ⚠️ 等待.topic-post超时: {e}")
+            # 尝试备用选择器
+            try:
+                await page.wait_for_selector('article', timeout=5000)
+                logger.info(f"    ✓ 找到article元素")
+            except:
+                logger.error(f"    ✗ 页面结构异常，无法找到帖子内容")
+                return None
         
         # 提取所有帖子容器（Discourse标准结构）
         posts_elements = await page.query_selector_all('.topic-post')
         
         if not posts_elements or len(posts_elements) == 0:
-            logger.warning(f"    ⚠️ 未找到帖子容器")
-            return None
+            logger.warning(f"    ⚠️ 未找到.topic-post容器，尝试备用方案")
+            # 备用方案：尝试article标签
+            posts_elements = await page.query_selector_all('article')
+            if not posts_elements or len(posts_elements) == 0:
+                logger.error(f"    ✗ 备用方案也失败")
+                return None
+            logger.info(f"    ✓ 使用article标签作为备用")
         
         logger.info(f"    ✓ 找到 {len(posts_elements)} 个帖子（1楼主 + {len(posts_elements)-1}评论）")
         
@@ -410,6 +428,17 @@ async def fetch_post_replies(page, post_url, post_title):
     
     except Exception as e:
         logger.error(f"    ❌ 访问帖子详情页失败: {e}")
+        import traceback
+        logger.error(f"    详细错误:\n{traceback.format_exc()}")
+        # 保存页面HTML用于调试
+        try:
+            html = await page.content()
+            debug_file = f"linuxdo/debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(html)
+            logger.info(f"    📄 已保存页面HTML到: {debug_file}")
+        except:
+            pass
         return None
 
 async def fetch_posts_with_replies(page, posts):

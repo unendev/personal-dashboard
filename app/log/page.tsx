@@ -728,17 +728,17 @@ export default function LogPage() {
   return (
     <div className="log-page-layout">
       {/* 顶部操作栏 */}
-      <div className="fixed top-4 right-4 z-40">
+      <div className="fixed top-2 md:top-4 right-2 md:right-4 left-2 md:left-auto z-40 max-w-full">
         <div className="flex items-center justify-end">
           {/* 操作按钮组 */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 md:gap-3 flex-wrap justify-end max-w-full">
             {/* 用户信息 */}
             {session?.user ? (
-              <div className="flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 py-2 shadow-sm">
-                <span className="text-sm font-medium text-gray-200">
+              <div className="flex items-center gap-1.5 md:gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-2 md:px-3 py-1.5 md:py-2 shadow-sm text-xs md:text-sm">
+                <span className="font-medium text-gray-200 truncate max-w-[80px] md:max-w-none">
                   {session.user.name || session.user.email}
                   {session.user.email === 'dev@localhost.com' && (
-                    <span className="ml-1 text-xs text-yellow-400">(开发)</span>
+                    <span className="ml-1 text-xs text-yellow-400 hidden md:inline">(开发)</span>
                   )}
                 </span>
                 <button
@@ -747,7 +747,7 @@ export default function LogPage() {
                     await signOut({ redirect: false });
                     window.location.href = '/auth/signin'; // 重定向到登录页
                   }}
-                  className="text-gray-400 hover:text-gray-200 text-sm"
+                  className="text-gray-400 hover:text-gray-200 text-xs md:text-sm"
                   title="登出"
                 >
                   登出
@@ -756,38 +756,38 @@ export default function LogPage() {
             ) : (
               <Link
                 href="/auth/signin"
-                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-2 md:px-4 py-1.5 md:py-2 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs md:text-sm"
               >
-                <span className="text-sm font-medium text-gray-200">登录</span>
+                <span className="font-medium text-gray-200">登录</span>
               </Link>
             )}
 
-            {/* 每周回顾按钮 */}
+            {/* 每周回顾按钮 - 桌面端显示 */}
             <button
               onClick={handleOpenWeeklyReview}
-              className="bg-blue-600 hover:bg-blue-500 border border-blue-500/50 rounded-lg px-4 py-2 transition-colors flex items-center gap-2"
+              className="hidden md:flex bg-blue-600 hover:bg-blue-500 border border-blue-500/50 rounded-lg px-3 md:px-4 py-1.5 md:py-2 transition-colors items-center gap-1.5 md:gap-2"
             >
-              <span className="text-lg">📊</span>
-              <span className="text-sm font-medium text-white">每周回顾</span>
+              <span className="text-base md:text-lg">📊</span>
+              <span className="text-xs md:text-sm font-medium text-white">每周回顾</span>
             </button>
 
             {/* 创建事物按钮 */}
             <button
               onClick={() => setIsCreateLogModalOpen(true)}
-              className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-2 md:px-4 py-1.5 md:py-2 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1 md:gap-2"
             >
-              <span className="text-lg">✏️</span>
-              <span className="text-sm font-medium text-gray-200">记录</span>
+              <span className="text-base md:text-lg">✏️</span>
+              <span className="text-xs md:text-sm font-medium text-gray-200">记录</span>
             </button>
 
-            {/* 操作记录按钮 */}
-            <div className="relative" ref={operationHistoryRef}>
+            {/* 操作记录按钮 - 桌面端显示 */}
+            <div className="relative hidden md:block" ref={operationHistoryRef}>
               <button
                 onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
-                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 md:px-4 py-1.5 md:py-2 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 md:gap-2"
               >
-                <span className="text-lg">📊</span>
-                <span className="text-sm font-medium text-gray-200">记录</span>
+                <span className="text-base md:text-lg">📊</span>
+                <span className="text-xs md:text-sm font-medium text-gray-200">记录</span>
                 <span className={`text-xs transition-transform duration-200 ${isOperationHistoryExpanded ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
@@ -854,8 +854,8 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      <div className="w-full max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8 pt-20">
-        <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8">
+      <div className="w-full max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8 pt-16 md:pt-20 overflow-x-hidden">
+        <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8 flex-wrap">
           <button
             onClick={handleOpenDailyProgress}
             className="bg-purple-600 hover:bg-purple-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
@@ -884,58 +884,58 @@ export default function LogPage() {
 
         {/* 移动端标签页导航 */}
         {isMobile && (
-          <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1.5 border border-gray-700/50">
-            <div className="grid grid-cols-4 gap-1.5">
+          <div className="mb-4 md:mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 md:p-1.5 border border-gray-700/50 overflow-hidden">
+            <div className="grid grid-cols-4 gap-1 md:gap-1.5">
               <button
                 onClick={() => setActiveSection('timer')}
-                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'timer'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-2xl">⏱️</span>
-                  <span className="text-sm">计时器</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">⏱️</span>
+                  <span className="text-xs md:text-sm">计时器</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('todo')}
-                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'todo'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-2xl">📋</span>
-                  <span className="text-sm">任务</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">📋</span>
+                  <span className="text-xs md:text-sm">任务</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('stats')}
-                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'stats'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-2xl">📊</span>
-                  <span className="text-sm">统计</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">📊</span>
+                  <span className="text-xs md:text-sm">统计</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('ai')}
-                className={`px-4 py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'ai'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-2xl">🤖</span>
-                  <span className="text-sm">AI</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">🤖</span>
+                  <span className="text-xs md:text-sm">AI</span>
                 </div>
               </button>
             </div>

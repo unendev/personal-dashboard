@@ -20,24 +20,122 @@ const ScrollableLayout = () => {
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
+  // 日期选择相关state
+  const [selectedLinuxDoDate, setSelectedLinuxDoDate] = useState<string>('');
+  const [selectedRedditDate, setSelectedRedditDate] = useState<string>('');
+  const [availableLinuxDoDates, setAvailableLinuxDoDates] = useState<Array<{ date: string; count: number; label: string }>>([]);
+  const [availableRedditDates, setAvailableRedditDates] = useState<Array<{ date: string; count: number; label: string }>>([]);
+  const [loadingDates, setLoadingDates] = useState(true);
+
+  // 日期格式化工具函数
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // 比较日期（忽略时间）
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+    
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      return `${dateStr} (今天)`;
+    } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+      return `${dateStr} (昨天)`;
+    } else {
+      const diffTime = todayOnly.getTime() - dateOnly.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 0 && diffDays <= 7) {
+        return `${dateStr} (${diffDays}天前)`;
+      }
+      return dateStr;
+    }
+  };
+
+  // 获取默认日期
+  const getDefaultDate = (type: 'linuxdo' | 'reddit') => {
+    const today = new Date();
+    if (type === 'linuxdo') {
+      // LinuxDo默认昨天
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return yesterday.toISOString().split('T')[0];
+    } else {
+      // Reddit默认今天
+      return today.toISOString().split('T')[0];
+    }
+  };
+
+  // 获取可用日期列表
+  useEffect(() => {
+    const fetchDates = async () => {
+      try {
+        setLoadingDates(true);
+        const [linuxdoDatesRes, redditDatesRes] = await Promise.all([
+          fetch('/api/linuxdo/dates'),
+          fetch('/api/reddit/dates')
+        ]);
+
+        if (linuxdoDatesRes.ok) {
+          const data = await linuxdoDatesRes.json();
+          setAvailableLinuxDoDates(data.dates || []);
+          // 设置默认日期
+          if (!selectedLinuxDoDate) {
+            const defaultDate = getDefaultDate('linuxdo');
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            setSelectedLinuxDoDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
+          }
+        }
+
+        if (redditDatesRes.ok) {
+          const data = await redditDatesRes.json();
+          setAvailableRedditDates(data.dates || []);
+          // 设置默认日期
+          if (!selectedRedditDate) {
+            const defaultDate = getDefaultDate('reddit');
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            setSelectedRedditDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch dates:', error);
+        // 设置默认日期作为降级
+        if (!selectedLinuxDoDate) setSelectedLinuxDoDate(getDefaultDate('linuxdo'));
+        if (!selectedRedditDate) setSelectedRedditDate(getDefaultDate('reddit'));
+      } finally {
+        setLoadingDates(false);
+      }
+    };
+
+    fetchDates();
+  }, []);
+
   // 获取数据
   useEffect(() => {
+    // 等待日期加载完成
+    if (loadingDates) return;
+    
     const fetchData = async () => {
       try {
         setLoading(true);
         const [linuxdoRes, redditRes] = await Promise.all([
-          fetch('/api/linuxdo'),
-          fetch('/api/reddit')
+          fetch(`/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`),
+          fetch(`/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`)
         ]);
 
         if (linuxdoRes.ok) {
           const data = await linuxdoRes.json();
           setLinuxdoData(data);
+        } else {
+          setLinuxdoData(null);
         }
 
         if (redditRes.ok) {
           const data = await redditRes.json();
           setRedditData(data);
+        } else {
+          setRedditData(null);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -47,7 +145,7 @@ const ScrollableLayout = () => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedLinuxDoDate, selectedRedditDate, loadingDates]);
 
   // 处理点击展开详情
   const handleClick = (post: LinuxDoPost | RedditPost) => {
@@ -148,12 +246,12 @@ const ScrollableLayout = () => {
       : <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴</span>;
   };
 
-  if (loading) {
-  return (
+  if (loading || loadingDates) {
+    return (
       <main className="w-full min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/60 mx-auto mb-4"></div>
-          <p className="text-white/60">加载中...</p>
+          <p className="text-white/60">{loadingDates ? '加载日期列表...' : '加载中...'}</p>
         </div>
       </main>
     );
@@ -187,7 +285,7 @@ const ScrollableLayout = () => {
                 {linuxdoData.posts.slice(0, 10).map((post, idx) => (
                   <div
                     key={post.id}
-                    onClick={() => scrollToSection(`post-${post.id}`)}
+                    onClick={() => scrollToSection(`post-linuxdo-${post.id}`)}
                     className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate 
                              transition-colors py-1 hover:bg-white/5 rounded px-2"
                     title={post.title}
@@ -221,7 +319,7 @@ const ScrollableLayout = () => {
                 {posts.slice(0, 10).map((post, idx) => (
                   <div
                     key={post.id}
-                    onClick={() => scrollToSection(`post-${post.id}`)}
+                    onClick={() => scrollToSection(`post-reddit-${post.id}`)}
                     className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate 
                              transition-colors py-1 hover:bg-white/5 rounded px-2"
                     title={post.title}
@@ -244,54 +342,118 @@ const ScrollableLayout = () => {
       <div className="flex-1 ml-56 overflow-hidden flex flex-col">
         {/* 顶部切换栏 */}
         <div className="flex-shrink-0 bg-gray-900/80 backdrop-blur-md border-b border-white/10 z-10">
-          <div className="px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-              <button
-                onClick={() => setActiveSource('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeSource === 'all'
-                    ? 'bg-white/10 text-white border border-white/20'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                📊 全部源
-              </button>
-              <button
-                onClick={() => setActiveSource('linuxdo')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeSource === 'linuxdo'
-                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                🐧 Linux.do
-              </button>
-              <button
-                onClick={() => setActiveSource('reddit')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeSource === 'reddit'
-                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                🔴 Reddit
-              </button>
+          <div className="px-6 py-3 space-y-3">
+            {/* 第一行：源选择 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setActiveSource('all')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeSource === 'all'
+                      ? 'bg-white/10 text-white border border-white/20'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  📊 全部源
+                </button>
+                <button
+                  onClick={() => setActiveSource('linuxdo')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeSource === 'linuxdo'
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  🐧 Linux.do
+                </button>
+                <button
+                  onClick={() => setActiveSource('reddit')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeSource === 'reddit'
+                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  🔴 Reddit
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm text-white/60">
+                <span>共 {displayedPosts.length} 篇</span>
+                <button
+                  onClick={() => setShowAIChat(!showAIChat)}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
+                           text-purple-400 border border-purple-500/30 hover:border-purple-500/50 
+                           transition-all flex items-center gap-2"
+                >
+                  <span>💬</span>
+                  <span>AI助手</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 text-sm text-white/60">
-              <span>共 {displayedPosts.length} 篇</span>
-              <button
-                onClick={() => setShowAIChat(!showAIChat)}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
-                         text-purple-400 border border-purple-500/30 hover:border-purple-500/50 
-                         transition-all flex items-center gap-2"
-              >
-                <span>💬</span>
-                <span>AI助手</span>
-              </button>
+            {/* 第二行：日期选择 */}
+            <div className="flex items-center gap-4 pt-2 border-t border-white/5">
+              {/* LinuxDo日期选择 */}
+              {(activeSource === 'all' || activeSource === 'linuxdo') && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/50 flex items-center gap-1">
+                    <span>🐧</span>
+                    <span>日期:</span>
+                  </span>
+                  <select
+                    value={selectedLinuxDoDate}
+                    onChange={(e) => setSelectedLinuxDoDate(e.target.value)}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white
+                             hover:bg-white/10 hover:border-white/20 focus:outline-none focus:border-blue-500/50
+                             transition-all cursor-pointer"
+                  >
+                    {availableLinuxDoDates.length > 0 ? (
+                      availableLinuxDoDates.map(dateObj => (
+                        <option key={dateObj.date} value={dateObj.date} className="bg-gray-900">
+                          {formatDateLabel(dateObj.date)} ({dateObj.count}篇)
+                        </option>
+                      ))
+                    ) : (
+                      <option value={selectedLinuxDoDate} className="bg-gray-900">
+                        {formatDateLabel(selectedLinuxDoDate)}
+                      </option>
+                    )}
+                  </select>
+                </div>
+              )}
+
+              {/* Reddit日期选择 */}
+              {(activeSource === 'all' || activeSource === 'reddit') && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/50 flex items-center gap-1">
+                    <span>🔴</span>
+                    <span>日期:</span>
+                  </span>
+                  <select
+                    value={selectedRedditDate}
+                    onChange={(e) => setSelectedRedditDate(e.target.value)}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white
+                             hover:bg-white/10 hover:border-white/20 focus:outline-none focus:border-orange-500/50
+                             transition-all cursor-pointer"
+                  >
+                    {availableRedditDates.length > 0 ? (
+                      availableRedditDates.map(dateObj => (
+                        <option key={dateObj.date} value={dateObj.date} className="bg-gray-900">
+                          {formatDateLabel(dateObj.date)} ({dateObj.count}篇)
+                        </option>
+                      ))
+                    ) : (
+                      <option value={selectedRedditDate} className="bg-gray-900">
+                        {formatDateLabel(selectedRedditDate)}
+                      </option>
+                    )}
+                  </select>
+                </div>
+              )}
             </div>
-                      </div>
-                    </div>
+          </div>
+        </div>
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6">
@@ -300,8 +462,8 @@ const ScrollableLayout = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {displayedPosts.map((post) => (
                 <div
-                  key={post.id}
-                  id={`post-${post.id}`}
+                  key={`${post.source}-${post.id}`}
+                  id={`post-${post.source}-${post.id}`}
                   onClick={() => handleClick(post)}
                   onMouseLeave={handleMouseLeave}
                   className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
@@ -358,9 +520,11 @@ const ScrollableLayout = () => {
             </div>
 
             {/* 空状态 */}
-            {displayedPosts.length === 0 && (
+            {displayedPosts.length === 0 && !loading && (
               <div className="text-center py-20">
-                <p className="text-white/40">暂无数据</p>
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-white/60 text-lg mb-2">该日期暂无数据</p>
+                <p className="text-white/40 text-sm">请选择其他日期查看</p>
               </div>
             )}
                     </div>

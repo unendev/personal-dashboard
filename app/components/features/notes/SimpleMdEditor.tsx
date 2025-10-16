@@ -112,7 +112,28 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       const normalizedKey = signatureData.key.replace(/^\/+/, '')
       const imageUrl = `${baseUrl}/${normalizedKey}`
       
-      return imageUrl
+      // 5. 生成签名 URL（用于私有 Bucket）
+      try {
+        const signUrlRes = await fetch('/api/upload/oss/sign-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: imageUrl }),
+        })
+        
+        if (signUrlRes.ok) {
+          const { signedUrl } = await signUrlRes.json()
+          console.log('✅ 生成签名 URL 成功')
+          return signedUrl
+        } else {
+          console.warn('⚠️ 生成签名 URL 失败，使用原始 URL')
+          return imageUrl
+        }
+      } catch (signError) {
+        console.warn('⚠️ 签名 URL 请求失败，使用原始 URL:', signError)
+        return imageUrl
+      }
     } catch (error) {
       console.error('图片上传失败:', error)
       alert('图片上传失败：' + (error instanceof Error ? error.message : '未知错误'))

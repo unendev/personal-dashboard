@@ -958,10 +958,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             overscrollBehavior: 'none'
           }}
         >
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               {/* 移动端拖拽手柄 - 顶部居中 */}
-              <div className="flex justify-center mb-3 sm:hidden">
+              <div className="flex justify-center mb-2 md:hidden">
                 <div 
                   {...listeners}
                   data-drag-handle
@@ -991,7 +991,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               <div 
                 {...listeners}
                 data-drag-handle
-                className="hidden sm:flex flex-shrink-0 cursor-grab active:cursor-grabbing p-2 -m-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 items-center justify-center"
+                className="hidden md:flex flex-shrink-0 cursor-grab active:cursor-grabbing p-2 -m-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 items-center justify-center"
                 style={{
                   // 移动端优化：确保触摸目标足够大
                   minWidth: '44px',
@@ -1012,8 +1012,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0 flex flex-col">
-                <div className="flex items-center gap-2 mb-1">
+              <div className="flex-1 min-w-0 flex flex-col items-center md:items-start text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-1 flex-wrap w-full">
                   {hasChildren && (
                     <Button
                       onClick={(e) => {
@@ -1037,16 +1037,16 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       ? (hasInstanceTag ? 'bg-orange-400' : 'bg-green-400')
                       : (hasInstanceTag ? 'bg-orange-300' : 'bg-gray-400')
                   }`}></div>
-                  <h3 className="font-medium text-white break-words min-w-0 flex-1">
+                  <h3 className="font-medium text-white break-words min-w-0 flex-1 text-sm md:text-base">
                     {/* 始终显示任务名称作为主标题 */}
                     {task.name}
                     {hasInstanceTag && (
-                      <span className="text-xs text-orange-300 ml-2 whitespace-nowrap">
+                      <span className="text-xs text-orange-300 ml-2">
                         🏷️ {task.instanceTag}
                       </span>
                     )}
                     {hasChildren && (
-                      <span className={`text-xs ml-2 whitespace-nowrap ${
+                      <span className={`text-xs ml-2 ${
                         hasInstanceTag ? 'text-orange-300' : 'text-green-400'
                       }`}>
                         ({task.children!.length}个子任务)
@@ -1054,10 +1054,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                     )}
                   </h3>
                 </div>
-                <p className="text-sm text-gray-300 break-words">
+                <p className="text-xs md:text-sm text-gray-300 break-words truncate w-full">
                   {task.categoryPath}
                 </p>
-                <div className={`text-lg font-mono mt-1 ${
+                <div className={`text-base md:text-lg font-mono mt-1 w-full ${
                   hasInstanceTag ? 'text-orange-300' : 'text-blue-400'
                 }`}>
                   {formatDisplayTime(getCurrentDisplayTime(task))}
@@ -1066,7 +1066,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   )}
                 </div>
                 {hasChildren && (
-                  <div className={`text-sm mt-1 ${
+                  <div className={`text-xs md:text-sm mt-1 w-full ${
                     hasInstanceTag ? 'text-orange-300' : 'text-green-400'
                   }`}>
                     总计: {formatTime(totalTime)}
@@ -1075,7 +1075,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
               </div>
               
               <div 
-                className="flex gap-1 sm:gap-2 sm:ml-4 flex-shrink-0 flex-wrap justify-end group-hover:show-secondary-buttons" 
+                className="flex gap-1.5 md:gap-2 md:ml-4 flex-shrink-0 flex-wrap justify-center md:justify-end group-hover:show-secondary-buttons" 
                 style={{ 
                   zIndex: 10,
                   // 确保按钮区域不会干扰拖拽
@@ -1097,10 +1097,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                     <Button 
                       onClick={() => resumeTimer(task.id)}
                       size="sm"
-                      className={hasInstanceTag 
-                        ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                        : "bg-green-600 hover:bg-green-700"
-                      }
+                      className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
+                        hasInstanceTag 
+                          ? "bg-orange-600 hover:bg-orange-700 text-white" 
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
                     >
                       继续
                     </Button>
@@ -1109,10 +1110,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       onClick={() => pauseTimer(task.id)}
                       variant="outline"
                       size="sm"
-                      className={hasInstanceTag 
-                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                        : ""
-                      }
+                      className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
+                        hasInstanceTag 
+                          ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                          : ""
+                      }`}
                     >
                       暂停
                     </Button>
@@ -1121,10 +1123,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   <Button 
                     onClick={() => startTimer(task.id)}
                     size="sm"
-                    className={hasInstanceTag 
-                      ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                      : "bg-blue-600 hover:bg-blue-700"
-                    }
+                    className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
+                      hasInstanceTag 
+                        ? "bg-orange-600 hover:bg-orange-700 text-white" 
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                   >
                     开始
                   </Button>
@@ -1136,10 +1139,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   variant="outline"
                   size="sm"
                   title="添加子任务"
-                  className={hasInstanceTag 
-                    ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                    : "border-green-300 text-green-600 hover:bg-green-50"
-                  }
+                  className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto min-w-[32px] md:min-w-[36px] ${
+                    hasInstanceTag 
+                      ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                      : "border-green-300 text-green-600 hover:bg-green-50"
+                  }`}
                 >
                   ➕
                 </Button>
@@ -1149,10 +1153,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   variant="outline"
                   size="sm"
                   title="删除任务"
-                  className={hasInstanceTag 
-                    ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
-                    : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
-                  }
+                  className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto min-w-[32px] md:min-w-[36px] ${
+                    hasInstanceTag 
+                      ? "text-red-400 hover:text-red-300 border-red-400 hover:bg-red-800" 
+                      : "text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                  }`}
                 >
                   ➖
                 </Button>
