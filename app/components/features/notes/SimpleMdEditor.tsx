@@ -22,8 +22,115 @@ import {
   Minimize2
 } from 'lucide-react'
 
-// 自定义 Image 扩展，确保正确渲染
+// 自定义 Image 扩展，支持可调节大小
 const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+        renderHTML: attributes => {
+          if (!attributes.width) {
+            return {}
+          }
+          return { width: attributes.width }
+        },
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+        renderHTML: attributes => {
+          if (!attributes.height) {
+            return {}
+          }
+          return { height: attributes.height }
+        },
+      },
+    }
+  },
+
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      const container = document.createElement('div')
+      container.className = 'image-resizer'
+      container.contentEditable = 'false'
+      
+      const img = document.createElement('img')
+      img.src = node.attrs.src
+      img.alt = node.attrs.alt || ''
+      img.className = 'tiptap-image'
+      
+      // 如果有保存的尺寸，使用保存的尺寸
+      if (node.attrs.width) {
+        img.style.width = node.attrs.width + 'px'
+      }
+      
+      // 双击重置大小
+      img.addEventListener('dblclick', () => {
+        img.style.width = ''
+        if (typeof getPos === 'function') {
+          editor.commands.updateAttributes('image', { width: null, height: null })
+        }
+      })
+      
+      // 创建调节手柄
+      const resizeHandle = document.createElement('div')
+      resizeHandle.className = 'image-resize-handle'
+      
+      let isResizing = false
+      let startX = 0
+      let startWidth = 0
+      
+      resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        isResizing = true
+        startX = e.clientX
+        startWidth = img.offsetWidth
+        
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        
+        container.classList.add('resizing')
+      })
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isResizing) return
+        
+        const diff = e.clientX - startX
+        const newWidth = Math.max(100, startWidth + diff)
+        img.style.width = newWidth + 'px'
+      }
+      
+      const handleMouseUp = () => {
+        if (!isResizing) return
+        isResizing = false
+        
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        
+        container.classList.remove('resizing')
+        
+        // 保存新的尺寸
+        if (typeof getPos === 'function') {
+          const width = img.offsetWidth
+          const height = img.offsetHeight
+          editor.commands.updateAttributes('image', { width, height })
+        }
+      }
+      
+      container.appendChild(img)
+      container.appendChild(resizeHandle)
+      
+      return {
+        dom: container,
+        contentDOM: null,
+        ignoreMutation: () => true,
+      }
+    }
+  },
+
   renderHTML({ HTMLAttributes }) {
     return [
       'img',
@@ -685,23 +792,66 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             padding: 0;
           }
           
-          .ProseMirror img,
+          /* 图片容器 */
+          .ProseMirror .image-resizer {
+            position: relative;
+            display: inline-block;
+            margin: 1em 0;
+            max-width: 100%;
+            cursor: default;
+          }
+          
+          .ProseMirror .image-resizer:hover .image-resize-handle {
+            opacity: 1;
+          }
+          
+          .ProseMirror .image-resizer.resizing {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+          }
+          
+          /* 图片本身 */
+          .ProseMirror .image-resizer img,
           .ProseMirror .tiptap-image {
             max-width: 100% !important;
-            width: auto !important;
             height: auto !important;
             display: block !important;
             border-radius: 4px;
-            margin: 1em 0 !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            min-height: 100px !important;
             min-width: 100px !important;
             object-fit: contain !important;
             opacity: 1 !important;
             visibility: visible !important;
-            position: relative !important;
-            z-index: 1 !important;
-            background-color: rgba(255, 255, 255, 0.05) !important;
+            background-color: rgba(255, 255, 255, 0.05);
+            transition: outline 0.2s;
+          }
+          
+          /* 调节手柄 */
+          .ProseMirror .image-resize-handle {
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 40px;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 6px;
+            cursor: ew-resize;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          
+          .ProseMirror .image-resize-handle:hover {
+            background: #2563eb;
+            opacity: 1 !important;
+          }
+          
+          .ProseMirror .image-resizer.resizing .image-resize-handle {
+            opacity: 1;
+            background: #2563eb;
           }
           
           /* 强制覆盖 Tailwind prose 样式 */
@@ -711,7 +861,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             display: block !important;
           }
           
-          /* 调试：图片加载失败时的占位样式 */
+          /* 图片加载失败时的占位样式 */
           .ProseMirror img:not([src]),
           .ProseMirror img[src=""] {
             min-height: 200px;
