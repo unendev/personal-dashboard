@@ -647,14 +647,45 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           
           .ProseMirror img,
           .ProseMirror .tiptap-image {
-            max-width: 100%;
+            max-width: 100% !important;
+            width: auto !important;
             height: auto !important;
             display: block !important;
             border-radius: 4px;
-            margin: 1em 0;
+            margin: 1em 0 !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            min-height: 100px;
-            object-fit: contain;
+            min-height: 100px !important;
+            min-width: 100px !important;
+            object-fit: contain !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            position: relative !important;
+            z-index: 1 !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
+          }
+          
+          /* 强制覆盖 Tailwind prose 样式 */
+          .prose img {
+            max-width: 100% !important;
+            height: auto !important;
+            display: block !important;
+          }
+          
+          /* 调试：图片加载失败时的占位样式 */
+          .ProseMirror img:not([src]),
+          .ProseMirror img[src=""] {
+            min-height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .ProseMirror img:not([src])::before,
+          .ProseMirror img[src=""]::before {
+            content: "图片加载中...";
+            color: white;
+            font-size: 14px;
           }
           
           .ProseMirror p.is-editor-empty:first-child::before {
