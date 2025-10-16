@@ -459,9 +459,9 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={`flex gap-6 w-full mx-auto px-4 pb-8 ${className}`}>
+    <div className={`grid grid-cols-1 xl:grid-cols-[288px_1fr_320px] gap-6 w-full mx-auto px-4 pb-8 ${className}`}>
       {/* 左侧大纲面板 */}
-      <aside className="hidden xl:block w-72 flex-shrink-0">
+      <aside className="hidden xl:block">
         <div className="bg-[#0d1117] rounded-xl border border-white/10">
           <TreasureOutline
             treasures={treasures.map(t => ({ id: t.id, title: t.title, type: t.type, createdAt: t.createdAt }))}
@@ -472,7 +472,7 @@ export function TreasureList({ className }: TreasureListProps) {
       </aside>
 
       {/* 中间内容区域 */}
-      <div className="flex-1 flex flex-col min-w-0 max-w-6xl mx-auto w-full pb-20">
+      <div className="flex flex-col min-w-0 max-w-6xl mx-auto w-full pb-20">
         {/* 搜索栏 */}
         <div className="sticky top-0 z-10 pb-4 pt-2 px-4 mb-4">
           <div className="max-w-3xl mx-auto">
@@ -624,7 +624,7 @@ export function TreasureList({ className }: TreasureListProps) {
       </div>
 
       {/* 右侧统计面板 */}
-      <aside className="hidden xl:block w-80 flex-shrink-0">
+      <aside className="hidden xl:block">
         <div>
           <TreasureStatsPanel 
             treasures={statsData}

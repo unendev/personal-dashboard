@@ -68,7 +68,7 @@ export function TreasureOutline({ treasures, selectedId, onTreasureClick }: Trea
         {Object.entries(groupedTreasures).map(([date, items]) => (
           <div key={date} className="space-y-2">
             {/* 日期标题 */}
-            <div className="text-xs font-medium text-white/50 sticky top-0 bg-[#0d1117] py-1 z-10">
+            <div className="text-xs font-medium text-white/50 bg-[#0d1117] py-1">
               {date}
             </div>
             
