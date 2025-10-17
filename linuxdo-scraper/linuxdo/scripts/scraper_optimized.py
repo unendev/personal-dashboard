@@ -327,7 +327,7 @@ async def fetch_post_replies(page, post_url, post_title):
     """
     try:
         logger.info(f"  ⏳ 访问帖子: {post_title[:40]}...")
-        await page.goto(post_url, wait_until="networkidle", timeout=30000)
+        await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
         
         # 等待关键元素出现（最多10秒）
         try:

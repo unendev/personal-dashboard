@@ -1,9 +1,9 @@
 name: Reddit 评论采集器
 
 on:
-  # 每天UTC 02:00和14:00运行 (对应北京时间10:00和22:00)
+  # 每天UTC 18:00运行 (对应北京时间凌晨02:00)
   schedule:
-    - cron: '0 2,14 * * *'
+    - cron: '0 18 * * *'
   
   # 允许手动触发
   workflow_dispatch:
@@ -66,6 +66,13 @@ jobs:
         else
           echo "❌ Reddit 评论采集失败，请检查日志"
         fi
+
+
+
+
+
+
+
 
 
 

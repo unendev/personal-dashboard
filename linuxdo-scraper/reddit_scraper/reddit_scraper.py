@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
 import time
 import asyncpg
+import praw
+import google.generativeai as genai
 
 # --- 配置日志 ---
 logging.basicConfig(
@@ -27,16 +29,25 @@ load_dotenv()
 SUBREDDIT = "technology"
 RSS_URL = f"https://www.reddit.com/r/{SUBREDDIT}/.rss?sort=hot"
 POST_COUNT_LIMIT = 10
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 NEON_DB_URL = os.getenv("DATABASE_URL")
+REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
+REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
+
+# --- 爬虫行为配置 ---
+COMMENT_COUNT_LIMIT = 5       # 每个帖子获取的顶级评论数
+AI_RETRY_LIMIT = 2            # AI分析失败时的重试次数
+AI_RETRY_DELAY = 2            # AI分析重试前的等待秒数
+POST_ANALYSIS_DELAY = 3       # 每个帖子分析后的等待秒数（防止API速率超限）
 
 proxy_for_all = "http://127.0.0.1:10809"
 os.environ['HTTP_PROXY'] = proxy_for_all
 os.environ['HTTPS_PROXY'] = proxy_for_all
 
 # --- Reddit 爬虫函数 ---
-def fetch_reddit_posts():
-    """从Reddit RSS获取帖子数据"""
+def fetch_reddit_posts(reddit_client):
+    """从Reddit RSS获取帖子数据并抓取评论"""
     logger.info(f"开始从 r/{SUBREDDIT} 的 RSS 源爬取热门帖子...")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     
@@ -60,26 +71,40 @@ def fetch_reddit_posts():
                 link = link_tag.get('href')
                 author = author_tag.text if author_tag is not None else "N/A"
                 
-                # 清理内容
                 content_html = content_tag.text if content_tag is not None else ""
                 clean_content = re.sub(r'<.*?>', ' ', content_html)
                 clean_content = re.sub(r'\[link\]|\[comments\]', '', clean_content).strip()
                 
-                # 提取Reddit帖子ID (从URL中提取comments后的部分)
-                post_id = "reddit_unknown"
-                if '/comments/' in link:
-                    # 格式: /r/technology/comments/1nx583c/title/
-                    parts = link.split('/comments/')
-                    if len(parts) > 1:
-                        id_part = parts[1].split('/')[0]
-                        post_id = f"reddit_{id_part}"
+                post_id_match = re.search(r'/comments/([a-zA-Z0-9]+)/',
+                                        link)
+                post_id = f"reddit_{post_id_match.group(1)}" if post_id_match else None
                 
+                if not post_id:
+                    logger.warning(f"无法从URL {link} 中提取 post ID，跳过评论获取。")
+                    comments_content = "没有获取到评论。"
+                else:
+                    try:
+                        logger.info(f"正在为帖子 '{title[:30]}...' 获取评论...")
+                        submission = reddit_client.submission(id=post_id.replace("reddit_", ""))
+                        submission.comments.replace_more(limit=0) # 展开 'more comments'
+                        comments = []
+                        for top_level_comment in submission.comments[:COMMENT_COUNT_LIMIT]: # 获取最多5条顶级评论
+                            comments.append(f"- {top_level_comment.body}")
+                        comments_content = "\n".join(comments)
+                        logger.info(f"成功获取 {len(comments)} 条评论。")
+                    except Exception as e:
+                        logger.error(f"使用PRAW获取评论失败 (post ID: {post_id}): {e}")
+                        comments_content = "获取评论时发生错误。"
+
+                full_content = f"""**帖子内容:**\n{clean_content}\n\n**热门评论:**\n{comments_content}"""
+
                 all_posts.append({
-                    "id": post_id,
+                    "id": post_id if post_id else f"reddit_unknown_{i}",
                     "title": title,
                     "link": link,
                     "author": author,
                     "content": clean_content[:500] + '...' if len(clean_content) > 500 else clean_content,
+                    "full_content": full_content, # 添加完整内容用于AI分析
                     "subreddit": SUBREDDIT,
                     "score": 0,
                     "num_comments": 0
@@ -99,23 +124,23 @@ def fetch_reddit_posts():
         logger.error(f"处理帖子时发生未知错误: {e}")
         return []
 
-# --- AI分析函数 (复用 linuxdo-scraper 的提示词结构) ---
-def analyze_single_post_with_deepseek(post, retry_count=0):
-    """使用DeepSeek分析单个Reddit帖子"""
-    excerpt = post.get('content', '')[:1000]
-    if not excerpt.strip():
-        excerpt = post.get('title', '')[:100]
+# --- AI分析函数 (使用 Gemini) ---
+async def analyze_single_post_with_gemini(post, model, retry_count=0):
+    """使用Gemini分析单个Reddit帖子及其评论 (异步)"""
+    content_to_analyze = post.get('full_content', '')
+    if not content_to_analyze.strip():
+        content_to_analyze = post.get('title', '')
 
     prompt = f"""
-你是一名社交媒体内容分析师。请分析以下Reddit帖子内容，并严格按照指定的JSON格式返回结果。
+你是一名社交媒体内容分析师。请分析以下Reddit帖子内容及其热门评论，并严格按照指定的JSON格式返回结果。
 你的回复必须是一个有效的JSON对象，不要包含任何解释性文字或Markdown的```json ```标记。
 
-**帖子标题**: {post['title']}
-**帖子内容**: {excerpt}
+**帖子与评论内容**: 
+{content_to_analyze}
 
 **请输出以下结构的JSON**:
 {{
-  "core_issue": "这里用一句话概括帖子的核心议题",
+  "core_issue": "这里用一句话概括帖子与评论的核心议题",
   "key_info": [
     "关键信息或观点1",
     "关键信息或观点2"
@@ -125,56 +150,31 @@ def analyze_single_post_with_deepseek(post, retry_count=0):
 }}
 """
     
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 400,
-        "temperature": 0.3
-    }
-    
     try:
-        response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers=headers,
-            json=data,
-            proxies={"http": proxy_for_all, "https": proxy_for_all},
-            timeout=30
-        )
+        # 使用 asyncio.to_thread 在后台线程中运行同步的SDK调用
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        content = response.text
         
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content'].strip()
-            
-            # 清理JSON内容
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
-            
-            try:
-                analysis = json.loads(content)
-                logger.info(f"帖子 '{post['title'][:30]}...' AI分析成功")
-                return analysis
-            except json.JSONDecodeError:
-                logger.error(f"AI返回的内容不是有效JSON: {content[:100]}...")
-                return {"core_issue": "解析失败", "key_info": ["解析失败"], "post_type": "其他", "value_assessment": "低"}
+        if content.startswith('```json'):
+            content = content[7:]
+        if content.endswith('```'):
+            content = content[:-3]
+        content = content.strip()
         
-        else:
-            logger.error(f"DeepSeek API调用失败: {response.status_code} - {response.text}")
-            return {"core_issue": "API失败", "key_info": ["API失败"], "post_type": "其他", "value_assessment": "低"}
+        try:
+            analysis = json.loads(content)
+            logger.info(f"帖子 '{post['title'][:30]}...' Gemini分析成功")
+            return analysis
+        except json.JSONDecodeError:
+            logger.error(f"Gemini返回的内容不是有效JSON: {content[:100]}...")
+            return {"core_issue": "解析失败", "key_info": ["解析失败"], "post_type": "其他", "value_assessment": "低"}
             
     except Exception as e:
-        logger.error(f"AI分析失败: {e}")
-        if retry_count < 2:
-            logger.info(f"重试AI分析 ({retry_count + 1}/2)...")
-            time.sleep(1)
-            return analyze_single_post_with_deepseek(post, retry_count + 1)
+        logger.error(f"✗ AI分析失败: {e}")
+        if retry_count < AI_RETRY_LIMIT:
+            logger.info(f"⟳ 重试AI分析 ({retry_count + 1}/{AI_RETRY_LIMIT})...")
+            await asyncio.sleep(AI_RETRY_DELAY)
+            return await analyze_single_post_with_gemini(post, model, retry_count + 1)
         else:
             return {"core_issue": "分析失败", "key_info": ["分析失败"], "post_type": "其他", "value_assessment": "低"}
 
@@ -272,19 +272,23 @@ async def insert_posts_into_db(posts_data):
             await conn.close()
 
 # --- AI整体洞察报告生成 ---
-def generate_ai_summary_report(posts_data):
-
+async def generate_ai_summary_report(posts_data, model):
+    """生成AI洞察报告 (异步)"""
     processed_posts = []
     post_summaries = []
 
-    logger.info("--- 开始生成逐帖结构化分析 ---")
+    logger.info(f"--- 开始为 {len(posts_data)} 个帖子并发生成结构化分析 ---")
 
-    for i, post in enumerate(posts_data):
-        logger.info(f"正在分析第 {i+1}/{len(posts_data)} 篇: {post['title'][:50]}...")
-        
-        analysis = analyze_single_post_with_deepseek(post)
-        
-        if analysis:
+    # 创建并发任务列表
+    tasks = [analyze_single_post_with_gemini(post, model) for post in posts_data]
+    # 并发执行所有分析任务
+    analyses = await asyncio.gather(*tasks)
+
+    logger.info("--- 逐帖分析全部完成 ---")
+
+    for i, analysis in enumerate(analyses):
+        post = posts_data[i]
+        if analysis and analysis.get("core_issue") not in ["分析失败", "解析失败", "API失败"]:
             processed_posts.append({
                 "id": post.get('id'),
                 "title": post.get('title'),
@@ -296,22 +300,14 @@ def generate_ai_summary_report(posts_data):
                 "score": post.get('score', 0),
                 "num_comments": post.get('num_comments', 0)
             })
-            
             post_summaries.append({
                 "title": post.get('title', 'N/A'),
                 "core_issue": analysis.get('core_issue', 'N/A'),
                 "post_type": analysis.get('post_type', 'N/A'),
                 "value_assessment": analysis.get('value_assessment')
-
             })
-            
-            logger.info(f"帖子 '{post['title'][:30]}...' AI分析成功")
-            logger.info("    ...等待3秒以遵守API速率限制...")
-            time.sleep(3)
         else:
-            logger.error(f"帖子 '{post['title'][:30]}...' AI分析失败")
-
-    logger.info("--- 逐帖分析全部完成 ---")
+            logger.error(f"帖子 '{post['title'][:30]}...' AI分析最终失败")
 
     logger.info("--- 开始生成今日整体洞察报告 (JSON格式) ---")
     
@@ -338,45 +334,17 @@ def generate_ai_summary_report(posts_data):
 }}
 """
 
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        response = await asyncio.to_thread(model.generate_content, overall_prompt)
+        content = response.text
         
-        data = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": overall_prompt}],
-            "max_tokens": 800,
-            "temperature": 0.7
-        }
+        if content.startswith('```json'):
+            content = content[7:]
+        if content.endswith('```'):
+            content = content[:-3]
+        content = content.strip()
         
-        response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers=headers,
-            json=data,
-            proxies={"http": proxy_for_all, "https": proxy_for_all},
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content'].strip()
-            
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
-            
-            summary_analysis = json.loads(content)
-            logger.info("--- 整体洞察报告生成完毕 ---")
-        else:
-            logger.error(f"整体洞察报告生成失败: {response.status_code}")
-            summary_analysis = {
-                "overview": "今日未能生成AI洞察报告。",
-                "highlights": {"tech_savvy": [], "resources_deals": [], "hot_topics": []},
-                "conclusion": "数据解析中，敬请期待明日更精彩的内容。"
-            }
+        summary_analysis = json.loads(content)
+        logger.info("--- 整体洞察报告生成完毕 ---")
             
     except Exception as e:
         logger.error(f"生成整体洞察报告时发生错误: {e}")
@@ -492,45 +460,51 @@ async def main():
     logger.info("=== 开始执行 Reddit 爬虫任务 ===")
     
     try:
-        if not DEEPSEEK_API_KEY:
-            logger.error("未找到 DEEPSEEK_API_KEY 环境变量")
+        # 验证环境变量
+        if not GEMINI_API_KEY:
+            logger.error("✗ 未找到 GEMINI_API_KEY 环境变量")
             return False
-            
+        if not all([REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT]):
+            logger.error("✗ 缺少 Reddit API 凭据 (CLIENT_ID, CLIENT_SECRET, USER_AGENT)")
+            return False
         if not NEON_DB_URL:
-            logger.error("未找到 DATABASE_URL 环境变量")
+            logger.error("✗ 未找到 DATABASE_URL 环境变量")
             return False
-        
+
+        # 初始化 API客户端
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-pro')
+        logger.info("✓ Gemini客户端初始化成功")
+
+        reddit_client = praw.Reddit(
+            client_id=REDDIT_CLIENT_ID,
+            client_secret=REDDIT_CLIENT_SECRET,
+            user_agent=REDDIT_USER_AGENT,
+        )
+        logger.info("✓ Reddit客户端 (PRAW) 初始化成功")
+
         # 创建数据库表
         if not await create_posts_table():
-            logger.error("数据库表创建失败")
+            logger.error("✗ 数据库表创建失败")
             return False
         
-        # 获取帖子数据
-        posts_data = fetch_reddit_posts()
+        # 获取帖子和评论数据
+        posts_data = fetch_reddit_posts(reddit_client)
         
         if not posts_data:
-            logger.error("未能获取到任何帖子数据")
-            empty_data = {
-                "summary_analysis": {
-                    "error": "未能抓取到任何帖子数据，可能是网络问题或RSS源异常",
-                    "overview": "今日未能抓取到任何帖子数据。"
-                }, 
-                "processed_posts": []
-            }
-            generate_json_report(empty_data, 0)
-            generate_markdown_report(empty_data, 0)
-            return False
+            logger.warning("未能获取到任何帖子数据，任务提前结束。")
+            return True # 可能是当天没有帖子，不算失败
         
-        logger.info(f"成功获取到 {len(posts_data)} 条帖子数据")
+        logger.info(f"✓ 成功获取到 {len(posts_data)} 条帖子数据")
         
         # 生成AI报告
-        report_data = generate_ai_summary_report(posts_data)
+        report_data = await generate_ai_summary_report(posts_data, gemini_model)
         
         # 插入数据到数据库
         if report_data.get('processed_posts'):
             db_success = await insert_posts_into_db(report_data['processed_posts'])
             if not db_success:
-                logger.error("数据库插入失败")
+                logger.error("✗ 数据库插入失败")
         
         # 生成报告文件
         json_file = generate_json_report(report_data, len(posts_data))
@@ -539,7 +513,7 @@ async def main():
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         
-        logger.info(f"=== 任务完成 ===")
+        logger.info("=== 任务完成 ===")
         logger.info(f"处理时间: {duration:.2f} 秒")
         logger.info(f"处理帖子: {len(posts_data)} 条")
         logger.info(f"生成文件: {json_file}, {md_file}")
@@ -551,8 +525,8 @@ async def main():
         return False
 
 if __name__ == "__main__":
-    success = asyncio.run(main())
-    if success:
-        print("\n🎉 Reddit 爬虫任务执行成功！")
+    # 运行主异步函数
+    if asyncio.run(main()):
+        logger.info("\n🎉 Reddit 爬虫任务执行成功！")
     else:
-        print("\n💥 Reddit 爬虫任务执行失败！")
+        logger.error("\n💥 Reddit 爬虫任务执行失败！")

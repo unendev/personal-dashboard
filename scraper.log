@@ -1338,3 +1338,980 @@ Call log:
 2025-10-16 19:33:26,249 [INFO]   处理帖子: 30 篇
 2025-10-16 19:33:26,249 [INFO]   生成文件: ../data/linux.do_report_2025-10-16.json
 2025-10-16 19:33:26,249 [INFO] ================================================================================
+2025-10-17 19:04:06,679 [INFO] 
+2025-10-17 19:04:06,680 [INFO] ================================================================================
+2025-10-17 19:04:06,680 [INFO] Linux.do 爬虫 - 本地PC运行版
+2025-10-17 19:04:06,680 [INFO] ================================================================================
+2025-10-17 19:04:06,681 [INFO] ✓ 代理模式: 启用 (http://127.0.0.1:10809)
+2025-10-17 19:04:06,681 [INFO] ✓ DeepSeek API密钥: sk-8857c...
+2025-10-17 19:04:06,681 [INFO] ✓ 数据库连接: 已配置
+2025-10-17 19:04:06,681 [INFO] ✓ 爬取数量: 30 篇帖子
+2025-10-17 19:04:06,681 [INFO] ✓ 浏览器模式: 无头
+2025-10-17 19:04:06,681 [INFO] ✓ AI请求间隔: 3 秒
+2025-10-17 19:04:06,681 [INFO] ================================================================================
+2025-10-17 19:04:09,966 [INFO] ✓ 数据库表检查完成
+2025-10-17 19:04:18,155 [INFO] 🚀 开始爬取Linux.do帖子...
+2025-10-17 19:04:27,696 [INFO] ⏳ 访问首页预热: https://linux.do/
+2025-10-17 19:04:36,671 [INFO] ✓ 预热完成
+2025-10-17 19:04:39,686 [INFO] ⏳ 访问RSS源: https://linux.do/latest.rss
+2025-10-17 19:04:43,271 [INFO] ✓ 已保存调试文件: debug_rss_content_20251017_190443.html (107090 字符)
+2025-10-17 19:04:43,272 [INFO] ⏳ 解析RSS内容...
+2025-10-17 19:04:43,286 [INFO] ⏳ 尝试从HTML中提取XML...
+2025-10-17 19:04:43,412 [INFO] ✓ 成功解析 30 篇帖子
+2025-10-17 19:04:43,413 [INFO]   [1/30] 【抽奖】抽台VPS... (297 字符)
+2025-10-17 19:04:44,423 [INFO]   [2/30] kiro开放注册（慢讯）... (29 字符)
+2025-10-17 19:04:45,437 [INFO]   [3/30] 整机配置二选一... (52 字符)
+2025-10-17 19:04:46,450 [INFO]   [4/30] 在评论区看见的FSRS记忆算法挺好玩... (86 字符)
+2025-10-17 19:04:47,462 [INFO]   [5/30] 言犀键盘船新版本!!带着本地 ASR 模型和一大堆更新优化来了... (1368 字符)
+2025-10-17 19:04:48,464 [INFO]   [6/30] 【跳转到任意回复】为chatgpt对话添加「到达最新」和 「返回当前」... (4542 字符)
+2025-10-17 19:04:49,474 [INFO]   [7/30] 英伟达100%退出了中国市场，是真的吗？... (83 字符)
+2025-10-17 19:04:50,487 [INFO]   [8/30] [2025-10-17] 最全的 AI 编程工具汇总和价格对比... (10695 字符)
+2025-10-17 19:04:51,498 [INFO]   [9/30] 今天股市大跌，各位佬如何操作... (37 字符)
+2025-10-17 19:04:52,507 [INFO]   [10/30] 完蛋了呜呜呜呜呜... (126 字符)
+2025-10-17 19:04:53,513 [INFO]   [11/30] 由于我在本地开发没有及时上传git，ai用git回滚把我三天写的所有代码全覆盖了... (25 字符)
+2025-10-17 19:04:54,522 [INFO]   [12/30] 有佬在前，萌新也献丑一篇... (83 字符)
+2025-10-17 19:04:55,532 [INFO]   [13/30] Codex插件GPT5思考时间过长，如何优化？... (210 字符)
+2025-10-17 19:04:56,541 [INFO]   [14/30] 关于 Debian 13 的 gai.conf 配置问题... (160 字符)
+2025-10-17 19:04:57,553 [INFO]   [15/30] 多 agent 这种怎么做，我看很多视频用的都是都是 claude code... (114 字符)
+2025-10-17 19:04:58,563 [INFO]   [16/30] 我买了个域名和云服务器，怎么把他们连到一起... (119 字符)
+2025-10-17 19:04:59,576 [INFO]   [17/30] 豆包doubao-seed-1-6-251015怎么没有讨论的... (38 字符)
+2025-10-17 19:05:00,583 [INFO]   [18/30] 太难了，leaflow的mysql服务一直连不上... (225 字符)
+2025-10-17 19:05:01,593 [INFO]   [19/30] 一覺醒來，kiro的免費試用credit增加了... (48 字符)
+2025-10-17 19:05:02,608 [INFO]   [20/30] Windsurf 出了新的代码搜索模型 Fast Context... (156 字符)
+2025-10-17 19:05:03,616 [INFO]   [21/30] 有没有觉得其实每个人都是一个ai agent？... (40 字符)
+2025-10-17 19:05:05,637 [INFO]   [23/30] augment 和 cursor 现在用啥来清除账号信息这些... (15 字符)
+2025-10-17 19:05:06,637 [INFO]   [24/30] 原来还要给别人点赞才能升级... (24 字符)
+2025-10-17 19:05:07,651 [INFO]   [25/30] 分享一下我的个人博客（备案）... (549 字符)
+2025-10-17 19:05:08,664 [INFO]   [26/30] rust值得学吗？... (51 字符)
+2025-10-17 19:05:09,674 [INFO]   [27/30] 浏览器不登录看微博和酷安内容... (93 字符)
+2025-10-17 19:05:10,682 [INFO]   [28/30] 王者十周年曲目《明日坐标》-合格线的作品... (113 字符)
+2025-10-17 19:05:11,693 [INFO]   [29/30] 发个帖，来分享一下今天看到的宝可梦——超级宝石海星！... (42 字符)
+2025-10-17 19:05:12,704 [INFO]   [30/30] 有没有佬救救帮忙Cursor Ultra绑卡... (510 字符)
+2025-10-17 19:05:12,705 [INFO] ✓ 获取到 30 篇帖子（仅RSS描述）
+2025-10-17 19:05:12,706 [INFO] 
+============================================================
+2025-10-17 19:05:12,706 [INFO] 🔍 开始抓取帖子详情页（真实评论）
+2025-10-17 19:05:12,706 [INFO] ============================================================
+
+2025-10-17 19:05:12,707 [INFO] [1/30] 处理: 【抽奖】抽台VPS...
+2025-10-17 19:05:12,707 [INFO]   ⏳ 访问帖子: 【抽奖】抽台VPS...
+2025-10-17 19:05:42,718 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055740", waiting until "networkidle"
+
+2025-10-17 19:05:42,720 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055740", waiting until "networkidle"
+
+
+2025-10-17 19:05:42,753 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:05:44,760 [INFO] [2/30] 处理: kiro开放注册（慢讯）...
+2025-10-17 19:05:44,760 [INFO]   ⏳ 访问帖子: kiro开放注册（慢讯）...
+2025-10-17 19:06:14,765 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055727", waiting until "networkidle"
+
+2025-10-17 19:06:14,766 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055727", waiting until "networkidle"
+
+
+2025-10-17 19:06:14,773 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:06:16,780 [INFO] [3/30] 处理: 整机配置二选一...
+2025-10-17 19:06:16,781 [INFO]   ⏳ 访问帖子: 整机配置二选一...
+2025-10-17 19:06:46,797 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055726", waiting until "networkidle"
+
+2025-10-17 19:06:46,798 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055726", waiting until "networkidle"
+
+
+2025-10-17 19:06:46,807 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:06:48,815 [INFO] [4/30] 处理: 在评论区看见的FSRS记忆算法挺好玩...
+2025-10-17 19:06:48,815 [INFO]   ⏳ 访问帖子: 在评论区看见的FSRS记忆算法挺好玩...
+2025-10-17 19:07:18,824 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055724", waiting until "networkidle"
+
+2025-10-17 19:07:19,832 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055724", waiting until "networkidle"
+
+
+2025-10-17 19:07:19,840 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:07:21,854 [INFO] [5/30] 处理: 言犀键盘船新版本!!带着本地 ASR 模型和一大堆更新优化来了...
+2025-10-17 19:07:21,855 [INFO]   ⏳ 访问帖子: 言犀键盘船新版本!!带着本地 ASR 模型和一大堆更新优化来了...
+2025-10-17 19:07:51,859 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055723", waiting until "networkidle"
+
+2025-10-17 19:07:51,861 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055723", waiting until "networkidle"
+
+
+2025-10-17 19:07:51,866 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:07:53,870 [INFO] [6/30] 处理: 【跳转到任意回复】为chatgpt对话添加「到达最新」和 「返回当前」...
+2025-10-17 19:07:53,870 [INFO]   ⏳ 访问帖子: 【跳转到任意回复】为chatgpt对话添加「到达最新」和 「返回当前」...
+2025-10-17 19:08:23,875 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055718", waiting until "networkidle"
+
+2025-10-17 19:08:23,876 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055718", waiting until "networkidle"
+
+
+2025-10-17 19:08:23,881 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:08:25,888 [INFO] [7/30] 处理: 英伟达100%退出了中国市场，是真的吗？...
+2025-10-17 19:08:25,888 [INFO]   ⏳ 访问帖子: 英伟达100%退出了中国市场，是真的吗？...
+2025-10-17 19:08:55,895 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055685", waiting until "networkidle"
+
+2025-10-17 19:08:55,895 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055685", waiting until "networkidle"
+
+
+2025-10-17 19:08:55,901 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:08:57,905 [INFO] [8/30] 处理: [2025-10-17] 最全的 AI 编程工具汇总和价格对比...
+2025-10-17 19:08:57,905 [INFO]   ⏳ 访问帖子: [2025-10-17] 最全的 AI 编程工具汇总和价格对比...
+2025-10-17 19:09:27,914 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055654", waiting until "networkidle"
+
+2025-10-17 19:09:27,914 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055654", waiting until "networkidle"
+
+
+2025-10-17 19:09:27,919 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:09:29,929 [INFO] [9/30] 处理: 今天股市大跌，各位佬如何操作...
+2025-10-17 19:09:29,929 [INFO]   ⏳ 访问帖子: 今天股市大跌，各位佬如何操作...
+2025-10-17 19:09:59,937 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055652", waiting until "networkidle"
+
+2025-10-17 19:09:59,937 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055652", waiting until "networkidle"
+
+
+2025-10-17 19:09:59,943 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:10:01,946 [INFO] [10/30] 处理: 完蛋了呜呜呜呜呜...
+2025-10-17 19:10:01,946 [INFO]   ⏳ 访问帖子: 完蛋了呜呜呜呜呜...
+2025-10-17 19:10:31,948 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055638", waiting until "networkidle"
+
+2025-10-17 19:10:31,949 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055638", waiting until "networkidle"
+
+
+2025-10-17 19:10:31,957 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:10:33,960 [INFO] [11/30] 处理: 由于我在本地开发没有及时上传git，ai用git回滚把我三天写的所有代码全覆盖了...
+2025-10-17 19:10:33,960 [INFO]   ⏳ 访问帖子: 由于我在本地开发没有及时上传git，ai用git回滚把我三天写的所有代码全覆盖了...
+2025-10-17 19:11:03,973 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055615", waiting until "networkidle"
+
+2025-10-17 19:11:03,974 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055615", waiting until "networkidle"
+
+
+2025-10-17 19:11:03,978 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:11:05,983 [INFO] [12/30] 处理: 有佬在前，萌新也献丑一篇...
+2025-10-17 19:11:05,983 [INFO]   ⏳ 访问帖子: 有佬在前，萌新也献丑一篇...
+2025-10-17 19:11:35,999 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055609", waiting until "networkidle"
+
+2025-10-17 19:11:35,999 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055609", waiting until "networkidle"
+
+
+2025-10-17 19:11:36,005 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:11:38,013 [INFO] [13/30] 处理: Codex插件GPT5思考时间过长，如何优化？...
+2025-10-17 19:11:38,015 [INFO]   ⏳ 访问帖子: Codex插件GPT5思考时间过长，如何优化？...
+2025-10-17 19:12:08,027 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055608", waiting until "networkidle"
+
+2025-10-17 19:12:08,028 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055608", waiting until "networkidle"
+
+
+2025-10-17 19:12:08,037 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:12:10,052 [INFO] [14/30] 处理: 关于 Debian 13 的 gai.conf 配置问题...
+2025-10-17 19:12:10,053 [INFO]   ⏳ 访问帖子: 关于 Debian 13 的 gai.conf 配置问题...
+2025-10-17 19:12:40,061 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055606", waiting until "networkidle"
+
+2025-10-17 19:12:40,064 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055606", waiting until "networkidle"
+
+
+2025-10-17 19:12:40,070 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:12:42,074 [INFO] [15/30] 处理: 多 agent 这种怎么做，我看很多视频用的都是都是 claude code...
+2025-10-17 19:12:42,075 [INFO]   ⏳ 访问帖子: 多 agent 这种怎么做，我看很多视频用的都是都是 claude code...
+2025-10-17 19:13:12,081 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055604", waiting until "networkidle"
+
+2025-10-17 19:13:12,086 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055604", waiting until "networkidle"
+
+
+2025-10-17 19:13:12,099 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:13:14,110 [INFO] [16/30] 处理: 我买了个域名和云服务器，怎么把他们连到一起...
+2025-10-17 19:13:14,110 [INFO]   ⏳ 访问帖子: 我买了个域名和云服务器，怎么把他们连到一起...
+2025-10-17 19:13:44,119 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055602", waiting until "networkidle"
+
+2025-10-17 19:13:44,120 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055602", waiting until "networkidle"
+
+
+2025-10-17 19:14:16,184 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:14:18,190 [INFO] [17/30] 处理: 豆包doubao-seed-1-6-251015怎么没有讨论的...
+2025-10-17 19:14:18,190 [INFO]   ⏳ 访问帖子: 豆包doubao-seed-1-6-251015怎么没有讨论的...
+2025-10-17 19:14:48,208 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055594", waiting until "networkidle"
+
+2025-10-17 19:14:48,226 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055594", waiting until "networkidle"
+
+
+2025-10-17 19:14:48,257 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:14:50,271 [INFO] [18/30] 处理: 太难了，leaflow的mysql服务一直连不上...
+2025-10-17 19:14:50,273 [INFO]   ⏳ 访问帖子: 太难了，leaflow的mysql服务一直连不上...
+2025-10-17 19:15:20,282 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055580", waiting until "networkidle"
+
+2025-10-17 19:15:20,284 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055580", waiting until "networkidle"
+
+
+2025-10-17 19:15:20,292 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:15:22,300 [INFO] [19/30] 处理: 一覺醒來，kiro的免費試用credit增加了...
+2025-10-17 19:15:22,300 [INFO]   ⏳ 访问帖子: 一覺醒來，kiro的免費試用credit增加了...
+2025-10-17 19:15:52,307 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055556", waiting until "networkidle"
+
+2025-10-17 19:15:52,308 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055556", waiting until "networkidle"
+
+
+2025-10-17 19:15:52,312 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:15:54,325 [INFO] [20/30] 处理: Windsurf 出了新的代码搜索模型 Fast Context...
+2025-10-17 19:15:54,325 [INFO]   ⏳ 访问帖子: Windsurf 出了新的代码搜索模型 Fast Context...
+2025-10-17 19:16:24,337 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055546", waiting until "networkidle"
+
+2025-10-17 19:16:24,340 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055546", waiting until "networkidle"
+
+
+2025-10-17 19:16:24,347 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:16:26,357 [INFO] [21/30] 处理: 有没有觉得其实每个人都是一个ai agent？...
+2025-10-17 19:16:26,357 [INFO]   ⏳ 访问帖子: 有没有觉得其实每个人都是一个ai agent？...
+2025-10-17 19:16:56,372 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055544", waiting until "networkidle"
+
+2025-10-17 19:16:56,372 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055544", waiting until "networkidle"
+
+
+2025-10-17 19:16:56,378 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:16:58,383 [INFO] [22/30] 处理: GLM Coding 大师作品征集赛开启...
+2025-10-17 19:16:58,383 [INFO]   ⏳ 访问帖子: GLM Coding 大师作品征集赛开启...
+2025-10-17 19:17:28,400 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055531", waiting until "networkidle"
+
+2025-10-17 19:17:28,406 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055531", waiting until "networkidle"
+
+
+2025-10-17 19:17:28,423 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:17:30,439 [INFO] [23/30] 处理: augment 和 cursor 现在用啥来清除账号信息这些...
+2025-10-17 19:17:30,439 [INFO]   ⏳ 访问帖子: augment 和 cursor 现在用啥来清除账号信息这些...
+2025-10-17 19:18:00,457 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055521", waiting until "networkidle"
+
+2025-10-17 19:18:00,459 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055521", waiting until "networkidle"
+
+
+2025-10-17 19:18:00,500 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:18:02,509 [INFO] [24/30] 处理: 原来还要给别人点赞才能升级...
+2025-10-17 19:18:02,511 [INFO]   ⏳ 访问帖子: 原来还要给别人点赞才能升级...
+2025-10-17 19:18:32,674 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055509", waiting until "networkidle"
+
+2025-10-17 19:18:32,676 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055509", waiting until "networkidle"
+
+
+2025-10-17 19:18:32,680 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:18:34,695 [INFO] [25/30] 处理: 分享一下我的个人博客（备案）...
+2025-10-17 19:18:34,695 [INFO]   ⏳ 访问帖子: 分享一下我的个人博客（备案）...
+2025-10-17 19:19:04,709 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055508", waiting until "networkidle"
+
+2025-10-17 19:19:04,710 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="networkidle", timeout=30000)
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055508", waiting until "networkidle"
+
+
+2025-10-17 19:19:04,716 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:19:06,726 [INFO] [26/30] 处理: rust值得学吗？...
+2025-10-17 19:19:06,727 [INFO]   ⏳ 访问帖子: rust值得学吗？...
+2025-10-17 19:19:36,733 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055487", waiting until "networkidle"
+
+2025-10-17 19:19:36,742 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055487", waiting until "networkidle"
+
+
+2025-10-17 19:19:36,749 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:19:38,755 [INFO] [27/30] 处理: 浏览器不登录看微博和酷安内容...
+2025-10-17 19:19:38,756 [INFO]   ⏳ 访问帖子: 浏览器不登录看微博和酷安内容...
+2025-10-17 19:20:33,205 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055468", waiting until "networkidle"
+
+2025-10-17 19:20:34,530 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055468", waiting until "networkidle"
+
+
+2025-10-17 19:20:35,266 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:20:37,305 [INFO] [28/30] 处理: 王者十周年曲目《明日坐标》-合格线的作品...
+2025-10-17 19:20:37,306 [INFO]   ⏳ 访问帖子: 王者十周年曲目《明日坐标》-合格线的作品...
+2025-10-17 19:21:07,321 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055465", waiting until "networkidle"
+
+2025-10-17 19:21:07,322 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055465", waiting until "networkidle"
+
+
+2025-10-17 19:21:07,384 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:21:09,388 [INFO] [29/30] 处理: 发个帖，来分享一下今天看到的宝可梦——超级宝石海星！...
+2025-10-17 19:21:09,390 [INFO]   ⏳ 访问帖子: 发个帖，来分享一下今天看到的宝可梦——超级宝石海星！...
+2025-10-17 19:21:39,486 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055440", waiting until "networkidle"
+
+2025-10-17 19:21:39,487 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055440", waiting until "networkidle"
+
+
+2025-10-17 19:21:39,498 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:21:41,517 [INFO] [30/30] 处理: 有没有佬救救帮忙Cursor Ultra绑卡...
+2025-10-17 19:21:41,518 [INFO]   ⏳ 访问帖子: 有没有佬救救帮忙Cursor Ultra绑卡...
+2025-10-17 19:22:11,537 [ERROR]     ❌ 访问帖子详情页失败: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055436", waiting until "networkidle"
+
+2025-10-17 19:22:11,538 [ERROR]     详细错误:
+Traceback (most recent call last):
+  File "D:\Study\Vue-\个人门户\project-nexus\linuxdo-scraper\linuxdo\scripts\scraper_optimized.py", line 330, in fetch_post_replies
+    await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\async_api\_generated.py", line 8992, in goto
+    await self._impl_obj.goto(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_page.py", line 556, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_frame.py", line 153, in goto
+    await self._channel.send(
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Study\Vue-\linuxdo-scraper\venv\Lib\site-packages\playwright\_impl\_connection.py", line 558, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://linux.do/t/topic/1055436", waiting until "networkidle"
+
+
+2025-10-17 19:22:11,553 [WARNING]     ⚠️ 使用RSS描述作为降级方案
+2025-10-17 19:22:11,554 [INFO] 
+✅ 完成帖子详情抓取
+2025-10-17 19:22:11,554 [INFO]    总帖子数: 30
+2025-10-17 19:22:11,556 [INFO]    总评论数: 0
+
+2025-10-17 19:22:12,382 [INFO] ✓ 获取到 30 篇帖子
+2025-10-17 19:22:12,383 [INFO] ⏳ 开始AI分析...
+2025-10-17 19:22:12,385 [INFO]   [1/30] 分析: 【抽奖】抽台VPS...
+2025-10-17 19:22:33,332 [INFO] ✓ AI分析成功: 【抽奖】抽台VPS...
+2025-10-17 19:22:36,334 [INFO]   [2/30] 分析: kiro开放注册（慢讯）...
+2025-10-17 19:22:56,167 [INFO] ✓ AI分析成功: kiro开放注册（慢讯）...
+2025-10-17 19:22:59,169 [INFO]   [3/30] 分析: 整机配置二选一...
+2025-10-17 19:23:20,234 [INFO] ✓ AI分析成功: 整机配置二选一...
+2025-10-17 19:23:23,236 [INFO]   [4/30] 分析: 在评论区看见的FSRS记忆算法挺好玩...
+2025-10-17 19:23:45,521 [INFO] ✓ AI分析成功: 在评论区看见的FSRS记忆算法挺好玩...
+2025-10-17 19:23:48,523 [INFO]   [5/30] 分析: 言犀键盘船新版本!!带着本地 ASR 模型和一大堆更新优化来了...
+2025-10-17 19:24:12,646 [INFO] ✓ AI分析成功: 言犀键盘船新版本!!带着本地 ASR 模型和一大堆更新优化来了...
+2025-10-17 19:24:15,649 [INFO]   [6/30] 分析: 【跳转到任意回复】为chatgpt对话添加「到达最新」和 「返回当前」...
+2025-10-17 19:24:38,888 [INFO] ✓ AI分析成功: 【跳转到任意回复】为chatgpt对话添加「到达最新」和 「返回当前」...
+2025-10-17 19:24:41,889 [INFO]   [7/30] 分析: 英伟达100%退出了中国市场，是真的吗？...
+2025-10-17 19:25:09,954 [INFO] ✓ AI分析成功: 英伟达100%退出了中国市场，是真的吗？...
+2025-10-17 19:25:12,959 [INFO]   [8/30] 分析: [2025-10-17] 最全的 AI 编程工具汇总和价格对比...
+2025-10-17 19:25:38,603 [INFO] ✓ AI分析成功: [2025-10-17] 最全的 AI 编程工具汇总和价格对比...
+2025-10-17 19:25:41,606 [INFO]   [9/30] 分析: 今天股市大跌，各位佬如何操作...
+2025-10-17 19:26:00,772 [INFO] ✓ AI分析成功: 今天股市大跌，各位佬如何操作...
+2025-10-17 19:26:03,773 [INFO]   [10/30] 分析: 完蛋了呜呜呜呜呜...
+2025-10-17 19:26:24,050 [INFO] ✓ AI分析成功: 完蛋了呜呜呜呜呜...
+2025-10-17 19:26:27,052 [INFO]   [11/30] 分析: 由于我在本地开发没有及时上传git，ai用git回滚把我三天写的所有代码全覆盖了...
+2025-10-17 19:26:52,165 [INFO] ✓ AI分析成功: 由于我在本地开发没有及时上传git，ai用git回滚把我三天写的所有代码全覆盖了...
+2025-10-17 19:26:55,167 [INFO]   [12/30] 分析: 有佬在前，萌新也献丑一篇...
+2025-10-17 19:27:14,154 [INFO] ✓ AI分析成功: 有佬在前，萌新也献丑一篇...
+2025-10-17 19:27:17,156 [INFO]   [13/30] 分析: Codex插件GPT5思考时间过长，如何优化？...
+2025-10-17 19:27:34,400 [INFO] ✓ AI分析成功: Codex插件GPT5思考时间过长，如何优化？...
+2025-10-17 19:27:37,401 [INFO]   [14/30] 分析: 关于 Debian 13 的 gai.conf 配置问题...
+2025-10-17 19:28:01,546 [INFO] ✓ AI分析成功: 关于 Debian 13 的 gai.conf 配置问题...
+2025-10-17 19:28:04,548 [INFO]   [15/30] 分析: 多 agent 这种怎么做，我看很多视频用的都是都是 claude code...
+2025-10-17 19:28:25,829 [INFO] ✓ AI分析成功: 多 agent 这种怎么做，我看很多视频用的都是都是 claude code...
+2025-10-17 19:28:28,831 [INFO]   [16/30] 分析: 我买了个域名和云服务器，怎么把他们连到一起...
+2025-10-17 19:28:53,411 [INFO] ✓ AI分析成功: 我买了个域名和云服务器，怎么把他们连到一起...
+2025-10-17 19:28:56,413 [INFO]   [17/30] 分析: 豆包doubao-seed-1-6-251015怎么没有讨论的...
+2025-10-17 19:29:15,472 [INFO] ✓ AI分析成功: 豆包doubao-seed-1-6-251015怎么没有讨论的...
+2025-10-17 19:29:18,474 [INFO]   [18/30] 分析: 太难了，leaflow的mysql服务一直连不上...
+2025-10-17 19:29:39,186 [INFO] ✓ AI分析成功: 太难了，leaflow的mysql服务一直连不上...
+2025-10-17 19:29:42,188 [INFO]   [19/30] 分析: 一覺醒來，kiro的免費試用credit增加了...
+2025-10-17 19:30:03,232 [INFO] ✓ AI分析成功: 一覺醒來，kiro的免費試用credit增加了...
+2025-10-17 19:30:06,234 [INFO]   [20/30] 分析: Windsurf 出了新的代码搜索模型 Fast Context...
+2025-10-17 19:30:29,463 [INFO] ✓ AI分析成功: Windsurf 出了新的代码搜索模型 Fast Context...
+2025-10-17 19:30:32,467 [INFO]   [21/30] 分析: 有没有觉得其实每个人都是一个ai agent？...
+2025-10-17 19:30:36,255 [ERROR] ❌ 分析失败: 有没有觉得其实每个人都是一个ai agent？... - Response ended prematurely
+2025-10-17 19:30:39,446 [INFO]   [22/30] 分析: GLM Coding 大师作品征集赛开启...
+2025-10-17 19:30:58,180 [INFO] ✓ AI分析成功: GLM Coding 大师作品征集赛开启...
+2025-10-17 19:31:01,184 [INFO]   [23/30] 分析: augment 和 cursor 现在用啥来清除账号信息这些...
+2025-10-17 19:31:17,558 [INFO] ✓ AI分析成功: augment 和 cursor 现在用啥来清除账号信息这些...
+2025-10-17 19:31:20,560 [INFO]   [24/30] 分析: 原来还要给别人点赞才能升级...
+2025-10-17 19:31:41,002 [INFO] ✓ AI分析成功: 原来还要给别人点赞才能升级...
+2025-10-17 19:31:44,004 [INFO]   [25/30] 分析: 分享一下我的个人博客（备案）...
+2025-10-17 19:31:56,450 [ERROR] ❌ 分析失败: 分享一下我的个人博客（备案）... - Response ended prematurely
+2025-10-17 19:31:59,463 [INFO]   [26/30] 分析: rust值得学吗？...
+2025-10-17 19:32:19,666 [INFO] ✓ AI分析成功: rust值得学吗？...
+2025-10-17 19:32:22,669 [INFO]   [27/30] 分析: 浏览器不登录看微博和酷安内容...
+2025-10-17 19:32:42,123 [INFO] ✓ AI分析成功: 浏览器不登录看微博和酷安内容...
+2025-10-17 19:32:45,124 [INFO]   [28/30] 分析: 王者十周年曲目《明日坐标》-合格线的作品...
+2025-10-17 19:33:04,959 [INFO] ✓ AI分析成功: 王者十周年曲目《明日坐标》-合格线的作品...
+2025-10-17 19:33:07,965 [INFO]   [29/30] 分析: 发个帖，来分享一下今天看到的宝可梦——超级宝石海星！...
+2025-10-17 19:33:26,030 [INFO] ✓ AI分析成功: 发个帖，来分享一下今天看到的宝可梦——超级宝石海星！...
+2025-10-17 19:33:29,032 [INFO]   [30/30] 分析: 有没有佬救救帮忙Cursor Ultra绑卡...
+2025-10-17 19:33:48,280 [INFO] ✓ AI分析成功: 有没有佬救救帮忙Cursor Ultra绑卡...
+2025-10-17 19:33:48,286 [INFO] ✓ AI分析完成
+2025-10-17 19:33:52,713 [INFO] ⏳ 开始插入数据到数据库...
+2025-10-17 19:34:00,358 [INFO] ✓ 成功插入 30/30 条数据
+2025-10-17 19:34:01,466 [INFO] ✓ JSON报告已生成: ../data/linux.do_report_2025-10-17.json
+2025-10-17 19:34:01,467 [INFO] ================================================================================
+2025-10-17 19:34:01,467 [INFO] ✓ 任务完成！
+2025-10-17 19:34:01,468 [INFO]   处理时间: 1794.79 秒
+2025-10-17 19:34:01,469 [INFO]   处理帖子: 30 篇
+2025-10-17 19:34:01,469 [INFO]   生成文件: ../data/linux.do_report_2025-10-17.json
+2025-10-17 19:34:01,469 [INFO] ================================================================================

@@ -946,30 +946,38 @@ export default function LogPage() {
         {isMobile ? (
           <>
             {activeSection === 'timer' && (
-              <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8">
-                <CardHeader className="px-4 py-4">
-                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <span className="text-2xl">⏱️</span>
-                    计时器
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="max-h-[600px] overflow-y-auto px-3 md:px-6">
-                  <CategoryZoneWrapper
-                    tasks={timerTasks}
-                    userId={userId}
-                    onQuickCreate={handleQuickCreate}
-                    renderTaskList={(groupTasks, onTaskClone) => (
-                      <NestedTimerZone
-                        tasks={timerTasks}
-                        onTasksChange={setTimerTasks}
-                        onOperationRecord={recordOperation}
-                        onTaskClone={onTaskClone}
-                        groupFilter={groupTasks.map(t => t.id)}
-                      />
-                    )}
-                  />
-                </CardContent>
-              </Card>
+              <div className="-mx-4 md:mx-0">
+                <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8 mx-0">
+                  <CardHeader className="px-4 py-4">
+                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                      <span className="text-2xl">⏱️</span>
+                      计时器
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="max-h-[600px] overflow-y-auto px-3 md:px-6" style={{
+                  // 移动端滚动优化
+                  touchAction: 'pan-y',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                  scrollBehavior: 'smooth'
+                }}>
+                    <CategoryZoneWrapper
+                      tasks={timerTasks}
+                      userId={userId}
+                      onQuickCreate={handleQuickCreate}
+                      renderTaskList={(groupTasks, onTaskClone) => (
+                        <NestedTimerZone
+                          tasks={timerTasks}
+                          onTasksChange={setTimerTasks}
+                          onOperationRecord={recordOperation}
+                          onTaskClone={onTaskClone}
+                          groupFilter={groupTasks.map(t => t.id)}
+                        />
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeSection === 'todo' && (

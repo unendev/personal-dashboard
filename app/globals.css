@@ -71,20 +71,20 @@
 }
 
 :root {
-  /* GitHub Dark 深蓝色主题 - 专业开发者配色 */
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #1c2128;
-  --bg-card: #21262d;
-  --border-primary: #30363d;
-  --border-secondary: #484f58;
-  --text-primary: #c9d1d9;
-  --text-secondary: #8b949e;
-  --text-tertiary: #6e7681;
-  --accent-blue: #58a6ff;
-  --accent-blue-hover: #1f6feb;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  --card-shadow-hover: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+  /* 深蓝紫色主题 - 明亮暗色配色 */
+  --bg-primary: #1e293b;
+  --bg-secondary: #334155;
+  --bg-tertiary: #475569;
+  --bg-card: #2d3748;
+  --border-primary: #475569;
+  --border-secondary: #64748b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --accent-blue: #60a5fa;
+  --accent-blue-hover: #3b82f6;
+  --card-shadow: 0 1px 3px rgba(30, 41, 59, 0.12), 0 1px 2px rgba(30, 41, 59, 0.24);
+  --card-shadow-hover: 0 3px 6px rgba(30, 41, 59, 0.15), 0 2px 4px rgba(30, 41, 59, 0.12);
 }
 
 * {
@@ -95,9 +95,9 @@ html,
 body {
   background: radial-gradient(
     ellipse 150% 100% at 50% 0%,
-    #161b22 0%,
-    #0d1117 40%,
-    #010409 100%
+    #334155 0%,
+    #1e293b 40%,
+    #0f172a 100%
   );
   background-attachment: fixed;
   min-height: 100vh;

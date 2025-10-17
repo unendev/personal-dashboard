@@ -8,7 +8,7 @@ export function TreasurePavilionNav() {
   const pathname = usePathname()
 
   return (
-    <div className="sticky top-0 z-40 bg-[#0d1117] border-b border-white/10">
+    <div className="sticky top-0 z-40 bg-[#1e293b] border-b border-white/10">
       <div className="container mx-auto px-4">
         <nav className="flex items-center gap-1 py-3">
           <Link

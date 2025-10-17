@@ -1252,10 +1252,14 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         onScroll={saveScrollPosition}
         style={{
           // 移动端优化：防止拖拽时的滚动冲突
-          touchAction: 'pan-y',
+          touchAction: 'pan-y pinch-zoom',
           WebkitOverflowScrolling: 'touch',
           // 确保滚动容器不会干扰拖拽
-          overscrollBehavior: 'contain'
+          overscrollBehavior: 'contain',
+          // 优化滚动性能
+          scrollBehavior: 'smooth',
+          // 防止滚动边界反弹
+          overscrollBehaviorY: 'contain'
         }}
       >
         <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>

@@ -125,7 +125,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
   return (
     <div className="space-y-6 p-4">
       {/* GitHub 风格热力图 */}
-      <div className="bg-[#0d1117] rounded-xl p-4 border border-white/10">
+        <div className="bg-[#1e293b] rounded-xl p-4 border border-white/10">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-4 h-4 text-green-400" />
           <h3 className="text-sm font-semibold text-white">创作热力图</h3>
