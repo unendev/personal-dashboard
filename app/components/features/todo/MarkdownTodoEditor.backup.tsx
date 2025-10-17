@@ -21,7 +21,6 @@ import {
   Columns3
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import { getMarkdownStats } from '@/lib/todo-parser';
 
 interface MarkdownTodoEditorProps {
   userId: string;

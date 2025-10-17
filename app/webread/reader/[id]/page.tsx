@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Rendition, Book as EpubBook } from 'epubjs';
 import { ArrowLeft, Settings, BookOpen, Eye, EyeOff } from 'lucide-react';
@@ -38,7 +38,7 @@ interface RelocatedLocation {
 }
 
 interface SelectedContents {
-  window: Window;
+  window: Window | null;
 }
 
 interface RenderedSection {
@@ -61,7 +61,6 @@ export default function EpubReaderPage() {
   const [lineHeight, setLineHeight] = useState(1.6);
   const [layoutMode, setLayoutMode] = useState<'paginated' | 'scrolled'>('paginated');
   const [theme, setTheme] = useState<'light' | 'dark' | 'sepia'>('sepia');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [rendition, setRendition] = useState<Rendition | null>(null);
@@ -93,7 +92,7 @@ export default function EpubReaderPage() {
   };
 
   // 获取书籍信息
-  const fetchBook = async () => {
+  const fetchBook = useCallback(async () => {
     try {
       const response = await fetch(`/api/webread/books/${bookId}`);
       if (response.ok) {
@@ -114,10 +113,10 @@ export default function EpubReaderPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookId]);
 
   // 获取阅读进度
-  const fetchProgress = async () => {
+  const fetchProgress = useCallback(async () => {
     try {
       const response = await fetch(`/api/webread/progress/${bookId}`);
       if (response.ok) {
@@ -130,7 +129,7 @@ export default function EpubReaderPage() {
     } catch (error) {
       console.error('Failed to fetch progress:', error);
     }
-  };
+  }, [bookId]);
 
   // 保存阅读进度
   const saveProgress = async (chapter: string, progressValue: number, cfi: string) => {
@@ -159,10 +158,8 @@ export default function EpubReaderPage() {
   };
 
   // 应用主题和样式
-  const applyThemeStyles = (renditionInstance: unknown) => {
-    if (!renditionInstance || typeof renditionInstance !== 'object') return;
-
-    const rendition = renditionInstance as Record<string, unknown>; // 使用Record类型替代any
+  const applyThemeStyles = (renditionInstance: Rendition) => {
+    if (!renditionInstance) return;
 
     const themeStyles = {
       light: {
@@ -179,7 +176,7 @@ export default function EpubReaderPage() {
       },
     };
 
-    (rendition.themes as { default: (styles: Record<string, unknown>) => void }).default({
+    renditionInstance.themes.default({
       body: {
         'font-size': `${fontSize}px`,
         'line-height': `${lineHeight}`,
@@ -194,7 +191,7 @@ export default function EpubReaderPage() {
   };
 
   // 初始化 EPUB 阅读器
-  const initEpubReader = async () => {
+  const initEpubReader = useCallback(async () => {
     if (!book?.fileUrl || !epubContainerRef.current) {
       console.error('Missing book fileUrl or container ref:', { 
         fileUrl: book?.fileUrl, 
@@ -220,26 +217,36 @@ export default function EpubReaderPage() {
       await epub.ready;
       
       // 检查 EPUB 基本信息
+      const epubWithMetadata = epub as EpubBook & {
+        metadata?: {
+          title?: string;
+          creator?: string;
+          language?: string;
+        };
+        spine?: { length: number };
+        locations?: { length: number };
+      };
+      
       console.log('EPUB ready, basic info:', {
-        hasMetadata: !!(epub as any).metadata,
-        spineLength: (epub as any).spine?.length || 0,
-        hasLocations: !!(epub as any).locations,
-        locationsLength: (epub as any).locations?.length || 0
+        hasMetadata: !!epubWithMetadata.metadata,
+        spineLength: epubWithMetadata.spine?.length || 0,
+        hasLocations: !!epubWithMetadata.locations,
+        locationsLength: epubWithMetadata.locations?.length || 0
       });
       
       // 安全地访问元数据
-      if ((epub as any).metadata) {
+      if (epubWithMetadata.metadata) {
         console.log('EPUB metadata:', {
-          title: (epub as any).metadata.title || 'Unknown Title',
-          creator: (epub as any).metadata.creator || 'Unknown Author',
-          language: (epub as any).metadata.language || 'Unknown Language'
+          title: epubWithMetadata.metadata.title || 'Unknown Title',
+          creator: epubWithMetadata.metadata.creator || 'Unknown Author',
+          language: epubWithMetadata.metadata.language || 'Unknown Language'
         });
       } else {
         console.warn('EPUB metadata is not available');
       }
 
       // 检查 EPUB 是否准备好渲染
-      if (!(epub as any).spine || (epub as any).spine.length === 0) {
+      if (!epubWithMetadata.spine || epubWithMetadata.spine.length === 0) {
         throw new Error('EPUB spine is empty or not available');
       }
 
@@ -258,7 +265,9 @@ export default function EpubReaderPage() {
       console.log('EPUB rendered to container');
 
       // 等待渲染器准备就绪
-      await rendition.ready;
+      if (rendition && typeof rendition === 'object' && 'ready' in rendition) {
+        await (rendition as { ready: Promise<void> }).ready;
+      }
       console.log('Rendition ready');
       
       // 保存 rendition 实例用于翻页
@@ -266,7 +275,7 @@ export default function EpubReaderPage() {
 
       // -- Rendition Event Listeners --
       // 监听位置变化，用于保存进度
-      rendition.on('relocated', (location: unknown) => {
+      rendition.on('relocated', (location: RelocatedLocation) => {
         console.log('EPUB relocated:', location);
         // 使用 CFI 保存精确位置
         if (location && location.start && location.start.cfi) {
@@ -278,22 +287,27 @@ export default function EpubReaderPage() {
       });
 
       // 监听文本选择，用于 AI 翻译
-      rendition.on('selected', (cfiRange: string, contents: unknown) => {
-        const text = contents.window.getSelection().toString();
-        if (text.trim()) {
-          setSelectedText(text.trim());
-          setShowTranslationModal(true);
+      rendition.on('selected', (cfiRange: string, contents: SelectedContents) => {
+        if (contents.window && contents.window.getSelection) {
+          const selection = contents.window.getSelection();
+          if (selection) {
+            const text = selection.toString();
+            if (text.trim()) {
+              setSelectedText(text.trim());
+              setShowTranslationModal(true);
+            }
+          }
         }
       });
 
       // 监听内容显示完成，用于应用样式
-      rendition.on('displayed', (section: unknown) => {
+      rendition.on('displayed', (section: RenderedSection) => {
         console.log('EPUB section displayed, applying styles:', section);
         applyThemeStyles(rendition);
       });
 
       // 监听渲染错误
-      rendition.on('error', (error: unknown) => {
+      rendition.on('error', (error: Error) => {
         console.error('EPUB rendering error:', error);
         setError(`EPUB 渲染错误: ${error.message}`);
       });
@@ -324,22 +338,22 @@ export default function EpubReaderPage() {
 
     } catch (error) {
       console.error('Failed to initialize EPUB reader:', error);
-      setError(`EPUB 文件加载失败: ${error.message}`);
+      setError(`EPUB 文件加载失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
-  };
+  }, [book, layoutMode, progress, applyThemeStyles, saveProgress]);
 
   useEffect(() => {
     if (bookId) {
       fetchBook();
       fetchProgress();
     }
-  }, [bookId]);
+  }, [bookId, fetchBook, fetchProgress]);
 
   useEffect(() => {
     if (book && epubContainerRef.current) {
       initEpubReader();
     }
-  }, [book, fontSize, lineHeight, theme, layoutMode]);
+  }, [book, initEpubReader]);
 
   // 主题切换
   const toggleTheme = () => {
@@ -369,13 +383,9 @@ export default function EpubReaderPage() {
     setLineHeight(Math.max(1.2, Math.min(2.0, height)));
   };
 
-  // 切换布局模式
-  const toggleLayoutMode = () => {
-    setLayoutMode(prev => prev === 'paginated' ? 'scrolled' : 'paginated');
-  };
 
   // 翻页功能
-  const nextPage = async () => {
+  const nextPage = useCallback(async () => {
     console.log('nextPage called, rendition:', !!rendition);
     if (rendition) {
       try {
@@ -387,9 +397,9 @@ export default function EpubReaderPage() {
     } else {
       console.warn('Rendition not available for next page');
     }
-  };
+  }, [rendition]);
 
-  const prevPage = async () => {
+  const prevPage = useCallback(async () => {
     console.log('prevPage called, rendition:', !!rendition);
     if (rendition) {
       try {
@@ -401,7 +411,7 @@ export default function EpubReaderPage() {
     } else {
       console.warn('Rendition not available for previous page');
     }
-  };
+  }, [rendition]);
 
   // 键盘快捷键和鼠标滚轮
   useEffect(() => {
@@ -463,7 +473,7 @@ export default function EpubReaderPage() {
       document.removeEventListener('keydown', handleKeyPress);
       document.removeEventListener('wheel', handleWheel);
     };
-  }, [rendition]);
+  }, [rendition, nextPage, prevPage]);
 
   // 添加笔记功能
   const handleAddToNotes = async (originalText: string, translation: string) => {

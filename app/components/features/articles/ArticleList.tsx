@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Plus, FileText, Clock, Eye } from 'lucide-react'
+import { Plus, FileText, Clock } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import Link from 'next/link'
 

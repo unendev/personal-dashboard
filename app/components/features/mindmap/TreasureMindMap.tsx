@@ -9,7 +9,6 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
-  Panel,
   BackgroundVariant
 } from 'reactflow'
 import 'reactflow/dist/style.css'

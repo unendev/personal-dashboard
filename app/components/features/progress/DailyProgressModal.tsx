@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface DailyProgressModalProps {
   isOpen: boolean;
@@ -23,13 +23,7 @@ export default function DailyProgressModal({
   const [confirming, setConfirming] = useState(false);
   const [userNotes, setUserNotes] = useState('');
 
-  useEffect(() => {
-    if (isOpen && !progress) {
-      analyzeProgress();
-    }
-  }, [isOpen]);
-
-  const analyzeProgress = async () => {
+  const analyzeProgress = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -52,7 +46,13 @@ export default function DailyProgressModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [targetDate]);
+
+  useEffect(() => {
+    if (isOpen && !progress) {
+      analyzeProgress();
+    }
+  }, [isOpen, progress, analyzeProgress]);
 
   const handleRefine = async () => {
     if (!userFeedback.trim()) return;

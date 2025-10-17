@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { WeeklyReviewData } from '@/types/milestone';
 
 interface WeeklyReviewModalProps {
@@ -25,14 +25,7 @@ export default function WeeklyReviewModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 自动加载周报初稿
-  useEffect(() => {
-    if (isOpen && !draft) {
-      loadDraft();
-    }
-  }, [isOpen]);
-
-  const loadDraft = async () => {
+  const loadDraft = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -63,7 +56,14 @@ export default function WeeklyReviewModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  // 自动加载周报初稿
+  useEffect(() => {
+    if (isOpen && !draft) {
+      loadDraft();
+    }
+  }, [isOpen, draft, loadDraft]);
 
   const handleToggleAchievement = (taskId: string) => {
     setSelectedAchievements((prev) =>

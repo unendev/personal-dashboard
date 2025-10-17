@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
@@ -27,13 +27,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(!!articleId)
 
-  useEffect(() => {
-    if (articleId) {
-      fetchArticle()
-    }
-  }, [articleId])
-
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     try {
       const response = await fetch(`/api/articles/${articleId}`)
       if (response.ok) {
@@ -51,7 +45,13 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [articleId])
+
+  useEffect(() => {
+    if (articleId) {
+      fetchArticle()
+    }
+  }, [articleId, fetchArticle])
 
   const handleSave = async (publishNow = false) => {
     if (!title || !content || !slug) {
@@ -81,7 +81,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
       })
 
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         alert(publishNow ? '文章已发布！' : '保存成功！')
         router.push('/treasure-pavilion/articles')
       } else {

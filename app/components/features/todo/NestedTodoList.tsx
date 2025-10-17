@@ -284,7 +284,7 @@ export default function NestedTodoList({ onStartTimer }: NestedTodoListProps = {
       })
 
       if (response.ok) {
-        const newTodo = await response.json()
+        await response.json()
         // 立即更新本地状态并重新验证，确保显示最新数据
         await mutate()
         setNewItemText('')

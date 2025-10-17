@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useReducer, useCallback } from 'react'
-import { Plus, FileText, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, FileText, Trash2 } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { TipTapEditor } from './TipTapEditor'
 
@@ -338,7 +338,7 @@ export function ArticleWorkspace() {
               <div className="flex items-center gap-2">
                 <select
                   value={currentArticle.status}
-                  onChange={(e) => {
+                  onChange={() => {
                     // 更新状态
                   }}
                   className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white"

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, memo } from 'react'
 import { MessageCircle, Trash2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 // 日期格式化工具函数（组件外部，避免重复创建）
 function formatDateString(dateString: string): string {
