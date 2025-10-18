@@ -71,6 +71,38 @@ export class AIService {
     }
   }
 
+  static async generateSummaryForRange(userId: string, startDate: string, endDate: string): Promise<AISummaryResponse> {
+    try {
+      const tasks = await TimerDB.getTasksByDateRange(userId, startDate, endDate);
+      
+      if (tasks.length === 0) {
+        return {
+          summary: "所选时间段内没有记录任何任务活动。",
+          totalTime: 0,
+          taskCount: 0,
+          categories: {},
+          insights: [],
+          tasks: []
+        };
+      }
+
+      const analysisData = this.prepareAnalysisData(tasks);
+      const aiSummary = await this.callDeepSeekAPIForRange(analysisData, startDate, endDate);
+      
+      return {
+        summary: aiSummary.summary,
+        totalTime: analysisData.totalTime,
+        taskCount: analysisData.taskCount,
+        categories: analysisData.categories,
+        insights: aiSummary.insights,
+        tasks: analysisData.tasks
+      };
+    } catch (error) {
+      console.error('Error generating AI summary for range:', error);
+      return this.generateFallbackSummaryForRange(userId, startDate, endDate);
+    }
+  }
+
   private static prepareAnalysisData(tasks: TimerTask[]): AnalysisData {
     const totalTime = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
     const taskCount = tasks.length;
@@ -190,6 +222,92 @@ ${data.tasks.filter(task => task.elapsedTime > 0).map(task =>
     }
   }
 
+  private static async callDeepSeekAPIForRange(data: AnalysisData, startDate: string, endDate: string) {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('DeepSeek API key not configured');
+    }
+
+    const systemPrompt = `你是一个专业的时间管理和效率分析助手。请根据用户一段时间的计时数据生成分析总结。
+
+重要说明：
+这是一个纯计时系统，重点关注时间投入而非任务状态。请忽略任务的状态信息，只关注实际的时间投入情况。
+
+分析要求：
+1. 提供时间段内的整体总结，关注时间分配模式
+2. 识别主要的工作方向和投入重点
+3. 分析各类别的时间投入情况
+4. 给出具体的时间管理改进建议
+5. 使用中文回复
+6. 总结应该体现时间段的特点
+
+请以以下格式回复：
+{
+  "summary": "整体总结",
+  "insights": ["洞察1", "洞察2", "洞察3"]
+}`;
+
+    const userPrompt = `请分析以下时间段的计时数据：
+
+时间范围：${startDate} 至 ${endDate}
+总计时时间：${Math.floor(data.totalTime / 3600)}小时${Math.floor((data.totalTime % 3600) / 60)}分钟
+任务总数：${data.taskCount}个
+有效计时任务：${data.completedTasks}个（有计时时间的任务）
+
+时间分配：
+${Object.entries(data.categories).map(([category, time]) => 
+  `- ${category}: ${Math.floor(time / 3600)}小时${Math.floor((time % 3600) / 60)}分钟`
+).join('\n')}
+
+主要任务（时长超过30分钟）：
+${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task => 
+  `- ${task.name} (${task.categoryPath}): ${Math.floor(task.elapsedTime / 3600)}小时${Math.floor((task.elapsedTime % 3600) / 60)}分钟`
+).join('\n')}`;
+
+    const response = await fetch(this.DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.DEEPSEEK_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        stream: false,
+        temperature: 0.7,
+        max_tokens: 1000
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('No content received from DeepSeek API');
+    }
+
+    try {
+      const parsed = JSON.parse(content);
+      return {
+        summary: parsed.summary || content,
+        insights: parsed.insights || []
+      };
+    } catch {
+      return {
+        summary: content,
+        insights: []
+      };
+    }
+  }
+
   private static async generateFallbackSummary(userId: string, date: string): Promise<AISummaryResponse> {
     const tasks = await TimerDB.getTasksByDate(userId, date);
     
@@ -234,6 +352,60 @@ ${data.tasks.filter(task => task.elapsedTime > 0).map(task =>
     }
 
     const summary = `今天总共计时了${Math.floor(totalTime / 3600)}小时${Math.floor((totalTime % 3600) / 60)}分钟，涉及${taskCount}个任务。${insights.join(' ')}`;
+
+    return {
+      summary,
+      totalTime,
+      taskCount,
+      categories,
+      insights,
+      tasks: tasks.map(task => ({
+        id: task.id,
+        name: task.name,
+        categoryPath: task.categoryPath,
+        elapsedTime: task.elapsedTime,
+        completedAt: task.completedAt
+      }))
+    };
+  }
+
+  private static async generateFallbackSummaryForRange(userId: string, startDate: string, endDate: string): Promise<AISummaryResponse> {
+    const tasks = await TimerDB.getTasksByDateRange(userId, startDate, endDate);
+    
+    if (tasks.length === 0) {
+      return {
+        summary: "所选时间段内没有记录任何任务活动。",
+        totalTime: 0,
+        taskCount: 0,
+        categories: {},
+        insights: [],
+        tasks: []
+      };
+    }
+
+    const totalTime = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
+    const taskCount = tasks.length;
+    const categories: Record<string, number> = {};
+    
+    tasks.forEach(task => {
+      const category = task.categoryPath.split('/')[0] || '未分类';
+      categories[category] = (categories[category] || 0) + task.elapsedTime;
+    });
+
+    const insights: string[] = [];
+    const avgTimePerDay = totalTime / Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1));
+    
+    insights.push(`平均每天计时${Math.floor(avgTimePerDay / 3600)}小时${Math.floor((avgTimePerDay % 3600) / 60)}分钟。`);
+    
+    const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0];
+    if (topCategory) {
+      insights.push(`主要投入在"${topCategory[0]}"类别，占总时间的${Math.round(topCategory[1] / totalTime * 100)}%。`);
+    }
+
+    const tasksWithTime = tasks.filter(task => task.elapsedTime > 0);
+    insights.push(`完成了${tasksWithTime.length}个任务的时间投入。`);
+
+    const summary = `从${startDate}到${endDate}，总共计时了${Math.floor(totalTime / 3600)}小时${Math.floor((totalTime % 3600) / 60)}分钟，涉及${taskCount}个任务。${insights.join(' ')}`;
 
     return {
       summary,

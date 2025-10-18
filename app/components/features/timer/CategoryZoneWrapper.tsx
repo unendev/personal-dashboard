@@ -33,13 +33,15 @@ interface CategoryZoneWrapperProps {
   tasks: TimerTask[];
   userId?: string;
   onQuickCreate: (data: QuickCreateData) => Promise<void>;
-  renderTaskList: (tasks: TimerTask[], onTaskClone: (task: TimerTask) => void) => React.ReactNode;
+  onBeforeOperation?: () => void; // 新增：在操作前执行的回调
+  renderTaskList: (tasks: TimerTask[], onTaskClone: (task: TimerTask) => void, onBeforeOperation?: () => void) => React.ReactNode;
 }
 
 const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   tasks,
   userId = 'user-1',
   onQuickCreate,
+  onBeforeOperation,
   renderTaskList
 }) => {
   // 折叠状态
@@ -152,7 +154,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
             {/* 任务列表（展开时显示） */}
             {!isCollapsed && (
               <div className="p-4">
-                {renderTaskList(group.tasks, handleTaskClone)}
+                {renderTaskList(group.tasks, handleTaskClone, onBeforeOperation)}
               </div>
             )}
           </Card>
@@ -162,7 +164,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
       {/* 不分组的任务（时间黑洞、身体锻炼）：直接显示 */}
       {ungroupedTasks.length > 0 && (
         <div className="space-y-4">
-          {renderTaskList(ungroupedTasks, handleTaskClone)}
+          {renderTaskList(ungroupedTasks, handleTaskClone, onBeforeOperation)}
         </div>
       )}
       

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
 import { useDevSession, markManualLogout } from '../hooks/useDevSession';
 import CreateLogModal from '@/app/components/features/log/CreateLogModal'
@@ -9,11 +9,10 @@ import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone'
 import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper'
 import { QuickCreateData } from '@/app/components/features/timer/QuickCreateDialog'
 import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
-import DateFilter from '@/app/components/shared/DateFilter'
+import DateRangePicker, { DateRangeValue } from '@/app/components/shared/DateRangePicker'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
 import NestedTodoList from '@/app/components/features/todo/NestedTodoList'
 import SimpleMdEditor from '@/app/components/features/notes/SimpleMdEditor'
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { Button } from '@/app/components/ui/button'
 import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
@@ -24,6 +23,13 @@ export default function LogPage() {
   const { data: session, status } = useDevSession();
   const [isPageReady, setIsPageReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // 时间段选择（用于统计和AI总结）
+  const [dateRange, setDateRange] = useState<DateRangeValue>({
+    startDate: '',
+    endDate: '',
+    label: '本周'
+  });
   
   // 移动端区域切换
   const [activeSection, setActiveSection] = useState<'timer' | 'todo' | 'stats' | 'ai'>('timer');
@@ -75,6 +81,43 @@ export default function LogPage() {
   // 每日进度审核状态
   const [isDailyProgressOpen, setIsDailyProgressOpen] = useState(false);
   const [progressTargetDate, setProgressTargetDate] = useState('');
+
+  // 滚动恢复逻辑
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const saveScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current) {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+        }
+      }, 100);
+    }
+  }, []);
+
+  const saveScrollPositionNow = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  }, []);
+
+  const restoreScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current && scrollPositionRef.current > 0) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      restoreScrollPosition();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [timerTasks, restoreScrollPosition]);
 
   // 创建宝藏处理函数
   const handleCreateTreasure = async (data: CreateTreasureData) => {
@@ -175,7 +218,7 @@ export default function LogPage() {
     preloadData();
   }, []);
 
-  // 从数据库加载任务
+  // 从数据库加载任务（单日 - 用于计时器）
   const fetchTimerTasks = React.useCallback(async () => {
     try {
       const response = await fetch(`/api/timer-tasks?userId=${userId}&date=${selectedDate}`);
@@ -188,6 +231,24 @@ export default function LogPage() {
     }
   }, [userId, selectedDate]);
 
+  // 从数据库加载时间范围任务（用于统计）
+  const [rangeTimerTasks, setRangeTimerTasks] = useState<typeof timerTasks>([]);
+  const fetchRangeTimerTasks = React.useCallback(async () => {
+    if (!dateRange.startDate || !dateRange.endDate) return;
+    
+    try {
+      const response = await fetch(
+        `/api/timer-tasks?userId=${userId}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`
+      );
+      if (response.ok) {
+        const tasks = await response.json();
+        setRangeTimerTasks(tasks);
+      }
+    } catch (error) {
+      console.error('Failed to fetch range timer tasks:', error);
+    }
+  }, [userId, dateRange.startDate, dateRange.endDate]);
+
   // 确保页面完全加载后再显示内容
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -198,6 +259,13 @@ export default function LogPage() {
 
     return () => clearTimeout(timer);
   }, [fetchTimerTasks]);
+
+  // 当时间范围变化时，加载对应的任务数据
+  useEffect(() => {
+    if (dateRange.startDate && dateRange.endDate) {
+      fetchRangeTimerTasks();
+    }
+  }, [fetchRangeTimerTasks]);
 
   // 点击外部区域关闭操作记录折叠栏
   useEffect(() => {
@@ -615,98 +683,80 @@ export default function LogPage() {
             </div>
           </div>
 
-          {/* 日期过滤器 */}
+          {/* 时间段选择器 */}
           <div className="mb-8">
-            <DateFilter 
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
+            <DateRangePicker 
+              value={dateRange}
+              onChange={setDateRange}
             />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* 计时器 - 在手机端显示在前面 */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl">⏱️</span>
-                  计时器 (演示数据)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NestedTimerZone
-                  tasks={mockTimerTasks}
-                  onTasksChange={() => {}} // 访客模式下不允许修改
-                  onOperationRecord={() => {}} // 访客模式下不允许记录操作
-                />
-              </CardContent>
-            </Card>
+            <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-1 lg:order-2">
+              <h3 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <span className="text-xl">⏱️</span>
+                计时器 (演示数据)
+              </h3>
+              <NestedTimerZone
+                tasks={mockTimerTasks}
+                onTasksChange={() => {}} // 访客模式下不允许修改
+                onOperationRecord={() => {}} // 访客模式下不允许记录操作
+              />
+            </section>
 
             {/* 任务清单 - 在手机端显示在后面 */}
-            <div className="order-2 lg:order-1">
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">📋</span>
-                    任务清单 (演示数据)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {mockTimerTasks.map((task) => (
-                      <div key={task.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-200">{task.name}</h4>
-                          <p className="text-sm text-gray-400">{task.categoryPath}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold text-blue-400">
-                            {Math.floor(task.elapsedTime / 3600)}h {Math.floor((task.elapsedTime % 3600) / 60)}m
-                          </div>
-                        </div>
+            <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
+              <h3 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <span className="text-xl">📋</span>
+                任务清单 (演示数据)
+              </h3>
+              <div className="space-y-3">
+                {mockTimerTasks.map((task) => (
+                  <div key={task.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-200">{task.name}</h4>
+                      <p className="text-sm text-gray-400">{task.categoryPath}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-blue-400">
+                        {Math.floor(task.elapsedTime / 3600)}h {Math.floor((task.elapsedTime % 3600) / 60)}m
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                ))}
+              </div>
+            </section>
           </div>
 
           {/* 时间统计 */}
           <div className="mb-8">
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl">📊</span>
-                  时间统计 (演示数据)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <section className="border-t border-gray-700/50 pt-6">
+              <h2 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <span className="text-xl">📊</span>
+                时间统计 (演示数据)
+              </h2>
               <TimeStatsChart tasks={mockTimerTasks} userId={userId} />
-              </CardContent>
-            </Card>
+            </section>
           </div>
 
           {/* AI总结 */}
           <div className="mb-8">
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl">🤖</span>
-                  AI总结 (演示数据)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                  <h3 className="font-semibold text-gray-200 mb-2">今日学习总结</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">
-                    今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
-                    总共投入了 2.25 小时的学习时间，其中 React Hooks 学习占用了 1 小时，
-                    技术文档阅读 30 分钟，代码审查 45 分钟。学习效率较高，
-                    建议继续保持这种学习节奏。
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <section className="border-t border-gray-700/50 pt-6">
+              <h2 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <span className="text-xl">🤖</span>
+                AI总结 (演示数据)
+              </h2>
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                <h3 className="font-semibold text-gray-200 mb-2">今日学习总结</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
+                  总共投入了 2.25 小时的学习时间，其中 React Hooks 学习占用了 1 小时，
+                  技术文档阅读 30 分钟，代码审查 45 分钟。学习效率较高，
+                  建议继续保持这种学习节奏。
+                </p>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -874,11 +924,11 @@ export default function LogPage() {
           </Link>
         </div>
         
-        {/* 日期过滤器 */}
+        {/* 时间段选择器 */}
         <div className="mb-8">
-          <DateFilter 
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
+          <DateRangePicker 
+            value={dateRange}
+            onChange={setDateRange}
           />
         </div>
 
@@ -946,122 +996,18 @@ export default function LogPage() {
         {isMobile ? (
           <>
             {activeSection === 'timer' && (
-              <div className="-mx-4 md:mx-0">
-                <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8 mx-0">
-                  <CardHeader className="px-4 py-4">
-                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <span className="text-2xl">⏱️</span>
-                      计时器
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="max-h-[600px] overflow-y-auto px-3 md:px-6" style={{
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 mb-6 md:mb-8">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">⏱️</span>
+                  计时器
+                </h3>
+                <div className="max-h-[600px] overflow-y-auto" style={{
                   // 移动端滚动优化
                   touchAction: 'pan-y',
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',
                   scrollBehavior: 'smooth'
                 }}>
-                    <CategoryZoneWrapper
-                      tasks={timerTasks}
-                      userId={userId}
-                      onQuickCreate={handleQuickCreate}
-                      renderTaskList={(groupTasks, onTaskClone) => (
-                        <NestedTimerZone
-                          tasks={timerTasks}
-                          onTasksChange={setTimerTasks}
-                          onOperationRecord={recordOperation}
-                          onTaskClone={onTaskClone}
-                          groupFilter={groupTasks.map(t => t.id)}
-                        />
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === 'todo' && (
-              <div className="mb-6 md:mb-8">
-                <Card className="hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="border-b border-gray-700 px-4 py-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                        <span className="text-2xl">📋</span>
-                        任务管理
-                      </CardTitle>
-                    </div>
-                    
-                    {/* 视图切换按钮 */}
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        variant={todoView === 'todo' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setTodoView('todo')}
-                        className="flex-1"
-                      >
-                        📋 待办清单
-                      </Button>
-                      <Button
-                        variant={todoView === 'notes' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setTodoView('notes')}
-                        className="flex-1"
-                      >
-                        📝 笔记
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {todoView === 'todo' ? (
-                      <div className="p-3 md:p-4">
-                        <NestedTodoList />
-                      </div>
-                    ) : (
-                      <div className="p-3 md:p-4">
-                        <SimpleMdEditor />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === 'stats' && (
-              <Card className="hover:shadow-lg transition-shadow duration-200 mb-6 md:mb-8">
-                <CardHeader className="px-4 py-4">
-                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <span className="text-2xl">📊</span>
-                    时间统计
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 md:px-6">
-                  <TimeStatsChart tasks={timerTasks} userId={userId} />
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === 'ai' && (
-              <div className="mb-6 md:mb-8">
-                <CollapsibleAISummary 
-                  userId={userId}
-                  date={selectedDate}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          /* 桌面端：保持原有布局 */
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-10 mb-6 lg:mb-8">
-              {/* 计时器 */}
-              <Card className="hover:shadow-lg transition-shadow duration-200 order-1 lg:order-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">⏱️</span>
-                    计时器
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="max-h-[600px] overflow-y-auto">
                   <CategoryZoneWrapper
                     tasks={timerTasks}
                     userId={userId}
@@ -1076,77 +1022,157 @@ export default function LogPage() {
                       />
                     )}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </section>
+            )}
+
+            {activeSection === 'todo' && (
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 mb-6 md:mb-8">
+                <div className="mb-4">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="text-2xl">📋</span>
+                    任务管理
+                  </h3>
+                  
+                  {/* 视图切换按钮 */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={todoView === 'todo' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTodoView('todo')}
+                      className="flex-1"
+                    >
+                      📋 待办清单
+                    </Button>
+                    <Button
+                      variant={todoView === 'notes' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTodoView('notes')}
+                      className="flex-1"
+                    >
+                      📝 笔记
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="border-t border-gray-700/30 pt-4">
+                  {todoView === 'todo' ? (
+                    <NestedTodoList />
+                  ) : (
+                    <SimpleMdEditor />
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeSection === 'stats' && (
+              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4">
+                <h2 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2 px-3 md:px-0">
+                  <span className="text-2xl">📊</span>
+                  时间统计
+                </h2>
+                <div className="px-3 md:px-0">
+                  <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+                </div>
+              </section>
+            )}
+
+            {activeSection === 'ai' && (
+              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4 px-3 md:px-0">
+                <CollapsibleAISummary 
+                  userId={userId}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                />
+              </section>
+            )}
+          </>
+        ) : (
+          /* 桌面端：保持原有布局 */
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-10 mb-6 lg:mb-8">
+              {/* 计时器 */}
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-1 lg:order-2">
+                <h3 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                  <span className="text-xl">⏱️</span>
+                  计时器
+                </h3>
+                <div ref={scrollContainerRef} onScroll={saveScrollPosition} className="max-h-[600px] overflow-y-auto">
+                  <CategoryZoneWrapper
+                    tasks={timerTasks}
+                    userId={userId}
+                    onQuickCreate={handleQuickCreate}
+                    onBeforeOperation={saveScrollPositionNow}
+                    renderTaskList={(groupTasks, onTaskClone, onBeforeOperation) => (
+                      <NestedTimerZone
+                        tasks={timerTasks}
+                        onTasksChange={setTimerTasks}
+                        onOperationRecord={recordOperation}
+                        onTaskClone={onTaskClone}
+                        groupFilter={groupTasks.map(t => t.id)}
+                        onBeforeOperation={onBeforeOperation}
+                      />
+                    )}
+                  />
+                </div>
+              </section>
 
               {/* 任务管理 */}
-              <div className="order-2 lg:order-1">
-                <Card className="hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="border-b border-gray-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="flex items-center gap-2">
-                        <span className="text-xl">📋</span>
-                        任务管理
-                      </CardTitle>
-                    </div>
-                    
-                    {/* 视图切换按钮 */}
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        variant={todoView === 'todo' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setTodoView('todo')}
-                        className="flex-1"
-                      >
-                        📋 待办清单
-                      </Button>
-                      <Button
-                        variant={todoView === 'notes' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setTodoView('notes')}
-                        className="flex-1"
-                      >
-                        📝 笔记
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {todoView === 'todo' ? (
-                      <div className="p-4">
-                        <NestedTodoList />
-                      </div>
-                    ) : (
-                      <div className="p-4">
-                        <SimpleMdEditor />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
+                <div className="mb-4 pb-4 border-b border-gray-700/30">
+                  <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="text-xl">📋</span>
+                    任务管理
+                  </h3>
+                  
+                  {/* 视图切换按钮 */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={todoView === 'todo' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTodoView('todo')}
+                      className="flex-1"
+                    >
+                      📋 待办清单
+                    </Button>
+                    <Button
+                      variant={todoView === 'notes' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTodoView('notes')}
+                      className="flex-1"
+                    >
+                      📝 笔记
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  {todoView === 'todo' ? (
+                    <NestedTodoList />
+                  ) : (
+                    <SimpleMdEditor />
+                  )}
+                </div>
+              </section>
             </div>
 
             {/* 时间统计 */}
-            <div className="mb-6 lg:mb-8">
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl md:text-2xl">📊</span>
-                    时间统计
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TimeStatsChart tasks={timerTasks} userId={userId} />
-                </CardContent>
-              </Card>
-            </div>
+            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-200 mb-6 flex items-center gap-2">
+                <span className="text-xl md:text-2xl">📊</span>
+                时间统计
+              </h2>
+              <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+            </section>
 
             {/* AI总结 */}
-            <div className="mb-6 lg:mb-8">
+            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
               <CollapsibleAISummary 
                 userId={userId}
-                date={selectedDate}
+                startDate={dateRange.startDate}
+                endDate={dateRange.endDate}
               />
-            </div>
+            </section>
           </>
         )}
       </div>

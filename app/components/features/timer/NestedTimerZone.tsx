@@ -52,6 +52,7 @@ interface NestedTimerZoneProps {
   onTasksChange: (tasks: TimerTask[]) => void;
   onOperationRecord?: (action: string, taskName: string, details?: string) => void;
   onTaskClone?: (task: TimerTask) => void; // 新增：任务复制创建回调
+  onBeforeOperation?: () => void; // 新增：在操作前执行的回调
   groupFilter?: string[]; // 新增：只显示这些ID的任务（用于分组显示）
   level?: number;
   parentId?: string; // 添加父级ID用于区分不同层级的弹框
@@ -73,6 +74,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   onTasksChange, 
   onOperationRecord,
   onTaskClone,
+  onBeforeOperation,
   groupFilter,
   level = 0,
   collapsedTasks: externalCollapsedTasks,
@@ -117,50 +119,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return newSet;
     });
   });
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  // 使用 useRef 存储滚动位置，避免不必要的重新渲染
-  const scrollPositionRef = useRef(0);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 保存滚动位置
-  const saveScrollPosition = useCallback(() => {
-    if (scrollContainerRef.current) {
-      // 清除之前的定时器
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      // 设置新的定时器，在滚动停止后更新位置
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollPositionRef.current = scrollContainerRef.current.scrollTop;
-        }
-      }, 100); // 100ms 延迟
-    }
-  }, []);
 
-  // 立即保存滚动位置（无延迟），用于操作前锁定当前位置
-  const saveScrollPositionNow = useCallback(() => {
-    if (scrollContainerRef.current) {
-      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
-    }
-  }, []);
 
-  // 恢复滚动位置
-  const restoreScrollPosition = useCallback(() => {
-    if (scrollContainerRef.current && scrollPositionRef.current > 0) {
-      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
-    }
-  }, []);
 
-  // 在组件更新后恢复滚动位置 - 监听任务状态变化
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      restoreScrollPosition();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [tasks, restoreScrollPosition]); // 监听整个 tasks 数组变化
 
   // 切换任务收缩状态函数已移到上面，使用传入的函数或本地函数
 
@@ -359,7 +321,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   const startTimer = async (taskId: string) => {
     // 操作前保存当前位置，避免UI更新导致回到顶部
-    saveScrollPositionNow();
+    onBeforeOperation?.();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -430,7 +392,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   const pauseTimer = async (taskId: string) => {
     // 操作前保存当前位置
-    saveScrollPositionNow();
+    onBeforeOperation?.();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -533,7 +495,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   const resumeTimer = async (taskId: string) => {
     // 操作前保存当前位置
-    saveScrollPositionNow();
+    onBeforeOperation?.();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -620,7 +582,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
   const deleteTimer = async (taskId: string) => {
     // 操作前保存当前位置
-    saveScrollPositionNow();
+    onBeforeOperation?.();
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -1247,9 +1209,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onDragEnd={handleDragEnd}
     >
       <div 
-        ref={scrollContainerRef}
-        className="space-y-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 timer-scroll-area"
-        onScroll={saveScrollPosition}
+        className="space-y-3 overflow-x-hidden pr-2 timer-scroll-area"
         style={{
           // 移动端优化：防止拖拽时的滚动冲突
           touchAction: 'pan-y pinch-zoom',

@@ -280,7 +280,9 @@ model OperationRecord {
 model AISummary {
   id         String   @id @default(cuid())
   userId     String
-  date       String
+  date       String?
+  startDate  String?
+  endDate    String?
   summary    String
   totalTime  Int
   taskCount  Int
@@ -291,6 +293,7 @@ model AISummary {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
+  @@unique([userId, startDate, endDate])
   @@map("ai_summaries")
 }
 

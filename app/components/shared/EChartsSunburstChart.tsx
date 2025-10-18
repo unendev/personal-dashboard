@@ -50,6 +50,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [taskDetails, setTaskDetails] = React.useState<TaskDetail[]>([]);
   const [showTaskList, setShowTaskList] = React.useState(true); // 默认显示任务列表
+  const [isTaskListExpanded, setIsTaskListExpanded] = React.useState(false); // 默认折叠，只显示前5条
 
   // 递归计算任务的总时间（包括子任务）
   const calculateTotalTime = React.useCallback((task: TimerTask): number => {
@@ -509,7 +510,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
           
           {taskDetails.length > 0 ? (
             <div className="space-y-3">
-              {taskDetails.map((task) => (
+              {(isTaskListExpanded ? taskDetails : taskDetails.slice(0, 5)).map((task) => (
                 <div key={task.id} className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-700/30">
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-200">{task.name}</h4>
@@ -525,6 +526,18 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
                   </div>
                 </div>
               ))}
+              
+              {/* 展开/收起按钮 */}
+              {taskDetails.length > 5 && (
+                <div className="text-center pt-2">
+                  <button
+                    onClick={() => setIsTaskListExpanded(!isTaskListExpanded)}
+                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    {isTaskListExpanded ? '收起 ▲' : `展开更多 (${taskDetails.length - 5}条) ▼`}
+                  </button>
+                </div>
+              )}
               
               <div className="mt-4 pt-4 border-t border-gray-700/50">
                 <div className="flex justify-between items-center">
