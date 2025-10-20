@@ -224,7 +224,15 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     immediatelyRender: false,
     content: initialContent,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ 
+        heading: { levels: [1, 2, 3] },
+        // 确保Bold扩展的inputRules启用
+        bold: {
+          HTMLAttributes: {
+            class: 'font-bold',
+          },
+        },
+      }),
       Placeholder.configure({ placeholder: '开始写笔记...' }),
       Typography,
       CustomImage.configure({ allowBase64: true, HTMLAttributes: { class: 'tiptap-image' } }),
@@ -232,6 +240,23 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     editorProps: {
         attributes: {
           class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] px-4 py-3',
+        },
+        handleKeyDown: (view, event) => {
+          // Ctrl+D 删除当前行
+          if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+            event.preventDefault()
+            const { state, dispatch } = view
+            const { $from } = state.selection
+            const start = $from.start()
+            const end = $from.end()
+            
+            if (start !== undefined && end !== undefined) {
+              const tr = state.tr.delete(start, end)
+              dispatch(tr)
+              return true
+            }
+          }
+          return false
         },
         handlePaste: (view, event) => {
             const items = event.clipboardData?.items
