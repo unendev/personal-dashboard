@@ -1087,7 +1087,7 @@ export default function LogPage() {
                   </h3>
                 </div>
                 
-                <div>
+                <div className="border border-gray-600/50 rounded-lg overflow-hidden">
                   <SimpleMdEditor />
                 </div>
               </section>
