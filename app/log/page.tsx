@@ -910,233 +910,212 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      <div className="w-full h-screen flex flex-col overflow-hidden pt-14 md:pt-16">
-        {/* 固定顶部工具栏 */}
-        <div className="flex-shrink-0 border-b border-gray-700/30 bg-gray-900/50">
-          <div className="container-padding py-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              {/* 时间段选择器 */}
-              <div className="flex-1 min-w-0">
-                <DateRangePicker 
-                  value={dateRange}
-                  onChange={setDateRange}
-                />
-              </div>
-              
-              {/* 右侧按钮组 */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={handleOpenDailyProgress}
-                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-3 py-1.5 md:py-2 rounded transition-colors flex items-center gap-1.5 text-sm"
-                >
-                  <span className="text-base">📊</span>
-                  <span className="hidden sm:inline">昨日进度</span>
-                  <span className="sm:hidden">进度</span>
-                </button>
-                <Link
-                  href="/progress"
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 md:py-2 rounded transition-colors flex items-center gap-1.5 text-sm"
-                >
-                  <span className="text-base">🏛️</span>
-                  <span className="hidden sm:inline">人生阁</span>
-                  <span className="sm:hidden">阁</span>
-                </Link>
-              </div>
-            </div>
-          </div>
+      <div className="w-full container-padding container-padding-y pt-16 md:pt-20 overflow-x-hidden">
+        <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8 flex-wrap">
+          <button
+            onClick={handleOpenDailyProgress}
+            className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
+          >
+            <span className="text-lg md:text-xl">📊</span>
+            <span className="hidden sm:inline">昨日进度</span>
+            <span className="sm:hidden">进度</span>
+          </button>
+          <Link
+            href="/progress"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
+          >
+            <span className="text-lg md:text-xl">🏛️</span>
+            <span className="hidden sm:inline">人生阁</span>
+            <span className="sm:hidden">阁</span>
+          </Link>
+        </div>
+        
+        {/* 时间段选择器 */}
+        <div className="mb-8">
+          <DateRangePicker 
+            value={dateRange}
+            onChange={setDateRange}
+          />
         </div>
 
         {/* 移动端标签页导航 */}
         {isMobile && (
-          <div className="flex-shrink-0 border-b border-gray-700/30 bg-gray-900/30">
-            <div className="grid grid-cols-3">
+          <div className="mb-4 md:mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 md:p-1.5 border border-gray-700/50 overflow-hidden">
+            <div className="grid grid-cols-3 gap-1 md:gap-1.5">
               <button
                 onClick={() => setActiveSection('timer')}
-                className={`px-2 py-3 font-medium transition-colors border-b-2 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'timer'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">⏱️</span>
-                  <span className="text-xs">计时器</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">⏱️</span>
+                  <span className="text-xs md:text-sm">计时器</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveSection('stats')}
-                className={`px-2 py-3 font-medium transition-colors border-b-2 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'stats'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">📊</span>
-                  <span className="text-xs">统计</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">📊</span>
+                  <span className="text-xs md:text-sm">统计</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveSection('ai')}
-                className={`px-2 py-3 font-medium transition-colors border-b-2 ${
+                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'ai'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">🤖</span>
-                  <span className="text-xs">AI</span>
+                <div className="flex flex-col items-center gap-1 md:gap-1.5">
+                  <span className="text-xl md:text-2xl">🤖</span>
+                  <span className="text-xs md:text-sm">AI</span>
                 </div>
               </button>
             </div>
           </div>
         )}
 
-        {/* 主内容区域 - 可滚动 */}
-        <div className="flex-1 overflow-y-auto">
-          {isMobile ? (
-            /* 移动端：根据选中的标签页显示内容 */
-            <div className="h-full">
-              {activeSection === 'timer' && (
-                <div className="h-full flex flex-col">
-                  <div className="flex-shrink-0 px-3 py-3 border-b border-gray-700/20">
-                    <h3 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-                      <span className="text-lg">⏱️</span>
-                      计时器
-                    </h3>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-2 py-3" style={{
-                    touchAction: 'pan-y',
-                    WebkitOverflowScrolling: 'touch',
-                    overscrollBehavior: 'contain',
-                  }}>
-                    <CategoryZoneWrapper
-                      tasks={timerTasks}
-                      userId={userId}
-                      onQuickCreate={handleQuickCreate}
-                      renderTaskList={(groupTasks, onTaskClone) => (
-                        <NestedTimerZone
-                          tasks={timerTasks}
-                          onTasksChange={setTimerTasks}
-                          onOperationRecord={recordOperation}
-                          onTaskClone={onTaskClone}
-                          groupFilter={groupTasks.map(t => t.id)}
-                        />
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'stats' && (
-                <div className="h-full flex flex-col">
-                  <div className="flex-shrink-0 px-3 py-3 border-b border-gray-700/20">
-                    <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-                      <span className="text-lg">📊</span>
-                      时间统计
-                    </h2>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-3 py-3">
-                    <LazyLoadWrapper placeholderHeight="400px">
-                      <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
-                    </LazyLoadWrapper>
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'ai' && (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-y-auto px-3 py-3">
-                    <LazyLoadWrapper placeholderHeight="150px">
-                      <CollapsibleAISummary 
-                        userId={userId}
-                        startDate={dateRange.startDate}
-                        endDate={dateRange.endDate}
+        {/* 移动端：根据选中的标签页显示内容 */}
+        {isMobile ? (
+          <>
+            {activeSection === 'timer' && (
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 mb-6 md:mb-8">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">⏱️</span>
+                  计时器
+                </h3>
+                <div className="max-h-[600px] overflow-y-auto" style={{
+                  // 移动端滚动优化
+                  touchAction: 'pan-y',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                  scrollBehavior: 'smooth'
+                }}>
+                  <CategoryZoneWrapper
+                    tasks={timerTasks}
+                    userId={userId}
+                    onQuickCreate={handleQuickCreate}
+                    renderTaskList={(groupTasks, onTaskClone) => (
+                      <NestedTimerZone
+                        tasks={timerTasks}
+                        onTasksChange={setTimerTasks}
+                        onOperationRecord={recordOperation}
+                        onTaskClone={onTaskClone}
+                        groupFilter={groupTasks.map(t => t.id)}
                       />
-                    </LazyLoadWrapper>
-                  </div>
+                    )}
+                  />
                 </div>
-              )}
-            </div>
-          ) : (
-            /* 桌面端：扁平化全屏布局 */
-            <div className="container-padding">
-              {/* 主要两栏区域 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-1 border-b border-gray-700/20">
-                {/* 笔记区 - 左侧 */}
-                <div className="order-2 lg:order-1 border-b lg:border-b-0 lg:border-r border-gray-700/20">
-                  <div className="px-4 py-3 border-b border-gray-700/20 bg-gray-900/20">
-                    <h3 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-                      <span className="text-lg">📝</span>
-                      笔记
-                    </h3>
-                  </div>
-                  <div className="p-3">
-                    <SimpleMdEditor />
-                  </div>
-                </div>
+              </section>
+            )}
 
-                {/* 计时器区 - 右侧 */}
-                <div className="order-1 lg:order-2">
-                  <div className="px-4 py-3 border-b border-gray-700/20 bg-gray-900/20">
-                    <h3 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-                      <span className="text-lg">⏱️</span>
-                      计时器
-                    </h3>
-                  </div>
-                  <div ref={scrollContainerRef} onScroll={saveScrollPosition} className="overflow-y-auto p-3" style={{maxHeight: 'calc(100vh - 300px)'}}>
-                    <CategoryZoneWrapper
-                      tasks={timerTasks}
-                      userId={userId}
-                      onQuickCreate={handleQuickCreate}
-                      onBeforeOperation={saveScrollPositionNow}
-                      renderTaskList={(groupTasks, onTaskClone, onBeforeOperation) => (
-                        <NestedTimerZone
-                          tasks={timerTasks}
-                          onTasksChange={setTimerTasks}
-                          onOperationRecord={recordOperation}
-                          onTaskClone={onTaskClone}
-                          groupFilter={groupTasks.map(t => t.id)}
-                          onBeforeOperation={onBeforeOperation}
-                        />
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* 时间统计区域 */}
-              <div className="border-b border-gray-700/20">
-                <div className="px-4 py-3 border-b border-gray-700/20 bg-gray-900/20">
-                  <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-                    <span className="text-lg">📊</span>
-                    时间统计
-                  </h2>
-                </div>
-                <div className="p-4">
+
+            {activeSection === 'stats' && (
+              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4">
+                <h2 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2 px-3 md:px-0">
+                  <span className="text-2xl">📊</span>
+                  时间统计
+                </h2>
+                <div className="px-3 md:px-0">
                   <LazyLoadWrapper placeholderHeight="400px">
                     <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
                   </LazyLoadWrapper>
                 </div>
-              </div>
+              </section>
+            )}
 
-              {/* AI总结区域 */}
-              <div>
-                <div className="p-4">
-                  <LazyLoadWrapper placeholderHeight="150px">
-                    <CollapsibleAISummary 
-                      userId={userId}
-                      startDate={dateRange.startDate}
-                      endDate={dateRange.endDate}
-                    />
-                  </LazyLoadWrapper>
+            {activeSection === 'ai' && (
+              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4 px-3 md:px-0">
+                <LazyLoadWrapper placeholderHeight="150px">
+                  <CollapsibleAISummary 
+                    userId={userId}
+                    startDate={dateRange.startDate}
+                    endDate={dateRange.endDate}
+                  />
+                </LazyLoadWrapper>
+              </section>
+            )}
+          </>
+        ) : (
+          /* 桌面端：保持原有布局 */
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-10 mb-6 lg:mb-8">
+              {/* 计时器 */}
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-1 lg:order-2">
+                <h3 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                  <span className="text-xl">⏱️</span>
+                  计时器
+                </h3>
+                <div ref={scrollContainerRef} onScroll={saveScrollPosition} className="max-h-[600px] overflow-y-auto">
+                  <CategoryZoneWrapper
+                    tasks={timerTasks}
+                    userId={userId}
+                    onQuickCreate={handleQuickCreate}
+                    onBeforeOperation={saveScrollPositionNow}
+                    renderTaskList={(groupTasks, onTaskClone, onBeforeOperation) => (
+                      <NestedTimerZone
+                        tasks={timerTasks}
+                        onTasksChange={setTimerTasks}
+                        onOperationRecord={recordOperation}
+                        onTaskClone={onTaskClone}
+                        groupFilter={groupTasks.map(t => t.id)}
+                        onBeforeOperation={onBeforeOperation}
+                      />
+                    )}
+                  />
                 </div>
-              </div>
+              </section>
+
+              {/* 任务管理 */}
+              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
+                <div className="mb-4 pb-4 border-b border-gray-700/30">
+                  <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="text-xl">📝</span>
+                    笔记
+                  </h3>
+                </div>
+                
+                <div>
+                  <SimpleMdEditor />
+                </div>
+              </section>
             </div>
-          )}
-        </div>
+
+            {/* 时间统计 */}
+            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-200 mb-6 flex items-center gap-2">
+                <span className="text-xl md:text-2xl">📊</span>
+                时间统计
+              </h2>
+              <LazyLoadWrapper placeholderHeight="400px">
+                <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+              </LazyLoadWrapper>
+            </section>
+
+            {/* AI总结 */}
+            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
+              <LazyLoadWrapper placeholderHeight="150px">
+                <CollapsibleAISummary 
+                  userId={userId}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                />
+              </LazyLoadWrapper>
+            </section>
+          </>
+        )}
       </div>
 
       {/* 藏宝阁创建模态框 */}
