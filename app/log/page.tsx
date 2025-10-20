@@ -660,9 +660,9 @@ export default function LogPage() {
           </div>
         </div>
 
-        <div className="w-full container-padding py-8">
+        <div className="w-full px-3 md:px-4 py-3">
           {/* 访客欢迎信息 */}
-          <div className="mb-8 p-6 bg-blue-900/20 rounded-xl border border-blue-700/50">
+          <div className="mb-3 p-4 bg-blue-900/20 rounded-xl border border-blue-700/50">
             <div className="flex items-center gap-4">
               <div className="text-4xl">🎯</div>
               <div>
@@ -684,18 +684,18 @@ export default function LogPage() {
           </div>
 
           {/* 时间段选择器 */}
-          <div className="mb-8">
+          <div className="mb-3">
             <DateRangePicker 
               value={dateRange}
               onChange={setDateRange}
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
             {/* 计时器 - 在手机端显示在前面 */}
-            <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-1 lg:order-2">
-              <h3 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <span className="text-xl">⏱️</span>
+            <section className="border-0 p-2 order-1 lg:order-2">
+              <h3 className="text-base font-semibold text-gray-200 mb-1.5 flex items-center gap-1.5">
+                <span className="text-lg">⏱️</span>
                 计时器 (演示数据)
               </h3>
               <NestedTimerZone
@@ -706,14 +706,14 @@ export default function LogPage() {
             </section>
 
             {/* 任务清单 - 在手机端显示在后面 */}
-            <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
-              <h3 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <span className="text-xl">📋</span>
+            <section className="border-0 p-2 order-2 lg:order-1">
+              <h3 className="text-base font-semibold text-gray-200 mb-1.5 flex items-center gap-1.5">
+                <span className="text-lg">📋</span>
                 任务清单 (演示数据)
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {mockTimerTasks.map((task) => (
-                  <div key={task.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
+                  <div key={task.id} className="flex justify-between items-center p-2 bg-gray-800/50 rounded-lg border border-gray-700/30">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-200">{task.name}</h4>
                       <p className="text-sm text-gray-400">{task.categoryPath}</p>
@@ -730,10 +730,10 @@ export default function LogPage() {
           </div>
 
           {/* 时间统计 */}
-          <div className="mb-8">
-            <section className="border-t border-gray-700/50 pt-6">
-              <h2 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <span className="text-xl">📊</span>
+          <div className="mb-2">
+            <section className="border-t border-gray-700/50 pt-3">
+              <h2 className="text-base font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                <span className="text-lg">📊</span>
                 时间统计 (演示数据)
               </h2>
               <TimeStatsChart tasks={mockTimerTasks} userId={userId} />
@@ -741,14 +741,14 @@ export default function LogPage() {
           </div>
 
           {/* AI总结 */}
-          <div className="mb-8">
-            <section className="border-t border-gray-700/50 pt-6">
-              <h2 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <span className="text-xl">🤖</span>
+          <div className="mb-2">
+            <section className="border-t border-gray-700/50 pt-3">
+              <h2 className="text-base font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                <span className="text-lg">🤖</span>
                 AI总结 (演示数据)
               </h2>
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                <h3 className="font-semibold text-gray-200 mb-2">今日学习总结</h3>
+              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                <h3 className="text-sm font-semibold text-gray-200 mb-1.5">今日学习总结</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
                   今天主要专注于前端开发学习，包括 React Hooks 的深入理解和实践。
                   总共投入了 2.25 小时的学习时间，其中 React Hooks 学习占用了 1 小时，
@@ -910,8 +910,8 @@ export default function LogPage() {
         onAddToTimer={handleAddToTimer}
       />
 
-      <div className="w-full container-padding container-padding-y pt-16 md:pt-20 overflow-x-hidden">
-        <div className="flex items-center justify-end gap-2 md:gap-3 mb-6 md:mb-8 flex-wrap">
+      <div className="w-full px-3 md:px-4 py-3 md:py-4 pt-12 md:pt-14 overflow-x-hidden">
+        <div className="flex items-center justify-end gap-1.5 md:gap-2 mb-3 md:mb-4 flex-wrap">
           <button
             onClick={handleOpenDailyProgress}
             className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg transition-colors flex items-center gap-1.5 md:gap-2 text-sm md:text-base"
@@ -931,7 +931,7 @@ export default function LogPage() {
         </div>
         
         {/* 时间段选择器 */}
-        <div className="mb-8">
+        <div className="mb-3">
           <DateRangePicker 
             value={dateRange}
             onChange={setDateRange}
@@ -940,11 +940,11 @@ export default function LogPage() {
 
         {/* 移动端标签页导航 */}
         {isMobile && (
-          <div className="mb-4 md:mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 md:p-1.5 border border-gray-700/50 overflow-hidden">
-            <div className="grid grid-cols-3 gap-1 md:gap-1.5">
+          <div className="mb-2 bg-gray-800/50 backdrop-blur-sm rounded-lg p-0.5 border border-gray-700/50 overflow-hidden">
+            <div className="grid grid-cols-3 gap-1">
               <button
                 onClick={() => setActiveSection('timer')}
-                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'timer'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
@@ -958,7 +958,7 @@ export default function LogPage() {
 
               <button
                 onClick={() => setActiveSection('stats')}
-                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'stats'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
@@ -971,7 +971,7 @@ export default function LogPage() {
               </button>
               <button
                 onClick={() => setActiveSection('ai')}
-                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'ai'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
@@ -990,9 +990,9 @@ export default function LogPage() {
         {isMobile ? (
           <>
             {activeSection === 'timer' && (
-              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 mb-6 md:mb-8">
-                <h3 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                  <span className="text-2xl">⏱️</span>
+              <section className="border-0 p-2 mb-2">
+                <h3 className="text-base font-semibold text-gray-200 mb-1.5 flex items-center gap-1.5">
+                  <span className="text-xl">⏱️</span>
                   计时器
                 </h3>
                 <div className="max-h-[600px] overflow-y-auto" style={{
@@ -1023,13 +1023,13 @@ export default function LogPage() {
 
 
             {activeSection === 'stats' && (
-              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2 px-3 md:px-0">
-                  <span className="text-2xl">📊</span>
+              <section className="mb-2 border-t border-gray-700/50 pt-2">
+                <h2 className="text-base font-semibold text-gray-200 mb-2 flex items-center gap-1.5 px-2 md:px-0">
+                  <span className="text-xl">📊</span>
                   时间统计
                 </h2>
-                <div className="px-3 md:px-0">
-                  <LazyLoadWrapper placeholderHeight="400px">
+                <div className="px-2 md:px-0">
+                  <LazyLoadWrapper placeholderHeight="350px">
                     <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
                   </LazyLoadWrapper>
                 </div>
@@ -1037,8 +1037,8 @@ export default function LogPage() {
             )}
 
             {activeSection === 'ai' && (
-              <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4 px-3 md:px-0">
-                <LazyLoadWrapper placeholderHeight="150px">
+              <section className="mb-2 border-t border-gray-700/50 pt-2 px-2 md:px-0">
+                <LazyLoadWrapper placeholderHeight="120px">
                   <CollapsibleAISummary 
                     userId={userId}
                     startDate={dateRange.startDate}
@@ -1051,14 +1051,14 @@ export default function LogPage() {
         ) : (
           /* 桌面端：保持原有布局 */
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-10 mb-6 lg:mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
               {/* 计时器 */}
-              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-1 lg:order-2">
-                <h3 className="text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                  <span className="text-xl">⏱️</span>
+              <section className="border-0 p-2 order-1 lg:order-2">
+                <h3 className="text-base font-semibold text-gray-200 mb-1.5 flex items-center gap-1.5">
+                  <span className="text-lg">⏱️</span>
                   计时器
                 </h3>
-                <div ref={scrollContainerRef} onScroll={saveScrollPosition} className="max-h-[600px] overflow-y-auto">
+                <div ref={scrollContainerRef} onScroll={saveScrollPosition} className="max-h-[650px] overflow-y-auto">
                   <CategoryZoneWrapper
                     tasks={timerTasks}
                     userId={userId}
@@ -1079,34 +1079,34 @@ export default function LogPage() {
               </section>
 
               {/* 任务管理 */}
-              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
-                <div className="mb-4 pb-4 border-b border-gray-700/30">
-                  <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
-                    <span className="text-xl">📝</span>
+              <section className="border-0 p-2 order-2 lg:order-1">
+                <div className="mb-1.5">
+                  <h3 className="text-base font-semibold text-gray-200 mb-1.5 flex items-center gap-1.5">
+                    <span className="text-lg">📝</span>
                     笔记
                   </h3>
                 </div>
                 
-                <div className="border border-gray-600/50 rounded-lg overflow-hidden">
+                <div className="border-t border-gray-700/30 pt-2 mt-1">
                   <SimpleMdEditor />
                 </div>
               </section>
             </div>
 
             {/* 时间统计 */}
-            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-200 mb-6 flex items-center gap-2">
-                <span className="text-xl md:text-2xl">📊</span>
+            <section className="mb-2 border-t border-gray-700/50 pt-3">
+              <h2 className="text-base md:text-lg font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                <span className="text-lg">📊</span>
                 时间统计
               </h2>
-              <LazyLoadWrapper placeholderHeight="400px">
+              <LazyLoadWrapper placeholderHeight="350px">
                 <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
               </LazyLoadWrapper>
             </section>
 
             {/* AI总结 */}
-            <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
-              <LazyLoadWrapper placeholderHeight="150px">
+            <section className="mb-2 border-t border-gray-700/50 pt-3">
+              <LazyLoadWrapper placeholderHeight="120px">
                 <CollapsibleAISummary 
                   userId={userId}
                   startDate={dateRange.startDate}
