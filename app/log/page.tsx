@@ -11,7 +11,8 @@ import { QuickCreateData } from '@/app/components/features/timer/QuickCreateDial
 import TimeStatsChart from '@/app/components/shared/TimeStatsChart'
 import DateRangePicker, { DateRangeValue } from '@/app/components/shared/DateRangePicker'
 import CollapsibleAISummary from '@/app/components/shared/CollapsibleAISummary'
-import NestedTodoList from '@/app/components/features/todo/NestedTodoList'
+import LazyLoadWrapper from '@/app/components/shared/LazyLoadWrapper'
+
 import SimpleMdEditor from '@/app/components/features/notes/SimpleMdEditor'
 import { Button } from '@/app/components/ui/button'
 import { CategoryCache } from '@/lib/category-cache'
@@ -32,11 +33,10 @@ export default function LogPage() {
   });
   
   // 移动端区域切换
-  const [activeSection, setActiveSection] = useState<'timer' | 'todo' | 'stats' | 'ai'>('timer');
+  const [activeSection, setActiveSection] = useState<'timer' | 'stats' | 'ai'>('timer');
   const [isMobile, setIsMobile] = useState(false);
   
   // 待办清单/笔记视图切换
-  const [todoView, setTodoView] = useState<'todo' | 'notes'>('notes');
   const [timerTasks, setTimerTasks] = useState<{
     id: string;
     name: string;
@@ -65,6 +65,7 @@ export default function LogPage() {
 
   // 操作记录折叠状态
   const [isOperationHistoryExpanded, setIsOperationHistoryExpanded] = useState(false);
+  const [hasFetchedHistory, setHasFetchedHistory] = useState(false);
   
   // 操作记录引用
   const operationHistoryRef = useRef<HTMLDivElement>(null);
@@ -254,7 +255,6 @@ export default function LogPage() {
     const timer = setTimeout(() => {
       setIsPageReady(true);
       fetchTimerTasks(); // 加载任务数据
-      fetchOperationRecords(); // 加载操作记录
     }, 100); // 短暂延迟确保样式加载完成
 
     return () => clearTimeout(timer);
@@ -833,7 +833,13 @@ export default function LogPage() {
             {/* 操作记录按钮 - 桌面端显示 */}
             <div className="relative hidden md:block" ref={operationHistoryRef}>
               <button
-                onClick={() => setIsOperationHistoryExpanded(!isOperationHistoryExpanded)}
+                onClick={() => {
+                  if (!isOperationHistoryExpanded && !hasFetchedHistory) {
+                    fetchOperationRecords();
+                    setHasFetchedHistory(true);
+                  }
+                  setIsOperationHistoryExpanded(!isOperationHistoryExpanded)
+                }}
                 className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-3 md:px-4 py-1.5 md:py-2 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 md:gap-2"
               >
                 <span className="text-base md:text-lg">📊</span>
@@ -935,7 +941,7 @@ export default function LogPage() {
         {/* 移动端标签页导航 */}
         {isMobile && (
           <div className="mb-4 md:mb-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-1 md:p-1.5 border border-gray-700/50 overflow-hidden">
-            <div className="grid grid-cols-4 gap-1 md:gap-1.5">
+            <div className="grid grid-cols-3 gap-1 md:gap-1.5">
               <button
                 onClick={() => setActiveSection('timer')}
                 className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
@@ -949,19 +955,7 @@ export default function LogPage() {
                   <span className="text-xs md:text-sm">计时器</span>
                 </div>
               </button>
-              <button
-                onClick={() => setActiveSection('todo')}
-                className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
-                  activeSection === 'todo'
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-1 md:gap-1.5">
-                  <span className="text-xl md:text-2xl">📋</span>
-                  <span className="text-xs md:text-sm">任务</span>
-                </div>
-              </button>
+
               <button
                 onClick={() => setActiveSection('stats')}
                 className={`px-2 py-2.5 md:px-4 md:py-3.5 rounded-md font-medium transition-all duration-200 ${
@@ -1026,44 +1020,7 @@ export default function LogPage() {
               </section>
             )}
 
-            {activeSection === 'todo' && (
-              <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 mb-6 md:mb-8">
-                <div className="mb-4">
-                  <h3 className="text-lg md:text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
-                    <span className="text-2xl">📋</span>
-                    任务管理
-                  </h3>
-                  
-                  {/* 视图切换按钮 */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant={todoView === 'todo' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTodoView('todo')}
-                      className="flex-1"
-                    >
-                      📋 待办清单
-                    </Button>
-                    <Button
-                      variant={todoView === 'notes' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTodoView('notes')}
-                      className="flex-1"
-                    >
-                      📝 笔记
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="border-t border-gray-700/30 pt-4">
-                  {todoView === 'todo' ? (
-                    <NestedTodoList />
-                  ) : (
-                    <SimpleMdEditor />
-                  )}
-                </div>
-              </section>
-            )}
+
 
             {activeSection === 'stats' && (
               <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4">
@@ -1072,18 +1029,22 @@ export default function LogPage() {
                   时间统计
                 </h2>
                 <div className="px-3 md:px-0">
-                  <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+                  <LazyLoadWrapper placeholderHeight="400px">
+                    <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+                  </LazyLoadWrapper>
                 </div>
               </section>
             )}
 
             {activeSection === 'ai' && (
               <section className="mb-6 md:mb-8 border-t border-gray-700/50 pt-4 px-3 md:px-0">
-                <CollapsibleAISummary 
-                  userId={userId}
-                  startDate={dateRange.startDate}
-                  endDate={dateRange.endDate}
-                />
+                <LazyLoadWrapper placeholderHeight="150px">
+                  <CollapsibleAISummary 
+                    userId={userId}
+                    startDate={dateRange.startDate}
+                    endDate={dateRange.endDate}
+                  />
+                </LazyLoadWrapper>
               </section>
             )}
           </>
@@ -1121,37 +1082,13 @@ export default function LogPage() {
               <section className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4 order-2 lg:order-1">
                 <div className="mb-4 pb-4 border-b border-gray-700/30">
                   <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center gap-2">
-                    <span className="text-xl">📋</span>
-                    任务管理
+                    <span className="text-xl">📝</span>
+                    笔记
                   </h3>
-                  
-                  {/* 视图切换按钮 */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant={todoView === 'todo' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTodoView('todo')}
-                      className="flex-1"
-                    >
-                      📋 待办清单
-                    </Button>
-                    <Button
-                      variant={todoView === 'notes' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTodoView('notes')}
-                      className="flex-1"
-                    >
-                      📝 笔记
-                    </Button>
-                  </div>
                 </div>
                 
                 <div>
-                  {todoView === 'todo' ? (
-                    <NestedTodoList />
-                  ) : (
-                    <SimpleMdEditor />
-                  )}
+                  <SimpleMdEditor />
                 </div>
               </section>
             </div>
@@ -1162,16 +1099,20 @@ export default function LogPage() {
                 <span className="text-xl md:text-2xl">📊</span>
                 时间统计
               </h2>
-              <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+              <LazyLoadWrapper placeholderHeight="400px">
+                <TimeStatsChart tasks={rangeTimerTasks} userId={userId} dateRange={dateRange} />
+              </LazyLoadWrapper>
             </section>
 
             {/* AI总结 */}
             <section className="mb-6 lg:mb-8 border-t border-gray-700/50 pt-6">
-              <CollapsibleAISummary 
-                userId={userId}
-                startDate={dateRange.startDate}
-                endDate={dateRange.endDate}
-              />
+              <LazyLoadWrapper placeholderHeight="150px">
+                <CollapsibleAISummary 
+                  userId={userId}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                />
+              </LazyLoadWrapper>
             </section>
           </>
         )}

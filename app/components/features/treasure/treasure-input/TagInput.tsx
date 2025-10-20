@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { Hash, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
+import { Button } from '@/app/components/ui/button'
 
 interface TagInputProps {
   tags: string[]
@@ -146,7 +147,7 @@ export function TagInput({
           
           {/* 输入框 */}
           {tags.length < maxTags && (
-            <div className="flex-1 min-w-[120px] relative">
+            <div className="flex-1 min-w-[120px] relative flex items-center gap-2">
               <input
                 ref={inputRef}
                 type="text"
@@ -156,12 +157,22 @@ export function TagInput({
                 onFocus={() => inputValue && setShowSuggestions(true)}
                 placeholder={tags.length === 0 ? "输入标签，支持 / 分隔层级..." : "继续添加..."}
                 className={cn(
-                  "w-full bg-transparent border-0 outline-none",
+                  "flex-1 w-full bg-transparent border-0 outline-none",
                   "text-white placeholder:text-gray-500 text-sm",
                   "focus:outline-none",
-                  "py-1" // 添加垂直内边距，让光标更明显
+                  "py-1"
                 )}
               />
+              {inputValue.trim() && (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="px-3 py-1 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs"
+                  onClick={() => addTag(inputValue)}
+                >
+                  添加
+                </Button>
+              )}
               
               {/* 建议列表 */}
               {showSuggestions && filteredSuggestions.length > 0 && (
