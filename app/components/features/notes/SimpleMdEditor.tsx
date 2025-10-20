@@ -545,6 +545,146 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
 
   const renderEditorContent = (isModal = false) => (
     <div className={isModal ? 'h-full flex flex-col' : className}>
+      <style jsx global>{`
+        /* TipTap编辑器Markdown样式 */
+        .ProseMirror {
+          outline: none;
+          padding: 1rem;
+          color: #e5e7eb;
+        }
+
+        /* 有序列表样式 */
+        .ProseMirror ol {
+          list-style-type: decimal;
+          padding-left: 1.5rem;
+          margin: 0.75rem 0;
+        }
+
+        /* 无序列表样式 */
+        .ProseMirror ul {
+          list-style-type: disc;
+          padding-left: 1.5rem;
+          margin: 0.75rem 0;
+        }
+
+        /* 列表项样式 */
+        .ProseMirror li {
+          margin: 0.25rem 0;
+          padding-left: 0.25rem;
+          color: #d1d5db;
+        }
+
+        /* 嵌套列表 */
+        .ProseMirror li > ol,
+        .ProseMirror li > ul {
+          margin: 0.25rem 0;
+        }
+
+        /* 二级无序列表使用空心圆 */
+        .ProseMirror ul ul {
+          list-style-type: circle;
+        }
+
+        /* 三级无序列表使用方块 */
+        .ProseMirror ul ul ul {
+          list-style-type: square;
+        }
+
+        /* 粗体样式 */
+        .ProseMirror strong {
+          font-weight: 700;
+          color: #f3f4f6;
+        }
+
+        /* 斜体样式 */
+        .ProseMirror em {
+          font-style: italic;
+          color: #e5e7eb;
+        }
+
+        /* 标题样式 */
+        .ProseMirror h1 {
+          font-size: 2rem;
+          font-weight: 700;
+          margin: 1.5rem 0 1rem;
+          color: #f9fafb;
+          line-height: 1.2;
+        }
+
+        .ProseMirror h2 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 1.25rem 0 0.75rem;
+          color: #f3f4f6;
+          line-height: 1.3;
+        }
+
+        .ProseMirror h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin: 1rem 0 0.5rem;
+          color: #e5e7eb;
+          line-height: 1.4;
+        }
+
+        /* 段落样式 */
+        .ProseMirror p {
+          margin: 0.75rem 0;
+          line-height: 1.6;
+          color: #d1d5db;
+        }
+
+        /* 代码块样式 */
+        .ProseMirror code {
+          background-color: #374151;
+          padding: 0.125rem 0.375rem;
+          border-radius: 0.25rem;
+          font-family: 'Courier New', monospace;
+          font-size: 0.875rem;
+          color: #fbbf24;
+        }
+
+        .ProseMirror pre {
+          background-color: #1f2937;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          overflow-x: auto;
+          margin: 1rem 0;
+        }
+
+        .ProseMirror pre code {
+          background-color: transparent;
+          padding: 0;
+          color: #e5e7eb;
+        }
+
+        /* 引用样式 */
+        .ProseMirror blockquote {
+          border-left: 4px solid #3b82f6;
+          padding-left: 1rem;
+          margin: 1rem 0;
+          color: #9ca3af;
+          font-style: italic;
+        }
+
+        /* 水平分割线 */
+        .ProseMirror hr {
+          border: none;
+          border-top: 2px solid #374151;
+          margin: 1.5rem 0;
+        }
+
+        /* 链接样式 */
+        .ProseMirror a {
+          color: #60a5fa;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+
+        .ProseMirror a:hover {
+          color: #93c5fd;
+        }
+      `}</style>
       <NotesFileBar 
         notes={notesList}
         activeNoteId={currentNoteId}
@@ -577,8 +717,8 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             </Button>
           </div>
       </div>
-      <div className={isModal ? 'flex flex-1 min-h-0' : 'flex'}>
-        <div className="flex-1 min-w-0 relative">
+      <div className={isModal ? 'flex flex-1 min-h-0 relative' : 'flex relative'}>
+        <div className="flex-1 min-w-0">
           <div 
             className="overflow-y-auto"
             style={{ height: isModal ? '100%' : '400px' }}
@@ -587,15 +727,15 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           </div>
         </div>
 
-        {/* Right-side outline sidebar */}
+        {/* Right-side outline sidebar - 位于编辑器内部 */}
         <div 
-          className={`hidden md:block ${isModal ? 'absolute' : 'fixed'} right-0 top-1/2 -translate-y-1/2 z-40`}
+          className="hidden md:block absolute right-0 top-0 h-full z-10"
           onMouseEnter={handleOutlineMouseEnter}
           onMouseLeave={handleOutlineMouseLeave}
         >
           {showOutline ? (
-            <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl max-h-[70vh] overflow-hidden flex flex-col transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+            <div className="w-72 h-full bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl overflow-hidden flex flex-col transition-all">
+              <div className="flex items-center justify-between p-4 border-b border-gray-700/50 flex-shrink-0">
                 <div className="text-sm font-medium text-gray-300">文档大纲</div>
                 <div className="text-xs text-gray-500">鼠标移出自动收起</div>
               </div>
