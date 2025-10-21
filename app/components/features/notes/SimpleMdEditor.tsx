@@ -695,7 +695,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         /* 水平分割线 */
         .ProseMirror hr {
           border: none;
-          border-top: 2px solid #374151;
+          border-top: 2px solid #6b7280;
           margin: 1.5rem 0;
         }
 

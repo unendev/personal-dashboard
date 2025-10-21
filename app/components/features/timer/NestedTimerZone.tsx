@@ -672,14 +672,16 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     const newOrder = maxOrder + 1;
     
     // 创建临时任务对象用于乐观更新
+    // 创建临时任务，默认自动开始计时
+    const currentTime = Math.floor(Date.now() / 1000);
     const tempTask: TimerTask = {
       id: `temp-${Date.now()}`, // 临时ID
       name: newChildName.trim(),
       categoryPath: newChildCategory.trim() || '未分类',
       elapsedTime: initialTimeInSeconds,
       initialTime: initialTimeInSeconds,
-      isRunning: false,
-      startTime: null,
+      isRunning: true, // 自动开始计时
+      startTime: currentTime, // 设置开始时间
       isPaused: false,
       pausedTime: 0,
       parentId: parentId,
@@ -717,6 +719,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     // 记录操作
     if (onOperationRecord) {
       onOperationRecord('创建子任务', newChildName.trim());
+      onOperationRecord('开始计时', newChildName.trim(), '自动开始');
     }
 
     // 异步处理数据库操作（带重试机制）
@@ -727,6 +730,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       parentId,
       date: new Date().toISOString().split('T')[0],
       initialTime: initialTimeInSeconds,
+      isRunning: true,
+      startTime: currentTime,
       order: newOrder
     });
     
@@ -745,6 +750,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             date: new Date().toISOString().split('T')[0],
             initialTime: initialTimeInSeconds,
             elapsedTime: initialTimeInSeconds,
+            isRunning: true, // 自动开始计时
+            startTime: currentTime, // 设置开始时间
+            isPaused: false,
+            pausedTime: 0,
             order: newOrder
           }),
         },
@@ -785,10 +794,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       const finalTasks = replaceTempTaskRecursive(updatedTasks);
       onTasksChange(finalTasks);
       
-      // 自动开始计时
-      setTimeout(() => {
-        startTimer(newTask.id);
-      }, 100);
+      // 注意：子任务已经在创建时设置为自动开始计时状态
+      console.log('✅ 子任务已自动开始计时:', newTask.name);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '未知错误';
       console.error('❌ 子任务创建失败（已重试3次）:', errorMsg);

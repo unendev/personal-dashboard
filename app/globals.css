@@ -71,13 +71,13 @@
 }
 
 :root {
-  /* 深蓝紫色主题 - 明亮暗色配色 */
+  /* 深蓝紫色主题 - 明亮暗色配色（提升对比度） */
   --bg-primary: #1e293b;
   --bg-secondary: #334155;
   --bg-tertiary: #475569;
   --bg-card: #2d3748;
-  --border-primary: #475569;
-  --border-secondary: #64748b;
+  --border-primary: #64748b;
+  --border-secondary: #94a3b8;
   --text-primary: #e2e8f0;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
