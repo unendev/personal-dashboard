@@ -636,8 +636,8 @@ async def main():
             return False
         
         # 初始化 Gemini客户端
-        gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        logger.info("✓ Gemini客户端初始化成功（使用 gemini-2.0-flash-exp）")
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+        logger.info("✓ Gemini客户端初始化成功（使用 gemini-2.5-flash）")
         
         # 创建数据库表
         if not await create_posts_table():
