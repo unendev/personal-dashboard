@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import time
 import asyncpg
 import ssl
+import google.generativeai as genai
 
 # --- 配置日志 ---
 os.makedirs('logs', exist_ok=True)
@@ -37,8 +38,12 @@ SUBREDDITS = [
 ]
 
 POST_COUNT_PER_SUB = 5  # 每个subreddit取5个帖子
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 NEON_DB_URL = os.getenv("DATABASE_URL")
+
+# 配置 Gemini
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # asyncpg不支持URL中的查询参数，需要清理
 if NEON_DB_URL:
@@ -178,8 +183,8 @@ async def fetch_post_comments(post_id):
     except:
         return []
 
-def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
-    """使用DeepSeek分析Reddit帖子并输出完整中文（包含评论精华）"""
+async def analyze_single_post_with_gemini(post, model, retry_count=0, comments=None):
+    """使用Gemini分析Reddit帖子并输出完整中文（包含评论精华）"""
     excerpt = post.get('content', '')[:1000]
     if not excerpt.strip():
         excerpt = "（无详细内容）"
@@ -196,98 +201,46 @@ def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
         comment_section = f"\n- 评论数量: {num_comments}条（暂无评论内容）" if num_comments > 0 else ""
 
     prompt = f"""
-你是一名专业的Reddit技术内容分析专家。请深度分析以下帖子（包含社区讨论），生成一份**专业技术分析报告**。
-
-**分析角色定位**：
-- 技术深度：深入剖析技术原理、架构设计、工程实践
-- 专业视角：关注最佳实践、性能优化、创新方向
-- 实战价值：提供可落地的建议和解决方案
-- 社区洞察：整合评论区的技术讨论和不同观点
-
-**重要要求**：
-1. 标题翻译成专业、准确的中文
-2. 所有分析内容必须是中文
-3. 技术类帖子：深入分析原理、架构、代码要点、性能优化
-4. 游戏开发类：关注引擎、工具、算法、渲染技术
-5. 评论整合：提炼社区讨论的技术要点、争议和共识
-6. 返回格式必须是纯JSON，不要包含```json```标记
+你是专业的Reddit技术内容分析专家。请分析以下帖子（含社区讨论），生成专业技术分析报告。
 
 **原始帖子信息**：
-- 标题（英文）: {post['title']}
-- 来源板块: r/{post['subreddit']}
-- 内容摘要: {excerpt}{comment_section}
+- 标题: {post['title']}
+- 板块: r/{post['subreddit']}
+- 内容: {excerpt}{comment_section}
 
-**请严格按以下JSON格式输出**：
+**请严格按JSON格式输出（不要包含```json```标记）**：
 {{
-  "title_cn": "将英文标题翻译成中文（保持原意，简洁明了）",
-  "core_issue": "用一句话概括这个帖子的核心议题（中文）",
-  "key_info": [
-    "关键信息点1（中文）",
-    "关键信息点2（中文）",
-    "关键信息点3（中文）"
-  ],
-  "post_type": "从[技术讨论, 新闻分享, 问题求助, 观点讨论, 资源分享, 教程指南, 项目展示, 其他]中选择一个",
-  "value_assessment": "从[高, 中, 低]中选择一个",
-  "detailed_analysis": "生成600-1200字的**专业深度技术分析**，包含以下结构（用markdown格式）：\\n\\n## 📋 技术背景\\n阐述技术背景、问题起源、行业现状。说明为什么这个话题重要、解决了什么痛点。\\n\\n## 🎯 核心技术方案\\n深入剖析技术原理、架构设计、实现思路。包括：\\n- 技术选型和理由\\n- 系统架构或算法设计\\n- 关键代码逻辑或API使用\\n- 数据流和状态管理\\n\\n## 💡 工程实践细节\\n**技术要点**：\\n- 性能优化策略（时间/空间复杂度、缓存、并发）\\n- 最佳实践和设计模式\\n- 常见陷阱和解决方案\\n- 兼容性和边界情况处理\\n\\n**工具链**：\\n- 推荐的框架、库、工具\\n- 开发环境配置\\n- 测试和调试方法\\n\\n## 💬 社区讨论与争议\\n基于评论区讨论，分析：\\n- 技术方案的不同观点和替代方案\\n- 社区共识和争议点\\n- 实际应用中遇到的问题\\n- 经验分享和建议\\n\\n## 🔧 实战应用指南\\n**适用场景**：什么情况下应该使用这个方案\\n**实施步骤**：具体的实现路径和注意事项\\n**资源推荐**：官方文档、教程、开源项目链接\\n**避坑指南**：常见错误、性能瓶颈、安全隐患\\n\\n## 🚀 技术趋势与展望\\n- 该技术在行业中的发展趋势\\n- 与其他技术的对比和演进方向\\n- 未来可能的应用场景\\n- 对开发者的建议和学习路径"
+  "title_cn": "中文标题翻译",
+  "core_issue": "核心议题（一句话）",
+  "key_info": ["关键信息1", "关键信息2", "关键信息3"],
+  "post_type": "从[技术讨论, 新闻分享, 问题求助, 观点讨论, 资源分享, 教程指南, 项目展示, 其他]选一个",
+  "value_assessment": "从[高, 中, 低]选一个",
+  "detailed_analysis": "生成600-1200字专业技术分析，markdown格式，包含：技术背景、核心方案、工程实践、社区讨论、应用指南、技术趋势"
 }}
 """
     
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 2000,
-        "temperature": 0.5
-    }
-    
-    proxies = {}
-    if not IS_GITHUB_ACTIONS and os.getenv("PROXY_URL"):
-        proxy_url = os.getenv("PROXY_URL")
-        proxies = {"http": proxy_url, "https": proxy_url}
-    
     try:
-        response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers=headers,
-            json=data,
-            proxies=proxies,
-            timeout=30
-        )
+        # 使用 asyncio.to_thread 异步调用Gemini
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        content = response.text.strip()
         
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content'].strip()
-            
-            # 清理JSON内容
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
-            
-            try:
-                analysis = json.loads(content)
-                logger.info(f"  ✓ 帖子分析成功: {analysis.get('title_cn', 'N/A')[:30]}...")
-                return analysis
-            except json.JSONDecodeError:
-                logger.error(f"  ✗ AI返回的内容不是有效JSON: {content[:100]}...")
-                return {
-                    "title_cn": post['title'][:50] + "...",
-                    "core_issue": "JSON解析失败",
-                    "key_info": ["解析失败"],
-                    "post_type": "其他",
-                    "value_assessment": "低"
-                }
-        else:
-            logger.error(f"  ✗ DeepSeek API调用失败: {response.status_code}")
+        # 清理JSON内容
+        if content.startswith('```json'):
+            content = content[7:]
+        if content.endswith('```'):
+            content = content[:-3]
+        content = content.strip()
+        
+        try:
+            analysis = json.loads(content)
+            logger.info(f"  ✓ 帖子分析成功: {analysis.get('title_cn', 'N/A')[:30]}...")
+            return analysis
+        except json.JSONDecodeError:
+            logger.error(f"  ✗ Gemini返回的内容不是有效JSON: {content[:100]}...")
             return {
                 "title_cn": post['title'][:50] + "...",
-                "core_issue": "API调用失败",
-                "key_info": ["API失败"],
+                "core_issue": "JSON解析失败",
+                "key_info": ["解析失败"],
                 "post_type": "其他",
                 "value_assessment": "低"
             }
@@ -296,8 +249,8 @@ def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
         logger.error(f"  ✗ AI分析失败: {e}")
         if retry_count < 2:
             logger.info(f"  ⟳ 重试AI分析 ({retry_count + 1}/2)...")
-            time.sleep(2)
-            return analyze_single_post_with_deepseek(post, retry_count + 1)
+            await asyncio.sleep(2)
+            return await analyze_single_post_with_gemini(post, model, retry_count + 1, comments)
         else:
             return {
                 "title_cn": post['title'][:50] + "...",
@@ -446,24 +399,36 @@ async def insert_posts_into_db(posts_data):
             await conn.close()
 
 # --- AI整体洞察报告 ---
-async def generate_ai_summary_report(posts_data):
-    """生成整体分析报告（异步版本，支持评论查询）"""
+async def generate_ai_summary_report(posts_data, model):
+    """生成整体分析报告（异步版本，支持评论查询，使用Gemini）"""
     processed_posts = []
     post_summaries = []
 
     logger.info("=== 开始AI分析（包含评论）===")
 
-    for i, post in enumerate(posts_data):
-        logger.info(f"[{i+1}/{len(posts_data)}] 分析: r/{post['subreddit']} - {post['title'][:40]}...")
-        
-        # 尝试获取评论
+    # 预先获取所有评论
+    all_comments = []
+    for post in posts_data:
+        logger.info(f"→ 获取评论: r/{post['subreddit']} - {post['title'][:40]}...")
         comments = await fetch_post_comments(post.get('id'))
         if comments:
-            logger.info(f"  → 获取到 {len(comments)} 条高质量评论")
-        
-        analysis = analyze_single_post_with_deepseek(post, comments=comments)
-        
-        if analysis:
+            logger.info(f"  ✓ 获取到 {len(comments)} 条高质量评论")
+        all_comments.append(comments)
+
+    # 并发分析所有帖子
+    logger.info(f"=== 开始并发分析 {len(posts_data)} 个帖子 ===")
+    tasks = [
+        analyze_single_post_with_gemini(post, model, comments=comments) 
+        for post, comments in zip(posts_data, all_comments)
+    ]
+    analyses = await asyncio.gather(*tasks)
+
+    logger.info("=== AI分析完成 ===")
+    
+    # 处理分析结果
+    for i, analysis in enumerate(analyses):
+        post = posts_data[i]
+        if analysis and analysis.get("core_issue") not in ["分析失败", "JSON解析失败"]:
             processed_posts.append({
                 "id": post.get('id'),
                 "title": post.get('title'),
@@ -484,83 +449,46 @@ async def generate_ai_summary_report(posts_data):
                 "post_type": analysis.get('post_type', 'N/A'),
                 "value_assessment": analysis.get('value_assessment')
             })
-            
-            time.sleep(3)  # API速率限制
         else:
-            logger.error(f"  ✗ 帖子分析失败")
-
-    logger.info("=== AI分析完成 ===")
+            logger.error(f"  ✗ 帖子分析失败: {post['title'][:30]}...")
     
     # 生成整体洞察
-    logger.info("=== 生成整体洞察报告 ===")
+    logger.info("=== 生成整体洞察报告（使用Gemini）===")
     
     try:
         all_summaries_text = json.dumps(post_summaries, ensure_ascii=False, indent=2)
 
         overall_prompt = f"""
-你是一名资深的Reddit内容分析师。以下是今天从多个技术/游戏开发相关subreddit采集的热门帖子摘要。
+你是资深的Reddit内容分析师。以下是今天从多个技术/游戏开发板块采集的热门帖子摘要。
 
-请生成一份简洁的中文"今日热点洞察"报告，严格按JSON格式返回（不要包含```json```标记）。
+请生成简洁的中文"今日热点洞察"报告，严格按JSON格式返回（不要包含```json```标记）。
 
 **今日帖子摘要**：
 {all_summaries_text}
 
 **输出格式**：
 {{
-  "overview": "用1-2句话总结今天这些板块的整体讨论氛围和焦点（中文）",
+  "overview": "1-2句话总结今天讨论氛围和焦点",
   "highlights": {{
-    "tech_news": ["提炼1-3条最重要的技术新闻或行业动态"],
-    "dev_insights": ["提炼1-3条游戏开发相关的有价值见解或资源"],
-    "hot_topics": ["提炼1-3个引发广泛讨论的热门话题"]
+    "tech_news": ["1-3条重要技术新闻或行业动态"],
+    "dev_insights": ["1-3条游戏开发相关见解或资源"],
+    "hot_topics": ["1-3个热门话题"]
   }},
-  "conclusion": "用一句话做个总结（可以幽默或专业）"
+  "conclusion": "一句话总结"
 }}
 """
-
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-            "Content-Type": "application/json"
-        }
         
-        data = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": overall_prompt}],
-            "max_tokens": 800,
-            "temperature": 0.7
-        }
+        response = await asyncio.to_thread(model.generate_content, overall_prompt)
+        content = response.text.strip()
         
-        proxies = {}
-        if not IS_GITHUB_ACTIONS and os.getenv("PROXY_URL"):
-            proxy_url = os.getenv("PROXY_URL")
-            proxies = {"http": proxy_url, "https": proxy_url}
+        if content.startswith('```json'):
+            content = content[7:]
+        if content.endswith('```'):
+            content = content[:-3]
+        content = content.strip()
         
-        response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers=headers,
-            json=data,
-            proxies=proxies,
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content'].strip()
-            
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
-            
-            summary_analysis = json.loads(content)
-            logger.info("✓ 整体洞察报告生成成功")
-        else:
-            logger.error(f"✗ 整体洞察生成失败: {response.status_code}")
-            summary_analysis = {
-                "overview": "今日未能生成AI洞察报告。",
-                "highlights": {"tech_news": [], "dev_insights": [], "hot_topics": []},
-                "conclusion": "系统维护中。"
-            }
+        summary_analysis = json.loads(content)
+        logger.info("✓ 整体洞察报告生成成功")
             
     except Exception as e:
         logger.error(f"✗ 生成整体洞察时出错: {e}")
@@ -698,13 +626,18 @@ async def main():
     logger.info("=" * 60)
     
     try:
-        if not DEEPSEEK_API_KEY:
-            logger.error("❌ 未找到 DEEPSEEK_API_KEY 环境变量")
+        # 验证环境变量
+        if not GEMINI_API_KEY:
+            logger.error("❌ 未找到 GEMINI_API_KEY 环境变量")
             return False
             
         if not NEON_DB_URL:
             logger.error("❌ 未找到 DATABASE_URL 环境变量")
             return False
+        
+        # 初始化 Gemini客户端
+        gemini_model = genai.GenerativeModel('gemini-pro')
+        logger.info("✓ Gemini客户端初始化成功")
         
         # 创建数据库表
         if not await create_posts_table():
@@ -720,8 +653,8 @@ async def main():
         
         logger.info(f"✓ 共获取 {len(posts_data)} 个帖子")
         
-        # 生成AI报告（包含评论分析）
-        report_data = await generate_ai_summary_report(posts_data)
+        # 生成AI报告（包含评论分析，使用Gemini）
+        report_data = await generate_ai_summary_report(posts_data, gemini_model)
         
         # 插入数据库
         if report_data.get('processed_posts'):
