@@ -28,6 +28,35 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(true); // 默认展开
 
+  // 解析可能包含JSON代码块的summary文本
+  const parseSummaryText = (text: string): { summary: string; insights: string[] } => {
+    // 检测```json...```格式
+    const jsonBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonBlockMatch) {
+      try {
+        const parsed = JSON.parse(jsonBlockMatch[1]);
+        return {
+          summary: parsed.summary || text,
+          insights: Array.isArray(parsed.insights) ? parsed.insights : []
+        };
+      } catch {
+        // JSON解析失败，返回原文本
+      }
+    }
+    
+    // 尝试直接解析为JSON
+    try {
+      const parsed = JSON.parse(text);
+      return {
+        summary: parsed.summary || text,
+        insights: Array.isArray(parsed.insights) ? parsed.insights : []
+      };
+    } catch {
+      // 不是JSON，返回原文本
+      return { summary: text, insights: [] };
+    }
+  };
+
   const fetchSummary = useCallback(async () => {
     if (!startDate || !endDate) return;
     
@@ -42,6 +71,16 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
         throw new Error('Failed to fetch AI summary');
       }
       const data = await response.json();
+      
+      // 如果summary是字符串，尝试解析
+      if (typeof data.summary === 'string') {
+        const parsed = parseSummaryText(data.summary);
+        data.summary = parsed.summary;
+        if (parsed.insights.length > 0 && (!data.insights || data.insights.length === 0)) {
+          data.insights = parsed.insights;
+        }
+      }
+      
       setSummary(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -70,6 +109,16 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
       }
       
       const data = await response.json();
+      
+      // 如果summary是字符串，尝试解析
+      if (typeof data.summary === 'string') {
+        const parsed = parseSummaryText(data.summary);
+        data.summary = parsed.summary;
+        if (parsed.insights.length > 0 && (!data.insights || data.insights.length === 0)) {
+          data.insights = parsed.insights;
+        }
+      }
+      
       setSummary(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

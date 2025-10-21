@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
@@ -319,9 +319,37 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   }, [tasks, triggerUpdate]);
 
+  // 查找所有运行中的任务（递归遍历）
+  const findAllRunningTasks = useCallback((taskList: TimerTask[]): TimerTask[] => {
+    const running: TimerTask[] = [];
+    const traverse = (tasks: TimerTask[]) => {
+      tasks.forEach(task => {
+        if (task.isRunning) {
+          running.push(task);
+        }
+        if (task.children && task.children.length > 0) {
+          traverse(task.children);
+        }
+      });
+    };
+    traverse(taskList);
+    return running;
+  }, []);
+
   const startTimer = async (taskId: string) => {
     // 操作前保存当前位置，避免UI更新导致回到顶部
     onBeforeOperation?.();
+    
+    // 互斥逻辑：暂停所有其他运行中的任务
+    const runningTasks = findAllRunningTasks(tasks);
+    const othersRunning = runningTasks.filter(t => t.id !== taskId);
+    
+    if (othersRunning.length > 0) {
+      for (const task of othersRunning) {
+        await pauseTimer(task.id);
+      }
+    }
+    
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;

@@ -66,9 +66,12 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   // 初始化时设置默认的任务详情数据 - 显示所有任务按耗时时长排序（分类模式）
   React.useEffect(() => {
     if (tasks.length > 0) {
+      // 过滤顶级任务，避免重复统计
+      const topLevelTasks = tasks.filter(task => !task.parentId);
+      
       // 获取所有任务并按耗时时长排序
       const allTasks: TaskDetail[] = [];
-      tasks.forEach(task => {
+      topLevelTasks.forEach(task => {
         allTasks.push({
           id: task.id,
           name: task.name,
@@ -84,32 +87,15 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     }
   }, [tasks, calculateTotalTime]);
 
-  // 获取指定分类下的具体事物项（按两级分类匹配）
-  const getTasksByCategory = (categoryPath: string): TaskDetail[] => {
-    const tasksInCategory: TaskDetail[] = [];
 
-    tasks.forEach(task => {
-      const rawCategory = task.categoryPath || '未分类';
-      const parts = rawCategory.split('/');
-      const twoLevel = parts.length >= 2 ? parts.slice(0, 2).join('/') : parts[0];
-      if (twoLevel === categoryPath) {
-        tasksInCategory.push({
-          id: task.id,
-          name: task.name,
-          elapsedTime: calculateTotalTime(task),
-          categoryPath: twoLevel
-        });
-      }
-    });
-
-    return tasksInCategory.sort((a, b) => b.elapsedTime - a.elapsedTime);
-  };
-
-  // 构建 分类 模式的 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持“其他”聚合）
+  // 构建 分类 模式的 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持"其他"聚合）
   const buildCategorySunburstData = React.useCallback(() => {
+    // 过滤顶级任务，避免子任务被重复统计（calculateTotalTime 已包含子任务时间）
+    const topLevelTasks = tasks.filter(task => !task.parentId);
+    
     // 预聚合成两级分类结构：First -> Second -> TaskDetail[]
     const firstLevelMap = new Map<string, Map<string, TaskDetail[]>>();
-    tasks.forEach(task => {
+    topLevelTasks.forEach(task => {
       const category = task.categoryPath || '未分类';
       const taskTotalTime = calculateTotalTime(task);
       const parts = category.split('/');
@@ -226,6 +212,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     // 根节点取子节点之和
     root.value = root.children.reduce((s, c) => s + c.value, 0);
     if (root.value <= 0) root.value = 1;
+    
     return root;
   }, [tasks, detailTopN, detailMinPercent, minLeafSeconds, showAllLeaf, calculateTotalTime]);
 
@@ -298,141 +285,54 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     return filtered.reduce((s, it) => s + it.totalTime, 0);
   }, [viewMode, tasks, calculateTotalTime, instanceStats, selectedInstanceTags]);
 
-  // 处理点击事件
-  const handleChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
-    const clickedData = params?.data;
-    if (viewMode === 'category') {
-      // 仅在我们定义的叶子（任务项）点击时触发
-      if (clickedData && clickedData.isLeaf === true) {
-        const categoryPath = clickedData.categoryPath
-          || (Array.isArray(params?.treePathInfo)
-            ? params.treePathInfo
-                .map((p: { name?: string }) => p?.name)
-                .filter((n: string | undefined) => !!n && n !== '总时间')
-                .slice(0, 2)
-                .join('/')
-            : null)
-          || findCategoryPathForTask(clickedData.fullName || params.name || '');
-
-        if (categoryPath) {
-          const tasks = getTasksByCategory(categoryPath);
-          setTaskDetails(tasks);
-          setSelectedCategory(categoryPath);
-          setShowTaskList(true);
-        }
-      }
-    }
-  };
-
-  // 查找任务对应的分类路径
-  const findCategoryPathForTask = (taskName: string): string | null => {
-    for (const task of tasks) {
-      if (task.name === taskName || task.name.includes(taskName.replace('...', ''))) {
-        return task.categoryPath;
-      }
-    }
-    return null;
-  };
 
   // ECharts 配置选项
-  const option = React.useMemo(() => ({
+  const option = React.useMemo(() => {
+    const config = {
     series: [
       {
         type: 'sunburst',
-        data: sunburstData.children,
-        radius: [0, '90%'],
+        data: [sunburstData],
+        radius: [0, '95%'],
         center: ['50%', '50%'],
         nodeClick: 'zoomToNode',
+        sort: 'desc',
         itemStyle: {
-          borderRadius: 7,
           borderWidth: 2,
-          borderColor: '#fff'
+          borderColor: '#ffffff'
         },
         label: {
           show: true,
-          formatter: function (params: { data: { children?: unknown[] }; name: string }) {
-            if (params.data.children && params.data.children.length > 0) {
-              return '';
-            }
-            const name = params.name;
-            return name.length > 6 ? name.substring(0, 6) + '...' : name;
-          },
-          fontSize: 12,
-          color: '#fff',
-          fontWeight: 'bold'
+          color: '#ffffff',
+          fontSize: 12
         },
         emphasis: {
-          focus: 'ancestor',
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        },
-        levels: viewMode === 'category' ? [
-          {
-            r0: '0%',
-            r: '35%',
-            itemStyle: {
-              borderWidth: 2
-            },
-            label: {
-              rotate: 'tangential'
-            }
-          },
-          {
-            r0: '35%',
-            r: '70%',
-            itemStyle: {
-              borderWidth: 2
-            },
-            label: {
-              align: 'right'
-            }
-          },
-          {
-            r0: '70%',
-            r: '90%',
-            itemStyle: {
-              borderWidth: 2
-            },
-            label: {
-              position: 'outside',
-              padding: 3,
-              silent: false
-            }
-          }
-        ] : [
-          {
-            r0: '0%',
-            r: '90%',
-            itemStyle: { borderWidth: 2 },
-            label: { rotate: 'tangential' }
-          }
-        ]
+          focus: 'ancestor'
+        }
       }
     ],
     tooltip: {
       trigger: 'item',
-      formatter: (params: { data?: { fullName?: string; name?: string; value?: number } }) => {
-        const data = params?.data || {};
-        const displayName = data.fullName || data.name || '';
-        const time = formatTime(data.value || 0);
-        return `${displayName}<br/>时间: ${time}`;
+      formatter: (params: { name?: string; value?: number }) => {
+        const name = params?.name || '';
+        const value = params?.value || 0;
+        return `${name}<br/>时间: ${formatTime(value)}`;
       }
-    },
-    animation: true,
-    animationType: 'scale',
-    animationEasing: 'elasticOut',
-    animationDelay: function () {
-      return Math.random() * 200;
     }
-  }), [sunburstData, formatTime, viewMode]);
-
-  // 添加点击事件处理
-  const onChartClick = (params: { data?: { isLeaf?: boolean; categoryPath?: string; fullName?: string }; treePathInfo?: Array<{ name?: string }>; name?: string }) => {
-    handleChartClick(params);
   };
+    return config;
+  }, [sunburstData, formatTime]);
+
+  // 注释掉自定义点击处理，完全使用 ECharts 原生 nodeClick: 'zoomToNode'
+  // const onChartClick = (params: any) => {
+  //   console.log('Chart clicked:', params);
+  //   
+  //   // 仅在叶子节点（任务项）触发自定义逻辑，其他节点由 ECharts 原生 nodeClick 处理
+  //   if (params?.data?.isLeaf === true) {
+  //     handleChartClick(params);
+  //   }
+  //   // 非叶子节点和中心圆点击由 nodeClick: 'zoomToNode' 自动处理
+  // };
 
   if (tasks.length === 0) {
     return (
@@ -481,15 +381,33 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         <div className="text-center text-sm text-red-500 mb-2">{instanceError}</div>
       )}
       <ReactECharts 
+        ref={(e) => {
+          if (e) {
+            const chartInstance = e.getEchartsInstance();
+            // 保存实例用于后续操作
+            (window as unknown as Record<string, unknown>).__echartInstance = chartInstance;
+          }
+        }}
         option={option} 
         style={{ height: '500px', width: '100%' }}
-        opts={{ renderer: 'svg' }}
+        opts={{ renderer: 'canvas' }}
         onEvents={{
-          click: onChartClick
+          click: (params: { data?: { name?: string } }) => {
+            const chartInstance = (window as unknown as Record<string, unknown>).__echartInstance as { dispatchAction: (action: { type: string; targetNodeId?: string }) => void } | undefined;
+            if (chartInstance && params?.data) {
+              // 手动触发缩放到点击的节点
+              // 注意：echarts-for-react 中 nodeClick: 'zoomToNode' 不工作
+              // 必须通过 dispatchAction 手动触发
+              chartInstance.dispatchAction({
+                type: 'sunburstRootToNode',
+                targetNodeId: params.data.name
+              });
+            }
+          }
         }}
       />
       <div className="mt-4 text-sm text-gray-300 text-center">
-        <p>点击扇形区域查看详细信息</p>
+        <p>点击扇形区域展开 · 点击中心圆返回上一级</p>
         <p className="text-xs text-gray-400 mt-1">总时间: {formatTime(totalSecondsAllTasks)}</p>
       </div>
 

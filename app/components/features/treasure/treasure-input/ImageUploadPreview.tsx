@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LazyImageRaw } from '@/app/components/shared/LazyImage'
 
 interface UploadingImage {
   id: string
@@ -56,7 +57,7 @@ function ImagePreviewItem({
       )}
 
       {/* 图片 */}
-      <img
+      <LazyImageRaw
         src={image.url}
         alt={image.alt || `图片 ${index + 1}`}
         className={cn(
@@ -73,7 +74,7 @@ function ImagePreviewItem({
           setIsLoading(false)
           setHasError(true)
         }}
-        crossOrigin="anonymous"
+        rootMargin="50px"
       />
       
       {/* 删除按钮 */}

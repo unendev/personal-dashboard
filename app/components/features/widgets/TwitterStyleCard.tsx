@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
-import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button } from '@/app/components/ui/button'
+import { LazyNextImage } from '@/app/components/shared/LazyNextImage'
 import { 
   Heart, 
   MessageCircle, 
@@ -24,6 +24,8 @@ import {
   Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getImageDisplayStrategy } from '@/lib/image-display-utils'
+import { useIsMobile } from '@/app/hooks/useMediaQuery'
 
 // 日期格式化工具函数（组件外部，避免重复创建）
 function formatDateString(dateString: string): string {
@@ -113,6 +115,9 @@ function TwitterStyleCardComponent({
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
   const [showInput, setShowInput] = useState(false) // 输入框默认隐藏
   const actionsRef = useRef<HTMLDivElement>(null)
+  
+  // 检测移动端
+  const isMobile = useIsMobile()
 
   // 点击外部关闭更多菜单
   useEffect(() => {
@@ -313,13 +318,6 @@ function TwitterStyleCardComponent({
     )
   }
 
-  // 判断图片是否应该使用 object-contain（竖图或小图）
-  const shouldUseContain = (image: { width?: number; height?: number }) => {
-    if (!image.width || !image.height) return false
-    // 竖图：高度大于宽度，或者宽高比 < 0.8
-    return image.height > image.width || (image.width / image.height) < 0.8
-  }
-
   const renderMedia = () => {
     // 只要有图片就显示，不限制类型
     if (treasure.images && treasure.images.length > 0) {
@@ -328,23 +326,28 @@ function TwitterStyleCardComponent({
       // 1张图：大图完整展示，有冲击力
       if (imageCount === 1) {
         const firstImage = treasure.images[0]
-        const useContain = shouldUseContain(firstImage)
+        const strategy = getImageDisplayStrategy(firstImage, isMobile)
         
         return (
           <div 
             className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer group"
             onClick={() => setSelectedImageIndex(0)}
+            style={{ maxHeight: strategy.maxHeight }}
           >
-            <Image
+            <LazyNextImage
               src={firstImage.url}
               alt={firstImage.alt || treasure.title}
               width={firstImage.width || 1200}
               height={firstImage.height || 800}
-              loading="lazy"
+              sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1200px"
+              quality={85}
               className={cn(
-                "w-full max-h-[500px] transition-transform duration-300",
-                useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                "w-full transition-transform duration-300",
+                strategy.shouldScale ? "scale-105" : "group-hover:scale-105"
               )}
+              containerClassName="w-full"
+              objectFit={strategy.objectFit}
+              rootMargin="100px"
             />
           </div>
         )
@@ -354,23 +357,27 @@ function TwitterStyleCardComponent({
         return (
           <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
             {treasure.images.map((image, index) => {
-              const useContain = shouldUseContain(image)
+              const strategy = getImageDisplayStrategy(image, isMobile)
               return (
                 <div 
                   key={image.id} 
                   className="relative h-64 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
                   onClick={() => setSelectedImageIndex(index)}
                 >
-                  <Image
+                  <LazyNextImage
                     src={image.url}
                     alt={image.alt || treasure.title}
                     width={image.width || 600}
                     height={image.height || 400}
-                    loading="lazy"
+                    sizes="(max-width: 640px) 320px, 600px"
+                    quality={85}
                     className={cn(
-                      "w-full h-full transition-transform duration-300",
-                      useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                      "transition-transform duration-300",
+                      strategy.shouldScale ? "scale-105" : "group-hover:scale-105"
                     )}
+                    containerClassName="w-full h-full"
+                    objectFit={strategy.objectFit}
+                    rootMargin="100px"
                   />
                 </div>
               )
@@ -380,7 +387,7 @@ function TwitterStyleCardComponent({
       } 
       // 3张图：1大2小布局，完整展示
       else if (imageCount === 3) {
-        const firstImageUseContain = shouldUseContain(treasure.images[0])
+        const firstImageStrategy = getImageDisplayStrategy(treasure.images[0], isMobile)
         
         return (
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -389,37 +396,45 @@ function TwitterStyleCardComponent({
               className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
               onClick={() => setSelectedImageIndex(0)}
             >
-              <Image
+              <LazyNextImage
                 src={treasure.images[0].url}
                 alt={treasure.images[0].alt || treasure.title}
                 width={treasure.images[0].width || 1000}
                 height={treasure.images[0].height || 600}
-                loading="lazy"
+                sizes="(max-width: 640px) 640px, 1000px"
+                quality={85}
                 className={cn(
-                  "w-full h-full transition-transform duration-300",
-                  firstImageUseContain ? "object-contain" : "object-cover group-hover:scale-105"
+                  "transition-transform duration-300",
+                  firstImageStrategy.shouldScale ? "scale-105" : "group-hover:scale-105"
                 )}
+                containerClassName="w-full h-full"
+                objectFit={firstImageStrategy.objectFit}
+                rootMargin="100px"
               />
             </div>
             {/* 后两张小图 */}
             {treasure.images.slice(1, 3).map((image, index) => {
-              const useContain = shouldUseContain(image)
+              const strategy = getImageDisplayStrategy(image, isMobile)
               return (
                 <div 
                   key={image.id}
                   className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
                   onClick={() => setSelectedImageIndex(index + 1)}
                 >
-                  <Image
+                  <LazyNextImage
                     src={image.url}
                     alt={image.alt || treasure.title}
                     width={image.width || 400}
                     height={image.height || 300}
-                    loading="lazy"
+                    sizes="(max-width: 640px) 160px, 400px"
+                    quality={85}
                     className={cn(
-                      "w-full h-full transition-transform duration-300",
-                      useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                      "transition-transform duration-300",
+                      strategy.shouldScale ? "scale-105" : "group-hover:scale-105"
                     )}
+                    containerClassName="w-full h-full"
+                    objectFit={strategy.objectFit}
+                    rootMargin="100px"
                   />
                 </div>
               )
@@ -429,7 +444,7 @@ function TwitterStyleCardComponent({
       } 
       // 4+张图：展示前3张，第4张显示"+N"
       else {
-        const firstImageUseContain = shouldUseContain(treasure.images[0])
+        const firstImageStrategy = getImageDisplayStrategy(treasure.images[0], isMobile)
         
         return (
           <div className="mt-3">
@@ -439,37 +454,45 @@ function TwitterStyleCardComponent({
                 className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
                 onClick={() => setSelectedImageIndex(0)}
               >
-                <Image
+                <LazyNextImage
                   src={treasure.images[0].url}
                   alt={treasure.images[0].alt || treasure.title}
                   width={treasure.images[0].width || 1000}
                   height={treasure.images[0].height || 600}
-                  loading="lazy"
+                  sizes="(max-width: 640px) 640px, 1000px"
+                  quality={85}
                   className={cn(
-                    "w-full h-full transition-transform duration-300",
-                    firstImageUseContain ? "object-contain" : "object-cover group-hover:scale-105"
+                    "transition-transform duration-300",
+                    firstImageStrategy.shouldScale ? "scale-105" : "group-hover:scale-105"
                   )}
+                  containerClassName="w-full h-full"
+                  objectFit={firstImageStrategy.objectFit}
+                  rootMargin="100px"
                 />
               </div>
               {/* 第2、3张小图 */}
               {treasure.images.slice(1, 3).map((image, index) => {
-                const useContain = shouldUseContain(image)
+                const strategy = getImageDisplayStrategy(image, isMobile)
                 return (
                   <div 
                     key={image.id}
                     className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
                     onClick={() => setSelectedImageIndex(index + 1)}
                   >
-                    <Image
+                    <LazyNextImage
                       src={image.url}
                       alt={image.alt || treasure.title}
                       width={image.width || 400}
                       height={image.height || 300}
-                      loading="lazy"
+                      sizes="(max-width: 640px) 160px, 400px"
+                      quality={85}
                       className={cn(
-                        "w-full h-full transition-transform duration-300",
-                        useContain ? "object-contain" : "object-cover group-hover:scale-105"
+                        "transition-transform duration-300",
+                        strategy.shouldScale ? "scale-105" : "group-hover:scale-105"
                       )}
+                      containerClassName="w-full h-full"
+                      objectFit={strategy.objectFit}
+                      rootMargin="100px"
                     />
                   </div>
                 )
@@ -1240,12 +1263,12 @@ function TwitterStyleCardComponent({
           className="relative max-w-[90vw] max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
-          <Image
+          <LazyNextImage
             src={treasure.images[selectedImageIndex].url}
             alt={treasure.images[selectedImageIndex].alt || treasure.title}
-            width={treasure.images[selectedImageIndex].width || 1200}
-            height={treasure.images[selectedImageIndex].height || 800}
             className="max-w-full max-h-[90vh] w-auto h-auto object-contain"
+            rootMargin="0px"
+            showLoader={false}
           />
         </div>
       </div>

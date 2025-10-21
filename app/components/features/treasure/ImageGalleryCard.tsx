@@ -17,6 +17,9 @@ import {
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getImageDisplayStrategy } from '@/lib/image-display-utils'
+import { useIsMobile } from '@/app/hooks/useMediaQuery'
+import { LazyNextImage } from '@/app/components/shared/LazyNextImage'
 
 interface ImageGalleryCardProps {
   treasure: {
@@ -47,6 +50,9 @@ export function ImageGalleryCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showLightbox, setShowLightbox] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  
+  // 检测移动端
+  const isMobile = useIsMobile()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('zh-CN', {
@@ -79,13 +85,26 @@ export function ImageGalleryCard({
     if (treasure.images.length === 0) return null
 
     if (treasure.images.length === 1) {
+      const strategy = getImageDisplayStrategy(treasure.images[0], isMobile)
       return (
-        <div className="relative flex justify-center bg-gray-50 rounded-lg p-2">
-          <img
+        <div 
+          className="relative flex justify-center bg-gray-50 rounded-lg p-2 cursor-pointer"
+          style={{ maxHeight: strategy.maxHeight }}
+          onClick={() => openLightbox(0)}
+        >
+          <LazyNextImage
             src={treasure.images[0].url}
             alt={treasure.images[0].alt || treasure.title}
-            className="max-h-96 w-auto object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => openLightbox(0)}
+            width={treasure.images[0].width || 800}
+            height={treasure.images[0].height || 600}
+            sizes="(max-width: 640px) 640px, 800px"
+            quality={85}
+            className={cn(
+              "w-auto rounded-lg hover:opacity-90 transition-opacity",
+              strategy.shouldScale && "scale-105"
+            )}
+            objectFit={strategy.objectFit}
+            rootMargin="100px"
           />
         </div>
       )
@@ -94,19 +113,32 @@ export function ImageGalleryCard({
     if (treasure.images.length === 2) {
       return (
         <div className="grid grid-cols-2 gap-2">
-          {treasure.images.map((image, index) => (
-            <div 
-              key={image.id} 
-              className="relative h-32 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
-              onClick={() => openLightbox(index)}
-            >
-              <img
-                src={image.url}
-                alt={image.alt || treasure.title}
-                className="w-full h-full object-contain rounded-lg hover:opacity-90 transition-opacity"
-              />
-            </div>
-          ))}
+          {treasure.images.map((image, index) => {
+            const strategy = getImageDisplayStrategy(image, isMobile)
+            return (
+              <div 
+                key={image.id} 
+                className="relative h-32 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
+                onClick={() => openLightbox(index)}
+              >
+                <LazyNextImage
+                  src={image.url}
+                  alt={image.alt || treasure.title}
+                  width={image.width || 400}
+                  height={image.height || 300}
+                  sizes="(max-width: 640px) 320px, 400px"
+                  quality={85}
+                  className={cn(
+                    "rounded-lg hover:opacity-90 transition-opacity",
+                    strategy.shouldScale && "scale-105"
+                  )}
+                  containerClassName="w-full h-full"
+                  objectFit={strategy.objectFit}
+                  rootMargin="100px"
+                />
+              </div>
+            )
+          })}
         </div>
       )
     }
@@ -114,19 +146,32 @@ export function ImageGalleryCard({
     if (treasure.images.length === 3) {
       return (
         <div className="grid grid-cols-3 gap-2">
-          {treasure.images.map((image, index) => (
-            <div 
-              key={image.id} 
-              className="relative h-24 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
-              onClick={() => openLightbox(index)}
-            >
-              <img
-                src={image.url}
-                alt={image.alt || treasure.title}
-                className="w-full h-full object-contain rounded-lg hover:opacity-90 transition-opacity"
-              />
-            </div>
-          ))}
+          {treasure.images.map((image, index) => {
+            const strategy = getImageDisplayStrategy(image, isMobile)
+            return (
+              <div 
+                key={image.id} 
+                className="relative h-24 flex items-center justify-center bg-gray-50 rounded-lg cursor-pointer"
+                onClick={() => openLightbox(index)}
+              >
+                <LazyNextImage
+                  src={image.url}
+                  alt={image.alt || treasure.title}
+                  width={image.width || 300}
+                  height={image.height || 200}
+                  sizes="(max-width: 640px) 200px, 300px"
+                  quality={85}
+                  className={cn(
+                    "rounded-lg hover:opacity-90 transition-opacity",
+                    strategy.shouldScale && "scale-105"
+                  )}
+                  containerClassName="w-full h-full"
+                  objectFit={strategy.objectFit}
+                  rootMargin="100px"
+                />
+              </div>
+            )
+          })}
         </div>
       )
     }
@@ -137,6 +182,7 @@ export function ImageGalleryCard({
         {treasure.images.slice(0, 4).map((image, index) => {
           // 如果是第4张且还有更多图片，显示 +N 叠加层
           const isLastWithMore = index === 3 && treasure.images.length > 4
+          const strategy = getImageDisplayStrategy(image, isMobile)
           
           return (
             <div 
@@ -147,10 +193,20 @@ export function ImageGalleryCard({
               )}
               onClick={() => openLightbox(index)}
             >
-              <img
+              <LazyNextImage
                 src={image.url}
                 alt={image.alt || treasure.title}
-                className="w-full h-full object-contain rounded-lg group-hover:opacity-90 transition-opacity"
+                width={image.width || 400}
+                height={image.height || 300}
+                sizes="(max-width: 640px) 160px, 400px"
+                quality={85}
+                className={cn(
+                  "rounded-lg group-hover:opacity-90 transition-opacity",
+                  strategy.shouldScale && "scale-105"
+                )}
+                containerClassName="w-full h-full"
+                objectFit={strategy.objectFit}
+                rootMargin="100px"
               />
               {isLastWithMore && (
                 <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
@@ -264,10 +320,18 @@ export function ImageGalleryCard({
       {showLightbox && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
           <div className="relative max-w-4xl max-h-full p-4">
-            <img
+            <LazyNextImage
               src={treasure.images[currentImageIndex].url}
               alt={treasure.images[currentImageIndex].alt || treasure.title}
-              className="max-w-full max-h-full object-contain"
+              width={treasure.images[currentImageIndex].width || 1200}
+              height={treasure.images[currentImageIndex].height || 800}
+              sizes="(max-width: 1024px) 90vw, 1200px"
+              quality={90}
+              className="max-w-full max-h-full"
+              objectFit="contain"
+              priority={true}
+              rootMargin="0px"
+              showLoader={false}
             />
             
             {/* 关闭按钮 */}
