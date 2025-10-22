@@ -247,28 +247,25 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] px-4 py-3',
         },
         handleKeyDown: (view, event) => {
-          // Ctrl+D 删除当前行（包括列表标记）
+          // Ctrl+D 删除当前行（支持列表、段落、标题）
           if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
             event.preventDefault()
             const { state, dispatch } = view
-            const { $from, $to } = state.selection
+            const { $from } = state.selection
             
-            // 查找最外层的块级节点（段落或列表项）
-            let depth = $from.depth
-            while (depth > 0) {
-              const node = $from.node(depth)
-              // 如果是列表项或段落，删除整个节点
-              if (node.type.name === 'listItem' || node.type.name === 'paragraph') {
-                const pos = $from.before(depth)
-                const nodeEnd = pos + node.nodeSize
-                const tr = state.tr.delete(pos, nodeEnd)
+            // 从当前位置向上查找块级节点
+            for (let d = $from.depth; d > 0; d--) {
+              const node = $from.node(d)
+              // 支持删除列表项、段落、标题
+              if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
+                const pos = $from.before(d)
+                const tr = state.tr.delete(pos, pos + node.nodeSize)
                 dispatch(tr)
                 return true
               }
-              depth--
             }
             
-            // 兜底：删除当前块的内容
+            // 兜底：删除当前块内容
             const start = $from.start()
             const end = $from.end()
             if (start !== undefined && end !== undefined) {
