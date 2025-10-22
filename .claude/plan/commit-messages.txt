@@ -1,0 +1,57 @@
+# 新的 Commit Messages
+# 按顺序对应每个 reword 操作
+
+# 1. a523d3d
+feat: 切换到 DeepSeek API 并实现 WebRead IndexedDB 缓存功能
+
+# 2. d352c99
+fix(reddit-scraper): 修复 Gemini 模型 404 错误
+
+# 3. 3c6a3ae
+refactor(reddit-scraper): 清理冗余代码，统一使用 Gemini API
+
+# 4. 1623691
+optimize: 优化 /log 页面布局，提升空间利用率 70%
+
+# 5. 981ba5f
+fix: 修复 SimpleMdEditor 快捷键和 Markdown 语法
+- 添加 Ctrl+D 删除行快捷键
+- 确保 Bold 扩展的粗体语法（**text**）正常工作
+
+# 6. 83b986d
+feat: 为笔记编辑器添加边框样式
+
+# 7. 1fd67c1
+revert: 回滚 /log 页面扁平化全屏设计
+
+# 8. d5fc7d9
+refactor: 重构 /log 页面为扁平化全屏设计，充分利用页面空间
+
+# 9. df4cda8
+feat: 为笔记编辑器添加 Markdown 样式支持（列表/粗体/斜体/代码等）
+
+# 10. d3bba12
+fix: 修复编译错误并清理代码
+- 修复 Button 导入缺失
+- 更新 Next.js 15 动态路由参数为异步
+- 删除依赖已移除 Todo 组件的 WorkProgressWidget
+- 成功编译构建
+
+# 11. 31dbb0a
+feat: 优化 /log 页面布局和交互体验
+主要改动：
+1. 时间段选择器：支持周/月/自定义时间段查看
+2. 移除所有 Card 布局：改用简洁的 section，提升空间利用率 30%
+3. 任务列表折叠：默认显示前 5 条，可展开查看全部
+4. AI 总结默认展开：提升信息触达率
+5. 代码优化：移除未使用的导入，减少 bundle 体积
+
+# 12. c2a6437
+fix: 修复构建错误和 linting 警告
+
+# 13. d4bc91b
+fix: 修复 TypeScript 编译错误，完成 Next.js 构建优化
+
+# 14. d212b67
+chore: 清理项目根目录，移除调试文件和临时脚本
+

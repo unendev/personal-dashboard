@@ -1,0 +1,27 @@
+# Git Rebase 指令文件
+# 将需要修改的 commit 标记为 reword
+
+reword a523d3d feat: 鍒囨崲鍒?DeepSeek API + WebRead IndexedDB 缂撳瓨鍔熻兘
+pick a265a64 fix: prioritize listItem deletion over paragraph
+pick 53ad4f6 debug: add console logs to DeleteLineExtension
+pick 4be92b8 fix(log): implement Ctrl+D with TipTap Extension API
+pick d5235a4 refactor(log): optimize Ctrl+D delete logic
+pick c6b74d1 fix(log): improve markdown editor keyboard shortcuts
+pick d352c99 fix: use gemini-2.5-flash model
+reword d352c99 fix(reddit-scraper): 淇Gemini妯″瀷404閿欒
+reword 3c6a3ae refactor(reddit-scraper): 娓呯悊鍐椾綑浠ｇ爜锛岀粺涓€浣跨敤Gemini API
+pick e20bc58 feat: implement sunburst chart interaction and timer mutex logic
+pick 8034a78 feat: integrate date range picker into stats section
+reword 1623691 浼樺寲: /log 椤甸潰鏋佽嚧鍘嬬缉甯冨眬锛屾彁鍗囩┖闂村埄鐢ㄧ巼 70%
+reword 981ba5f fix: 淇SimpleMdEditor蹇嵎閿拰Markdown璇硶 - 娣诲姞Ctrl+D鍒犻櫎琛屽揩鎹烽敭 - 纭繚Bold鎵╁睍鐨勭矖浣撹娉?**text**)姝ｅ父宸ヤ綔
+reword 83b986d feat: 涓虹瑪璁扮紪杈戝櫒娣诲姞杈规鏍峰紡
+reword 1fd67c1 Revert "refactor: 閲嶆瀯/log椤甸潰甯冨眬涓烘墎骞冲寲鍏ㄥ睆璁捐 鍏呭垎鍒╃敤椤甸潰绌洪棿"
+reword d5fc7d9 refactor: 閲嶆瀯/log椤甸潰甯冨眬涓烘墎骞冲寲鍏ㄥ睆璁捐 鍏呭垎鍒╃敤椤甸潰绌洪棿
+reword df4cda8 feat: 娣诲姞绗旇缂栬緫鍣∕arkdown鏍峰紡鏀寔(鍒楄〃/绮椾綋/鏂滀綋/浠ｇ爜绛?
+reword d3bba12 fix: 淇缂栬瘧閿欒骞舵竻鐞嗕唬鐮?- 淇Button瀵煎叆缂哄け - 鏇存柊Next.js 15鍔ㄦ€佽矾鐢卞弬鏁颁负寮傛 - 鍒犻櫎渚濊禆宸茬Щ闄odo缁勪欢鐨刉orkProgressWidget - 鎴愬姛缂栬瘧鏋勫缓
+reword 31dbb0a feat: 浼樺寲/log椤甸潰甯冨眬鍜屼氦浜掍綋楠? 涓昏鏀瑰姩锛?1. 鏃堕棿娈甸€夋嫨鍣細鏀寔鍛?鏈?鑷畾涔夋椂闂存鏌ョ湅 2. 绉婚櫎鎵€鏈塁ard甯冨眬锛氭敼鐢ㄧ畝娲佺殑section锛屾彁鍗囩┖闂村埄鐢ㄧ巼30% 3. 浠诲姟鍒楄〃鎶樺彔锛氶粯璁ゆ樉绀哄墠5鏉★紝鍙睍寮€鏌ョ湅鍏ㄩ儴 4. AI鎬荤粨榛樿灞曞紑锛氭彁鍗囦俊鎭Е杈剧巼 5. 浠ｇ爜浼樺寲锛氱Щ闄ゆ湭浣跨敤鐨勫鍏ワ紝鍑忓皯bundle浣撶Н
+reword c2a6437 淇鏋勫缓閿欒鍜宭inting璀﹀憡
+reword d4bc91b 淇TypeScript缂栬瘧閿欒锛屽畬鎴怤ext.js鏋勫缓浼樺寲
+pick 7c56955 feat: apply GitHub Dark theme and restore treasure layout to max-w-2xl
+pick 5df01ab fix(treasure): add self-start to sidebars to prevent stretching
+
