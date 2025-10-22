@@ -1057,7 +1057,16 @@ export default function LogPage() {
                   笔记
                 </h3>
                 
-                <div className="flex-1 overflow-hidden">
+                <div 
+                  className="flex-1 overflow-auto"
+                  style={{
+                    // 移动端优化：虚拟键盘弹出时自动滚动
+                    minHeight: 'calc(100vh - 250px)',
+                    touchAction: 'pan-y',
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'contain'
+                  }}
+                >
                   <SimpleMdEditor />
                 </div>
               </section>

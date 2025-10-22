@@ -66,52 +66,62 @@ const CustomImage = Image.extend({
         }
       })
       
-      const resizeHandle = document.createElement('div')
-      resizeHandle.className = 'image-resize-handle'
+      // 检测是否为移动设备
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+        || window.innerWidth < 768
       
-      let isResizing = false
-      let startX = 0
-      let startWidth = 0
-      
-      resizeHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        isResizing = true
-        startX = e.clientX
-        startWidth = img.offsetWidth
+      // 仅在桌面端添加拖拽调整手柄
+      if (!isMobile) {
+        const resizeHandle = document.createElement('div')
+        resizeHandle.className = 'image-resize-handle'
         
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
+        let isResizing = false
+        let startX = 0
+        let startWidth = 0
         
-        container.classList.add('resizing')
-      })
-      
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!isResizing) return
+        resizeHandle.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          isResizing = true
+          startX = e.clientX
+          startWidth = img.offsetWidth
+          
+          document.addEventListener('mousemove', handleMouseMove)
+          document.addEventListener('mouseup', handleMouseUp)
+          
+          container.classList.add('resizing')
+        })
         
-        const diff = e.clientX - startX
-        const newWidth = Math.max(100, startWidth + diff)
-        img.style.width = newWidth + 'px'
-      }
-      
-      const handleMouseUp = () => {
-        if (!isResizing) return
-        isResizing = false
-        
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-        
-        container.classList.remove('resizing')
-        
-        if (typeof getPos === 'function') {
-          const width = img.offsetWidth
-          const height = img.offsetHeight
-          editor.commands.updateAttributes('image', { width, height })
+        const handleMouseMove = (e: MouseEvent) => {
+          if (!isResizing) return
+          
+          const diff = e.clientX - startX
+          const newWidth = Math.max(100, startWidth + diff)
+          img.style.width = newWidth + 'px'
         }
+        
+        const handleMouseUp = () => {
+          if (!isResizing) return
+          isResizing = false
+          
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+          
+          container.classList.remove('resizing')
+          
+          if (typeof getPos === 'function') {
+            const width = img.offsetWidth
+            const height = img.offsetHeight
+            editor.commands.updateAttributes('image', { width, height })
+          }
+        }
+        
+        container.appendChild(img)
+        container.appendChild(resizeHandle)
+      } else {
+        // 移动端：只添加图片，不添加调整手柄
+        container.appendChild(img)
       }
-      
-      container.appendChild(img)
-      container.appendChild(resizeHandle)
       
       return {
         dom: container,
@@ -139,13 +149,9 @@ const DeleteLineExtension = Extension.create({
   addKeyboardShortcuts() {
     return {
       'Mod-d': () => {
-        console.log('🔥 Ctrl+D triggered in DeleteLineExtension')
-        
         try {
           const { state } = this.editor
           const { $from } = state.selection
-          
-          console.log('📍 Current depth:', $from.depth)
           
           // 从当前位置向上查找块级节点
           // 优先查找listItem，然后是paragraph和heading
@@ -154,24 +160,20 @@ const DeleteLineExtension = Extension.create({
           
           for (let d = $from.depth; d > 0; d--) {
             const node = $from.node(d)
-            console.log(`📦 Depth ${d}: ${node.type.name}`)
             
             // 优先级：listItem > heading > paragraph
             if (node.type.name === 'listItem') {
               targetNode = node
               targetDepth = d
-              console.log(`🎯 Found listItem at depth ${d}`)
               break // 找到listItem就停止，这是最优先的
             } else if (node.type.name === 'heading') {
               targetNode = node
               targetDepth = d
-              console.log(`🎯 Found heading at depth ${d}`)
               break // 找到heading也停止
             } else if (node.type.name === 'paragraph' && !targetNode) {
               // 只有还没找到其他目标时才记录paragraph
               targetNode = node
               targetDepth = d
-              console.log(`📝 Found paragraph at depth ${d} (will continue looking for listItem)`)
               // 不break，继续向上查找listItem
             }
           }
@@ -180,28 +182,23 @@ const DeleteLineExtension = Extension.create({
           if (targetNode && targetDepth > 0) {
             const pos = $from.before(targetDepth)
             const nodeSize = targetNode.nodeSize
-            console.log(`✅ Deleting ${targetNode.type.name} from ${pos} to ${pos + nodeSize}`)
             
-            const result = this.editor.commands.deleteRange({ 
+            return this.editor.commands.deleteRange({ 
               from: pos, 
               to: pos + nodeSize 
             })
-            console.log('✅ Delete result:', result)
-            return result
           }
           
           // 兜底：删除当前块内容
           const start = $from.start()
           const end = $from.end()
-          console.log(`⚠️ Fallback: deleting from ${start} to ${end}`)
           if (start !== undefined && end !== undefined) {
             return this.editor.commands.deleteRange({ from: start, to: end })
           }
           
-          console.log('❌ No deletion performed')
           return false
         } catch (error) {
-          console.error('❌ DeleteLineExtension error:', error)
+          console.error('DeleteLineExtension error:', error)
           return false
         }
       }
