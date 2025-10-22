@@ -3,7 +3,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 console.log('\n=== Git Commit 历史修复自动化脚本 ===\n');
 
@@ -43,7 +42,6 @@ function exec(cmd, options = {}) {
     const result = execSync(cmd, {
       encoding: 'utf-8',
       stdio: 'pipe',
-      shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
       ...options,
     });
     return result;
@@ -72,17 +70,6 @@ function getCurrentBranch() {
   return exec('git rev-parse --abbrev-ref HEAD').trim();
 }
 
-function convertToGitBashPath(windowsPath) {
-  // 将 Windows 路径转换为 Git Bash 路径
-  // 例如: D:\Study\Vue-\... -> /d/Study/Vue-/...
-  if (os.platform() === 'win32') {
-    return windowsPath
-      .replace(/\\/g, '/')
-      .replace(/^([A-Z]):/, (match, drive) => `/${drive.toLowerCase()}`);
-  }
-  return windowsPath;
-}
-
 function createFilterScript() {
   const scriptPath = path.join(__dirname, 'temp-filter-script.sh');
   
@@ -92,12 +79,7 @@ function createFilterScript() {
   scriptContent += 'case $HASH in\n';
   
   for (const [hash, message] of Object.entries(commitMap)) {
-    // 转义消息中的特殊字符
-    const escapedMsg = message
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/\$/g, '\\$')
-      .replace(/`/g, '\\`');
+    const escapedMsg = message.replace(/"/g, '\\"').replace(/\$/g, '\\$');
     scriptContent += `  ${hash})\n`;
     scriptContent += `    echo "${escapedMsg}"\n`;
     scriptContent += `    ;;\n`;
@@ -113,23 +95,12 @@ function createFilterScript() {
   return scriptPath;
 }
 
-function executeFilterBranch(scriptPath) {
+async function executeFilterBranch(scriptPath) {
   try {
     console.log('\n🔄 开始执行 git filter-branch...');
     console.log('⏳ 这可能需要 1-2 分钟，请耐心等待...\n');
     
-    // 转换路径为 Git Bash 可以理解的格式
-    const gitBashPath = convertToGitBashPath(scriptPath);
-    
-    // 在 Windows 上使用 Git Bash 执行 filter-branch
-    let cmd;
-    if (os.platform() === 'win32') {
-      // 使用 git bash 来执行 filter-branch
-      cmd = `git filter-branch -f --msg-filter "bash '${gitBashPath}'" HEAD~30..HEAD`;
-    } else {
-      cmd = `git filter-branch -f --msg-filter "bash ${scriptPath}" HEAD~30..HEAD`;
-    }
-    
+    const cmd = `git filter-branch -f --msg-filter "bash ${scriptPath}" HEAD~30..HEAD`;
     exec(cmd, { stdio: 'inherit' });
     
     console.log('\n✓ filter-branch 执行完成');
@@ -159,7 +130,7 @@ async function main() {
     const scriptPath = createFilterScript();
     
     console.log('\n3️⃣  执行 git filter-branch...');
-    executeFilterBranch(scriptPath);
+    await executeFilterBranch(scriptPath);
     
     console.log('\n4️⃣  验证修复结果...');
     verifyResults();
