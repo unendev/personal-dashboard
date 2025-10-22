@@ -132,37 +132,55 @@ const CustomImage = Image.extend({
   },
 })
 
-// 自定义Ctrl+D删除行扩展
+// 自定义Ctrl+D删除行扩展（带调试）
 const DeleteLineExtension = Extension.create({
   name: 'deleteLine',
   
   addKeyboardShortcuts() {
     return {
       'Mod-d': () => {
-        const { state, view } = this.editor
-        const { $from } = state.selection
+        console.log('🔥 Ctrl+D triggered in DeleteLineExtension')
         
-        // 从当前位置向上查找块级节点
-        for (let d = $from.depth; d > 0; d--) {
-          const node = $from.node(d)
-          // 支持删除列表项、段落、标题
-          if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
-            const pos = $from.before(d)
-            return this.editor.commands.deleteRange({ 
-              from: pos, 
-              to: pos + node.nodeSize 
-            })
+        try {
+          const { state } = this.editor
+          const { $from } = state.selection
+          
+          console.log('📍 Current depth:', $from.depth)
+          
+          // 从当前位置向上查找块级节点
+          for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d)
+            console.log(`📦 Depth ${d}: ${node.type.name}`)
+            
+            // 支持删除列表项、段落、标题
+            if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
+              const pos = $from.before(d)
+              const nodeSize = node.nodeSize
+              console.log(`✅ Deleting ${node.type.name} from ${pos} to ${pos + nodeSize}`)
+              
+              const result = this.editor.commands.deleteRange({ 
+                from: pos, 
+                to: pos + nodeSize 
+              })
+              console.log('✅ Delete result:', result)
+              return result
+            }
           }
+          
+          // 兜底：删除当前块内容
+          const start = $from.start()
+          const end = $from.end()
+          console.log(`⚠️ Fallback: deleting from ${start} to ${end}`)
+          if (start !== undefined && end !== undefined) {
+            return this.editor.commands.deleteRange({ from: start, to: end })
+          }
+          
+          console.log('❌ No deletion performed')
+          return false
+        } catch (error) {
+          console.error('❌ DeleteLineExtension error:', error)
+          return false
         }
-        
-        // 兜底：删除当前块内容
-        const start = $from.start()
-        const end = $from.end()
-        if (start !== undefined && end !== undefined) {
-          return this.editor.commands.deleteRange({ from: start, to: end })
-        }
-        
-        return false
       }
     }
   }
