@@ -221,6 +221,9 @@ async def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
 }}
 """
     
+    # 调试：输出 Prompt 的关键部分（避免日志过长）
+    logger.debug(f"  → Prompt 长度: {len(prompt)} 字符, 评论区长度: {len(comment_section)} 字符")
+    
     try:
         # 使用 DeepSeek API (REST)
         def call_deepseek():
