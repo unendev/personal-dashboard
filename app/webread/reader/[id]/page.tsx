@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { Rendition, Book as EpubBook } from 'epubjs';
 import { ArrowLeft, Settings, BookOpen, Eye, EyeOff } from 'lucide-react';
 import AITranslationModal from '@/app/components/webread/AITranslationModal';
+import * as ebookCache from '@/lib/ebook-cache';
 
 interface Book {
   id: string;
@@ -94,6 +95,24 @@ export default function EpubReaderPage() {
   // 获取书籍信息
   const fetchBook = useCallback(async () => {
     try {
+      // 特殊处理：示例书籍（纯缓存）
+      if (bookId === 'demo-book-webread') {
+        console.log('加载示例书籍（纯缓存）');
+        const bookData: Book = {
+          id: 'demo-book-webread',
+          title: '示例电子书 - WebRead 测试',
+          author: 'WebRead 系统',
+          fileUrl: '', // 纯缓存，无需 URL
+          fileSize: 15000,
+          uploadDate: new Date().toISOString(),
+          coverUrl: null,
+        };
+        setBook(bookData);
+        setLoading(false);
+        return;
+      }
+
+      // 普通书籍：从 API 获取
       const response = await fetch(`/api/webread/books/${bookId}`);
       if (response.ok) {
         const bookData = await response.json();
@@ -177,14 +196,26 @@ export default function EpubReaderPage() {
     };
 
     renditionInstance.themes.default({
-      body: {
-        'font-size': `${fontSize}px`,
-        'line-height': `${lineHeight}`,
-        'max-width': '800px',
-        'margin': '0 auto',
-        'padding': '0 2rem',
-        'box-sizing': 'border-box',
+      'body': {
+        'font-size': `${fontSize}px !important`,
+        'line-height': `${lineHeight} !important`,
+        'max-width': '800px !important',
+        'width': '100% !important',
+        'margin': '0 auto !important',
+        'padding': '0 2rem !important',
+        'box-sizing': 'border-box !important',
+        'overflow-x': 'hidden !important',
+        'word-wrap': 'break-word !important',
         ...themeStyles[theme],
+      },
+      '*': {
+        'max-width': '100% !important',
+        'box-sizing': 'border-box !important',
+      },
+      'p, div, span': {
+        'max-width': '100% !important',
+        'word-wrap': 'break-word !important',
+        'overflow-wrap': 'break-word !important',
       },
     });
     console.log('Theme styles applied');
@@ -192,23 +223,72 @@ export default function EpubReaderPage() {
 
   // 初始化 EPUB 阅读器
   const initEpubReader = useCallback(async () => {
-    if (!book?.fileUrl || !epubContainerRef.current) {
-      console.error('Missing book fileUrl or container ref:', { 
-        fileUrl: book?.fileUrl, 
+    if (!book || !epubContainerRef.current) {
+      console.error('Missing book or container ref:', { 
+        book: !!book,
         containerRef: !!epubContainerRef.current 
       });
       return;
     }
 
-    console.log('Starting EPUB initialization with fileUrl:', book.fileUrl);
+    console.log('Starting EPUB initialization:', book.id);
 
     try {
       // 动态导入 epubjs
       const { default: ePub } = await import('epubjs');
       console.log('epubjs imported successfully');
       
-      // 创建 EPUB 实例
-      const epub = ePub(book.fileUrl);
+      // === 缓存逻辑开始 ===
+      let epubSource: string | ArrayBuffer;
+      
+      // 检查 IndexedDB 支持
+      if (ebookCache.isIndexedDBSupported()) {
+        console.log('检查缓存...');
+        const cachedBlob = await ebookCache.getBook(book.id);
+        
+        if (cachedBlob) {
+          // 缓存命中，将 Blob 转换为 ArrayBuffer
+          console.log('✅ 缓存命中，从本地加载');
+          epubSource = await cachedBlob.arrayBuffer();
+        } else if (!book.fileUrl) {
+          // 纯缓存书籍（如示例书籍）但缓存不存在
+          throw new Error('示例书籍缓存不存在，请返回书籍列表重新加载');
+        } else {
+          // 缓存未命中，下载并缓存
+          console.log('❌ 缓存未命中，开始下载...');
+          try {
+            const response = await fetch(book.fileUrl);
+            if (!response.ok) {
+              throw new Error(`下载失败: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            console.log(`下载完成: ${ebookCache.formatFileSize(blob.size)}`);
+            
+            // 缓存到 IndexedDB
+            await ebookCache.setBook(book.id, book.fileUrl, blob, book.title);
+            console.log('✅ 已缓存到本地');
+            
+            // 转换为 ArrayBuffer 用于 EPUB.js
+            epubSource = await blob.arrayBuffer();
+          } catch (cacheError) {
+            console.error('缓存失败，使用直接下载:', cacheError);
+            // 降级到直接使用 URL
+            epubSource = book.fileUrl;
+          }
+        }
+      } else {
+        // IndexedDB 不支持
+        if (!book.fileUrl) {
+          throw new Error('浏览器不支持 IndexedDB，无法加载示例书籍');
+        }
+        console.warn('IndexedDB 不支持，使用直接下载');
+        epubSource = book.fileUrl;
+      }
+      // === 缓存逻辑结束 ===
+      
+      // 创建 EPUB 实例（使用缓存的 ArrayBuffer 或原始 URL）
+      const epub = ePub(epubSource);
       epubRef.current = epub;
       console.log('EPUB instance created');
 
@@ -252,9 +332,16 @@ export default function EpubReaderPage() {
 
       // 渲染到容器
       console.log('Rendering EPUB to container...');
+      
+      // 获取容器宽度，确保内容不溢出
+      const containerWidth = epubContainerRef.current.clientWidth;
+      const containerHeight = epubContainerRef.current.clientHeight;
+      
+      console.log('Container dimensions:', { width: containerWidth, height: containerHeight });
+      
       const rendition = epub.renderTo(epubContainerRef.current, {
-        width: '100%',
-        height: '100%',
+        width: containerWidth,  // 使用具体像素值而非百分比
+        height: containerHeight,
         spread: 'none',
         allowScriptedContent: true,
         manager: 'default',
@@ -355,6 +442,34 @@ export default function EpubReaderPage() {
     }
   }, [book, initEpubReader]);
 
+  // 监听窗口大小变化，重新调整渲染器
+  useEffect(() => {
+    if (!rendition || !epubContainerRef.current) return;
+
+    const handleResize = () => {
+      const container = epubContainerRef.current;
+      if (!container) return;
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      console.log('Window resized, updating rendition:', { width, height });
+      
+      // 重新调整 rendition 大小
+      try {
+        rendition.resize(width, height);
+      } catch (error) {
+        console.error('Failed to resize rendition:', error);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [rendition]);
+
   // 主题切换
   const toggleTheme = () => {
     const themes = ['light', 'dark', 'sepia'] as const;
@@ -387,29 +502,45 @@ export default function EpubReaderPage() {
   // 翻页功能
   const nextPage = useCallback(async () => {
     console.log('nextPage called, rendition:', !!rendition);
-    if (rendition) {
-      try {
-        await rendition.next();
-        console.log('Next page successful');
-      } catch (error) {
-        console.error('Failed to go to next page:', error);
-      }
-    } else {
+    if (!rendition) {
       console.warn('Rendition not available for next page');
+      return;
+    }
+    
+    // 检查 manager 是否就绪
+    const renditionWithManager = rendition as Rendition & { manager?: { next?: () => Promise<void> } };
+    if (!renditionWithManager.manager) {
+      console.warn('Rendition manager not ready');
+      return;
+    }
+    
+    try {
+      await rendition.next();
+      console.log('Next page successful');
+    } catch (error) {
+      console.error('Failed to go to next page:', error);
     }
   }, [rendition]);
 
   const prevPage = useCallback(async () => {
     console.log('prevPage called, rendition:', !!rendition);
-    if (rendition) {
-      try {
-        await rendition.prev();
-        console.log('Previous page successful');
-      } catch (error) {
-        console.error('Failed to go to previous page:', error);
-      }
-    } else {
+    if (!rendition) {
       console.warn('Rendition not available for previous page');
+      return;
+    }
+    
+    // 检查 manager 是否就绪
+    const renditionWithManager = rendition as Rendition & { manager?: { prev?: () => Promise<void> } };
+    if (!renditionWithManager.manager) {
+      console.warn('Rendition manager not ready');
+      return;
+    }
+    
+    try {
+      await rendition.prev();
+      console.log('Previous page successful');
+    } catch (error) {
+      console.error('Failed to go to previous page:', error);
     }
   }, [rendition]);
 
@@ -606,7 +737,10 @@ export default function EpubReaderPage() {
             padding: '20px',
             boxSizing: 'border-box',
             maxWidth: '100%',
+            width: '100%',
             overflow: 'hidden',
+            overflowX: 'hidden',
+            position: 'relative',
           }}
         >
           {/* 调试信息 */}

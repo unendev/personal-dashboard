@@ -11,7 +11,6 @@ import xml.etree.ElementTree as ET
 import time
 import asyncpg
 import ssl
-import google.generativeai as genai
 
 # --- 配置日志 ---
 os.makedirs('logs', exist_ok=True)
@@ -38,12 +37,9 @@ SUBREDDITS = [
 ]
 
 POST_COUNT_PER_SUB = 5  # 每个subreddit取5个帖子
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 NEON_DB_URL = os.getenv("DATABASE_URL")
-
-# 配置 Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 # asyncpg不支持URL中的查询参数，需要清理
 if NEON_DB_URL:
@@ -183,7 +179,7 @@ async def fetch_post_comments(post_id):
     except:
         return []
 
-async def analyze_single_post_with_gemini(post, model, retry_count=0, comments=None):
+async def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
     """使用Gemini分析Reddit帖子并输出完整中文（包含评论精华）"""
     excerpt = post.get('content', '')[:1000]
     if not excerpt.strip():
@@ -220,13 +216,41 @@ async def analyze_single_post_with_gemini(post, model, retry_count=0, comments=N
 """
     
     try:
-        # 使用 asyncio.to_thread 异步调用Gemini
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        content = response.text.strip()
+        # 使用 DeepSeek API (REST)
+        async def call_deepseek():
+            response = requests.post(
+                DEEPSEEK_API_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 2000,
+                },
+                timeout=60,
+            )
+            
+            if not response.ok:
+                raise Exception(f"DeepSeek API error: {response.status_code}")
+            
+            return response.json()
+        
+        data = await asyncio.to_thread(call_deepseek)
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
         
         # 清理JSON内容
         if content.startswith('```json'):
             content = content[7:]
+        if content.startswith('```'):
+            content = content[3:]
         if content.endswith('```'):
             content = content[:-3]
         content = content.strip()
@@ -236,7 +260,7 @@ async def analyze_single_post_with_gemini(post, model, retry_count=0, comments=N
             logger.info(f"  ✓ 帖子分析成功: {analysis.get('title_cn', 'N/A')[:30]}...")
             return analysis
         except json.JSONDecodeError:
-            logger.error(f"  ✗ Gemini返回的内容不是有效JSON: {content[:100]}...")
+            logger.error(f"  ✗ DeepSeek返回的内容不是有效JSON: {content[:100]}...")
             return {
                 "title_cn": post['title'][:50] + "...",
                 "core_issue": "JSON解析失败",
@@ -250,7 +274,7 @@ async def analyze_single_post_with_gemini(post, model, retry_count=0, comments=N
         if retry_count < 2:
             logger.info(f"  ⟳ 重试AI分析 ({retry_count + 1}/2)...")
             await asyncio.sleep(2)
-            return await analyze_single_post_with_gemini(post, model, retry_count + 1, comments)
+            return await analyze_single_post_with_deepseek(post, retry_count + 1, comments)
         else:
             return {
                 "title_cn": post['title'][:50] + "...",
@@ -399,8 +423,8 @@ async def insert_posts_into_db(posts_data):
             await conn.close()
 
 # --- AI整体洞察报告 ---
-async def generate_ai_summary_report(posts_data, model):
-    """生成整体分析报告（异步版本，支持评论查询，使用Gemini）"""
+async def generate_ai_summary_report(posts_data):
+    """生成整体分析报告（异步版本，支持评论查询，使用DeepSeek）"""
     processed_posts = []
     post_summaries = []
 
@@ -418,7 +442,7 @@ async def generate_ai_summary_report(posts_data, model):
     # 并发分析所有帖子
     logger.info(f"=== 开始并发分析 {len(posts_data)} 个帖子 ===")
     tasks = [
-        analyze_single_post_with_gemini(post, model, comments=comments) 
+        analyze_single_post_with_deepseek(post, comments=comments) 
         for post, comments in zip(posts_data, all_comments)
     ]
     analyses = await asyncio.gather(*tasks)
@@ -627,17 +651,16 @@ async def main():
     
     try:
         # 验证环境变量
-        if not GEMINI_API_KEY:
-            logger.error("❌ 未找到 GEMINI_API_KEY 环境变量")
+        if not DEEPSEEK_API_KEY:
+            logger.error("❌ 未找到 DEEPSEEK_API_KEY 环境变量")
             return False
             
         if not NEON_DB_URL:
             logger.error("❌ 未找到 DATABASE_URL 环境变量")
             return False
         
-        # 初始化 Gemini客户端
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
-        logger.info("✓ Gemini客户端初始化成功（使用 gemini-2.5-flash）")
+        # 验证 DeepSeek API 配置
+        logger.info("✓ DeepSeek API 配置已加载")
         
         # 创建数据库表
         if not await create_posts_table():
@@ -653,8 +676,8 @@ async def main():
         
         logger.info(f"✓ 共获取 {len(posts_data)} 个帖子")
         
-        # 生成AI报告（包含评论分析，使用Gemini）
-        report_data = await generate_ai_summary_report(posts_data, gemini_model)
+        # 生成AI报告（包含评论分析，使用DeepSeek）
+        report_data = await generate_ai_summary_report(posts_data)
         
         # 插入数据库
         if report_data.get('processed_posts'):

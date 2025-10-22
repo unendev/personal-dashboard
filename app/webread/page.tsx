@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Upload, Search, Eye, Clock, User } from 'lucide-react';
+import { BookOpen, Upload, Search, Eye, Clock, User, HardDrive } from 'lucide-react';
+import CacheManagerModal from '@/app/components/features/webread/CacheManagerModal';
+import * as ebookCache from '@/lib/ebook-cache';
+import { generateDemoEpub } from '@/lib/demo-epub-generator';
 
 interface Book {
   id: string;
@@ -35,6 +38,8 @@ export default function WebReadPage() {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [cacheModalOpen, setCacheModalOpen] = useState(false);
+  const [cachedBookIds, setCachedBookIds] = useState<Set<string>>(new Set());
 
   // 获取书籍列表
   const fetchBooks = async () => {
@@ -42,12 +47,119 @@ export default function WebReadPage() {
       const response = await fetch('/api/webread/books');
       if (response.ok) {
         const data: BooksResponse = await response.json();
-        setBooks(data.books);
+        
+        // 加载示例书籍
+        const demoBook = await loadDemoBook();
+        
+        // 合并示例书籍和真实书籍（示例书籍排在最前面）
+        const allBooks = demoBook ? [demoBook, ...data.books] : data.books;
+        setBooks(allBooks);
+        
+        // 获取书籍后检查缓存状态（优化：示例书籍已确定缓存）
+        await checkCachedBooks(allBooks, demoBook ? DEMO_BOOK_ID : null);
       }
     } catch (error) {
       console.error('Failed to fetch books:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 检查哪些书籍已缓存
+  const checkCachedBooks = async (bookList: Book[], knownCachedId?: string | null) => {
+    if (!ebookCache.isIndexedDBSupported()) return;
+    
+    try {
+      const cached = new Set<string>();
+      
+      // 如果有已知缓存的书籍，直接添加（跳过检查）
+      if (knownCachedId) {
+        cached.add(knownCachedId);
+      }
+      
+      // 检查其他书籍
+      for (const book of bookList) {
+        // 跳过已知缓存的书籍
+        if (book.id === knownCachedId) continue;
+        
+        const isCached = await ebookCache.isBookCached(book.id);
+        if (isCached) {
+          cached.add(book.id);
+        }
+      }
+      
+      setCachedBookIds(cached);
+    } catch (error) {
+      console.error('检查缓存状态失败:', error);
+    }
+  };
+
+  // 缓存更新后刷新状态
+  const handleCacheUpdated = () => {
+    checkCachedBooks(books);
+  };
+
+  // 示例书籍固定 ID
+  const DEMO_BOOK_ID = 'demo-book-webread';
+
+  // 生成示例书籍（内部函数）
+  const generateAndCacheDemoBook = async (): Promise<void> => {
+    console.log('生成示例书籍...');
+    const demoBlob = await generateDemoEpub({
+      title: '示例电子书 - WebRead 测试',
+      author: 'WebRead 系统',
+      chapters: 3,
+    });
+    
+    console.log('示例书籍生成完成:', ebookCache.formatFileSize(demoBlob.size));
+    
+    // 缓存到 IndexedDB（使用固定 ID）
+    await ebookCache.setBook(
+      DEMO_BOOK_ID,
+      '', // 示例书籍无需 URL
+      demoBlob,
+      '示例电子书 - WebRead 测试'
+    );
+    
+    console.log('✅ 示例书籍已缓存');
+  };
+
+  // 检查并加载示例书籍
+  const loadDemoBook = async (): Promise<Book | null> => {
+    if (!ebookCache.isIndexedDBSupported()) {
+      return null;
+    }
+
+    try {
+      // 检查缓存中是否已有示例书籍
+      const isCached = await ebookCache.isBookCached(DEMO_BOOK_ID);
+      
+      if (!isCached) {
+        // 首次访问，自动生成
+        console.log('首次访问，自动生成示例书籍');
+        await generateAndCacheDemoBook();
+      }
+
+      // 获取缓存信息以显示文件大小
+      const cachedBlob = await ebookCache.getBook(DEMO_BOOK_ID);
+      const fileSize = cachedBlob?.size || 15000; // 默认大小
+
+      // 构造虚拟书籍对象
+      const demoBook: Book = {
+        id: DEMO_BOOK_ID,
+        title: '示例电子书 - WebRead 测试',
+        author: 'WebRead 系统',
+        fileUrl: '', // 示例书籍纯缓存
+        fileSize: fileSize,
+        uploadDate: new Date().toISOString(),
+        coverUrl: null,
+        readingProgress: [],
+      };
+
+      return demoBook;
+    } catch (error) {
+      console.error('加载示例书籍失败:', error);
+      return null;
     }
   };
 
@@ -134,11 +246,19 @@ export default function WebReadPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <BookOpen className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">WebRead</h1>
-                <p className="text-sm text-gray-500">智能阅读与知识管理平台</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">WebRead</h1>
+              <p className="text-sm text-gray-500">智能阅读与知识管理平台</p>
             </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setCacheModalOpen(true)}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
+            >
+              <HardDrive className="h-4 w-4" />
+              <span>缓存管理</span>
+            </button>
             <button
               onClick={() => setUploadModalOpen(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
@@ -147,6 +267,7 @@ export default function WebReadPage() {
               <span>上传书籍</span>
             </button>
           </div>
+        </div>
         </div>
       </div>
 
@@ -207,9 +328,17 @@ export default function WebReadPage() {
 
                 {/* 书籍信息 */}
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
-                    {book.title}
-                  </h3>
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="font-medium text-gray-900 line-clamp-2 flex-1">
+                      {book.title}
+                    </h3>
+                    {cachedBookIds.has(book.id) && (
+                      <span className="ml-2 flex-shrink-0 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center">
+                        <HardDrive className="h-3 w-3 mr-1" />
+                        已缓存
+                      </span>
+                    )}
+                  </div>
                   {book.author && (
                     <p className="text-sm text-gray-500 mb-2 flex items-center">
                       <User className="h-3 w-3 mr-1" />
@@ -290,6 +419,13 @@ export default function WebReadPage() {
           </div>
         </div>
       )}
+
+      {/* 缓存管理模态框 */}
+      <CacheManagerModal
+        isOpen={cacheModalOpen}
+        onClose={() => setCacheModalOpen(false)}
+        onCacheUpdated={handleCacheUpdated}
+      />
     </div>
   );
 }

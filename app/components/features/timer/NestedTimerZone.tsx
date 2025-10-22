@@ -340,16 +340,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     // 操作前保存当前位置，避免UI更新导致回到顶部
     onBeforeOperation?.();
     
-    // 互斥逻辑：暂停所有其他运行中的任务
-    const runningTasks = findAllRunningTasks(tasks);
-    const othersRunning = runningTasks.filter(t => t.id !== taskId);
-    
-    if (othersRunning.length > 0) {
-      for (const task of othersRunning) {
-        await pauseTimer(task.id);
-      }
-    }
-    
     const findTask = (taskList: TimerTask[]): TimerTask | null => {
       for (const task of taskList) {
         if (task.id === taskId) return task;
@@ -363,11 +353,15 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
     const task = findTask(tasks);
     if (!task) return;
-
-    // 立即更新前端状态，避免延迟
+    
+    // 记录需要暂停的任务信息（用于数据库更新和操作日志）
+    const tasksToPause: Array<{ id: string; name: string; elapsedTime: number }> = [];
     const currentTime = Math.floor(Date.now() / 1000);
+    
+    // 原子化状态更新：同时暂停其他任务和启动当前任务
     const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
       return taskList.map(task => {
+        // 启动目标任务
         if (task.id === taskId) {
           return {
             ...task,
@@ -377,28 +371,59 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             pausedTime: 0
           };
         }
+        
+        // 暂停其他运行中的任务
+        if (task.isRunning && task.id !== taskId) {
+          const runningTime = task.startTime ? currentTime - task.startTime : 0;
+          const newElapsedTime = task.elapsedTime + runningTime;
+          
+          // 记录需要暂停的任务
+          tasksToPause.push({
+            id: task.id,
+            name: task.name,
+            elapsedTime: newElapsedTime
+          });
+          
+          return {
+            ...task,
+            elapsedTime: newElapsedTime,
+            isPaused: true,
+            isRunning: false,
+            startTime: null,
+            pausedTime: 0
+          };
+        }
+        
+        // 递归处理子任务
         if (task.children) {
           return { ...task, children: updateTaskRecursive(task.children) };
         }
+        
         return task;
       });
     };
 
+    // 一次性更新所有任务状态
     const updatedTasks = updateTaskRecursive(tasks);
     onTasksChange(updatedTasks);
     
+    // 记录操作日志
     if (onOperationRecord) {
       const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
       onOperationRecord('开始计时', task.name, timeText);
+      
+      // 记录被暂停的任务
+      tasksToPause.forEach(pausedTask => {
+        onOperationRecord('自动暂停', pausedTask.name, `(切换到: ${task.name})`);
+      });
     }
 
-    // 异步更新数据库（带重试机制）
-    try {
-      const response = await fetchWithRetry('/api/timer-tasks', {
+    // 异步更新数据库：并行更新所有任务
+    const dbUpdatePromises = [
+      // 启动目标任务
+      fetchWithRetry('/api/timer-tasks', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: taskId,
           isRunning: true,
@@ -406,16 +431,38 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           startTime: currentTime,
           pausedTime: 0
         }),
-      });
+      }).catch(error => {
+        console.error('Failed to start timer in database:', error);
+        return null;
+      }),
+      
+      // 暂停其他任务
+      ...tasksToPause.map(pausedTask =>
+        fetchWithRetry('/api/timer-tasks', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: pausedTask.id,
+            elapsedTime: pausedTask.elapsedTime,
+            isPaused: true,
+            isRunning: false,
+            startTime: null,
+            pausedTime: 0
+          }),
+        }).catch(error => {
+          console.error(`Failed to pause task ${pausedTask.id} in database:`, error);
+          return null;
+        })
+      )
+    ];
 
-      if (!response.ok) {
-        console.error('Failed to update database for start timer after retries');
-        // 不显示错误提示，因为前端状态已经更新
+    // 并行执行所有数据库更新，不阻塞UI
+    Promise.allSettled(dbUpdatePromises).then(results => {
+      const failedCount = results.filter(r => r.status === 'rejected').length;
+      if (failedCount > 0) {
+        console.warn(`${failedCount} database update(s) failed`);
       }
-    } catch (error) {
-      console.error('Failed to start timer in database after all retries:', error);
-      // 不显示错误提示，因为前端状态已经更新
-    }
+    });
   };
 
   const pauseTimer = async (taskId: string) => {
