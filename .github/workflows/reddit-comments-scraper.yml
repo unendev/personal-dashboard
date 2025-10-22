@@ -1,9 +1,9 @@
 name: Reddit 评论采集器
 
 on:
-  # 每天UTC 18:00运行 (对应北京时间凌晨02:00)
+  # 每天UTC 00:00运行 (对应北京时间08:00) - 先运行评论采集
   schedule:
-    - cron: '0 18 * * *'
+    - cron: '0 0 * * *'
   
   # 允许手动触发
   workflow_dispatch:
@@ -52,7 +52,7 @@ jobs:
         
     - name: 上传日志文件 (如果失败)
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: reddit-comments-logs
         path: linuxdo-scraper/reddit_scraper/logs/

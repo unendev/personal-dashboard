@@ -485,51 +485,13 @@ async def generate_ai_summary_report(posts_data):
         else:
             logger.error(f"  ✗ 帖子分析失败: {post['title'][:30]}...")
     
-    # 生成整体洞察
-    logger.info("=== 生成整体洞察报告（使用Gemini）===")
-    
-    try:
-        all_summaries_text = json.dumps(post_summaries, ensure_ascii=False, indent=2)
-
-        overall_prompt = f"""
-你是资深的Reddit内容分析师。以下是今天从多个技术/游戏开发板块采集的热门帖子摘要。
-
-请生成简洁的中文"今日热点洞察"报告，严格按JSON格式返回（不要包含```json```标记）。
-
-**今日帖子摘要**：
-{all_summaries_text}
-
-**输出格式**：
-{{
-  "overview": "1-2句话总结今天讨论氛围和焦点",
-  "highlights": {{
-    "tech_news": ["1-3条重要技术新闻或行业动态"],
-    "dev_insights": ["1-3条游戏开发相关见解或资源"],
-    "hot_topics": ["1-3个热门话题"]
-  }},
-  "conclusion": "一句话总结"
-}}
-"""
-        
-        response = await asyncio.to_thread(model.generate_content, overall_prompt)
-        content = response.text.strip()
-        
-        if content.startswith('```json'):
-            content = content[7:]
-        if content.endswith('```'):
-            content = content[:-3]
-        content = content.strip()
-        
-        summary_analysis = json.loads(content)
-        logger.info("✓ 整体洞察报告生成成功")
-            
-    except Exception as e:
-        logger.error(f"✗ 生成整体洞察时出错: {e}")
-        summary_analysis = {
-            "overview": "今日内容分析遇到技术问题。",
-            "highlights": {"tech_news": [], "dev_insights": [], "hot_topics": []},
-            "conclusion": "系统维护中，明日恢复。"
-        }
+    # 生成整体洞察（已移除 - 使用 DeepSeek 统一分析）
+    logger.info("=== 跳过整体洞察报告生成 ===")
+    summary_analysis = {
+        "overview": f"今日共分析 {len(processed_posts)} 篇技术/游戏开发相关帖子。",
+        "highlights": {"tech_news": [], "dev_insights": [], "hot_topics": []},
+        "conclusion": "请查看各帖子详细分析。"
+    }
 
     return {
         "summary_analysis": summary_analysis,
