@@ -148,23 +148,46 @@ const DeleteLineExtension = Extension.create({
           console.log('📍 Current depth:', $from.depth)
           
           // 从当前位置向上查找块级节点
+          // 优先查找listItem，然后是paragraph和heading
+          let targetNode = null
+          let targetDepth = 0
+          
           for (let d = $from.depth; d > 0; d--) {
             const node = $from.node(d)
             console.log(`📦 Depth ${d}: ${node.type.name}`)
             
-            // 支持删除列表项、段落、标题
-            if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
-              const pos = $from.before(d)
-              const nodeSize = node.nodeSize
-              console.log(`✅ Deleting ${node.type.name} from ${pos} to ${pos + nodeSize}`)
-              
-              const result = this.editor.commands.deleteRange({ 
-                from: pos, 
-                to: pos + nodeSize 
-              })
-              console.log('✅ Delete result:', result)
-              return result
+            // 优先级：listItem > heading > paragraph
+            if (node.type.name === 'listItem') {
+              targetNode = node
+              targetDepth = d
+              console.log(`🎯 Found listItem at depth ${d}`)
+              break // 找到listItem就停止，这是最优先的
+            } else if (node.type.name === 'heading') {
+              targetNode = node
+              targetDepth = d
+              console.log(`🎯 Found heading at depth ${d}`)
+              break // 找到heading也停止
+            } else if (node.type.name === 'paragraph' && !targetNode) {
+              // 只有还没找到其他目标时才记录paragraph
+              targetNode = node
+              targetDepth = d
+              console.log(`📝 Found paragraph at depth ${d} (will continue looking for listItem)`)
+              // 不break，继续向上查找listItem
             }
+          }
+          
+          // 执行删除
+          if (targetNode && targetDepth > 0) {
+            const pos = $from.before(targetDepth)
+            const nodeSize = targetNode.nodeSize
+            console.log(`✅ Deleting ${targetNode.type.name} from ${pos} to ${pos + nodeSize}`)
+            
+            const result = this.editor.commands.deleteRange({ 
+              from: pos, 
+              to: pos + nodeSize 
+            })
+            console.log('✅ Delete result:', result)
+            return result
           }
           
           // 兜底：删除当前块内容
