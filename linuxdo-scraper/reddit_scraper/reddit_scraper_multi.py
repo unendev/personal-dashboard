@@ -192,9 +192,15 @@ async def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
         for i, comment in enumerate(comments[:3], 1):
             comment_body = comment['body'][:200]
             comment_section += f"{i}. [{comment['author']}] (👍{comment['score']}): {comment_body}...\n"
+        logger.info(f"  ✓ 包含 {len(comments[:3])} 条评论到分析 Prompt")
     else:
         num_comments = post.get('num_comments', 0)
-        comment_section = f"\n- 评论数量: {num_comments}条（暂无评论内容）" if num_comments > 0 else ""
+        if num_comments > 0:
+            comment_section = f"\n\n**注意**：该帖子有 {num_comments} 条评论，但评论内容未包含在本次分析中。请仅基于帖子标题和正文内容进行分析，不要推测评论区内容。"
+            logger.info(f"  ⚠ 帖子有 {num_comments} 条评论但未获取到内容")
+        else:
+            comment_section = ""
+            logger.info(f"  ℹ 该帖子无评论")
 
     prompt = f"""
 你是专业的Reddit技术内容分析专家。请分析以下帖子（含社区讨论），生成专业技术分析报告。

@@ -33,7 +33,7 @@ export default function LogPage() {
   });
   
   // 移动端区域切换
-  const [activeSection, setActiveSection] = useState<'timer' | 'stats' | 'ai'>('timer');
+  const [activeSection, setActiveSection] = useState<'timer' | 'notes' | 'stats' | 'ai'>('timer');
   const [isMobile, setIsMobile] = useState(false);
   
   // 待办清单/笔记视图切换
@@ -941,45 +941,60 @@ export default function LogPage() {
         {/* 移动端标签页导航 */}
         {isMobile && (
           <div className="mb-6 bg-gray-800 rounded-lg p-1 border-2 border-gray-600 overflow-hidden">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               <button
                 onClick={() => setActiveSection('timer')}
-                className={`px-3 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'timer'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1 md:gap-1.5">
-                  <span className="text-xl md:text-2xl">⏱️</span>
-                  <span className="text-xs md:text-sm">计时器</span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">⏱️</span>
+                  <span className="text-xs">计时器</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveSection('notes')}
+                className={`px-2 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                  activeSection === 'notes'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">📝</span>
+                  <span className="text-xs">笔记</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveSection('stats')}
-                className={`px-3 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'stats'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1 md:gap-1.5">
-                  <span className="text-xl md:text-2xl">📊</span>
-                  <span className="text-xs md:text-sm">统计</span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">📊</span>
+                  <span className="text-xs">统计</span>
                 </div>
               </button>
+
               <button
                 onClick={() => setActiveSection('ai')}
-                className={`px-3 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 py-2.5 rounded-md font-medium transition-all duration-200 ${
                   activeSection === 'ai'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
                 }`}
               >
-                <div className="flex flex-col items-center gap-1 md:gap-1.5">
-                  <span className="text-xl md:text-2xl">🤖</span>
-                  <span className="text-xs md:text-sm">AI</span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">🤖</span>
+                  <span className="text-xs">AI</span>
                 </div>
               </button>
             </div>
@@ -1035,7 +1050,18 @@ export default function LogPage() {
               </section>
             )}
 
-
+            {activeSection === 'notes' && (
+              <section className="border-2 border-gray-600 bg-gray-800 rounded-lg p-6 mb-6 min-h-[600px] flex flex-col">
+                <h3 className="text-xl font-bold text-white mb-4 pb-3 border-b-2 border-gray-600 flex items-center gap-3">
+                  <span className="text-2xl">📝</span>
+                  笔记
+                </h3>
+                
+                <div className="flex-1 overflow-hidden">
+                  <SimpleMdEditor />
+                </div>
+              </section>
+            )}
 
             {activeSection === 'stats' && (
               <section className="border-2 border-gray-600 bg-gray-800 rounded-lg p-6 mb-6">
