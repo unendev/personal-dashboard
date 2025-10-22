@@ -97,7 +97,7 @@ Write-Host "✓ rebase 指令文件已生成" -ForegroundColor Green
 Write-Host "`n📝 需要修改的 commit 和新 message：`n" -ForegroundColor Yellow
 
 foreach ($hash in $commitMessages.Keys) {
-    Write-Host "  $hash:" -ForegroundColor Cyan
+    Write-Host "  $($hash):" -ForegroundColor Cyan
     Write-Host "    $($commitMessages[$hash].Split("`n")[0])" -ForegroundColor White
 }
 
