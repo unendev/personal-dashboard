@@ -217,7 +217,7 @@ async def analyze_single_post_with_deepseek(post, retry_count=0, comments=None):
     
     try:
         # 使用 DeepSeek API (REST)
-        async def call_deepseek():
+        def call_deepseek():
             response = requests.post(
                 DEEPSEEK_API_URL,
                 headers={
