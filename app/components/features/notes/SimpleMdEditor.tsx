@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
 import Image from '@tiptap/extension-image'
+import { Extension } from '@tiptap/core'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
@@ -131,6 +132,42 @@ const CustomImage = Image.extend({
   },
 })
 
+// 自定义Ctrl+D删除行扩展
+const DeleteLineExtension = Extension.create({
+  name: 'deleteLine',
+  
+  addKeyboardShortcuts() {
+    return {
+      'Mod-d': () => {
+        const { state, view } = this.editor
+        const { $from } = state.selection
+        
+        // 从当前位置向上查找块级节点
+        for (let d = $from.depth; d > 0; d--) {
+          const node = $from.node(d)
+          // 支持删除列表项、段落、标题
+          if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
+            const pos = $from.before(d)
+            return this.editor.commands.deleteRange({ 
+              from: pos, 
+              to: pos + node.nodeSize 
+            })
+          }
+        }
+        
+        // 兜底：删除当前块内容
+        const start = $from.start()
+        const end = $from.end()
+        if (start !== undefined && end !== undefined) {
+          return this.editor.commands.deleteRange({ from: start, to: end })
+        }
+        
+        return false
+      }
+    }
+  }
+})
+
 interface Note {
   id: string;
   title: string;
@@ -241,40 +278,11 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       Placeholder.configure({ placeholder: '开始写笔记...' }),
       Typography,
       CustomImage.configure({ allowBase64: true, HTMLAttributes: { class: 'tiptap-image' } }),
+      DeleteLineExtension,
     ],
     editorProps: {
         attributes: {
           class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] px-4 py-3',
-        },
-        handleKeyDown: (view, event) => {
-          // Ctrl+D 删除当前行（支持列表、段落、标题）
-          if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-            event.preventDefault()
-            const { state, dispatch } = view
-            const { $from } = state.selection
-            
-            // 从当前位置向上查找块级节点
-            for (let d = $from.depth; d > 0; d--) {
-              const node = $from.node(d)
-              // 支持删除列表项、段落、标题
-              if (['listItem', 'paragraph', 'heading'].includes(node.type.name)) {
-                const pos = $from.before(d)
-                const tr = state.tr.delete(pos, pos + node.nodeSize)
-                dispatch(tr)
-                return true
-              }
-            }
-            
-            // 兜底：删除当前块内容
-            const start = $from.start()
-            const end = $from.end()
-            if (start !== undefined && end !== undefined) {
-              const tr = state.tr.delete(start, end)
-              dispatch(tr)
-              return true
-            }
-          }
-          return false
         },
         handlePaste: (view, event) => {
             const items = event.clipboardData?.items
