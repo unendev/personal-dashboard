@@ -239,7 +239,7 @@ class RedditCommentsScraper:
             is_submitter BOOLEAN DEFAULT FALSE,
             permalink TEXT,
             scraped_at TIMESTAMP DEFAULT NOW(),
-            FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+            FOREIGN KEY (post_id) REFERENCES reddit_posts(id) ON DELETE CASCADE
         );
         
         CREATE INDEX IF NOT EXISTS idx_reddit_comments_post_id ON reddit_comments(post_id);
