@@ -30,3 +30,4 @@ CREATE UNIQUE INDEX "reddit_comments_comment_id_key" ON "public"."reddit_comment
 
 -- AddForeignKey
 ALTER TABLE "public"."reddit_comments" ADD CONSTRAINT "reddit_comments_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."reddit_posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

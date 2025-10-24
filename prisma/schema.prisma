@@ -227,6 +227,7 @@ model TimerTask {
   updatedAt    DateTime               @updatedAt
   order        Int                    @default(0)
   instanceTag  String?
+  version      Int                    @default(1)
   instanceTags TimerTaskInstanceTag[]
   parent       TimerTask?             @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children     TimerTask[]            @relation("TaskHierarchy")

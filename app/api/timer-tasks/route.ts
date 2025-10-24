@@ -121,16 +121,36 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/timer-tasks - 更新任务
+// PUT /api/timer-tasks - 更新任务（带乐观锁）
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, version, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
     }
 
+    // 【乐观锁】如果提供了version，进行版本检查
+    if (version !== undefined) {
+      try {
+        const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
+        return NextResponse.json(updatedTask);
+      } catch (error: any) {
+        if (error.message === 'VERSION_CONFLICT') {
+          return NextResponse.json(
+            { 
+              error: 'CONFLICT', 
+              message: '数据已在其他设备修改，请刷新页面获取最新数据' 
+            }, 
+            { status: 409 }
+          );
+        }
+        throw error;
+      }
+    }
+
+    // 向后兼容：无version的请求仍然正常处理
     const updatedTask = await TimerDB.updateTask(id, updates);
     return NextResponse.json(updatedTask);
   } catch (error) {

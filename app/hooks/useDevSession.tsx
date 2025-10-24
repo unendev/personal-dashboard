@@ -17,6 +17,7 @@ interface DevSession {
 // 本地存储键，用于标记用户是否手动登出
 const MANUAL_LOGOUT_KEY = 'manual_logout'
 const AUTO_LOGIN_ATTEMPTED_KEY = 'auto_login_attempted'
+const AUTH_PERSISTENT_KEY = 'auth_persistent' // 认证缓存，用于断网时保持登录状态
 
 /**
  * 开发环境专用的会话 Hook
@@ -45,6 +46,15 @@ export function useDevSession(): DevSession {
         if (typeof window !== 'undefined') {
           localStorage.removeItem(MANUAL_LOGOUT_KEY)
           localStorage.removeItem(AUTO_LOGIN_ATTEMPTED_KEY)
+          
+          // 【新增】缓存认证状态，用于断网时保持登录
+          localStorage.setItem(AUTH_PERSISTENT_KEY, JSON.stringify({
+            authenticated: true,
+            userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            timestamp: Date.now()
+          }))
         }
         autoLoginAttemptedRef.current = false
         console.log('✅ 使用真实NextAuth会话:', session.user.email)
@@ -52,51 +62,93 @@ export function useDevSession(): DevSession {
           data: session,
           status: 'authenticated'
         })
-      } else if (status === 'unauthenticated' && !hasManualLogout && !autoLoginAttemptedRef.current) {
-        // 未登录且非手动登出，自动登录示例账户（使用真实的 NextAuth 登录）
-        autoLoginAttemptedRef.current = true
-        console.log('🎭 尝试自动登录演示账户...')
-        
-        // 确保演示用户存在
-        fetch('/api/auth/ensure-demo-user', { method: 'POST' })
-          .then(() => fetch('/api/auth/ensure-demo-user'))
-          .then(res => res.json())
-          .then(async (data) => {
-            console.log('🔐 使用演示账户登录:', data.email)
-            // 使用 NextAuth 的 signIn 函数进行真实登录
-            const result = await signIn('credentials', {
-              email: data.email,
-              password: data.password,
-              redirect: false,
-            })
-            
-            if (result?.ok) {
-              console.log('✅ 演示账户登录成功')
-              if (typeof window !== 'undefined') {
-                localStorage.setItem(AUTO_LOGIN_ATTEMPTED_KEY, 'true')
+      } else if (status === 'unauthenticated') {
+        // 【新增】未登录时，先检查缓存的认证状态（用于断网场景）
+        if (typeof window !== 'undefined' && !hasManualLogout) {
+          const authCache = localStorage.getItem(AUTH_PERSISTENT_KEY)
+          if (authCache) {
+            try {
+              const cached = JSON.parse(authCache)
+              const cacheAge = Date.now() - cached.timestamp
+              const maxAge = 24 * 60 * 60 * 1000 // 24小时
+              
+              if (cacheAge < maxAge) {
+                // 缓存未过期，使用缓存的认证状态
+                console.log('🔌 检测到网络问题，使用缓存的认证状态保持登录')
+                setDevSession({
+                  data: {
+                    user: {
+                      id: cached.userId,
+                      email: cached.email,
+                      name: cached.name
+                    }
+                  },
+                  status: 'authenticated'
+                })
+                return // 直接返回，不执行后续的自动登录逻辑
+              } else {
+                // 缓存已过期，清除
+                localStorage.removeItem(AUTH_PERSISTENT_KEY)
               }
-            } else {
-              console.error('❌ 演示账户登录失败:', result?.error)
+            } catch (error) {
+              console.error('解析认证缓存失败:', error)
+              localStorage.removeItem(AUTH_PERSISTENT_KEY)
+            }
+          }
+        }
+        
+        // 如果没有缓存或缓存已过期，尝试自动登录示例账户
+        if (!hasManualLogout && !autoLoginAttemptedRef.current) {
+          autoLoginAttemptedRef.current = true
+          console.log('🎭 尝试自动登录演示账户...')
+          
+          // 确保演示用户存在
+          fetch('/api/auth/ensure-demo-user', { method: 'POST' })
+            .then(() => fetch('/api/auth/ensure-demo-user'))
+            .then(res => res.json())
+            .then(async (data) => {
+              console.log('🔐 使用演示账户登录:', data.email)
+              // 使用 NextAuth 的 signIn 函数进行真实登录
+              const result = await signIn('credentials', {
+                email: data.email,
+                password: data.password,
+                redirect: false,
+              })
+              
+              if (result?.ok) {
+                console.log('✅ 演示账户登录成功')
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(AUTO_LOGIN_ATTEMPTED_KEY, 'true')
+                }
+              } else {
+                console.error('❌ 演示账户登录失败:', result?.error)
+                setDevSession({
+                  data: null,
+                  status: 'unauthenticated'
+                })
+              }
+            })
+            .catch(err => {
+              console.error('获取演示账户信息失败:', err)
               setDevSession({
                 data: null,
                 status: 'unauthenticated'
               })
-            }
-          })
-          .catch(err => {
-            console.error('获取演示账户信息失败:', err)
-            setDevSession({
-              data: null,
-              status: 'unauthenticated'
             })
+        } else {
+          // 手动登出或已尝试自动登录
+          setDevSession({
+            data: null,
+            status: 'unauthenticated'
           })
+        }
       } else if (status === 'loading') {
         setDevSession({
           data: null,
           status: 'loading'
         })
       } else {
-        // 手动登出或其他状态
+        // 其他状态
         setDevSession({
           data: null,
           status: status as 'loading' | 'authenticated' | 'unauthenticated'
@@ -121,6 +173,8 @@ export function useDevSession(): DevSession {
 export function markManualLogout() {
   if (typeof window !== 'undefined') {
     localStorage.setItem(MANUAL_LOGOUT_KEY, 'true')
+    // 【新增】清除认证缓存
+    localStorage.removeItem(AUTH_PERSISTENT_KEY)
   }
 }
 

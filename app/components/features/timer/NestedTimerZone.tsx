@@ -418,7 +418,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       });
     }
 
-    // 异步更新数据库：并行更新所有任务
+    // 异步更新数据库：并行更新所有任务（带乐观锁）
     const dbUpdatePromises = [
       // 启动目标任务
       fetchWithRetry('/api/timer-tasks', {
@@ -426,11 +426,21 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: taskId,
+          version: task.version, // 【乐观锁】传递版本号
           isRunning: true,
           isPaused: false,
           startTime: currentTime,
           pausedTime: 0
         }),
+      }).then(async (response) => {
+        // 【乐观锁】检测冲突
+        if (response && response.status === 409) {
+          const error = await response.json();
+          alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n点击确定刷新页面`);
+          window.location.reload();
+          return null;
+        }
+        return response;
       }).catch(error => {
         console.error('Failed to start timer in database:', error);
         return null;
@@ -443,12 +453,22 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: pausedTask.id,
+            version: pausedTask.version, // 【乐观锁】传递版本号
             elapsedTime: pausedTask.elapsedTime,
             isPaused: true,
             isRunning: false,
             startTime: null,
             pausedTime: 0
           }),
+        }).then(async (response) => {
+          // 【乐观锁】检测冲突
+          if (response && response.status === 409) {
+            const error = await response.json();
+            alert(`⚠️ 检测到数据冲突\n\n${error.message || '任务已在其他设备修改'}\n点击确定刷新页面`);
+            window.location.reload();
+            return null;
+          }
+          return response;
         }).catch(error => {
           console.error(`Failed to pause task ${pausedTask.id} in database:`, error);
           return null;
@@ -531,7 +551,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('暂停计时', task.name);
     }
 
-    // 异步更新数据库（带重试机制，失败后不回滚）
+    // 异步更新数据库（带重试机制和乐观锁，失败后不回滚）
     let retryCount = 0;
     try {
       const response = await fetchWithRetry(
@@ -543,6 +563,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           },
           body: JSON.stringify({
             id: taskId,
+            version: task.version, // 【乐观锁】传递版本号
             elapsedTime: newElapsedTime,
             isPaused: true,
             isRunning: false,
@@ -556,6 +577,14 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           console.warn(`暂停任务重试 ${attempt}/3:`, error.message);
         }
       );
+
+      // 【乐观锁】检测冲突
+      if (response && response.status === 409) {
+        const error = await response.json();
+        alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n点击确定刷新页面`);
+        window.location.reload();
+        return;
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -627,7 +656,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       onOperationRecord('继续计时', task.name);
     }
 
-    // 异步更新数据库（带重试机制）
+    // 异步更新数据库（带重试机制和乐观锁）
     try {
       const response = await fetchWithRetry('/api/timer-tasks', {
         method: 'PUT',
@@ -636,12 +665,21 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         },
         body: JSON.stringify({
           id: taskId,
+          version: task.version, // 【乐观锁】传递版本号
           isRunning: true,
           isPaused: false,
           startTime: currentTime,
           pausedTime: 0
         }),
       });
+
+      // 【乐观锁】检测冲突
+      if (response && response.status === 409) {
+        const error = await response.json();
+        alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n点击确定刷新页面`);
+        window.location.reload();
+        return;
+      }
 
       if (!response.ok) {
         console.error('Failed to update database for resume timer after retries');

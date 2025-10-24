@@ -253,6 +253,52 @@ export const TimerDB = {
     }
   },
 
+  // 【乐观锁】更新任务（带版本检查）
+  updateTaskWithVersion: async (taskId: string, expectedVersion: number, updates: Partial<Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children' | 'version'>>): Promise<TimerTask> => {
+    try {
+      // 使用updateMany进行条件更新，仅当version匹配时才更新
+      const result = await prisma.timerTask.updateMany({
+        where: { 
+          id: taskId,
+          version: expectedVersion
+        },
+        data: {
+          ...updates,
+          version: { increment: 1 } // 版本号+1
+        }
+      });
+
+      // 如果没有更新任何记录，说明版本冲突
+      if (result.count === 0) {
+        throw new Error('VERSION_CONFLICT');
+      }
+
+      // 重新获取更新后的任务（包含完整信息）
+      const updatedTask = await prisma.timerTask.findUnique({
+        where: { id: taskId },
+        include: {
+          children: {
+            include: {
+              children: true
+            }
+          }
+        }
+      });
+
+      if (!updatedTask) {
+        throw new Error('Task not found after update');
+      }
+
+      return updatedTask;
+    } catch (error: any) {
+      if (error.message === 'VERSION_CONFLICT') {
+        throw error;
+      }
+      console.error('Failed to update timer task with version:', error);
+      throw error;
+    }
+  },
+
   // 删除任务（包括所有子任务）
   deleteTask: async (taskId: string): Promise<void> => {
     try {
