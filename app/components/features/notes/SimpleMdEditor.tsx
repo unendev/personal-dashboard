@@ -13,6 +13,7 @@ import { mergeAttributes } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { Save, Maximize2, Minimize2 } from 'lucide-react'
 import { NotesFileBar } from './NotesFileBar'
+import { SwapLineExtension } from '@/lib/swap-line-extension'
 
 // Note: The CustomImage implementation and other Tiptap extensions remain unchanged.
 // ... (CustomImage, slugify, etc. would be here)
@@ -227,6 +228,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const [initialContent, setInitialContent] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const isLoadingContent = useRef(false)
+  const isSystemUpdate = useRef(false)
   const [isFullscreenModalOpen, setIsFullscreenModalOpen] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [showOutline, setShowOutline] = useState(false) // 默认不显示
@@ -317,6 +319,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       Typography,
       CustomImage.configure({ allowBase64: true, HTMLAttributes: { class: 'tiptap-image' } }),
       DeleteLineExtension,
+      SwapLineExtension,
     ],
     editorProps: {
         attributes: {
@@ -348,7 +351,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           },
     },
     onUpdate: ({ editor }) => {
-      if (isLoadingContent.current) return;
+      if (isLoadingContent.current || isSystemUpdate.current) return;
       if (saveTimeout) clearTimeout(saveTimeout);
       const timeout = setTimeout(() => {
         saveContent(editor.getHTML());
@@ -447,14 +450,23 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }
   };
 
+  // 清除待处理的自动保存操作
+  const clearPendingSave = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+  };
+
   const handleSelectNote = async (noteId: string) => {
     if (noteId === currentNoteId) return;
+    // 清除任何待处理的自动保存，防止旧笔记内容被保存到新笔记
+    clearPendingSave();
     await saveIfDirty();
     setCurrentNoteId(noteId);
-    loadNoteContent(noteId);
+    await loadNoteContent(noteId);
   };
 
   const handleCreateNote = async (selectNewNote = true) => {
+    // 清除任何待处理的自动保存
+    clearPendingSave();
     await saveIfDirty();
 
     setIsCreatingNote(true);
@@ -468,9 +480,14 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       const newNote: Note = await response.json();
       await loadNotesList(); // Refresh the list
       if (selectNewNote) {
-        setCurrentNoteId(newNote.id);
-        editor?.commands.setContent('');
-        setInitialContent('');
+        isSystemUpdate.current = true;
+        try {
+          setCurrentNoteId(newNote.id);
+          editor?.commands.setContent('');
+          setInitialContent('');
+        } finally {
+          isSystemUpdate.current = false;
+        }
       }
     } catch (error) {
       console.error('Error creating note:', error);

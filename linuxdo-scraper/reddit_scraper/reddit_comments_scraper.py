@@ -183,8 +183,8 @@ class RedditCommentsScraper:
         try:
             conn = await asyncpg.connect(NEON_DB_URL)
             
-            # 确保 reddit_comments 表存在
-            await self._ensure_comments_table_exists(conn)
+            # 注意：reddit_comments 表由 Prisma 迁移管理（prisma/migrations/20251024_add_reddit_comments_model）
+            # 无需手动创建表
             
             # 批量插入评论
             insert_query = """
@@ -224,7 +224,12 @@ class RedditCommentsScraper:
             return False
     
     async def _ensure_comments_table_exists(self, conn):
-        """确保评论表存在"""
+        """
+        [已弃用] 表创建由 Prisma 迁移管理
+        
+        保留此方法作为备份和文档，显示表的 schema。
+        实际表创建通过运行: npx prisma migrate deploy
+        """
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS reddit_comments (
             comment_id VARCHAR PRIMARY KEY,

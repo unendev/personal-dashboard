@@ -19,6 +19,7 @@ import {
   Redo,
   ImageIcon
 } from 'lucide-react'
+import { SwapLineExtension } from '@/lib/swap-line-extension'
 
 interface TipTapEditorProps {
   content: string
@@ -39,6 +40,7 @@ export function TipTapEditor({ content, onChange, placeholder }: TipTapEditorPro
           class: 'max-w-full rounded-lg',
         },
       }),
+      SwapLineExtension,
     ],
     content,
     immediatelyRender: false, // 修复 SSR hydration 问题

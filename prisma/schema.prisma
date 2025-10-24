@@ -297,6 +297,32 @@ model reddit_posts {
   score             Int?
   num_comments      Int?
   timestamp         DateTime? @default(now()) @db.Timestamptz(6)
+  comments          RedditComment[]
+
+  @@map("reddit_posts")
+}
+
+model RedditComment {
+  id             String    @id @map("comment_id")
+  postId         String    @map("post_id")
+  redditPostId   String    @map("reddit_post_id")
+  author         String?
+  body           String    @db.Text
+  score          Int       @default(0)
+  createdUtc     DateTime  @map("created_utc") @db.Timestamptz(6)
+  parentId       String?   @map("parent_id")
+  depth          Int       @default(0)
+  isSubmitter    Boolean   @default(false) @map("is_submitter")
+  permalink      String?
+  scrapedAt      DateTime  @default(now()) @map("scraped_at") @db.Timestamptz(6)
+  
+  post           reddit_posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  @@unique([id])
+  @@index([postId])
+  @@index([redditPostId])
+  @@index([createdUtc])
+  @@map("reddit_comments")
 }
 
 model TwitterUser {
