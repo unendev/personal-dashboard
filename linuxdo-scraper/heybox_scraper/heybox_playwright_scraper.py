@@ -4,9 +4,10 @@
 小黑盒Playwright爬虫 - 基于MCP测试验证的方案
 使用 Playwright 无头浏览器 + x_xhh_tokenid 认证
 
-版本：v2.1.1-reload-fix
-更新时间：2025-10-25 17:20
+版本：v2.1.2-comment-limit
+更新时间：2025-10-25 17:30
 更新内容：
+- 🔧 优化评论数量限制为10条（可配置）
 - ⚠️ 关键修复：详情页Token注入后刷新页面
 - 基于MCP Playwright调试修复评论抓取
 - 使用精确选择器：.link-comment__comment-item
@@ -27,8 +28,8 @@
 """
 
 # 版本信息
-__version__ = "v2.1.1-reload-fix"
-__update_date__ = "2025-10-25 17:20"
+__version__ = "v2.1.2-comment-limit"
+__update_date__ = "2025-10-25 17:30"
 
 import asyncio
 import os
@@ -250,7 +251,7 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
         
         # 提取评论数据（基于MCP调试验证的选择器）
         comments_data = await page.evaluate("""
-            (post_id) => {
+            (post_id, commentLimit) => {
                 const comments = [];
                 
                 // 使用小黑盒特定的评论选择器
@@ -309,9 +310,9 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
                     }
                 });
                 
-                return comments.slice(0, 50);  // 最多返回50条
+                return comments.slice(0, commentLimit);  // 限制评论数量
             }
-        """, post_id)
+        """, post_id, COMMENT_LIMIT)
         
         logger.info(f"    ✓ 获取到 {len(comments_data)} 条评论")
         return comments_data
