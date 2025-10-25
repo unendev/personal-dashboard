@@ -210,6 +210,17 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
     try:
         # 访问帖子详情页
         await page.goto(post_url, wait_until='domcontentloaded', timeout=30000)
+        
+        # 确保Token在详情页也有效（防止cookie作用域问题）
+        await page.evaluate(f"""
+            () => {{
+                const token = "{HEYBOX_TOKEN_ID}";
+                localStorage.setItem('x_xhh_tokenid', token);
+                sessionStorage.setItem('x_xhh_tokenid', token);
+                document.cookie = `x_xhh_tokenid=${{token}}; path=/; domain=.xiaoheihe.cn`;
+            }}
+        """)
+        
         await asyncio.sleep(3)  # 等待评论加载
         
         # 尝试滚动加载更多评论
