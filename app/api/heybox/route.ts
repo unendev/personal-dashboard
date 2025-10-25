@@ -77,6 +77,7 @@ export async function GET(request: Request) {
     const formattedPosts = posts.map(post => ({
       id: post.id,
       title: post.title,
+      title_cn: post.title_cn,
       url: post.url,
       author: post.author,
       cover_image: post.cover_image,
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
       comments_count: post.comments_count ?? 0,
       views_count: post.views_count ?? 0,
       analysis: {
+        title_cn: post.title_cn,
         core_issue: post.core_issue || '',
         key_info: Array.isArray(post.key_info) ? post.key_info : [],
         post_type: post.post_type || '未知',

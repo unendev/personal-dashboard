@@ -590,10 +590,10 @@ const ScrollableLayout = () => {
                       </span>
                     </div>
 
-                    {/* 标题 */}
+                    {/* 标题（优先显示中文优化标题） */}
                     <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
                                  transition-colors mb-2 line-clamp-2 flex-shrink-0">
-                      {post.title}
+                      {'title_cn' in post && post.title_cn ? post.title_cn : post.title}
                     </h3>
 
                     {/* 核心问题 */}
@@ -732,7 +732,7 @@ const ScrollableLayout = () => {
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-white mb-2">
-                    {hoveredPost.title}
+                    {'title_cn' in hoveredPost && hoveredPost.title_cn ? hoveredPost.title_cn : hoveredPost.title}
                   </h2>
                   <p className="text-sm text-white/70">
                     {hoveredPost.analysis.core_issue}

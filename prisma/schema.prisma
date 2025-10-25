@@ -731,6 +731,7 @@ model BookNote {
 model heybox_posts {
   id                String    @id
   title             String
+  title_cn          String?
   url               String
   author            String?
   avatar_url        String?

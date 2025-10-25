@@ -217,11 +217,12 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
 # ========== AI分析 ==========
 
 def analyze_with_ai(post: Dict, comments: List[Dict]) -> Dict:
-    """使用DeepSeek AI分析"""
+    """使用DeepSeek AI分析 - 对标Reddit的高质量分析"""
     logger.info(f"  🤖 AI分析: {post['title'][:30]}...")
     
     if not DEEPSEEK_API_KEY:
         return {
+            'title_cn': post.get('title', ''),
             'core_issue': post.get('summary', '')[:100],
             'key_info': [post['title']],
             'post_type': '未分类',
@@ -231,26 +232,65 @@ def analyze_with_ai(post: Dict, comments: List[Dict]) -> Dict:
     
     import requests
     
-    comments_text = "\n".join([f"- {c.get('author', '')}: {c.get('content', '')[:100]}" for c in comments[:5]])
+    # 构建内容摘要
+    excerpt = post.get('summary', '')[:1000]
+    if not excerpt.strip():
+        excerpt = "（无详细内容）"
     
-    prompt = f"""你是专业游戏社区内容分析师。分析以下小黑盒帖子：
+    # 构建评论区精华（对标Reddit - 高赞前3条）
+    comment_section = ""
+    if comments and len(comments) > 0:
+        # 按点赞数排序（如果有的话）
+        sorted_comments = sorted(comments, key=lambda x: x.get('likes_count', 0), reverse=True)
+        top_comments = sorted_comments[:3]
+        
+        comment_section = "\n\n**社区讨论精华**（高赞评论）：\n"
+        for i, comment in enumerate(top_comments, 1):
+            comment_body = comment.get('content', '')[:200]
+            likes = comment.get('likes_count', 0)
+            author = comment.get('author', '匿名')
+            comment_section += f"{i}. [{author}] (👍{likes}): {comment_body}...\n"
+        logger.info(f"  ✓ 包含 {len(top_comments)} 条高赞评论到分析")
+    else:
+        num_comments = post.get('comments_count', 0)
+        if num_comments > 0:
+            comment_section = f"\n\n**注意**：该帖子有 {num_comments} 条评论，但评论内容未包含在本次分析中。请仅基于帖子标题和正文内容进行分析，不要推测评论区内容。"
+            logger.info(f"  ⚠ 帖子有 {num_comments} 条评论但未获取")
+        else:
+            logger.info(f"  ℹ 该帖子无评论")
+    
+    # 构建高质量Prompt（对标Reddit，适配游戏社区）
+    prompt = f"""
+你是专业的游戏社区内容分析专家，擅长分析小黑盒等游戏平台的帖子和社区讨论。请分析以下帖子（含社区讨论），生成专业分析报告。
 
-标题：{post['title']}
-作者：{post['author']}
-内容：{post.get('summary', '')}
-互动：{post['likes_count']}赞 / {post['comments_count']}评论
+**原始帖子信息**：
+- 标题: {post['title']}
+- 作者: {post['author']}
+- 游戏标签: {post.get('game_tag', '未知')}
+- 内容: {excerpt}{comment_section}
+- 互动数据: {post['likes_count']}赞 / {post['comments_count']}评论
 
-评论区（前5条）：
-{comments_text if comments_text else '暂无评论'}
-
-返回JSON格式分析（只返回JSON）：
+**请严格按JSON格式输出（不要包含```json```标记）**：
 {{
-  "core_issue": "核心议题一句话",
-  "key_info": ["关键点1", "关键点2", "关键点3"],
-  "post_type": "游戏资讯/游戏攻略/玩家讨论/硬件评测/求助问答/其他",
-  "value_assessment": "高/中/低",
-  "detailed_analysis": "## 📋 内容概述\\n...\\n\\n## 💡 关键信息\\n..."
-}}"""
+  "title_cn": "中文优化标题（如果原标题已是中文，可优化使其更简洁专业；如果是英文或混杂，翻译为中文）",
+  "core_issue": "核心议题（一句话概括）",
+  "key_info": ["关键信息1", "关键信息2", "关键信息3"],
+  "post_type": "从[游戏攻略, 新闻资讯, 玩家讨论, 硬件评测, 问题求助, 资源分享, 视频内容, 其他]选一个",
+  "value_assessment": "从[高, 中, 低]选一个",
+  "detailed_analysis": "生成600-1200字专业分析，markdown格式，必须包含以下6个维度：\\n\\n## 🎮 内容背景\\n（介绍帖子的游戏/硬件背景、发布时机、社区关注度）\\n\\n## 💡 核心内容\\n（提炼帖子的主要信息、关键观点或攻略要点）\\n\\n## 🛠️ 实用价值\\n（分析对玩家的实际帮助、可操作性、适用场景）\\n\\n## 💬 社区反响\\n（基于评论分析玩家反馈、争议点、共识观点）\\n\\n## 📚 参考价值\\n（对其他玩家的借鉴意义、注意事项）\\n\\n## 🔮 趋势洞察\\n（相关游戏/硬件的发展趋势、潜在影响）"
+}}
+
+**分析要求**：
+1. title_cn要简洁专业，去除emoji和过度修饰
+2. 核心议题要准确抓住帖子的本质
+3. key_info要提炼最有价值的3个关键点
+4. post_type要根据内容准确分类
+5. value_assessment要客观评估对玩家的价值
+6. detailed_analysis必须包含完整的6个维度，每个维度2-3句话
+"""
+    
+    # 调试日志
+    logger.debug(f"  → Prompt长度: {len(prompt)}字符, 评论区长度: {len(comment_section)}字符")
     
     try:
         response = requests.post(
@@ -262,10 +302,16 @@ def analyze_with_ai(post: Dict, comments: List[Dict]) -> Dict:
             json={
                 "model": "deepseek-chat",
                 "messages": [
-                    {"role": "system", "content": "你是专业游戏社区分析师。"},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system", 
+                        "content": "你是专业的游戏社区内容分析专家，擅长分析游戏攻略、资讯、讨论和硬件评测。你的分析客观专业，注重实用价值。"
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
                 ],
-                "temperature": 0.5,
+                "temperature": 0.3,
                 "max_tokens": 2000
             },
             timeout=60
@@ -280,16 +326,20 @@ def analyze_with_ai(post: Dict, comments: List[Dict]) -> Dict:
                 logger.info(f"    ✓ AI分析完成")
                 time.sleep(AI_REQUEST_DELAY)
                 return analysis
+        else:
+            logger.warning(f"    ✗ API返回错误: {response.status_code}")
                 
     except Exception as e:
         logger.warning(f"    ✗ AI分析失败: {e}")
     
+    # 返回默认分析
     return {
+        'title_cn': post.get('title', ''),
         'core_issue': post.get('summary', post['title'])[:100],
         'key_info': [post['title']],
         'post_type': '未分类',
         'value_assessment': '中',
-        'detailed_analysis': f"## 内容\n\n{post.get('summary', '')}"
+        'detailed_analysis': f"## 🎮 内容背景\n\n{post.get('summary', '')[:200]}\n\n## 💡 核心内容\n\n待AI分析补充"
     }
 
 # ========== 数据库存储 ==========
@@ -315,18 +365,19 @@ async def save_to_database(posts_with_analysis: List[Dict]):
             try:
                 await conn.execute('''
                     INSERT INTO heybox_posts (
-                        id, title, url, author, cover_image,
+                        id, title, title_cn, url, author, cover_image,
                         content_summary, likes_count, comments_count,
                         core_issue, key_info, post_type,
                         value_assessment, detailed_analysis, timestamp
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                     ON CONFLICT (id) DO UPDATE SET
-                        likes_count = $7,
-                        comments_count = $8,
-                        timestamp = $14
+                        title_cn = $3,
+                        likes_count = $8,
+                        comments_count = $9,
+                        timestamp = $15
                 ''', 
-                    post['id'], post['title'], post['url'],
-                    post.get('author'), None,
+                    post['id'], post['title'], post['analysis'].get('title_cn', post['title']),
+                    post['url'], post.get('author'), None,
                     post.get('summary', '')[:1000], post['likes_count'],
                     post['comments_count'],
                     post['analysis']['core_issue'],
@@ -457,28 +508,10 @@ async def main():
         
         logger.info(f"\n第3步完成：AI分析\n")
         
-        # 保存数据库
+        # 保存数据库（对标Reddit - 仅数据库，不生成JSON文件）
         await save_to_database(posts)
         
-        # 保存JSON备份
-        os.makedirs('data', exist_ok=True)
-        today = datetime.now().strftime("%Y-%m-%d")
-        output_file = f"data/heybox_report_{today}.json"
-        
-        report = {
-            'meta': {
-                'report_date': today,
-                'title': f'小黑盒每日报告 ({today})',
-                'post_count': len(posts),
-                'generation_time': datetime.now().isoformat()
-            },
-            'posts': posts
-        }
-        
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(report, f, ensure_ascii=False, indent=2)
-        
-        logger.info(f"✅ JSON备份已保存: {output_file}")
+        logger.info(f"✅ 数据已存入数据库，前端将从数据库读取")
         
         # 关闭浏览器
         await browser.close()

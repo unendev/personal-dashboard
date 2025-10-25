@@ -5,6 +5,7 @@
 export interface HeyboxPost {
   id: string;
   title: string;
+  title_cn?: string;
   url: string;
   author?: string;
   avatar_url?: string;
@@ -16,6 +17,7 @@ export interface HeyboxPost {
   game_tag?: string;
   timestamp?: string;
   analysis: {
+    title_cn?: string;
     core_issue: string;
     key_info: string[];
     post_type: string;
