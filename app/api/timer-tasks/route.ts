@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
       completedAt: completedAt || null,
       date: date!,
       parentId: parentId || null, // 支持父任务ID
-      order: order !== undefined ? order : 0 // 支持排序，默认0确保新任务显示在最下面
+      order: order !== undefined ? order : 0, // 支持排序，默认0确保新任务显示在最下面
+      version: 1 // 【乐观锁】初始版本号
     });
 
     console.log('✅ 任务创建成功，ID:', newTask.id);
@@ -136,8 +137,8 @@ export async function PUT(request: NextRequest) {
       try {
         const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
         return NextResponse.json(updatedTask);
-      } catch (error: any) {
-        if (error.message === 'VERSION_CONFLICT') {
+      } catch (error: unknown) {
+        if (error instanceof Error && error.message === 'VERSION_CONFLICT') {
           return NextResponse.json(
             { 
               error: 'CONFLICT', 

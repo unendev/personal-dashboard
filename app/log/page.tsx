@@ -49,6 +49,7 @@ export default function LogPage() {
     isPaused: boolean;
     pausedTime: number;
     order?: number; // 排序字段（数值越小越靠前）
+    version?: number; // 【乐观锁】版本号
     createdAt: string;
     updatedAt: string;
   }[]>([]);

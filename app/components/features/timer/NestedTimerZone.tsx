@@ -43,6 +43,7 @@ interface TimerTask {
   children?: TimerTask[];
   totalTime?: number; // 包含子任务的总时间
   order?: number; // 排序字段
+  version?: number; // 【乐观锁】版本号
   createdAt: string;
   updatedAt: string;
 }
@@ -355,7 +356,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     if (!task) return;
     
     // 记录需要暂停的任务信息（用于数据库更新和操作日志）
-    const tasksToPause: Array<{ id: string; name: string; elapsedTime: number }> = [];
+    const tasksToPause: Array<{ id: string; name: string; elapsedTime: number; version?: number }> = [];
     const currentTime = Math.floor(Date.now() / 1000);
     
     // 原子化状态更新：同时暂停其他任务和启动当前任务
@@ -381,7 +382,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           tasksToPause.push({
             id: task.id,
             name: task.name,
-            elapsedTime: newElapsedTime
+            elapsedTime: newElapsedTime,
+            version: task.version // 【乐观锁】保留版本号
           });
           
           return {

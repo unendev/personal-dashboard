@@ -3,17 +3,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LinuxDoPost, LinuxDoReport } from '@/types/linuxdo';
 import { RedditPost, RedditReport } from '@/types/reddit';
+import { HeyboxPost, HeyboxReport } from '@/types/heybox';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 
-type SourceType = 'all' | 'linuxdo' | 'reddit';
+type SourceType = 'all' | 'linuxdo' | 'reddit' | 'heybox';
 
 const ScrollableLayout = () => {
   const [linuxdoData, setLinuxdoData] = useState<LinuxDoReport | null>(null);
   const [redditData, setRedditData] = useState<RedditReport | null>(null);
+  const [heyboxData, setHeyboxData] = useState<HeyboxReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hoveredPost, setHoveredPost] = useState<(LinuxDoPost | RedditPost) | null>(null);
+  const [hoveredPost, setHoveredPost] = useState<(LinuxDoPost | RedditPost | HeyboxPost) | null>(null);
   const [activeSource, setActiveSource] = useState<SourceType>('all');
   const [activeSection, setActiveSection] = useState<string>('linuxdo');
   const [showAIChat, setShowAIChat] = useState(false);
@@ -23,8 +25,10 @@ const ScrollableLayout = () => {
   // 日期选择相关state
   const [selectedLinuxDoDate, setSelectedLinuxDoDate] = useState<string>('');
   const [selectedRedditDate, setSelectedRedditDate] = useState<string>('');
+  const [selectedHeyboxDate, setSelectedHeyboxDate] = useState<string>('');
   const [availableLinuxDoDates, setAvailableLinuxDoDates] = useState<Array<{ date: string; count: number; label: string }>>([]);
   const [availableRedditDates, setAvailableRedditDates] = useState<Array<{ date: string; count: number; label: string }>>([]);
+  const [availableHeyboxDates, setAvailableHeyboxDates] = useState<Array<{ date: string; count: number; label: string }>>([]);
   const [loadingDates, setLoadingDates] = useState(true);
 
   // 日期格式化工具函数
@@ -72,9 +76,10 @@ const ScrollableLayout = () => {
     const fetchDates = async () => {
       try {
         setLoadingDates(true);
-        const [linuxdoDatesRes, redditDatesRes] = await Promise.all([
+        const [linuxdoDatesRes, redditDatesRes, heyboxDatesRes] = await Promise.all([
           fetch('/api/linuxdo/dates'),
-          fetch('/api/reddit/dates')
+          fetch('/api/reddit/dates'),
+          fetch('/api/heybox/dates')
         ]);
 
         if (linuxdoDatesRes.ok) {
@@ -98,11 +103,23 @@ const ScrollableLayout = () => {
             setSelectedRedditDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
+
+        if (heyboxDatesRes.ok) {
+          const data = await heyboxDatesRes.json();
+          setAvailableHeyboxDates(data.dates || []);
+          // 设置默认日期（小黑盒用今天）
+          if (!selectedHeyboxDate) {
+            const defaultDate = new Date().toISOString().split('T')[0];
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            setSelectedHeyboxDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch dates:', error);
         // 设置默认日期作为降级
         if (!selectedLinuxDoDate) setSelectedLinuxDoDate(getDefaultDate('linuxdo'));
         if (!selectedRedditDate) setSelectedRedditDate(getDefaultDate('reddit'));
+        if (!selectedHeyboxDate) setSelectedHeyboxDate(new Date().toISOString().split('T')[0]);
       } finally {
         setLoadingDates(false);
       }
@@ -119,9 +136,10 @@ const ScrollableLayout = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [linuxdoRes, redditRes] = await Promise.all([
+        const [linuxdoRes, redditRes, heyboxRes] = await Promise.all([
           fetch(`/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`),
-          fetch(`/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`)
+          fetch(`/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`),
+          fetch(`/api/heybox${selectedHeyboxDate ? `?date=${selectedHeyboxDate}` : ''}`)
         ]);
 
         if (linuxdoRes.ok) {
@@ -137,6 +155,13 @@ const ScrollableLayout = () => {
         } else {
           setRedditData(null);
         }
+
+        if (heyboxRes.ok) {
+          const data = await heyboxRes.json();
+          setHeyboxData(data);
+        } else {
+          setHeyboxData(null);
+        }
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -145,7 +170,7 @@ const ScrollableLayout = () => {
     };
 
     fetchData();
-  }, [selectedLinuxDoDate, selectedRedditDate, loadingDates]);
+  }, [selectedLinuxDoDate, selectedRedditDate, selectedHeyboxDate, loadingDates]);
 
   // 处理点击展开详情
   const handleClick = (post: LinuxDoPost | RedditPost) => {
@@ -205,7 +230,7 @@ const ScrollableLayout = () => {
 
   // 获取显示的帖子
   const displayedPosts = React.useMemo(() => {
-    const allPosts: Array<(LinuxDoPost | RedditPost) & { source: 'linuxdo' | 'reddit' }> = [];
+    const allPosts: Array<(LinuxDoPost | RedditPost | HeyboxPost) & { source: 'linuxdo' | 'reddit' | 'heybox' }> = [];
     
     if (activeSource === 'all' || activeSource === 'linuxdo') {
       linuxdoData?.posts.forEach(post => {
@@ -219,8 +244,14 @@ const ScrollableLayout = () => {
       });
     }
     
+    if (activeSource === 'all' || activeSource === 'heybox') {
+      heyboxData?.posts.forEach(post => {
+        allPosts.push({ ...post, source: 'heybox' as const });
+      });
+    }
+    
     return allPosts;
-  }, [linuxdoData, redditData, activeSource]);
+  }, [linuxdoData, redditData, heyboxData, activeSource]);
 
   const getPostTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -240,10 +271,14 @@ const ScrollableLayout = () => {
     return value === '高' ? '⭐' : value === '中' ? '◆' : '○';
   };
 
-  const getSourceBadge = (source: 'linuxdo' | 'reddit') => {
-    return source === 'linuxdo' 
-      ? <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">🐧</span>
-      : <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴</span>;
+  const getSourceBadge = (source: 'linuxdo' | 'reddit' | 'heybox') => {
+    if (source === 'linuxdo') {
+      return <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">🐧</span>;
+    } else if (source === 'reddit') {
+      return <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs border border-orange-500/30">🔴</span>;
+    } else {
+      return <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/30">🎮</span>;
+    }
   };
 
   if (loading || loadingDates) {
@@ -335,6 +370,40 @@ const ScrollableLayout = () => {
               </div>
             </div>
           ))}
+
+          {/* 小黑盒 */}
+          {(activeSource === 'all' || activeSource === 'heybox') && heyboxData && (
+            <div className="mb-6">
+              <div 
+                onClick={() => scrollToSection('heybox')}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
+                  activeSection === 'heybox' ? 'bg-purple-500/20 text-purple-400' : 'text-white/70 hover:bg-white/5'
+                }`}
+              >
+                <span className="text-base">🎮</span>
+                <span className="font-medium">小黑盒</span>
+                <span className="ml-auto text-xs text-white/40">({heyboxData.posts.length})</span>
+              </div>
+              <div className="ml-6 mt-2 space-y-1">
+                {heyboxData.posts.slice(0, 10).map((post, idx) => (
+                  <div
+                    key={post.id}
+                    onClick={() => scrollToSection(`post-heybox-${post.id}`)}
+                    className="text-xs text-white/50 hover:text-white/80 cursor-pointer truncate 
+                             transition-colors py-1 hover:bg-white/5 rounded px-2"
+                    title={post.title}
+                  >
+                    {idx + 1}. {post.title}
+                  </div>
+                ))}
+                {heyboxData.posts.length > 10 && (
+                  <div className="text-xs text-white/30 px-2 py-1">
+                    还有 {heyboxData.posts.length - 10} 篇...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -375,6 +444,16 @@ const ScrollableLayout = () => {
                   }`}
                 >
                   🔴 Reddit
+                </button>
+                <button
+                  onClick={() => setActiveSource('heybox')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeSource === 'heybox'
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  🎮 小黑盒
                 </button>
               </div>
 
@@ -446,6 +525,35 @@ const ScrollableLayout = () => {
                     ) : (
                       <option value={selectedRedditDate} className="bg-gray-900">
                         {formatDateLabel(selectedRedditDate)}
+                      </option>
+                    )}
+                  </select>
+                </div>
+              )}
+
+              {/* 小黑盒日期选择 */}
+              {(activeSource === 'all' || activeSource === 'heybox') && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/50 flex items-center gap-1">
+                    <span>🎮</span>
+                    <span>日期:</span>
+                  </span>
+                  <select
+                    value={selectedHeyboxDate}
+                    onChange={(e) => setSelectedHeyboxDate(e.target.value)}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white
+                             hover:bg-white/10 hover:border-white/20 focus:outline-none focus:border-purple-500/50
+                             transition-all cursor-pointer"
+                  >
+                    {availableHeyboxDates.length > 0 ? (
+                      availableHeyboxDates.map(dateObj => (
+                        <option key={dateObj.date} value={dateObj.date} className="bg-gray-900">
+                          {formatDateLabel(dateObj.date)} ({dateObj.count}篇)
+                        </option>
+                      ))
+                    ) : (
+                      <option value={selectedHeyboxDate} className="bg-gray-900">
+                        {formatDateLabel(selectedHeyboxDate)}
                       </option>
                     )}
                   </select>

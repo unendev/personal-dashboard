@@ -11,9 +11,12 @@ import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { mergeAttributes } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
-import { Save, Maximize2, Minimize2 } from 'lucide-react'
+import { Save, Maximize2, Minimize2, ChevronDown } from 'lucide-react'
 import { NotesFileBar } from './NotesFileBar'
 import { SwapLineExtension } from '@/lib/swap-line-extension'
+import { Details } from '@/lib/tiptap-extensions/details'
+import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
+import { DetailsContent } from '@/lib/tiptap-extensions/details-content'
 
 // Note: The CustomImage implementation and other Tiptap extensions remain unchanged.
 // ... (CustomImage, slugify, etc. would be here)
@@ -320,6 +323,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       CustomImage.configure({ allowBase64: true, HTMLAttributes: { class: 'tiptap-image' } }),
       DeleteLineExtension,
       SwapLineExtension,
+      Details,
+      DetailsSummary,
+      DetailsContent,
     ],
     editorProps: {
         attributes: {
@@ -790,6 +796,136 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         .ProseMirror a:hover {
           color: #93c5fd;
         }
+
+        /* 折叠块样式 */
+        .ProseMirror details {
+          border: 1px solid #4b5563;
+          border-radius: 0.5rem;
+          padding: 0;
+          margin: 1rem 0;
+          background-color: #1f2937;
+          overflow: hidden;
+          transition: all 0.2s ease;
+        }
+
+        .ProseMirror details:hover {
+          border-color: #6b7280;
+          background-color: #252d3a;
+        }
+
+        .ProseMirror details[open] {
+          border-color: #3b82f6;
+        }
+
+        .ProseMirror details summary {
+          padding: 0.75rem 1rem;
+          cursor: pointer;
+          font-weight: 500;
+          color: #e5e7eb;
+          background-color: #374151;
+          user-select: none;
+          display: flex;
+          align-items: center;
+          transition: all 0.15s ease;
+          position: relative;
+        }
+
+        .ProseMirror details summary:hover {
+          background-color: #4b5563;
+          color: #f9fafb;
+        }
+
+        .ProseMirror details[open] summary {
+          background-color: #3b82f6;
+          color: #ffffff;
+          border-bottom: 1px solid #2563eb;
+        }
+
+        .ProseMirror details summary::marker,
+        .ProseMirror details summary::-webkit-details-marker {
+          content: '';
+          display: none;
+        }
+
+        .ProseMirror details summary::before {
+          content: '▶';
+          display: inline-block;
+          margin-right: 0.5rem;
+          transition: transform 0.2s ease;
+          font-size: 0.75rem;
+          color: #9ca3af;
+        }
+
+        .ProseMirror details[open] summary::before {
+          transform: rotate(90deg);
+          color: #ffffff;
+        }
+
+        .ProseMirror .details-content {
+          padding: 1rem;
+          color: #d1d5db;
+          animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* 折叠块内的段落不需要额外上边距 */
+        .ProseMirror .details-content > p:first-child {
+          margin-top: 0;
+        }
+
+        .ProseMirror .details-content > p:last-child {
+          margin-bottom: 0;
+        }
+
+        /* 嵌套折叠块样式 */
+        .ProseMirror .details-content details {
+          margin: 0.75rem 0;
+        }
+
+        /* 图片调整手柄样式 */
+        .image-resizer {
+          position: relative;
+          display: inline-block;
+          max-width: 100%;
+        }
+
+        .image-resize-handle {
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          width: 20px;
+          height: 20px;
+          background-color: #3b82f6;
+          cursor: nwse-resize;
+          border-radius: 0 0 4px 0;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .image-resizer:hover .image-resize-handle {
+          opacity: 0.8;
+        }
+
+        .image-resizer.resizing .image-resize-handle {
+          opacity: 1;
+        }
+
+        .tiptap-image {
+          max-width: 100%;
+          height: auto;
+          display: block;
+          border-radius: 4px;
+        }
       `}</style>
       <NotesFileBar 
         notes={notesList}
@@ -804,6 +940,14 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
         {lastSaved && <span>已保存 {lastSaved.toLocaleTimeString()}</span>}
         {isSaving && <span className="text-blue-400">保存中...</span>}
         <div className="ml-auto flex gap-2">
+            {/* <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor?.commands.setDetails()}
+              title="插入折叠块 (Ctrl+Shift+D)"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button> */}
             <Button
               variant="ghost"
               size="sm"

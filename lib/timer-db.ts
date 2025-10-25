@@ -290,8 +290,8 @@ export const TimerDB = {
       }
 
       return updatedTask;
-    } catch (error: any) {
-      if (error.message === 'VERSION_CONFLICT') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'VERSION_CONFLICT') {
         throw error;
       }
       console.error('Failed to update timer task with version:', error);
