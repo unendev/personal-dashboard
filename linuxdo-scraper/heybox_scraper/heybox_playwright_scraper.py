@@ -4,10 +4,19 @@
 小黑盒Playwright爬虫 - 基于MCP测试验证的方案
 使用 Playwright 无头浏览器 + x_xhh_tokenid 认证
 
+版本：v2.1.0-mcp-comment-fix
+更新时间：2025-10-25 17:00
+更新内容：
+- 基于MCP Playwright调试修复评论抓取
+- 使用精确选择器：.link-comment__comment-item
+- TreeWalker遍历提取评论内容
+- 正则过滤元数据噪音
+
 测试验证：2025-10-25 ✅
 - Token认证成功
 - 安全验证已绕过
 - 页面正常加载帖子内容
+- MCP验证评论提取成功
 
 使用方法：
   1. 配置 .env 文件中的 HEYBOX_TOKEN_ID
@@ -15,6 +24,10 @@
   3. 安装浏览器: python -m playwright install chromium
   4. 运行: python heybox_playwright_scraper.py
 """
+
+# 版本信息
+__version__ = "v2.1.0-mcp-comment-fix"
+__update_date__ = "2025-10-25 17:00"
 
 import asyncio
 import os
@@ -190,8 +203,9 @@ async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[D
         return []
 
 async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict]:
-    """提取帖子评论"""
+    """提取帖子评论 - MCP调试验证版本"""
     logger.info(f"  💬 抓取评论: {post_id}")
+    logger.info(f"     📍 URL: {post_url}")
     
     try:
         # 访问帖子详情页
@@ -205,6 +219,20 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
             }
         """)
         await asyncio.sleep(1)
+        
+        # 调试：检查页面结构
+        page_info = await page.evaluate("""
+            () => {
+                const commentSection = document.querySelector('.link-comment');
+                const commentItems = document.querySelectorAll('.link-comment__comment-item');
+                return {
+                    hasCommentSection: !!commentSection,
+                    commentItemsCount: commentItems.length,
+                    pageTitle: document.title
+                };
+            }
+        """)
+        logger.info(f"     🔍 页面检测: 评论区={page_info['hasCommentSection']}, 评论项数={page_info['commentItemsCount']}")
         
         # 提取评论数据（基于MCP调试验证的选择器）
         comments_data = await page.evaluate("""
@@ -489,6 +517,8 @@ async def main():
     """主执行流程"""
     logger.info("=" * 80)
     logger.info("🎮 小黑盒Playwright爬虫启动")
+    logger.info(f"📦 版本: {__version__}")
+    logger.info(f"🕐 更新时间: {__update_date__}")
     logger.info("=" * 80)
     
     # 检查配置
