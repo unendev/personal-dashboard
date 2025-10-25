@@ -196,14 +196,79 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
     try:
         # 访问帖子详情页
         await page.goto(post_url, wait_until='domcontentloaded', timeout=30000)
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)  # 等待评论加载
         
-        # 尝试提取评论（需要根据实际页面结构调整）
+        # 尝试滚动加载更多评论
+        await page.evaluate("""
+            () => {
+                window.scrollTo(0, document.body.scrollHeight / 2);
+            }
+        """)
+        await asyncio.sleep(1)
+        
+        # 提取评论数据
         comments_data = await page.evaluate("""
             () => {
                 const comments = [];
-                // TODO: 根据实际评论结构提取
-                return comments;
+                
+                // 尝试多种可能的评论选择器
+                const selectors = [
+                    '.comment-item',
+                    '.comment',
+                    '[class*="comment"]',
+                    '[class*="Comment"]',
+                    '.reply-item',
+                    '[data-comment-id]'
+                ];
+                
+                let commentElements = [];
+                for (const selector of selectors) {
+                    commentElements = document.querySelectorAll(selector);
+                    if (commentElements.length > 0) break;
+                }
+                
+                commentElements.forEach((el, index) => {
+                    try {
+                        // 提取评论内容
+                        const contentEl = el.querySelector('[class*="content"]') || 
+                                         el.querySelector('[class*="text"]') ||
+                                         el.querySelector('p') ||
+                                         el;
+                        const content = contentEl?.textContent?.trim() || '';
+                        
+                        if (!content || content.length < 2) return;
+                        
+                        // 提取作者
+                        const authorEl = el.querySelector('[class*="author"]') ||
+                                        el.querySelector('[class*="user"]') ||
+                                        el.querySelector('[class*="name"]');
+                        const author = authorEl?.textContent?.trim() || '匿名';
+                        
+                        // 提取点赞数
+                        const likeEl = el.querySelector('[class*="like"]') ||
+                                      el.querySelector('[class*="praise"]') ||
+                                      el.querySelector('[class*="thumbs"]');
+                        const likeText = likeEl?.textContent?.trim() || '0';
+                        const likes = parseInt(likeText.replace(/[^0-9]/g, '')) || 0;
+                        
+                        // 提取时间
+                        const timeEl = el.querySelector('[class*="time"]') ||
+                                      el.querySelector('[class*="date"]');
+                        const time = timeEl?.textContent?.trim() || '';
+                        
+                        comments.push({
+                            id: `comment_${index}`,
+                            author: author,
+                            content: content,
+                            likes_count: likes,
+                            created_at: time
+                        });
+                    } catch (e) {
+                        console.log('评论提取失败:', e);
+                    }
+                });
+                
+                return comments.slice(0, 50);  // 最多返回50条
             }
         """)
         
