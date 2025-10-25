@@ -4,9 +4,10 @@
 小黑盒Playwright爬虫 - 基于MCP测试验证的方案
 使用 Playwright 无头浏览器 + x_xhh_tokenid 认证
 
-版本：v2.1.0-mcp-comment-fix
-更新时间：2025-10-25 17:00
+版本：v2.1.1-reload-fix
+更新时间：2025-10-25 17:20
 更新内容：
+- ⚠️ 关键修复：详情页Token注入后刷新页面
 - 基于MCP Playwright调试修复评论抓取
 - 使用精确选择器：.link-comment__comment-item
 - TreeWalker遍历提取评论内容
@@ -26,8 +27,8 @@
 """
 
 # 版本信息
-__version__ = "v2.1.0-mcp-comment-fix"
-__update_date__ = "2025-10-25 17:00"
+__version__ = "v2.1.1-reload-fix"
+__update_date__ = "2025-10-25 17:20"
 
 import asyncio
 import os
@@ -221,6 +222,8 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
             }}
         """)
         
+        # ⚠️ 关键：刷新页面使Token生效（MCP调试验证必须步骤）
+        await page.reload(wait_until='domcontentloaded')
         await asyncio.sleep(3)  # 等待评论加载
         
         # 尝试滚动加载更多评论
