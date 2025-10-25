@@ -24,7 +24,7 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any
 from playwright.async_api import async_playwright, Page
-from playwright_stealth import Stealth
+from playwright_stealth import stealth_async
 import asyncpg
 import re
 
@@ -465,11 +465,10 @@ async def main():
             }
         )
         
-        # 应用反爬虫
-        stealth = Stealth()
-        await stealth.apply_stealth_async(context)
-        
         page = await context.new_page()
+        
+        # 应用反爬虫stealth
+        await stealth_async(page)
         logger.info("✓ 页面创建成功")
         
         # 初始化并注入Token
