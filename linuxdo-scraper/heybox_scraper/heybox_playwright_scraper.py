@@ -206,62 +206,61 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
         """)
         await asyncio.sleep(1)
         
-        # 提取评论数据
+        # 提取评论数据（基于MCP调试验证的选择器）
         comments_data = await page.evaluate("""
-            () => {
+            (post_id) => {
                 const comments = [];
                 
-                // 尝试多种可能的评论选择器
-                const selectors = [
-                    '.comment-item',
-                    '.comment',
-                    '[class*="comment"]',
-                    '[class*="Comment"]',
-                    '.reply-item',
-                    '[data-comment-id]'
-                ];
+                // 使用小黑盒特定的评论选择器
+                const commentElements = document.querySelectorAll('.link-comment__comment-item');
                 
-                let commentElements = [];
-                for (const selector of selectors) {
-                    commentElements = document.querySelectorAll(selector);
-                    if (commentElements.length > 0) break;
-                }
-                
-                commentElements.forEach((el, index) => {
+                commentElements.forEach((item, index) => {
                     try {
-                        // 提取评论内容
-                        const contentEl = el.querySelector('[class*="content"]') || 
-                                         el.querySelector('[class*="text"]') ||
-                                         el.querySelector('p') ||
-                                         el;
-                        const content = contentEl?.textContent?.trim() || '';
+                        // 提取作者
+                        const authorLink = item.querySelector('a[href*="/app/user/profile/"]');
+                        let author = '匿名';
+                        if (authorLink) {
+                            // 获取链接文本，过滤掉"作者"、"Lv.XX"等标签
+                            const authorText = authorLink.textContent.trim();
+                            author = authorText.split('\\n')[0].replace(/作者|Lv\\.\\d+/g, '').trim();
+                        }
+                        
+                        // 提取点赞数 - 查找只包含数字的按钮
+                        const buttons = Array.from(item.querySelectorAll('button'));
+                        const likeBtn = buttons.find(b => /^\\s*\\d+\\s*$/.test(b.textContent.trim()));
+                        const likes_count = likeBtn ? parseInt(likeBtn.textContent.trim()) : 0;
+                        
+                        // 提取评论内容 - 使用TreeWalker遍历文本节点
+                        const textNodes = [];
+                        const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
+                        while (walker.nextNode()) {
+                            const text = walker.currentNode.textContent.trim();
+                            // 过滤掉时间、等级、回复等元数据
+                            if (text && 
+                                text.length > 5 && 
+                                !text.match(/^\\d+(天|小时|分钟)前/) &&
+                                !text.match(/^Lv\\.\\d+/) &&
+                                !text.match(/^·/) &&
+                                !text.match(/^回复/) &&
+                                !text.match(/全部.*条回复/)) {
+                                textNodes.push(text);
+                            }
+                        }
+                        // 取第一个有效文本作为评论内容
+                        const content = textNodes[0] || '';
                         
                         if (!content || content.length < 2) return;
                         
-                        // 提取作者
-                        const authorEl = el.querySelector('[class*="author"]') ||
-                                        el.querySelector('[class*="user"]') ||
-                                        el.querySelector('[class*="name"]');
-                        const author = authorEl?.textContent?.trim() || '匿名';
-                        
-                        // 提取点赞数
-                        const likeEl = el.querySelector('[class*="like"]') ||
-                                      el.querySelector('[class*="praise"]') ||
-                                      el.querySelector('[class*="thumbs"]');
-                        const likeText = likeEl?.textContent?.trim() || '0';
-                        const likes = parseInt(likeText.replace(/[^0-9]/g, '')) || 0;
-                        
                         // 提取时间
-                        const timeEl = el.querySelector('[class*="time"]') ||
-                                      el.querySelector('[class*="date"]');
-                        const time = timeEl?.textContent?.trim() || '';
+                        const timeMatch = item.textContent.match(/(\\d+(天|小时|分钟)前)/);
+                        const created_at = timeMatch ? timeMatch[0] : '';
                         
                         comments.push({
-                            id: `comment_${index}`,
+                            id: `comment_${post_id}_${index}`,
                             author: author,
                             content: content,
-                            likes_count: likes,
-                            created_at: time
+                            likes_count: likes_count,
+                            created_at: created_at
                         });
                     } catch (e) {
                         console.log('评论提取失败:', e);
@@ -270,7 +269,7 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
                 
                 return comments.slice(0, 50);  // 最多返回50条
             }
-        """)
+        """, post_id)
         
         logger.info(f"    ✓ 获取到 {len(comments_data)} 条评论")
         return comments_data
