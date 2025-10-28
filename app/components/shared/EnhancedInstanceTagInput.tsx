@@ -92,7 +92,7 @@ export function EnhancedInstanceTagInput({
         }
 
         // 合并并去重
-        const allTagsMap: Record<string, InstanceTag> = {}
+        const allTagsMap: Record<string, InstanceTag> = {};
         safePredefinedTags.forEach(tag => allTagsMap[tag.name] = tag)
         usedTags.forEach(tag => {
           if (!allTagsMap[tag.name]) {
@@ -126,7 +126,7 @@ export function EnhancedInstanceTagInput({
           const predefinedData = await predefinedResponse.json()
           const usedTagsData = await usedTagsResponse.json()
           
-          const allTagsMap: Record<string, InstanceTag> = {}
+          const allTagsMap: Record<string, InstanceTag> = {};
           ((predefinedData?.instanceTags || predefinedData) || []).forEach((tag: InstanceTag) => allTagsMap[tag.name] = tag);
           (usedTagsData.instanceTags || []).forEach((tagName: string) => {
             if (!allTagsMap[tagName]) {
