@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { safeFetchJSON, safePostJSON } from '@/lib/fetch-utils';
 
 const TwitterDebug = () => {
   const [debugData, setDebugData] = useState<{
@@ -15,24 +16,18 @@ const TwitterDebug = () => {
     const fetchDebugData = async () => {
       try {
         // 测试用户API
-        const userResponse = await fetch('/api/twitter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: 'elonmusk' })
-        });
-        const userData = await userResponse.json();
+        const userData = await safePostJSON('/api/twitter', { username: 'elonmusk' }, 0);
 
         // 测试推文API
-        const tweetsResponse = await fetch('/api/twitter?userId=2244994945&maxResults=3');
-        const tweetsData = await tweetsResponse.json();
+        const tweetsData = await safeFetchJSON('/api/twitter?userId=2244994945&maxResults=3', {}, 0);
 
         setDebugData({
           userApi: {
-            status: userResponse.status,
+            status: 200,
             data: userData
           },
           tweetsApi: {
-            status: tweetsResponse.status,
+            status: 200,
             data: tweetsData
           }
         });

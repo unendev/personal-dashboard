@@ -47,6 +47,8 @@ interface ERGameData {
 //   message: string;
 // }
 
+import { safeFetchJSON } from '@/lib/fetch-utils';
+
 const EternalReturnCard = () => {
   const [gameData, setGameData] = useState<ERGameData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,13 +65,7 @@ const EternalReturnCard = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/eternal-return');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch game data');
-      }
-
+      const data = await safeFetchJSON<ERGameData>('/api/eternal-return', {}, 0);
       setGameData(data);
     } catch (err) {
       console.error('Error fetching Eternal Return data:', err);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { safeFetchJSON, safePostJSON } from '@/lib/fetch-utils';
 
 const TwitterStatusCheck = () => {
   const [status, setStatus] = useState<{
@@ -20,20 +21,16 @@ const TwitterStatusCheck = () => {
 
     try {
       // 检查API状态
-      const apiResponse = await fetch('/api/twitter/test-real?type=user');
-      const apiData = await apiResponse.json();
+      const apiData = await safeFetchJSON<{ success: boolean }>('/api/twitter/test-real?type=user', {}, 0);
       
       // 检查缓存状态
-      const cacheResponse = await fetch('/api/twitter/cache');
-      const cacheData = await cacheResponse.json();
+      const cacheData = await safeFetchJSON<{ success: boolean }>('/api/twitter/cache', {}, 0);
 
       // 检查我们的API
-      const ourApiResponse = await fetch('/api/twitter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'elonmusk', useCache: false })
-      });
-      const ourApiData = await ourApiResponse.json();
+      const ourApiData = await safePostJSON<{ cached: boolean }>('/api/twitter', { 
+        username: 'elonmusk', 
+        useCache: false 
+      }, 0);
 
       setStatus({
         apiStatus: apiData.success ? 'working' : 'failed',

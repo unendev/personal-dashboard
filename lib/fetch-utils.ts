@@ -155,4 +155,122 @@ export async function deleteRequest(
   }
 }
 
+/**
+ * 安全的 JSON 解析
+ * 检查 content-type 避免解析 HTML 错误页面
+ */
+export async function safeParseJSON<T = unknown>(response: Response): Promise<T> {
+  const contentType = response.headers.get('content-type');
+  
+  // 检查是否是 JSON 响应
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text();
+    
+    // 如果是 HTML 错误页面，提取更友好的错误信息
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+      throw new Error(
+        `API 返回了 HTML 页面而不是 JSON (${response.status} ${response.statusText})`
+      );
+    }
+    
+    // 其他非 JSON 响应
+    throw new Error(
+      `API 返回了非 JSON 格式数据 (Content-Type: ${contentType || 'unknown'})`
+    );
+  }
+  
+  try {
+    return await response.json();
+  } catch (error) {
+    throw new Error(
+      `JSON 解析失败: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * 安全的 GET JSON 请求
+ * 自动检查响应类型并处理错误
+ */
+export async function safeFetchJSON<T = unknown>(
+  url: string,
+  options: RequestInit = {},
+  maxRetries: number = 3,
+  onRetry?: (attempt: number, error: Error) => void
+): Promise<T> {
+  const response = await fetchWithRetry(url, options, maxRetries, onRetry);
+  
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    
+    // 尝试解析错误信息
+    if (contentType?.includes('application/json')) {
+      try {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || errorData.message || `请求失败 (${response.status})`
+        );
+      } catch (jsonError) {
+        // JSON 解析失败，使用文本
+        const text = await response.text();
+        throw new Error(`请求失败 (${response.status}): ${text.slice(0, 100)}`);
+      }
+    } else {
+      // 非 JSON 错误响应
+      const text = await response.text();
+      throw new Error(
+        `请求失败 (${response.status}): ${text.includes('<!DOCTYPE') ? 'HTML 错误页面' : text.slice(0, 100)}`
+      );
+    }
+  }
+  
+  return safeParseJSON<T>(response);
+}
+
+/**
+ * 安全的 POST JSON 请求（替代现有的 postJSON）
+ */
+export async function safePostJSON<T = unknown>(
+  url: string,
+  data: Record<string, unknown>,
+  maxRetries: number = 3,
+  onRetry?: (attempt: number, error: Error) => void
+): Promise<T> {
+  return safeFetchJSON<T>(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    },
+    maxRetries,
+    onRetry
+  );
+}
+
+/**
+ * 安全的 PUT JSON 请求（替代现有的 putJSON）
+ */
+export async function safePutJSON<T = unknown>(
+  url: string,
+  data: Record<string, unknown>,
+  maxRetries: number = 3,
+  onRetry?: (attempt: number, error: Error) => void
+): Promise<T> {
+  return safeFetchJSON<T>(
+    url,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    },
+    maxRetries,
+    onRetry
+  );
+}
+
 

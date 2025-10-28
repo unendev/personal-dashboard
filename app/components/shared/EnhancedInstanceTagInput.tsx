@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, KeyboardEvent } from 'react'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { Button } from '@/app/components/ui/button'
 import { Plus, Clock, Sparkles } from 'lucide-react'
+import { safeFetchJSON } from '@/lib/fetch-utils'
 
 interface InstanceTag {
   id: string
@@ -72,16 +73,19 @@ export function EnhancedInstanceTagInput({
         }
 
         // 并行加载：预定义事务项 + 已使用过的事务项
-        const [predefinedTags, usedTagsResponse] = await Promise.all([
+        const [predefinedTags, usedTagsData] = await Promise.all([
           InstanceTagCache.preload(userId),
-          fetch(`/api/timer-tasks/instance-tags?userId=${userId}`)
+          safeFetchJSON<{ instanceTags: string[] }>(
+            `/api/timer-tasks/instance-tags?userId=${userId}`, 
+            {}, 
+            0
+          ).catch(() => null)
         ])
 
         const safePredefinedTags = Array.isArray(predefinedTags) ? predefinedTags : []
 
         let usedTags: InstanceTag[] = []
-        if (usedTagsResponse.ok) {
-          const usedTagsData = await usedTagsResponse.json()
+        if (usedTagsData) {
           usedTags = (usedTagsData.instanceTags || []).map((tagName: string) => ({
             id: `used-${tagName}`,
             name: tagName,
@@ -115,19 +119,27 @@ export function EnhancedInstanceTagInput({
 
     const checkForUpdates = async () => {
       try {
-        const [predefinedResponse, usedTagsResponse] = await Promise.all([
-          fetch(`/api/instance-tags?userId=${userId}`),
-          fetch(`/api/timer-tasks/instance-tags?userId=${userId}`)
+        const [predefinedData, usedTagsData] = await Promise.all([
+          safeFetchJSON<{ instanceTags?: InstanceTag[] } | InstanceTag[]>(
+            `/api/instance-tags?userId=${userId}`, 
+            {}, 
+            0
+          ).catch(() => null),
+          safeFetchJSON<{ instanceTags: string[] }>(
+            `/api/timer-tasks/instance-tags?userId=${userId}`, 
+            {}, 
+            0
+          ).catch(() => null)
         ])
 
         const currentData = InstanceTagCache.getInstanceTags()
         
-        if (predefinedResponse.ok && usedTagsResponse.ok) {
-          const predefinedData = await predefinedResponse.json()
-          const usedTagsData = await usedTagsResponse.json()
-          
+        if (predefinedData && usedTagsData) {
           const allTagsMap: Record<string, InstanceTag> = {};
-          ((predefinedData?.instanceTags || predefinedData) || []).forEach((tag: InstanceTag) => allTagsMap[tag.name] = tag);
+          const predefinedTags: InstanceTag[] = Array.isArray(predefinedData) 
+            ? predefinedData 
+            : ((predefinedData as { instanceTags?: InstanceTag[] }).instanceTags || []);
+          predefinedTags.forEach((tag: InstanceTag) => allTagsMap[tag.name] = tag);
           (usedTagsData.instanceTags || []).forEach((tagName: string) => {
             if (!allTagsMap[tagName]) {
               allTagsMap[tagName] = {
@@ -195,17 +207,33 @@ export function EnhancedInstanceTagInput({
         })
       })
 
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        console.error('API 返回的不是 JSON 格式')
+        return null
+      }
+
       if (response.ok) {
-        const newTag = await response.json()
-        setAvailableTags(prev => [...prev, newTag])
-        InstanceTagCache.addInstanceTag(newTag)
-        return formattedTag
-      } else {
-        const errorData = await response.json()
-        if (response.status === 409) {
+        try {
+          const newTag = await response.json()
+          setAvailableTags(prev => [...prev, newTag])
+          InstanceTagCache.addInstanceTag(newTag)
           return formattedTag
-        } else {
-          console.error('创建标签失败:', errorData.error)
+        } catch (parseError) {
+          console.error('解析创建标签响应失败:', parseError)
+          return null
+        }
+      } else {
+        try {
+          const errorData = await response.json()
+          if (response.status === 409) {
+            return formattedTag
+          } else {
+            console.error('创建标签失败:', errorData.error)
+            return null
+          }
+        } catch (parseError) {
+          console.error('解析错误响应失败:', parseError)
           return null
         }
       }

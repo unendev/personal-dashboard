@@ -69,6 +69,8 @@ interface NestedTimerZoneProps {
   onNewChildCategoryChange?: (category: string) => void; // 更新子任务分类
   newChildInitialTime?: string; // 子任务初始时间
   onNewChildInitialTimeChange?: (time: string) => void; // 更新子任务初始时间
+  // 【新增】共享的 timer 控制器（用于全局互斥）
+  timerControl?: ReturnType<typeof useTimerControl>;
 }
 
 const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({ 
@@ -89,7 +91,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   newChildCategory: externalNewChildCategory,
   onNewChildCategoryChange: externalOnNewChildCategoryChange,
   newChildInitialTime: externalNewChildInitialTime,
-  onNewChildInitialTimeChange: externalOnNewChildInitialTimeChange
+  onNewChildInitialTimeChange: externalOnNewChildInitialTimeChange,
+  // 【新增】接收外部的 timerControl
+  timerControl: externalTimerControl
 }) => {
   // 本地状态作为后备
   const [localShowAddChildDialog, setLocalShowAddChildDialog] = useState<string | null>(null);
@@ -122,8 +126,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     });
   });
 
-  // 【启用】使用通用 Hook - 已包含所有防抖、互斥、版本同步逻辑
-  const timerControl = useTimerControl(tasks, onTasksChange);
+  // 【关键修复】使用外部传入的 timerControl（全局互斥），或创建本地的（向后兼容）
+  const localTimerControl = useTimerControl(tasks, onTasksChange);
+  const timerControl = externalTimerControl || localTimerControl;
   const { startTimer: hookStartTimer, pauseTimer: hookPauseTimer, stopTimer: hookStopTimer, operationInProgress } = timerControl;
   
   // 【新增】操作防抖状态：记录正在执行操作的任务ID
@@ -900,6 +905,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             onNewChildCategoryChange={setNewChildCategory}
             newChildInitialTime={newChildInitialTime}
             onNewChildInitialTimeChange={setNewChildInitialTime}
+            timerControl={timerControl}
           />
         )}
       </div>

@@ -7,6 +7,7 @@ import { HeyboxPost, HeyboxReport } from '@/types/heybox';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { safeFetchJSON } from '@/lib/fetch-utils';
 
 type SourceType = 'all' | 'linuxdo' | 'reddit' | 'heybox';
 
@@ -76,41 +77,38 @@ const ScrollableLayout = () => {
     const fetchDates = async () => {
       try {
         setLoadingDates(true);
-        const [linuxdoDatesRes, redditDatesRes, heyboxDatesRes] = await Promise.all([
-          fetch('/api/linuxdo/dates'),
-          fetch('/api/reddit/dates'),
-          fetch('/api/heybox/dates')
+        const [linuxdoData, redditData, heyboxData] = await Promise.all([
+          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/linuxdo/dates', {}, 0).catch(() => null),
+          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/reddit/dates', {}, 0).catch(() => null),
+          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/heybox/dates', {}, 0).catch(() => null)
         ]);
 
-        if (linuxdoDatesRes.ok) {
-          const data = await linuxdoDatesRes.json();
-          setAvailableLinuxDoDates(data.dates || []);
+        if (linuxdoData) {
+          setAvailableLinuxDoDates(linuxdoData.dates || []);
           // 设置默认日期
           if (!selectedLinuxDoDate) {
             const defaultDate = getDefaultDate('linuxdo');
-            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (linuxdoData.dates || []).map((d: { date: string }) => d.date);
             setSelectedLinuxDoDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
 
-        if (redditDatesRes.ok) {
-          const data = await redditDatesRes.json();
-          setAvailableRedditDates(data.dates || []);
+        if (redditData) {
+          setAvailableRedditDates(redditData.dates || []);
           // 设置默认日期
           if (!selectedRedditDate) {
             const defaultDate = getDefaultDate('reddit');
-            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (redditData.dates || []).map((d: { date: string }) => d.date);
             setSelectedRedditDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
 
-        if (heyboxDatesRes.ok) {
-          const data = await heyboxDatesRes.json();
-          setAvailableHeyboxDates(data.dates || []);
+        if (heyboxData) {
+          setAvailableHeyboxDates(heyboxData.dates || []);
           // 设置默认日期（小黑盒用今天）
           if (!selectedHeyboxDate) {
             const defaultDate = new Date().toISOString().split('T')[0];
-            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (heyboxData.dates || []).map((d: { date: string }) => d.date);
             setSelectedHeyboxDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
@@ -136,32 +134,27 @@ const ScrollableLayout = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [linuxdoRes, redditRes, heyboxRes] = await Promise.all([
-          fetch(`/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`),
-          fetch(`/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`),
-          fetch(`/api/heybox${selectedHeyboxDate ? `?date=${selectedHeyboxDate}` : ''}`)
+        const [linuxdoData, redditData, heyboxData] = await Promise.all([
+          safeFetchJSON<LinuxDoReport>(
+            `/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`, 
+            {}, 
+            0
+          ).catch(() => null),
+          safeFetchJSON<RedditReport>(
+            `/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`, 
+            {}, 
+            0
+          ).catch(() => null),
+          safeFetchJSON<HeyboxReport>(
+            `/api/heybox${selectedHeyboxDate ? `?date=${selectedHeyboxDate}` : ''}`, 
+            {}, 
+            0
+          ).catch(() => null)
         ]);
 
-        if (linuxdoRes.ok) {
-          const data = await linuxdoRes.json();
-          setLinuxdoData(data);
-        } else {
-          setLinuxdoData(null);
-        }
-
-        if (redditRes.ok) {
-          const data = await redditRes.json();
-          setRedditData(data);
-        } else {
-          setRedditData(null);
-        }
-
-        if (heyboxRes.ok) {
-          const data = await heyboxRes.json();
-          setHeyboxData(data);
-        } else {
-          setHeyboxData(null);
-        }
+        setLinuxdoData(linuxdoData);
+        setRedditData(redditData);
+        setHeyboxData(heyboxData);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {

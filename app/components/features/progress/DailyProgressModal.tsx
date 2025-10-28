@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { safePostJSON, safeParseJSON } from '@/lib/fetch-utils';
 
 interface DailyProgressModalProps {
   isOpen: boolean;
@@ -27,19 +28,8 @@ export default function DailyProgressModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/progress/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetDate }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      setProgress(data);
+      const data = await safePostJSON('/api/progress/analyze', { targetDate }, 0);
+      setProgress(data as Record<string, unknown>);
     } catch (error) {
       console.error('Analysis failed:', error);
       setError(error instanceof Error ? error.message : '分析失败，请重试');
@@ -59,16 +49,11 @@ export default function DailyProgressModal({
 
     setRefining(true);
     try {
-      const res = await fetch('/api/progress/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          progressId: progress?.id,
-          userFeedback,
-        }),
-      });
-      const updated = await res.json();
-      setProgress(updated);
+      const updated = await safePostJSON('/api/progress/refine', {
+        progressId: progress?.id,
+        userFeedback,
+      }, 0);
+      setProgress(updated as Record<string, unknown>);
       setUserFeedback('');
     } catch (error) {
       console.error('Refine failed:', error);
@@ -82,14 +67,10 @@ export default function DailyProgressModal({
     
     setConfirming(true);
     try {
-      await fetch('/api/progress/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          progressId: progress.id,
-          userNotes,
-        }),
-      });
+      await safePostJSON('/api/progress/confirm', {
+        progressId: progress.id,
+        userNotes,
+      }, 0);
       onConfirmed();
       handleClose();
     } catch (error) {

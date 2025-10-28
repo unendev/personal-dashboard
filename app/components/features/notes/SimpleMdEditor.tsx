@@ -17,6 +17,7 @@ import { SwapLineExtension } from '@/lib/swap-line-extension'
 import { Details } from '@/lib/tiptap-extensions/details'
 import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
 import { DetailsContent } from '@/lib/tiptap-extensions/details-content'
+import { AutoOrderListExtension } from '@/lib/tiptap-extensions/auto-order-list'
 
 // Note: The CustomImage implementation and other Tiptap extensions remain unchanged.
 // ... (CustomImage, slugify, etc. would be here)
@@ -323,6 +324,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       CustomImage.configure({ allowBase64: true, HTMLAttributes: { class: 'tiptap-image' } }),
       DeleteLineExtension,
       SwapLineExtension,
+      AutoOrderListExtension,
       Details,
       DetailsSummary,
       DetailsContent,

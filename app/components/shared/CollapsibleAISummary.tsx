@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { safeFetchJSON, safePostJSON } from '@/lib/fetch-utils';
 
 interface AISummary {
   summary: string;
@@ -64,13 +65,11 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
     setError(null);
     
     try {
-      const response = await fetch(
-        `/api/ai-summary?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+      const data = await safeFetchJSON<AISummary>(
+        `/api/ai-summary?userId=${userId}&startDate=${startDate}&endDate=${endDate}`,
+        {},
+        0
       );
-      if (!response.ok) {
-        throw new Error('Failed to fetch AI summary');
-      }
-      const data = await response.json();
       
       // 如果summary是字符串，尝试解析
       if (typeof data.summary === 'string') {
@@ -96,19 +95,11 @@ const CollapsibleAISummary: React.FC<CollapsibleAISummaryProps> = ({
     setError(null);
     
     try {
-      const response = await fetch('/api/ai-summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, startDate, endDate }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate AI summary');
-      }
-      
-      const data = await response.json();
+      const data = await safePostJSON<AISummary>('/api/ai-summary', { 
+        userId, 
+        startDate, 
+        endDate 
+      }, 0);
       
       // 如果summary是字符串，尝试解析
       if (typeof data.summary === 'string') {

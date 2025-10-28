@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/app/components/ui/input'
 import { Button } from '@/app/components/ui/button'
+import { CategoryCache } from '@/lib/category-cache'
 
 interface CategoryNode {
   id: string
@@ -47,15 +48,46 @@ export function ThreeLayerCategorySelector({
   // 加载分类数据
   useEffect(() => {
     const loadCategories = async () => {
+      setIsLoading(true)
       try {
-        const response = await fetch('/api/log-categories')
-        const data = await response.json()
-        setAllCategories(data)
+        // 1. 优先从缓存加载（立即显示）
+        const cachedData = CategoryCache.loadFromStorage()
+        if (cachedData && cachedData.length > 0) {
+          setAllCategories(cachedData)
+          setIsLoading(false)
+          // 后台异步检查更新
+          checkForUpdates()
+          return
+        }
+
+        // 2. 无缓存时使用预加载（自动处理缓存）
+        const freshData = await CategoryCache.preload()
+        setAllCategories(freshData)
       } catch (error) {
         console.error('加载分类失败:', error)
         setAllCategories([])
       } finally {
         setIsLoading(false)
+      }
+    }
+
+    // 后台检查更新
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch('/api/log-categories')
+        if (!response.ok) return
+        
+        const newData = await response.json()
+        const currentData = CategoryCache.getCategories()
+        
+        // 简单对比数据是否变化
+        if (JSON.stringify(newData) !== JSON.stringify(currentData)) {
+          console.log('检测到分类数据更新，刷新缓存')
+          CategoryCache.updateCategories(newData)
+          setAllCategories(newData)
+        }
+      } catch (error) {
+        console.log('后台检查分类更新失败:', error)
       }
     }
 
