@@ -77,6 +77,14 @@ const ScrollableLayout = () => {
     const fetchDates = async () => {
       try {
         setLoadingDates(true);
+        
+        // 辅助函数：为日期数据添加 label 字段
+        const addDateLabels = (dates: Array<{ date: string; count: number }>) => 
+          dates.map(d => ({
+            ...d,
+            label: formatDateLabel(d.date)
+          }));
+        
         const [linuxdoData, redditData, heyboxData] = await Promise.all([
           safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/linuxdo/dates', {}, 0).catch(() => null),
           safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/reddit/dates', {}, 0).catch(() => null),
@@ -84,12 +92,7 @@ const ScrollableLayout = () => {
         ]);
 
         if (linuxdoData) {
-          setAvailableLinuxDoDates(
-            (linuxdoData.dates || []).map(d => ({
-              ...d,
-              label: formatDateLabel(d.date)
-            }))
-          );
+          setAvailableLinuxDoDates(addDateLabels(linuxdoData.dates || []));
           // 设置默认日期
           if (!selectedLinuxDoDate) {
             const defaultDate = getDefaultDate('linuxdo');
@@ -99,12 +102,7 @@ const ScrollableLayout = () => {
         }
 
         if (redditData) {
-          setAvailableRedditDates(
-            (redditData.dates || []).map(d => ({
-              ...d,
-              label: formatDateLabel(d.date)
-            }))
-          );
+          setAvailableRedditDates(addDateLabels(redditData.dates || []));
           // 设置默认日期
           if (!selectedRedditDate) {
             const defaultDate = getDefaultDate('reddit');
@@ -114,12 +112,7 @@ const ScrollableLayout = () => {
         }
 
         if (heyboxData) {
-          setAvailableHeyboxDates(
-            (heyboxData.dates || []).map(d => ({
-              ...d,
-              label: formatDateLabel(d.date)
-            }))
-          );
+          setAvailableHeyboxDates(addDateLabels(heyboxData.dates || []));
           // 设置默认日期（小黑盒用今天）
           if (!selectedHeyboxDate) {
             const defaultDate = new Date().toISOString().split('T')[0];
