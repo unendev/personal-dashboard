@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
+import { ThreeLayerCategorySelector } from '@/app/components/shared/ThreeLayerCategorySelector';
+import { EnhancedInstanceTagInput } from '@/app/components/shared/EnhancedInstanceTagInput';
 
 interface TimerTask {
   id: string;
@@ -31,6 +33,7 @@ export default function TimerPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('');
+  const [newTaskTags, setNewTaskTags] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationLog, setOperationLog] = useState<string[]>([]);
 
@@ -98,6 +101,7 @@ export default function TimerPage() {
     // 重置表单
     setNewTaskName('');
     setNewTaskCategory('');
+    setNewTaskTags([]);
     setShowAddDialog(false);
     recordOperation('创建任务', newTaskName.trim());
     
@@ -113,6 +117,7 @@ export default function TimerPage() {
         body: JSON.stringify({
           name: newTaskName.trim(),
           categoryPath: newTaskCategory.trim() || '未分类',
+          instanceTagNames: newTaskTags,
           date: selectedDate
         }),
       });
@@ -203,7 +208,7 @@ export default function TimerPage() {
                   />
                 </div>
                 <Button onClick={() => setShowAddDialog(true)}>
-                  添加顶级任务
+                  ⏱️ 快速任务
                 </Button>
               </div>
             </CardContent>
@@ -267,40 +272,47 @@ export default function TimerPage() {
         </div>
       </div>
 
-      {/* 添加任务弹框 */}
+      {/* 添加任务弹框（记录） */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl bg-white dark:bg-gray-900">
           <DialogHeader>
-            <DialogTitle>添加顶级任务</DialogTitle>
+            <DialogTitle>📝 记录任务</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
+          <div className="py-4 space-y-5">
+            {/* 三层分类选择器 */}
+            <ThreeLayerCategorySelector
+              value={newTaskCategory}
+              onChange={setNewTaskCategory}
+            />
+            
+            {/* 任务名称 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 任务名称
               </label>
               <Input
                 value={newTaskName}
                 onChange={(e) => setNewTaskName(e.target.value)}
                 placeholder="输入任务名称..."
+                className="text-base"
                 autoFocus
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                分类 (可选)
-              </label>
-              <Input
-                value={newTaskCategory}
-                onChange={(e) => setNewTaskCategory(e.target.value)}
-                placeholder="输入分类..."
-              />
-            </div>
+
+            {/* 事务项选择器 */}
+            <EnhancedInstanceTagInput
+              tags={newTaskTags}
+              onChange={setNewTaskTags}
+              userId="user-1"
+              placeholder="输入事务项（回车创建）..."
+              maxTags={5}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               取消
             </Button>
-            <Button onClick={addTask}>
+            <Button onClick={addTask} disabled={!newTaskName.trim()}>
               添加任务
             </Button>
           </DialogFooter>

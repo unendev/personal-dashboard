@@ -4,32 +4,30 @@
 小黑盒Playwright爬虫 - 基于MCP测试验证的方案
 使用 Playwright 无头浏览器 + x_xhh_tokenid 认证
 
-版本：v2.1.3-eval-fix
-更新时间：2025-10-25 17:40
+版本：v2.2.2-no-stealth
+更新时间：2025-10-27 13:45
 更新内容：
-- 🔧 优化评论数量限制为10条（可配置）
+- ✅ 移除playwright_stealth依赖（token认证已足够，避免API不稳定）
+- ✅ 通用选择器：不依赖具体class名，通过用户链接反向定位
 - ⚠️ 关键修复：详情页Token注入后刷新页面
-- 基于MCP Playwright调试修复评论抓取
-- 使用精确选择器：.link-comment__comment-item
-- TreeWalker遍历提取评论内容
-- 正则过滤元数据噪音
+- 🔧 优化评论数量限制为10条（可配置）
 
-测试验证：2025-10-25 ✅
+测试验证：2025-10-27 ✅
 - Token认证成功
 - 安全验证已绕过
 - 页面正常加载帖子内容
-- MCP验证评论提取成功
+- MCP验证通用选择器有效
 
 使用方法：
   1. 配置 .env 文件中的 HEYBOX_TOKEN_ID
-  2. 安装Playwright: pip install playwright playwright-stealth
+  2. 安装Playwright: pip install playwright
   3. 安装浏览器: python -m playwright install chromium
   4. 运行: python heybox_playwright_scraper.py
 """
 
 # 版本信息
-__version__ = "v2.1.3-eval-fix"
-__update_date__ = "2025-10-25 17:40"
+__version__ = "v2.2.2-no-stealth"
+__update_date__ = "2025-10-27 13:45"
 
 import asyncio
 import os
@@ -39,7 +37,7 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any
 from playwright.async_api import async_playwright, Page
-from playwright_stealth import stealth_async
+# from playwright_stealth import stealth  # 已禁用：token认证已足够
 import asyncpg
 import re
 
@@ -249,71 +247,58 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
         """)
         logger.info(f"     🔍 页面检测: 评论区={page_info['hasCommentSection']}, 评论项数={page_info['commentItemsCount']}")
         
-        # 提取评论数据（基于MCP调试验证的选择器）
-        comments_data = await page.evaluate("""
-            (args) => {
-                const {post_id, commentLimit} = args;
+        # 提取评论数据 - 通用方法（不依赖具体class）
+        comments_data = await page.evaluate(f"""
+            () => {{
                 const comments = [];
+                const limit = {COMMENT_LIMIT};
                 
-                // 使用小黑盒特定的评论选择器
-                const commentElements = document.querySelectorAll('.link-comment__comment-item');
+                // 找所有用户链接（评论必有作者链接）
+                const allLinks = document.querySelectorAll('a[href*="/app/user/profile/"]');
+                const processedContainers = new Set();
                 
-                commentElements.forEach((item, index) => {
-                    try {
-                        // 提取作者
-                        const authorLink = item.querySelector('a[href*="/app/user/profile/"]');
-                        let author = '匿名';
-                        if (authorLink) {
-                            // 获取链接文本，过滤掉"作者"、"Lv.XX"等标签
-                            const authorText = authorLink.textContent.trim();
-                            author = authorText.split('\\n')[0].replace(/作者|Lv\\.\\d+/g, '').trim();
-                        }
-                        
-                        // 提取点赞数 - 查找只包含数字的按钮
-                        const buttons = Array.from(item.querySelectorAll('button'));
-                        const likeBtn = buttons.find(b => /^\\s*\\d+\\s*$/.test(b.textContent.trim()));
-                        const likes_count = likeBtn ? parseInt(likeBtn.textContent.trim()) : 0;
-                        
-                        // 提取评论内容 - 使用TreeWalker遍历文本节点
-                        const textNodes = [];
-                        const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
-                        while (walker.nextNode()) {
-                            const text = walker.currentNode.textContent.trim();
-                            // 过滤掉时间、等级、回复等元数据
-                            if (text && 
-                                text.length > 5 && 
-                                !text.match(/^\\d+(天|小时|分钟)前/) &&
-                                !text.match(/^Lv\\.\\d+/) &&
-                                !text.match(/^·/) &&
-                                !text.match(/^回复/) &&
-                                !text.match(/全部.*条回复/)) {
-                                textNodes.push(text);
-                            }
-                        }
-                        // 取第一个有效文本作为评论内容
-                        const content = textNodes[0] || '';
-                        
-                        if (!content || content.length < 2) return;
-                        
-                        // 提取时间
-                        const timeMatch = item.textContent.match(/(\\d+(天|小时|分钟)前)/);
-                        const created_at = timeMatch ? timeMatch[0] : '';
-                        
-                        comments.push({
-                            id: `comment_${post_id}_${index}`,
+                for (const link of allLinks) {{
+                    if (comments.length >= limit) break;
+                    
+                    // 找最近的评论容器
+                    let container = link.closest('div[class*="comment"]') || link.parentElement?.parentElement;
+                    if (!container || processedContainers.has(container)) continue;
+                    processedContainers.add(container);
+                    
+                    // 提取作者
+                    const author = link.textContent.trim().split('\\n')[0].replace(/作者|Lv\\.\\d+/g, '').trim();
+                    
+                    // 提取评论内容（找最长文本）
+                    let content = '';
+                    const textDivs = container.querySelectorAll('div, p, span');
+                    for (const div of textDivs) {{
+                        const text = div.textContent.trim();
+                        if (text.length > Math.max(20, content.length) && 
+                            !text.includes('小时前') && !text.includes('天前') &&
+                            !text.includes('Lv.') && !text.includes('回复')) {{
+                            content = text.substring(0, 200);
+                        }}
+                    }}
+                    
+                    // 提取点赞数
+                    const buttons = Array.from(container.querySelectorAll('button'));
+                    const likeBtn = buttons.find(b => /^\\s*\\d+\\s*$/.test(b.textContent.trim()));
+                    const likes = likeBtn ? parseInt(likeBtn.textContent.trim()) : 0;
+                    
+                    if (author && content.length > 10) {{
+                        comments.push({{
+                            id: `comment_{post_id}_${{comments.length}}`,
                             author: author,
                             content: content,
-                            likes_count: likes_count,
-                            created_at: created_at
-                        });
-                    } catch (e) {
-                        console.log('评论提取失败:', e);
-                    }
-                });
+                            likes_count: likes,
+                            created_at: '最近'
+                        }});
+                    }}
+                }}
                 
-                return comments.slice(0, commentLimit);  // 限制评论数量
-            }
-        """, {"post_id": post_id, "commentLimit": COMMENT_LIMIT})
+                return comments;
+            }}
+        """)
         
         logger.info(f"    ✓ 获取到 {len(comments_data)} 条评论")
         return comments_data
@@ -577,9 +562,9 @@ async def main():
         
         page = await context.new_page()
         
-        # 应用反爬虫stealth
-        await stealth_async(page)
-        logger.info("✓ 页面创建成功")
+        # 应用反爬虫stealth（已禁用：token认证已足够）
+        # await stealth(page)
+        logger.info("✓ 页面创建成功（使用Token认证，无需stealth）")
         
         # 初始化并注入Token
         if not await init_browser_with_token(page, HEYBOX_TOKEN_ID):

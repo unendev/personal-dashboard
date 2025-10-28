@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Checkbox } from '@/app/components/ui/checkbox';
-import InstanceTagSelector from '@/app/components/shared/InstanceTagSelector';
+import { EnhancedInstanceTagInput } from '@/app/components/shared/EnhancedInstanceTagInput';
 import { parseTimeToSeconds, loadAutoStartPreference, saveAutoStartPreference } from '@/lib/timer-utils';
 
 export interface QuickCreateData {
@@ -162,16 +162,13 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
           </div>
           
           {/* 事物项标签 */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              事物项标签 <span className="text-gray-500 font-normal">(可选)</span>
-            </label>
-            <InstanceTagSelector
-              selectedTags={selectedTags}
-              onTagsChange={setSelectedTags}
-              userId={userId}
-            />
-          </div>
+          <EnhancedInstanceTagInput
+            tags={selectedTags}
+            onChange={setSelectedTags}
+            userId={userId}
+            placeholder="输入事务项（回车创建）..."
+            maxTags={5}
+          />
           
           {/* 自动开始计时选项 */}
           <div className="flex items-center space-x-2 pt-2 pb-1">

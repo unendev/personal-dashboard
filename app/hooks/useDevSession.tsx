@@ -99,42 +99,42 @@ export function useDevSession(): DevSession {
         
         // 如果没有缓存或缓存已过期，尝试自动登录示例账户
         if (!hasManualLogout && !autoLoginAttemptedRef.current) {
-          autoLoginAttemptedRef.current = true
-          console.log('🎭 尝试自动登录演示账户...')
-          
-          // 确保演示用户存在
-          fetch('/api/auth/ensure-demo-user', { method: 'POST' })
-            .then(() => fetch('/api/auth/ensure-demo-user'))
-            .then(res => res.json())
-            .then(async (data) => {
-              console.log('🔐 使用演示账户登录:', data.email)
-              // 使用 NextAuth 的 signIn 函数进行真实登录
-              const result = await signIn('credentials', {
-                email: data.email,
-                password: data.password,
-                redirect: false,
-              })
-              
-              if (result?.ok) {
-                console.log('✅ 演示账户登录成功')
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem(AUTO_LOGIN_ATTEMPTED_KEY, 'true')
-                }
-              } else {
-                console.error('❌ 演示账户登录失败:', result?.error)
-                setDevSession({
-                  data: null,
-                  status: 'unauthenticated'
-                })
-              }
+        autoLoginAttemptedRef.current = true
+        console.log('🎭 尝试自动登录演示账户...')
+        
+        // 确保演示用户存在
+        fetch('/api/auth/ensure-demo-user', { method: 'POST' })
+          .then(() => fetch('/api/auth/ensure-demo-user'))
+          .then(res => res.json())
+          .then(async (data) => {
+            console.log('🔐 使用演示账户登录:', data.email)
+            // 使用 NextAuth 的 signIn 函数进行真实登录
+            const result = await signIn('credentials', {
+              email: data.email,
+              password: data.password,
+              redirect: false,
             })
-            .catch(err => {
-              console.error('获取演示账户信息失败:', err)
+            
+            if (result?.ok) {
+              console.log('✅ 演示账户登录成功')
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(AUTO_LOGIN_ATTEMPTED_KEY, 'true')
+              }
+            } else {
+              console.error('❌ 演示账户登录失败:', result?.error)
               setDevSession({
                 data: null,
                 status: 'unauthenticated'
               })
+            }
+          })
+          .catch(err => {
+            console.error('获取演示账户信息失败:', err)
+            setDevSession({
+              data: null,
+              status: 'unauthenticated'
             })
+          })
         } else {
           // 手动登出或已尝试自动登录
           setDevSession({

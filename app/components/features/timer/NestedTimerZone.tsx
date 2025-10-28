@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
 import { fetchWithRetry } from '@/lib/fetch-utils';
+import { useTimerControl } from '@/app/hooks/useTimerControl';
 import {
   DndContext,
   closestCenter,
@@ -121,8 +122,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     });
   });
 
+  // 【启用】使用通用 Hook - 已包含所有防抖、互斥、版本同步逻辑
+  const timerControl = useTimerControl(tasks, onTasksChange);
+  const { startTimer: hookStartTimer, pauseTimer: hookPauseTimer, stopTimer: hookStopTimer, operationInProgress } = timerControl;
+  
   // 【新增】操作防抖状态：记录正在执行操作的任务ID
-  const [operationInProgress, setOperationInProgress] = useState<Set<string>>(new Set());
+  // const [operationInProgress, setOperationInProgress] = useState<Set<string>>(new Set()); // 移除重复的operationInProgress
 
   // 【新增】工具函数：递归同步任务的 version
   const syncTaskVersion = useCallback((taskList: TimerTask[], taskId: string, newVersion: number): TimerTask[] => {
@@ -136,12 +141,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return task;
     });
   }, []);
-
-
-
-
-
-  // 切换任务收缩状态函数已移到上面，使用传入的函数或本地函数
 
   // 拖拽传感器配置 - 优化移动端支持
   const sensors = useSensors(
@@ -177,7 +176,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       }
     }
     
-    // console.log('拖拽开始:', event.active.id);
   };
 
   // 拖拽结束处理函数
@@ -192,14 +190,10 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         dragHandle.classList.remove('bg-gray-700');
       }
     }
-    
-    // console.log('拖拽结束:', { activeId: active.id, overId: over?.id });
 
     if (active.id !== over?.id && over) {
       const oldIndex = tasks.findIndex((task) => task.id === active.id);
       const newIndex = tasks.findIndex((task) => task.id === over.id);
-
-      // console.log('任务重排序:', { oldIndex, newIndex, taskName: tasks[oldIndex]?.name });
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
@@ -285,22 +279,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     if (task.isRunning && !task.isPaused && task.startTime) {
       const elapsed = Math.floor((Date.now() / 1000 - task.startTime));
       displayTime = task.elapsedTime + elapsed;
-      // console.log(`${task.name} 运行中时间计算:`, {
-      //   isRunning: task.isRunning,
-      //   isPaused: task.isPaused,
-      //   startTime: task.startTime,
-      //   elapsedTime: task.elapsedTime,
-      //   currentElapsed: elapsed,
-      //   displayTime
-      // });
     } else {
       displayTime = task.elapsedTime;
-      // console.log(`${task.name} 非运行状态时间:`, {
-      //   isRunning: task.isRunning,
-      //   isPaused: task.isPaused,
-      //   elapsedTime: task.elapsedTime,
-      //   displayTime
-      // });
     }
     return displayTime;
   };
@@ -335,443 +315,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return () => clearInterval(interval);
     }
   }, [tasks, triggerUpdate]);
-
-  // 查找所有运行中的任务（递归遍历）
-  const findAllRunningTasks = useCallback((taskList: TimerTask[]): TimerTask[] => {
-    const running: TimerTask[] = [];
-    const traverse = (tasks: TimerTask[]) => {
-      tasks.forEach(task => {
-        if (task.isRunning) {
-          running.push(task);
-        }
-        if (task.children && task.children.length > 0) {
-          traverse(task.children);
-        }
-      });
-    };
-    traverse(taskList);
-    return running;
-  }, []);
-
-  const startTimer = async (taskId: string) => {
-    // 【防抖】检查是否已有操作在进行中
-    if (operationInProgress.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
-    }
-
-    // 操作前保存当前位置，避免UI更新导致回到顶部
-    onBeforeOperation?.();
-    
-    const findTask = (taskList: TimerTask[]): TimerTask | null => {
-      for (const task of taskList) {
-        if (task.id === taskId) return task;
-        if (task.children) {
-          const found = findTask(task.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const task = findTask(tasks);
-    if (!task) return;
-
-    // 【防抖】标记操作开始
-    setOperationInProgress(prev => new Set(prev).add(taskId));
-    
-    try {
-      // 记录需要暂停的任务信息（用于数据库更新和操作日志）
-      const tasksToPause: Array<{ id: string; name: string; elapsedTime: number; version?: number }> = [];
-      const currentTime = Math.floor(Date.now() / 1000);
-      
-      // 原子化状态更新：同时暂停其他任务和启动当前任务
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          // 启动目标任务
-          if (task.id === taskId) {
-            return {
-              ...task,
-              isRunning: true,
-              isPaused: false,
-              startTime: currentTime,
-              pausedTime: 0
-            };
-          }
-          
-          // 暂停其他运行中的任务
-          if (task.isRunning && task.id !== taskId) {
-            const runningTime = task.startTime ? currentTime - task.startTime : 0;
-            const newElapsedTime = task.elapsedTime + runningTime;
-            
-            // 记录需要暂停的任务
-            tasksToPause.push({
-              id: task.id,
-              name: task.name,
-              elapsedTime: newElapsedTime,
-              version: task.version // 【乐观锁】保留版本号
-            });
-            
-            return {
-              ...task,
-              elapsedTime: newElapsedTime,
-              isPaused: true,
-              isRunning: false,
-              startTime: null,
-              pausedTime: 0
-            };
-          }
-          
-          // 递归处理子任务
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          
-          return task;
-        });
-      };
-
-      // 一次性更新所有任务状态（乐观更新）
-      let updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      // 记录操作日志
-      if (onOperationRecord) {
-        const timeText = task.initialTime > 0 ? ` (从 ${formatTime(task.initialTime)} 开始)` : '';
-        onOperationRecord('开始计时', task.name, timeText);
-        
-        // 记录被暂停的任务
-        tasksToPause.forEach(pausedTask => {
-          onOperationRecord('自动暂停', pausedTask.name, `(切换到: ${task.name})`);
-        });
-      }
-
-      // 【串行】1. 先启动目标任务
-      try {
-        const startResponse = await fetchWithRetry('/api/timer-tasks', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: taskId,
-            version: task.version, // 【乐观锁】传递版本号
-            isRunning: true,
-            isPaused: false,
-            startTime: currentTime,
-            pausedTime: 0
-          }),
-        });
-
-        // 【乐观锁】检测冲突
-        if (startResponse && startResponse.status === 409) {
-          const error = await startResponse.json();
-          alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n\n点击确定刷新页面`);
-          window.location.reload();
-          return;
-        }
-
-        if (!startResponse.ok) {
-          throw new Error(`启动任务失败: ${startResponse.status}`);
-        }
-
-        // 【版本同步】从响应中获取新 version
-        const startedTask = await startResponse.json();
-        if (startedTask && startedTask.version !== undefined) {
-          updatedTasks = syncTaskVersion(updatedTasks, taskId, startedTask.version);
-          onTasksChange(updatedTasks);
-          console.log(`✅ 任务 ${task.name} 启动成功，version: ${task.version} -> ${startedTask.version}`);
-        }
-      } catch (error) {
-        console.error('启动任务失败:', error);
-        // 失败时不回滚UI，保持乐观更新
-        alert(`启动任务失败：${error instanceof Error ? error.message : '未知错误'}\n\n任务状态已保留在本地`);
-        return;
-      }
-
-      // 【串行】2. 再暂停其他任务（并行执行暂停操作）
-      if (tasksToPause.length > 0) {
-        const pausePromises = tasksToPause.map(async (pausedTask) => {
-          try {
-            const pauseResponse = await fetchWithRetry('/api/timer-tasks', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id: pausedTask.id,
-                version: pausedTask.version, // 【乐观锁】传递版本号
-                elapsedTime: pausedTask.elapsedTime,
-                isPaused: true,
-                isRunning: false,
-                startTime: null,
-                pausedTime: 0
-              }),
-            });
-
-            // 【乐观锁】检测冲突
-            if (pauseResponse && pauseResponse.status === 409) {
-              const error = await pauseResponse.json();
-              console.warn(`⚠️ 暂停任务 ${pausedTask.name} 时检测到冲突:`, error.message);
-              // 暂停其他任务时的冲突不强制刷新，只记录日志
-              return null;
-            }
-
-            if (!pauseResponse.ok) {
-              throw new Error(`暂停任务失败: ${pauseResponse.status}`);
-            }
-
-            // 【版本同步】从响应中获取新 version
-            const pausedTaskData = await pauseResponse.json();
-            if (pausedTaskData && pausedTaskData.version !== undefined) {
-              updatedTasks = syncTaskVersion(updatedTasks, pausedTask.id, pausedTaskData.version);
-              console.log(`✅ 任务 ${pausedTask.name} 暂停成功，version 已同步: ${pausedTaskData.version}`);
-            }
-            return pausedTaskData;
-          } catch (error) {
-            console.error(`暂停任务 ${pausedTask.id} 失败:`, error);
-            return null;
-          }
-        });
-
-        await Promise.allSettled(pausePromises);
-        
-        // 最后一次性同步所有 version 更新
-        onTasksChange(updatedTasks);
-      }
-    } finally {
-      // 【防抖】操作完成，移除标记
-      setOperationInProgress(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
-    }
-  };
-
-  const pauseTimer = async (taskId: string) => {
-    // 【防抖】检查是否已有操作在进行中
-    if (operationInProgress.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
-    }
-
-    // 操作前保存当前位置
-    onBeforeOperation?.();
-    const findTask = (taskList: TimerTask[]): TimerTask | null => {
-      for (const task of taskList) {
-        if (task.id === taskId) return task;
-        if (task.children) {
-          const found = findTask(task.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const task = findTask(tasks);
-    if (!task || !task.startTime) {
-      return;
-    }
-
-    // 【防抖】标记操作开始
-    setOperationInProgress(prev => new Set(prev).add(taskId));
-
-    try {
-      // 计算当前运行时间
-      const currentTime = Math.floor(Date.now() / 1000);
-      const runningTime = currentTime - task.startTime;
-      const newElapsedTime = task.elapsedTime + runningTime;
-
-      // 立即更新前端状态（乐观更新）
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId && task.isRunning) {
-            return {
-              ...task,
-              elapsedTime: newElapsedTime,
-              isPaused: true,
-              isRunning: false,
-              startTime: null,
-              pausedTime: 0
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      let updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      if (onOperationRecord) {
-        onOperationRecord('暂停计时', task.name);
-      }
-
-      // 更新数据库（带重试机制和乐观锁）
-      let retryCount = 0;
-      const response = await fetchWithRetry(
-        '/api/timer-tasks',
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: taskId,
-            version: task.version, // 【乐观锁】传递版本号
-            elapsedTime: newElapsedTime,
-            isPaused: true,
-            isRunning: false,
-            startTime: null,
-            pausedTime: 0
-          }),
-        },
-        3,
-        (attempt, error) => {
-          retryCount = attempt;
-          console.warn(`暂停任务重试 ${attempt}/3:`, error.message);
-        }
-      );
-
-      // 【乐观锁】检测冲突
-      if (response && response.status === 409) {
-        const error = await response.json();
-        alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n\n点击确定刷新页面`);
-        window.location.reload();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`暂停失败 (${response.status}): ${errorText}`);
-      }
-
-      // 【版本同步】从响应中获取新 version
-      const pausedTask = await response.json();
-      if (pausedTask && pausedTask.version !== undefined) {
-        updatedTasks = syncTaskVersion(updatedTasks, taskId, pausedTask.version);
-        onTasksChange(updatedTasks);
-        console.log(`✅ 任务 ${task.name} 暂停成功，version: ${task.version} -> ${pausedTask.version}`);
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '未知错误';
-      console.error('暂停任务失败:', errorMsg);
-      alert(`暂停任务失败：\n${errorMsg}\n\n任务状态已保留在本地`);
-    } finally {
-      // 【防抖】操作完成，移除标记
-      setOperationInProgress(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
-    }
-  };
-
-  const resumeTimer = async (taskId: string) => {
-    // 【防抖】检查是否已有操作在进行中
-    if (operationInProgress.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
-    }
-
-    // 操作前保存当前位置
-    onBeforeOperation?.();
-    const findTask = (taskList: TimerTask[]): TimerTask | null => {
-      for (const task of taskList) {
-        if (task.id === taskId) return task;
-        if (task.children) {
-          const found = findTask(task.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const task = findTask(tasks);
-    if (!task || !task.isPaused) {
-      return;
-    }
-
-    // 【防抖】标记操作开始
-    setOperationInProgress(prev => new Set(prev).add(taskId));
-
-    try {
-      // 立即更新前端状态（乐观更新）
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId && task.isPaused) {
-            return {
-              ...task,
-              isRunning: true,
-              isPaused: false,
-              startTime: currentTime,
-              pausedTime: 0
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      let updatedTasks = updateTaskRecursive(tasks);
-      onTasksChange(updatedTasks);
-      
-      if (onOperationRecord) {
-        onOperationRecord('继续计时', task.name);
-      }
-
-      // 更新数据库（带重试机制和乐观锁）
-      const response = await fetchWithRetry('/api/timer-tasks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: taskId,
-          version: task.version, // 【乐观锁】传递版本号
-          isRunning: true,
-          isPaused: false,
-          startTime: currentTime,
-          pausedTime: 0
-        }),
-      });
-
-      // 【乐观锁】检测冲突
-      if (response && response.status === 409) {
-        const error = await response.json();
-        alert(`⚠️ 检测到数据冲突\n\n${error.message || '此任务在其他设备已被修改'}\n\n点击确定刷新页面`);
-        window.location.reload();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`恢复任务失败 (${response.status}): ${errorText}`);
-      }
-
-      // 【版本同步】从响应中获取新 version
-      const resumedTask = await response.json();
-      if (resumedTask && resumedTask.version !== undefined) {
-        updatedTasks = syncTaskVersion(updatedTasks, taskId, resumedTask.version);
-        onTasksChange(updatedTasks);
-        console.log(`✅ 任务 ${task.name} 恢复成功，version: ${task.version} -> ${resumedTask.version}`);
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '未知错误';
-      console.error('恢复任务失败:', errorMsg);
-      alert(`恢复任务失败：\n${errorMsg}\n\n任务状态已保留在本地`);
-    } finally {
-      // 【防抖】操作完成，移除标记
-      setOperationInProgress(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
-    }
-  };
 
   const deleteTimer = async (taskId: string) => {
     // 操作前保存当前位置
@@ -1029,13 +572,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     
     total += childrenTotal;
     
-    // console.log(`${task.name} 总时间计算:`, {
-    //   ownTime: getCurrentDisplayTime(task),
-    //   childrenCount: task.children?.length || 0,
-    //   childrenTotal,
-    //   total
-    // });
-    
     return total;
   };
 
@@ -1257,7 +793,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 {task.isRunning ? (
                   task.isPaused ? (
                     <Button 
-                      onClick={() => resumeTimer(task.id)}
+                      onClick={() => hookStartTimer(task.id)}
                       disabled={operationInProgress.has(task.id)}
                       size="sm"
                       className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
@@ -1269,23 +805,23 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                       {operationInProgress.has(task.id) ? '处理中...' : '继续'}
                     </Button>
                   ) : (
-                    <Button 
-                      onClick={() => pauseTimer(task.id)}
-                      disabled={operationInProgress.has(task.id)}
-                      variant="outline"
-                      size="sm"
-                      className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
-                        hasInstanceTag 
-                          ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
-                          : ""
-                      }`}
-                    >
-                      {operationInProgress.has(task.id) ? '处理中...' : '暂停'}
-                    </Button>
+                  <Button 
+                    onClick={() => hookPauseTimer(task.id)}
+                    disabled={operationInProgress.has(task.id)}
+                    variant="outline"
+                    size="sm"
+                    className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
+                      hasInstanceTag 
+                        ? "border-orange-300 text-orange-300 hover:bg-orange-800" 
+                        : ""
+                    }`}
+                  >
+                    {operationInProgress.has(task.id) ? '处理中...' : '暂停'}
+                  </Button>
                   )
                 ) : (
                   <Button 
-                    onClick={() => startTimer(task.id)}
+                    onClick={() => hookStartTimer(task.id)}
                     disabled={operationInProgress.has(task.id)}
                     size="sm"
                     className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${

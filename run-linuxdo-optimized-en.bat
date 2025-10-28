@@ -1,13 +1,13 @@
 @echo off
 REM ========================================
-REM LinuxDo Silent Scraper Launcher
+REM LinuxDo Scraper - 无弹窗后台运行
 REM ========================================
 
-REM Switch to script directory
-cd /d "%~dp0"
+REM 切换到脚本所在目录
+cd /d "%~dp0\linuxdo-scraper"
 
-REM Run Python scraper silently, output to log file
-linuxdo-scraper\venv\Scripts\pythonw.exe linuxdo-scraper\linuxdo\scripts\scraper_optimized.py > linuxdo-scraper\logs\scraper.log 2>&1
+REM 确保日志目录存在
+if not exist "logs" mkdir "logs"
 
-REM To view log, open the log file:
-REM notepad linuxdo-scraper\logs\scraper.log
+REM 使用 pythonw.exe 无窗口运行，日志追加到文件
+..\venv\Scripts\pythonw.exe linuxdo\scripts\scraper_optimized.py >> logs\scraper.log 2>&1

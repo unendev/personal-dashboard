@@ -3,6 +3,8 @@
  * 包含：分组逻辑、折叠状态持久化、颜色生成等
  */
 
+import { migrateLegacyCategory, formatCategoryDisplay } from './category-utils';
+
 interface TimerTask {
   id: string;
   name: string;
@@ -46,7 +48,9 @@ export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
   
   // 过滤掉不参与分组的任务（时间黑洞、身体锻炼）
   topLevelTasks.forEach(task => {
-    const category = task.categoryPath || "未分类";
+    // 自动迁移和规范化分类路径（兼容旧数据）
+    const rawCategory = task.categoryPath || "未分类";
+    const category = migrateLegacyCategory(rawCategory);
     
     // 跳过不参与分组的分类（检查路径中是否包含这些关键词）
     if (category.includes('时间黑洞') || category.includes('身体锻炼')) {
@@ -67,7 +71,7 @@ export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
     return {
       id: categoryPath,
       categoryPath: categoryPath,
-      displayName: extractDisplayName(categoryPath),
+      displayName: formatCategoryDisplay(categoryPath, false), // 使用新的格式化函数
       tasks: sortTasks(tasks),
       totalTime,
       runningCount,
