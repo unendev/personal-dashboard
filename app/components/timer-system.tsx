@@ -668,14 +668,11 @@ const QuickTimer: React.FC = () => {
   const stopCurrentTask = () => {
     if (!currentTask || !currentTask.startTime) return
 
-    const elapsed = currentTask.isPaused 
-      ? currentTask.elapsedTime 
-      : Math.floor((Date.now() / 1000 - currentTask.startTime))
+    const elapsed = elapsedTime
     
     const updatedTask = {
       ...currentTask,
       startTime: null,
-      elapsedTime: elapsed,
       totalTime: (currentTask.totalTime || 0) + elapsed,
       isRunning: false,
       isPaused: false,
