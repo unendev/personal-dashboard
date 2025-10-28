@@ -92,15 +92,15 @@ export function EnhancedInstanceTagInput({
         }
 
         // 合并并去重
-        const allTagsMap = new globalThis.Map<string, InstanceTag>()
-        safePredefinedTags.forEach(tag => allTagsMap.set(tag.name, tag))
+        const allTagsMap: Record<string, InstanceTag> = {}
+        safePredefinedTags.forEach(tag => allTagsMap[tag.name] = tag)
         usedTags.forEach(tag => {
-          if (!allTagsMap.has(tag.name)) {
-            allTagsMap.set(tag.name, tag)
+          if (!allTagsMap[tag.name]) {
+            allTagsMap[tag.name] = tag
           }
         })
 
-        const mergedTags = Array.from(allTagsMap.values())
+        const mergedTags = Object.values(allTagsMap)
         setAvailableTags(mergedTags)
         
         if (mergedTags.length > 0) {
@@ -126,21 +126,21 @@ export function EnhancedInstanceTagInput({
           const predefinedData = await predefinedResponse.json()
           const usedTagsData = await usedTagsResponse.json()
           
-          const allTagsMap = new globalThis.Map<string, InstanceTag>()
-          ((predefinedData?.instanceTags || predefinedData) || []).forEach((tag: InstanceTag) => allTagsMap.set(tag.name, tag));
+          const allTagsMap: Record<string, InstanceTag> = {}
+          ((predefinedData?.instanceTags || predefinedData) || []).forEach((tag: InstanceTag) => allTagsMap[tag.name] = tag);
           (usedTagsData.instanceTags || []).forEach((tagName: string) => {
-            if (!allTagsMap.has(tagName)) {
-              allTagsMap.set(tagName, {
+            if (!allTagsMap[tagName]) {
+              allTagsMap[tagName] = {
                 id: `used-${tagName}`,
                 name: tagName,
                 userId: userId,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
-              })
+              }
             }
           })
 
-          const mergedData = Array.from(allTagsMap.values())
+          const mergedData = Object.values(allTagsMap)
           const hasChanges = !currentData || 
             mergedData.length !== currentData.length ||
             mergedData.some(newTag => !currentData.find(currentTag => currentTag.name === newTag.name))
