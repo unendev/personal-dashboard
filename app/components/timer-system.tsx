@@ -637,7 +637,7 @@ const QuickTimer: React.FC = () => {
     setElapsedTime(0)
   }
 
-  const pauseTask = () => {
+  const pauseTask = async () => {
     if (!currentTask || !currentTask.isRunning) return
 
     const updatedTask = {
@@ -648,9 +648,12 @@ const QuickTimer: React.FC = () => {
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t))
     setCurrentTask(updatedTask)
+    
+    // 持久化到数据库
+    await updateTask(updatedTask)
   }
 
-  const resumeTask = () => {
+  const resumeTask = async () => {
     if (!currentTask || !currentTask.isPaused) return
 
     const pauseDuration = Math.floor(Date.now() / 1000) - currentTask.pausedTime
@@ -663,16 +666,23 @@ const QuickTimer: React.FC = () => {
 
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t))
     setCurrentTask(updatedTask)
+    
+    // 持久化到数据库
+    await updateTask(updatedTask)
   }
 
-  const stopCurrentTask = () => {
+  const stopCurrentTask = async () => {
     if (!currentTask || !currentTask.startTime) return
 
-    const elapsed = Math.floor((Date.now() / 1000 - currentTask.startTime))
+    const elapsed = currentTask.isPaused 
+      ? currentTask.elapsedTime 
+      : Math.floor((Date.now() / 1000 - currentTask.startTime))
+    
     const updatedTask = {
       ...currentTask,
       startTime: null,
-      totalTime: currentTask.totalTime + elapsed,
+      elapsedTime: elapsed,
+      totalTime: (currentTask.totalTime || 0) + elapsed,
       isRunning: false,
       isPaused: false,
       pausedTime: 0
@@ -681,6 +691,9 @@ const QuickTimer: React.FC = () => {
     setTasks(tasks.map(t => t.id === currentTask.id ? updatedTask : t))
     setCurrentTask(null)
     setElapsedTime(0)
+    
+    // 持久化到数据库
+    await updateTask(updatedTask)
   }
 
   return (
