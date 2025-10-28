@@ -84,7 +84,12 @@ const ScrollableLayout = () => {
         ]);
 
         if (linuxdoData) {
-          setAvailableLinuxDoDates(linuxdoData.dates || []);
+          setAvailableLinuxDoDates(
+            (linuxdoData.dates || []).map(d => ({
+              ...d,
+              label: formatDateLabel(d.date)
+            }))
+          );
           // 设置默认日期
           if (!selectedLinuxDoDate) {
             const defaultDate = getDefaultDate('linuxdo');
@@ -94,7 +99,12 @@ const ScrollableLayout = () => {
         }
 
         if (redditData) {
-          setAvailableRedditDates(redditData.dates || []);
+          setAvailableRedditDates(
+            (redditData.dates || []).map(d => ({
+              ...d,
+              label: formatDateLabel(d.date)
+            }))
+          );
           // 设置默认日期
           if (!selectedRedditDate) {
             const defaultDate = getDefaultDate('reddit');
@@ -104,7 +114,12 @@ const ScrollableLayout = () => {
         }
 
         if (heyboxData) {
-          setAvailableHeyboxDates(heyboxData.dates || []);
+          setAvailableHeyboxDates(
+            (heyboxData.dates || []).map(d => ({
+              ...d,
+              label: formatDateLabel(d.date)
+            }))
+          );
           // 设置默认日期（小黑盒用今天）
           if (!selectedHeyboxDate) {
             const defaultDate = new Date().toISOString().split('T')[0];
