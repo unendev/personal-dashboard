@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, KeyboardEvent } from 'react'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { Button } from '@/app/components/ui/button'
-import { X, Plus, Clock, Sparkles } from 'lucide-react'
+import { Plus, Clock, Sparkles } from 'lucide-react'
 
 interface InstanceTag {
   id: string
@@ -92,7 +92,7 @@ export function EnhancedInstanceTagInput({
         }
 
         // 合并并去重
-        const allTagsMap = new Map<string, InstanceTag>()
+        const allTagsMap = new globalThis.Map<string, InstanceTag>()
         safePredefinedTags.forEach(tag => allTagsMap.set(tag.name, tag))
         usedTags.forEach(tag => {
           if (!allTagsMap.has(tag.name)) {
@@ -126,7 +126,7 @@ export function EnhancedInstanceTagInput({
           const predefinedData = await predefinedResponse.json()
           const usedTagsData = await usedTagsResponse.json()
           
-          const allTagsMap = new Map<string, InstanceTag>()
+          const allTagsMap = new globalThis.Map<string, InstanceTag>()
           ((predefinedData?.instanceTags || predefinedData) || []).forEach((tag: InstanceTag) => allTagsMap.set(tag.name, tag));
           (usedTagsData.instanceTags || []).forEach((tagName: string) => {
             if (!allTagsMap.has(tagName)) {
