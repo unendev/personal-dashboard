@@ -127,7 +127,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   });
 
   // 【关键修复】使用外部传入的 timerControl（全局互斥），或创建本地的（向后兼容）
-  const localTimerControl = useTimerControl(tasks, onTasksChange);
+  const localTimerControl = useTimerControl({
+    tasks,
+    onTasksChange,
+    // 本地实例不设置回调（由外部 timerControl 提供）
+  });
   const timerControl = externalTimerControl || localTimerControl;
   const { startTimer: hookStartTimer, pauseTimer: hookPauseTimer, stopTimer: hookStopTimer, operationInProgress } = timerControl;
   

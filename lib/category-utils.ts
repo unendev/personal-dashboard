@@ -261,3 +261,4 @@ export function searchCategories(query: string, paths: string[]): string[] {
 
 
 
+

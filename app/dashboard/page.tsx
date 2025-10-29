@@ -62,7 +62,6 @@ export default async function DashboardPage() {
         <div className="flex space-x-6">
           <Link href="/dashboard" className="text-green-600 font-medium border-b-2 border-green-600 pb-2">🏆 技能树</Link>
           <Link href="/log" className="text-gray-600 hover:text-gray-800 font-medium pb-2">📝 每日日志</Link>
-          <Link href="/timer" className="text-gray-600 hover:text-gray-800 font-medium pb-2">⏱️ 计时器</Link>
         </div>
       </div>
 

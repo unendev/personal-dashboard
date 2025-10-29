@@ -19,6 +19,7 @@ import { CategoryCache } from '@/lib/category-cache'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { QuickCreateModal, CreateTreasureData } from '@/app/components/shared/QuickCreateModal'
 import DailyProgressModal from '@/app/components/features/progress/DailyProgressModal'
+import { useTimerControl } from '@/app/hooks/useTimerControl'
 
 export default function LogPage() {
   const { data: session, status } = useDevSession();
@@ -83,6 +84,42 @@ export default function LogPage() {
   // 每日进度审核状态
   const [isDailyProgressOpen, setIsDailyProgressOpen] = useState(false);
   const [progressTargetDate, setProgressTargetDate] = useState('');
+
+  // 从数据库加载任务（单日 - 用于计时器）
+  const fetchTimerTasks = React.useCallback(async () => {
+    try {
+      const response = await fetch(`/api/timer-tasks?userId=${userId}&date=${selectedDate}`);
+      if (response.ok) {
+        const tasks = await response.json();
+        setTimerTasks(tasks);
+      }
+    } catch (error) {
+      console.error('加载任务失败:', error);
+    }
+  }, [userId, selectedDate]);
+
+  // 【版本冲突处理】
+  const handleVersionConflict = useCallback(() => {
+    console.warn('🔄 检测到版本冲突，正在刷新任务数据...');
+    fetchTimerTasks(); // 重新加载最新数据
+  }, [fetchTimerTasks]);
+
+  // 【互斥提示】
+  const handleTasksPaused = useCallback((pausedTasks: Array<{ id: string; name: string }>) => {
+    if (pausedTasks.length > 0) {
+      const taskNames = pausedTasks.map(t => t.name).join('、');
+      console.log(`ℹ️ 已自动暂停：${taskNames}`);
+      // 可选：显示 toast 通知用户
+    }
+  }, []);
+
+  // 【创建统一的 Timer 控制器】
+  const timerControl = useTimerControl({
+    tasks: timerTasks,
+    onTasksChange: setTimerTasks,
+    onVersionConflict: handleVersionConflict,
+    onTasksPaused: handleTasksPaused,
+  });
 
   // 滚动恢复逻辑
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -219,19 +256,6 @@ export default function LogPage() {
 
     preloadData();
   }, []);
-
-  // 从数据库加载任务（单日 - 用于计时器）
-  const fetchTimerTasks = React.useCallback(async () => {
-    try {
-      const response = await fetch(`/api/timer-tasks?userId=${userId}&date=${selectedDate}`);
-      if (response.ok) {
-        const tasks = await response.json();
-        setTimerTasks(tasks);
-      }
-    } catch (error) {
-      console.error('Failed to fetch timer tasks:', error);
-    }
-  }, [userId, selectedDate]);
 
   // 从数据库加载时间范围任务（用于统计）
   const [rangeTimerTasks, setRangeTimerTasks] = useState<typeof timerTasks>([]);
@@ -1044,6 +1068,7 @@ export default function LogPage() {
                         onOperationRecord={recordOperation}
                         onTaskClone={onTaskClone}
                         groupFilter={groupTasks.map(t => t.id)}
+                        timerControl={timerControl}
                       />
                     )}
                   />
@@ -1187,6 +1212,7 @@ export default function LogPage() {
                         onTaskClone={onTaskClone}
                         groupFilter={groupTasks.map(t => t.id)}
                         onBeforeOperation={onBeforeOperation}
+                        timerControl={timerControl}
                       />
                     )}
                   />
