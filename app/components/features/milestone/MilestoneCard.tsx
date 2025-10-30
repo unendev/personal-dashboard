@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { MilestoneData } from '@/types/milestone';
+import type { MilestoneData, ConfirmedAchievement } from '@/types/milestone';
 
 interface MilestoneCardProps {
   milestone: MilestoneData;
@@ -23,9 +23,9 @@ export default function MilestoneCard({ milestone }: MilestoneCardProps) {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
-  const confirmedAchievements = Array.isArray(milestone.confirmedAchievements)
+  const confirmedAchievements = (Array.isArray(milestone.confirmedAchievements)
     ? milestone.confirmedAchievements
-    : [];
+    : []) as ConfirmedAchievement[];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700">
@@ -84,7 +84,7 @@ export default function MilestoneCard({ milestone }: MilestoneCardProps) {
                 🎯 关键成果
               </h4>
               <ul className="space-y-2">
-                {confirmedAchievements.map((achievement: { description: string; impact: string; taskName?: string; duration?: number; categoryPath?: string }, index: number) => (
+                {confirmedAchievements.map((achievement, index) => (
                   <li
                     key={index}
                     className="flex items-start text-sm bg-gray-50 dark:bg-gray-700/50 rounded p-2"

@@ -9,6 +9,15 @@ export interface AchievementData {
   reason?: string; // 为什么重要
 }
 
+// 确认的成就数据结构
+export interface ConfirmedAchievement {
+  description: string;
+  impact: string;
+  taskName?: string;
+  duration?: number;
+  categoryPath?: string;
+}
+
 // Prisma JSON 兼容的类型定义
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
