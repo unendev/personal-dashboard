@@ -163,36 +163,66 @@ async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[D
                 post_id = id_match.group(1)
                 text = item['text']
                 
-                # 分割文本（格式：作者 Lv.X | 标题 | 摘要 | 点赞数 | 评论数）
-                parts = [p.strip() for p in text.split('  ') if p.strip()]
+                # 改进的文本解析逻辑
+                # 格式分析：作者名 Lv.等级 标题或内容 数字(点赞/评论)...
                 
-                # 提取数字（点赞和评论）
+                # 1. 提取作者和等级（格式：作者名 Lv.数字）
+                author_match = re.match(r'^(.+?)\s+Lv\.(\d+)\s*(.*)$', text)
+                
+                if author_match:
+                    author = author_match.group(1).strip()
+                    level = author_match.group(2)
+                    remaining_text = author_match.group(3)
+                else:
+                    author = ''
+                    remaining_text = text
+                
+                # 2. 提取标题（剩余文本的前200个字符作为标题）
+                title = remaining_text[:200].strip() if remaining_text else ''
+                
+                # 3. 提取所有数字（用于点赞数、评论数、数据等）
                 numbers = re.findall(r'\b(\d+)\b', text)
                 
-                # 解析各部分
-                author = parts[0].replace('Lv.', '').replace('  ', '').strip() if parts else ''
-                title = parts[1] if len(parts) > 1 else ''
-                summary = parts[2] if len(parts) > 2 else ''
+                # 4. 智能解析数字（假设最后两个数字通常是点赞和评论）
+                likes = 0
+                comments = 0
                 
-                likes = int(numbers[-2]) if len(numbers) >= 2 else 0
-                comments = int(numbers[-1]) if len(numbers) >= 1 else 0
+                if len(numbers) >= 2:
+                    try:
+                        # 最后一个通常是评论数
+                        comments = int(numbers[-1])
+                        # 倒数第二个通常是点赞数
+                        likes = int(numbers[-2])
+                    except (ValueError, IndexError):
+                        pass
+                elif len(numbers) == 1:
+                    try:
+                        # 只有一个数字时当作评论数
+                        comments = int(numbers[0])
+                    except ValueError:
+                        pass
                 
-                post = {
-                    'id': post_id,
-                    'title': title,
-                    'summary': summary,
-                    'author': author,
-                    'url': item['href'],
-                    'likes_count': likes,
-                    'comments_count': comments,
-                    'created_time': int(time.time())
-                }
-                
-                posts.append(post)
-                logger.debug(f"    [{len(posts)}] {title[:30]}...")
+                # 只有在提取到有效数据时才添加帖子
+                if title:  # 确保至少有标题
+                    post = {
+                        'id': post_id,
+                        'title': title,
+                        'summary': title[:100],  # 摘要为标题前100字
+                        'author': author,
+                        'url': item['href'],
+                        'likes_count': likes,
+                        'comments_count': comments,
+                        'created_time': int(time.time())
+                    }
+                    
+                    posts.append(post)
+                    logger.debug(f"    [{len(posts)}] 作者:{author} | 点赞:{likes} 评论:{comments} | {title[:40]}...")
+                else:
+                    logger.debug(f"    ⚠ 跳过空标题的帖子")
                 
             except Exception as e:
                 logger.warning(f"    解析帖子失败: {e}")
+                logger.debug(f"    原始文本: {text[:100]}")
                 continue
         
         logger.info(f"✅ 成功提取 {len(posts)} 个帖子")

@@ -7,7 +7,7 @@ import { HeyboxPost, HeyboxReport } from '@/types/heybox';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { safeFetchJSON } from '@/lib/fetch-utils';
+import PostTagSelector from '@/app/components/features/widgets/PostTagSelector';
 
 type SourceType = 'all' | 'linuxdo' | 'reddit' | 'heybox';
 
@@ -20,8 +20,11 @@ const ScrollableLayout = () => {
   const [activeSource, setActiveSource] = useState<SourceType>('all');
   const [activeSection, setActiveSection] = useState<string>('linuxdo');
   const [showAIChat, setShowAIChat] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
+
+  // ✨ 标签相关状态
+  const [postTags, setPostTags] = useState<Record<string, string[]>>({});
+  const [showTagEditor, setShowTagEditor] = useState(false);
 
   // 日期选择相关state
   const [selectedLinuxDoDate, setSelectedLinuxDoDate] = useState<string>('');
@@ -77,46 +80,41 @@ const ScrollableLayout = () => {
     const fetchDates = async () => {
       try {
         setLoadingDates(true);
-        
-        // 辅助函数：为日期数据添加 label 字段
-        const addDateLabels = (dates: Array<{ date: string; count: number }>) => 
-          dates.map(d => ({
-            ...d,
-            label: formatDateLabel(d.date)
-          }));
-        
-        const [linuxdoData, redditData, heyboxData] = await Promise.all([
-          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/linuxdo/dates', {}, 0).catch(() => null),
-          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/reddit/dates', {}, 0).catch(() => null),
-          safeFetchJSON<{ dates: Array<{ date: string; count: number }> }>('/api/heybox/dates', {}, 0).catch(() => null)
+        const [linuxdoDatesRes, redditDatesRes, heyboxDatesRes] = await Promise.all([
+          fetch('/api/linuxdo/dates'),
+          fetch('/api/reddit/dates'),
+          fetch('/api/heybox/dates')
         ]);
 
-        if (linuxdoData) {
-          setAvailableLinuxDoDates(addDateLabels(linuxdoData.dates || []));
+        if (linuxdoDatesRes.ok) {
+          const data = await linuxdoDatesRes.json();
+          setAvailableLinuxDoDates(data.dates || []);
           // 设置默认日期
           if (!selectedLinuxDoDate) {
             const defaultDate = getDefaultDate('linuxdo');
-            const dateStrings = (linuxdoData.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
             setSelectedLinuxDoDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
 
-        if (redditData) {
-          setAvailableRedditDates(addDateLabels(redditData.dates || []));
+        if (redditDatesRes.ok) {
+          const data = await redditDatesRes.json();
+          setAvailableRedditDates(data.dates || []);
           // 设置默认日期
           if (!selectedRedditDate) {
             const defaultDate = getDefaultDate('reddit');
-            const dateStrings = (redditData.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
             setSelectedRedditDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
 
-        if (heyboxData) {
-          setAvailableHeyboxDates(addDateLabels(heyboxData.dates || []));
+        if (heyboxDatesRes.ok) {
+          const data = await heyboxDatesRes.json();
+          setAvailableHeyboxDates(data.dates || []);
           // 设置默认日期（小黑盒用今天）
           if (!selectedHeyboxDate) {
             const defaultDate = new Date().toISOString().split('T')[0];
-            const dateStrings = (heyboxData.dates || []).map((d: { date: string }) => d.date);
+            const dateStrings = (data.dates || []).map((d: { date: string }) => d.date);
             setSelectedHeyboxDate(dateStrings.includes(defaultDate) ? defaultDate : (dateStrings[0] || defaultDate));
           }
         }
@@ -142,27 +140,32 @@ const ScrollableLayout = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [linuxdoData, redditData, heyboxData] = await Promise.all([
-          safeFetchJSON<LinuxDoReport>(
-            `/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`, 
-            {}, 
-            0
-          ).catch(() => null),
-          safeFetchJSON<RedditReport>(
-            `/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`, 
-            {}, 
-            0
-          ).catch(() => null),
-          safeFetchJSON<HeyboxReport>(
-            `/api/heybox${selectedHeyboxDate ? `?date=${selectedHeyboxDate}` : ''}`, 
-            {}, 
-            0
-          ).catch(() => null)
+        const [linuxdoRes, redditRes, heyboxRes] = await Promise.all([
+          fetch(`/api/linuxdo${selectedLinuxDoDate ? `?date=${selectedLinuxDoDate}` : ''}`),
+          fetch(`/api/reddit${selectedRedditDate ? `?date=${selectedRedditDate}` : ''}`),
+          fetch(`/api/heybox${selectedHeyboxDate ? `?date=${selectedHeyboxDate}` : ''}`)
         ]);
 
-        setLinuxdoData(linuxdoData);
-        setRedditData(redditData);
-        setHeyboxData(heyboxData);
+        if (linuxdoRes.ok) {
+          const data = await linuxdoRes.json();
+          setLinuxdoData(data);
+        } else {
+          setLinuxdoData(null);
+        }
+
+        if (redditRes.ok) {
+          const data = await redditRes.json();
+          setRedditData(data);
+        } else {
+          setRedditData(null);
+        }
+
+        if (heyboxRes.ok) {
+          const data = await heyboxRes.json();
+          setHeyboxData(data);
+        } else {
+          setHeyboxData(null);
+        }
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -176,36 +179,23 @@ const ScrollableLayout = () => {
   // 处理点击展开详情
   const handleClick = (post: LinuxDoPost | RedditPost) => {
     setHoveredPost(post);
+    setShowTagEditor(false); // 切换帖子时重置标签编辑器状态
   };
 
-  // 处理鼠标离开 - 延迟关闭
-  const handleMouseLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    
-    // 延迟 200ms 关闭，给用户时间移动到详情面板
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredPost(null);
-    }, 200);
+  // ✨ 处理标签更新
+  const handleTagsChange = (postId: string, newTags: string[]) => {
+    setPostTags(prev => ({
+      ...prev,
+      [postId]: newTags
+    }));
   };
 
-  // 详情面板鼠标进入 - 取消关闭
-  const handleDetailPanelEnter = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-  };
-
-  // 详情面板鼠标离开 - 关闭详情
-  const handleDetailPanelLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredPost(null);
-    }, 200);
+  // 获取帖子的 source
+  const getPostSource = (post: LinuxDoPost | RedditPost | HeyboxPost): 'linuxdo' | 'reddit' | 'heybox' => {
+    if (linuxdoData?.posts.some(p => p.id === post.id)) return 'linuxdo';
+    if (redditData?.posts.some(p => p.id === post.id)) return 'reddit';
+    if (heyboxData?.posts.some(p => p.id === post.id)) return 'heybox';
+    return 'linuxdo'; // 默认值
   };
 
   // 大纲跳转
@@ -574,7 +564,6 @@ const ScrollableLayout = () => {
                   key={`${post.source}-${post.id}`}
                   id={`post-${post.source}-${post.id}`}
                   onClick={() => handleClick(post)}
-                  onMouseLeave={handleMouseLeave}
                   className="p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 
                            hover:border-white/20 transition-all duration-200 cursor-pointer group 
                            hover:shadow-lg hover:scale-[1.02]"
@@ -590,6 +579,18 @@ const ScrollableLayout = () => {
                         {getValueIcon(post.analysis.value_assessment)}
                       </span>
                     </div>
+
+                    {/* ✨ 用户标签 */}
+                    {postTags[post.id] && postTags[post.id].length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {postTags[post.id].map(tag => (
+                          <span key={tag} className="px-2 py-0.5 bg-green-500/20 text-green-400 
+                                                     rounded text-xs border border-green-500/30">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* 标题（优先显示中文优化标题） */}
                     <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
@@ -704,7 +705,10 @@ const ScrollableLayout = () => {
       {hoveredPost && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={() => setHoveredPost(null)}
+          onClick={() => {
+            setHoveredPost(null);
+            setShowTagEditor(false);
+          }}
         >
           {/* 背景遮罩 */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -713,8 +717,6 @@ const ScrollableLayout = () => {
           <div
             ref={detailPanelRef}
             onClick={(e) => e.stopPropagation()}
-            onMouseEnter={handleDetailPanelEnter}
-            onMouseLeave={handleDetailPanelLeave}
             className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
                      max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
@@ -739,13 +741,30 @@ const ScrollableLayout = () => {
                     {hoveredPost.analysis.core_issue}
                   </p>
                       </div>
+                <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setHoveredPost(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTagEditor(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg
+                             bg-green-500/10 hover:bg-green-500/20 border border-green-500/30
+                             text-green-400 hover:text-green-300 transition-all text-sm"
+                  >
+                    <span>🏷️</span>
+                    <span>编辑标签</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setHoveredPost(null);
+                      setShowTagEditor(false);
+                    }}
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
                            bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
+                </div>
                   </div>
                 </div>
 
@@ -798,6 +817,62 @@ const ScrollableLayout = () => {
                 </svg>
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ 侧边栏标签编辑面板 */}
+      {showTagEditor && hoveredPost && (
+        <div 
+          className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-white/20
+                     shadow-2xl z-[60] flex flex-col animate-slide-in"
+        >
+          {/* 头部 */}
+          <div className="flex-shrink-0 p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🏷️</span>
+              <span className="text-white font-semibold">编辑标签</span>
+            </div>
+            <button
+              onClick={() => setShowTagEditor(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-full 
+                       bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 帖子信息 */}
+          <div className="flex-shrink-0 p-4 border-b border-white/10">
+            <div className="flex items-center gap-2 mb-2">
+              {getSourceBadge(getPostSource(hoveredPost))}
+              <span className={`px-2 py-0.5 rounded text-xs border ${
+                getPostTypeColor(hoveredPost.analysis.post_type)
+              }`}>
+                {hoveredPost.analysis.post_type}
+              </span>
+            </div>
+            <h3 className="text-sm font-medium text-white line-clamp-2">
+              {'title_cn' in hoveredPost && hoveredPost.title_cn ? hoveredPost.title_cn : hoveredPost.title}
+            </h3>
+          </div>
+
+          {/* 标签编辑器 */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+            <PostTagSelector
+              source={getPostSource(hoveredPost)}
+              postId={hoveredPost.id}
+              currentTags={postTags[hoveredPost.id] || []}
+              onTagsChange={(newTags) => handleTagsChange(hoveredPost.id, newTags)}
+              compact={false}
+            />
+          </div>
+
+          {/* 底部提示 */}
+          <div className="flex-shrink-0 p-4 border-t border-white/10">
+            <p className="text-xs text-white/40 text-center">
+              标签将自动保存
+            </p>
           </div>
         </div>
       )}
