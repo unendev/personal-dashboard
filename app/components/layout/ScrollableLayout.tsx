@@ -944,11 +944,14 @@ const ScrollableLayout = () => {
                       </div>
       )}
 
-      {/* 悬停详情面板 */}
+      {/* 详情面板 - 移动端集成标签Tab，桌面端独立 */}
       {hoveredPost && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
-          onClick={() => setHoveredPost(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-4"
+          onClick={() => {
+            setHoveredPost(null);
+            setMobileTab('content');
+          }}
         >
           {/* 背景遮罩 */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -957,11 +960,11 @@ const ScrollableLayout = () => {
           <div
             ref={detailPanelRef}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-gray-900 rounded-none sm:rounded-2xl border border-white/20 shadow-2xl 
-                     max-w-4xl w-full max-h-full sm:max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
+            className="relative bg-gray-900 rounded-none lg:rounded-2xl border border-white/20 shadow-2xl 
+                     max-w-4xl w-full max-h-full lg:max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
             {/* 头部 */}
-            <div className="flex-shrink-0 p-6 border-b border-white/10">
+            <div className="flex-shrink-0 p-4 lg:p-6 border-b border-white/10">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
@@ -974,54 +977,133 @@ const ScrollableLayout = () => {
                       {getValueIcon(hoveredPost.analysis.value_assessment)}
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-white mb-2">
+                  <h2 className="text-lg lg:text-xl font-bold text-white mb-2">
                     {'title_cn' in hoveredPost && hoveredPost.title_cn ? hoveredPost.title_cn : hoveredPost.title}
                   </h2>
                   <p className="text-sm text-white/70">
                     {hoveredPost.analysis.core_issue}
                   </p>
-                      </div>
+                </div>
                 <button
-                  onClick={() => setHoveredPost(null)}
+                  onClick={() => {
+                    setHoveredPost(null);
+                    setMobileTab('content');
+                  }}
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
                            bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
-                  </div>
-                </div>
-
-            {/* 内容 */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-              {hoveredPost.analysis.detailed_analysis ? (
-                <div className="markdown-content prose prose-invert max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                  >
-                    {hoveredPost.analysis.detailed_analysis}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>💡</span>
-                    关键信息
-                  </h3>
-                  <ul className="space-y-2">
-                    {hoveredPost.analysis.key_info.map((info, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-white/80">
-                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center 
-                                       bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold">
-                          {idx + 1}
-                        </span>
-                        <span>{info}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
               </div>
+            </div>
+
+            {/* 移动端 Tab 切换 */}
+            <div className="lg:hidden flex-shrink-0 flex border-b border-white/10">
+              <button
+                onClick={() => setMobileTab('content')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                  mobileTab === 'content'
+                    ? 'bg-white/10 text-white border-b-2 border-emerald-500'
+                    : 'text-white/60 hover:text-white/80'
+                }`}
+              >
+                📄 内容
+              </button>
+              <button
+                onClick={() => setMobileTab('tags')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                  mobileTab === 'tags'
+                    ? 'bg-white/10 text-white border-b-2 border-emerald-500'
+                    : 'text-white/60 hover:text-white/80'
+                }`}
+              >
+                🏷️ 标签
+              </button>
+            </div>
+
+            {/* 内容区 */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {/* 移动端：根据 Tab 切换显示 */}
+              <div className="lg:hidden">
+                {mobileTab === 'content' ? (
+                  <div className="p-4">
+                    {hoveredPost.analysis.detailed_analysis ? (
+                      <div className="markdown-content prose prose-invert max-w-none prose-sm">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {hoveredPost.analysis.detailed_analysis}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                          <span>💡</span>
+                          关键信息
+                        </h3>
+                        <ul className="space-y-2">
+                          {hoveredPost.analysis.key_info.map((info, idx) => (
+                            <li key={idx} className="flex items-start gap-3 text-white/80 text-sm">
+                              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center 
+                                             bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <span>{info}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <PostTagSelector
+                      currentTags={postTags[`${getPostSource(hoveredPost)}-${hoveredPost.id}`] || []}
+                      availableTags={allUserTags}
+                      onTagsChange={(newTags) => {
+                        const source = getPostSource(hoveredPost);
+                        const postKey = `${source}-${hoveredPost.id}`;
+                        savePostTags(postKey, newTags, source, hoveredPost.id);
+                      }}
+                      isSaving={savingTags.has(`${getPostSource(hoveredPost)}-${hoveredPost.id}`)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 桌面端：只显示内容 */}
+              <div className="hidden lg:block p-6">
+                {hoveredPost.analysis.detailed_analysis ? (
+                  <div className="markdown-content prose prose-invert max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
+                      {hoveredPost.analysis.detailed_analysis}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <span>💡</span>
+                      关键信息
+                    </h3>
+                    <ul className="space-y-2">
+                      {hoveredPost.analysis.key_info.map((info, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-white/80">
+                          <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center 
+                                         bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>{info}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* 底部 */}
             <div className="flex-shrink-0 p-4 border-t border-white/10 flex justify-end">
@@ -1029,10 +1111,10 @@ const ScrollableLayout = () => {
                 href={hoveredPost.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 
+                className="px-4 lg:px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 
                          hover:from-blue-600 hover:to-purple-600
                          text-white font-medium rounded-lg transition-all duration-200 
-                         flex items-center gap-2"
+                         flex items-center gap-2 text-sm"
               >
                 查看原文
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1044,16 +1126,12 @@ const ScrollableLayout = () => {
         </div>
       )}
 
-      {/* ✨ 侧边栏标签编辑面板 - 默认显示 */}
+      {/* ✨ 桌面端侧边栏标签编辑面板 */}
       {hoveredPost && (
         <div 
-          className="fixed 
-                     inset-x-0 bottom-0 h-2/3 
-                     lg:inset-y-0 lg:right-0 lg:left-auto lg:h-auto lg:w-80
-                     bg-gray-900 
-                     border-t lg:border-t-0 lg:border-l border-white/20
-                     shadow-2xl z-[60] flex flex-col animate-slide-in
-                     rounded-t-2xl lg:rounded-none"
+          className="hidden lg:flex fixed inset-y-0 right-0 w-80
+                     bg-gray-900 border-l border-white/20
+                     shadow-2xl z-[60] flex-col animate-slide-in"
         >
           {/* 头部 */}
           <div className="flex-shrink-0 p-4 border-b border-white/10 flex items-center justify-between">

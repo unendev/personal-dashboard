@@ -25,7 +25,7 @@ export default function MilestoneCard({ milestone }: MilestoneCardProps) {
 
   const confirmedAchievements = (Array.isArray(milestone.confirmedAchievements)
     ? milestone.confirmedAchievements
-    : []) as ConfirmedAchievement[];
+    : []) as unknown as ConfirmedAchievement[];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700">
