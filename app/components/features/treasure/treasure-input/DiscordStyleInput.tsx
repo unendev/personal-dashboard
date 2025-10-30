@@ -16,6 +16,7 @@ interface DiscordStyleInputProps {
   onCancel: () => void
   initialData?: TreasureData & { id?: string }
   mode?: 'create' | 'edit'
+  lastTags?: string[]
 }
 
 interface UploadingImage {
@@ -34,7 +35,7 @@ interface ImageWithPreview {
   previewUrl?: string   // 用于预览的签名 URL
 }
 
-export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create' }: DiscordStyleInputProps) {
+export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create', lastTags }: DiscordStyleInputProps) {
   const [content, setContent] = useState('')
   const [images, setImages] = useState<ImageWithPreview[]>([])
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([])
@@ -100,15 +101,8 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       // 防止重复初始化同一个宝藏
       if (lastTreasureIdRef.current === currentId && isInitializedRef.current) {
-        console.log('[DiscordStyleInput] 跳过重复初始化', { currentId, lastId: lastTreasureIdRef.current })
         return
       }
-      
-      console.log('[DiscordStyleInput] 初始化编辑数据', { 
-        currentId, 
-        lastId: lastTreasureIdRef.current,
-        title: initialData.title 
-      })
       
       // 记录当前初始化的宝藏 ID
       lastTreasureIdRef.current = currentId
@@ -117,12 +111,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       // 构建完整的内容
       let fullContent = ''
       
-      // 添加标题
       if (initialData.title) {
         fullContent += initialData.title + '\n\n'
       }
       
-      // 添加内容
       if (initialData.content) {
         fullContent += initialData.content
       }
@@ -131,7 +123,6 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       // 初始化标签系统
       if (initialData.tags && initialData.tags.length > 0) {
-        // 检查是否有主要分类
         const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
         const primaryTag = initialData.tags.find(tag => primaryCategories.includes(tag))
         const topicTagsList = initialData.tags.filter(tag => !primaryCategories.includes(tag))
@@ -144,18 +135,14 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       // 设置图片（必须重置，即使为空数组）
       if (initialData.images && initialData.images.length > 0) {
-        console.log('🖼️ 编辑模式 - 初始化图片:', initialData.images)
         const mappedImages = initialData.images.map(img => ({
           ...img,
-          url: img.url, // 确保 url 字段存在
+          url: img.url,
           originalUrl: img.url,
           previewUrl: img.url
         }))
-        console.log('🖼️ 编辑模式 - 映射后的图片:', mappedImages)
         setImages(mappedImages)
       } else {
-        // 重要：编辑没有图片的宝藏时，必须重置为空数组
-        console.log('🖼️ 编辑模式 - 重置图片为空')
         setImages([])
       }
       
@@ -171,15 +158,9 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         setActiveCommand('music')
       }
     } else if (!initialData) {
-      // 重置所有状态（创建模式）
-      console.log('[DiscordStyleInput] 重置为创建模式')
-      isInitializedRef.current = false
-      lastTreasureIdRef.current = undefined
-      
+      // 创建模式：重置所有状态，然后用 lastTags 预填充
       setContent('')
       setImages([])
-      setPrimaryCategory('')
-      setTopicTags([])
       setActiveCommand(null)
       setMusicData({
         title: '',
@@ -188,8 +169,23 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         url: '',
         coverUrl: ''
       })
+      
+      // 预填充上一条宝藏的标签（如果存在）
+      if (lastTags && lastTags.length > 0) {
+        const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
+        const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
+        const topicTagsList = lastTags.filter(tag => !primaryCategories.includes(tag))
+        
+        if (primaryTag) {
+          setPrimaryCategory(primaryTag)
+        }
+        setTopicTags(topicTagsList)
+      } else {
+        setPrimaryCategory('')
+        setTopicTags([])
+      }
     }
-  }, [initialData?.id, mode])
+  }, [initialData?.id, mode, lastTags])
 
   // 自动聚焦
   useEffect(() => {

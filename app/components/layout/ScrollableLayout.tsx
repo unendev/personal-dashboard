@@ -24,7 +24,15 @@ const ScrollableLayout = () => {
 
   // ✨ 标签相关状态
   const [postTags, setPostTags] = useState<Record<string, string[]>>({});
-  const [showTagEditor, setShowTagEditor] = useState(false);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
+  
+  // 📱 移动端标签栏切换状态
+  const [showTagsBar, setShowTagsBar] = useState(false);
+
+  // 🔍 筛选相关状态
+  const [selectedUserTag, setSelectedUserTag] = useState<string>(''); // 选中的用户标签
+  const [selectedPostType, setSelectedPostType] = useState<string>(''); // 选中的帖子类型
+  const [selectedValue, setSelectedValue] = useState<string>(''); // 选中的价值评估
 
   // 日期选择相关state
   const [selectedLinuxDoDate, setSelectedLinuxDoDate] = useState<string>('');
@@ -74,6 +82,44 @@ const ScrollableLayout = () => {
       return today.toISOString().split('T')[0];
     }
   };
+
+  // 📌 加载用户标签（页面初始化时）
+  useEffect(() => {
+    const loadUserTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await fetch('/api/post-tags');
+        
+        if (response.ok) {
+          const tagsData = await response.json();
+          console.log('✅ 加载标签成功:', tagsData.length, '条');
+          
+          // 将数据库返回的标签数组转换为状态格式
+          // tagsData 应该是 { tags: string[], source: string, postId: string }[] 格式
+          const tagsMap: Record<string, string[]> = {};
+          
+          if (Array.isArray(tagsData)) {
+            tagsData.forEach((item: any) => {
+              if (item.source && item.postId && Array.isArray(item.tags)) {
+                const key = `${item.source}-${item.postId}`;
+                tagsMap[key] = item.tags;
+              }
+            });
+          }
+          
+          setPostTags(tagsMap);
+        } else {
+          console.warn('加载标签失败，状态码:', response.status);
+        }
+      } catch (error) {
+        console.error('加载标签出错:', error);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+
+    loadUserTags();
+  }, []);
 
   // 获取可用日期列表
   useEffect(() => {
@@ -179,7 +225,6 @@ const ScrollableLayout = () => {
   // 处理点击展开详情
   const handleClick = (post: LinuxDoPost | RedditPost) => {
     setHoveredPost(post);
-    setShowTagEditor(false); // 切换帖子时重置标签编辑器状态
   };
 
   // ✨ 处理标签更新
@@ -219,6 +264,27 @@ const ScrollableLayout = () => {
     return groups;
   }, [redditData]);
 
+  // 🔍 动态收集所有用户标签
+  const allUserTags = React.useMemo(() => {
+    const tags = new Set<string>();
+    Object.values(postTags).forEach(tagArray => {
+      tagArray.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [postTags]);
+
+  // 🔍 收集所有帖子类型
+  const allPostTypes = React.useMemo(() => {
+    const types = new Set<string>();
+    [linuxdoData, redditData, heyboxData].forEach(data => {
+      data?.posts.forEach(post => types.add(post.analysis.post_type));
+    });
+    return Array.from(types).sort();
+  }, [linuxdoData, redditData, heyboxData]);
+
+  // 🔍 所有价值评估选项
+  const allValues = ['高', '中', '低'];
+
   // 获取显示的帖子
   const displayedPosts = React.useMemo(() => {
     const allPosts: Array<(LinuxDoPost | RedditPost | HeyboxPost) & { source: 'linuxdo' | 'reddit' | 'heybox' }> = [];
@@ -241,8 +307,32 @@ const ScrollableLayout = () => {
       });
     }
     
-    return allPosts;
-  }, [linuxdoData, redditData, heyboxData, activeSource]);
+    // 🔍 应用筛选
+    let filtered = allPosts;
+    
+    // 用户标签筛选
+    if (selectedUserTag) {
+      filtered = filtered.filter(post => 
+        postTags[`${getPostSource(post)}-${post.id}`]?.includes(selectedUserTag)
+      );
+    }
+    
+    // 帖子类型筛选
+    if (selectedPostType) {
+      filtered = filtered.filter(post => 
+        post.analysis.post_type === selectedPostType
+      );
+    }
+    
+    // 价值评估筛选
+    if (selectedValue) {
+      filtered = filtered.filter(post => 
+        post.analysis.value_assessment === selectedValue
+      );
+    }
+    
+    return filtered;
+  }, [linuxdoData, redditData, heyboxData, activeSource, postTags, selectedUserTag, selectedPostType, selectedValue]);
 
   const getPostTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -286,7 +376,7 @@ const ScrollableLayout = () => {
   return (
     <main className="w-full min-h-screen flex">
       {/* 左侧：大纲导航 */}
-      <aside className="w-56 flex-shrink-0 border-r border-white/10 bg-gray-900/50 backdrop-blur-sm 
+      <aside className="hidden lg:block w-56 flex-shrink-0 border-r border-white/10 bg-gray-900/50 backdrop-blur-sm 
                       fixed left-0 top-0 bottom-0 overflow-y-auto custom-scrollbar z-20">
         <div className="p-4">
           <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
@@ -399,7 +489,7 @@ const ScrollableLayout = () => {
       </aside>
 
       {/* 主内容区 */}
-      <div className="flex-1 ml-56 overflow-hidden flex flex-col">
+      <div className="flex-1 ml-0 lg:ml-56 overflow-hidden flex flex-col">
         {/* 顶部切换栏 */}
         <div className="flex-shrink-0 bg-gray-900/80 backdrop-blur-md border-b border-white/10 z-10">
           <div className="px-6 py-3 space-y-3">
@@ -450,6 +540,18 @@ const ScrollableLayout = () => {
 
               <div className="flex items-center gap-3 text-sm text-white/60">
                 <span>共 {displayedPosts.length} 篇</span>
+                
+                {/* 📱 移动端标签栏切换按钮 */}
+                <button
+                  onClick={() => setShowTagsBar(!showTagsBar)}
+                  className="md:hidden px-4 py-2 rounded-lg bg-emerald-500/20 
+                           text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 
+                           transition-all flex items-center gap-2"
+                >
+                  <span>🏷️</span>
+                  <span>{showTagsBar ? '隐藏标签' : '显示标签'}</span>
+                </button>
+                
                 <button
                   onClick={() => setShowAIChat(!showAIChat)}
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 
@@ -462,8 +564,11 @@ const ScrollableLayout = () => {
               </div>
             </div>
 
-            {/* 第二行：日期选择 */}
-            <div className="flex items-center gap-4 pt-2 border-t border-white/5">
+            {/* 第二行：日期选择和过滤 */}
+            <div className={`flex items-center gap-2 sm:gap-4 pt-2 border-t border-white/5 overflow-x-auto ${
+              // md及以上始终显示，小于md时根据 showTagsBar 显示
+              showTagsBar ? 'flex' : 'hidden'
+            } md:flex`}>
               {/* LinuxDo日期选择 */}
               {(activeSource === 'all' || activeSource === 'linuxdo') && (
                 <div className="flex items-center gap-2">
@@ -550,15 +655,85 @@ const ScrollableLayout = () => {
                   </select>
                 </div>
               )}
+
+              {/* 🔍 筛选区域 */}
+              <div className="flex items-center gap-3 ml-auto overflow-x-auto">
+                {/* 用户标签云 */}
+                {allUserTags.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50 hidden sm:inline">🏷️ 标签:</span>
+                    <div className="flex items-center gap-1 max-w-md overflow-x-auto custom-scrollbar">
+                      {allUserTags.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => setSelectedUserTag(selectedUserTag === tag ? '' : tag)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 
+                                      rounded-md text-xs font-medium border transition-all 
+                                      whitespace-nowrap shadow-sm ${
+                            selectedUserTag === tag
+                              ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50'
+                              : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 帖子类型筛选 - 中屏以上显示 */}
+                {allPostTypes.length > 0 && (
+                  <select
+                    value={selectedPostType}
+                    onChange={(e) => setSelectedPostType(e.target.value)}
+                    className="hidden md:block px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-white
+                               hover:bg-white/10 focus:outline-none focus:border-blue-500/50 transition-all"
+                  >
+                    <option value="">全部类型</option>
+                    {allPostTypes.map(type => (
+                      <option key={type} value={type} className="bg-gray-900">{type}</option>
+                    ))}
+                  </select>
+                )}
+                
+                {/* 价值评估筛选 - 中屏以上显示 */}
+                <select
+                  value={selectedValue}
+                  onChange={(e) => setSelectedValue(e.target.value)}
+                  className="hidden md:block px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-white
+                             hover:bg-white/10 focus:outline-none focus:border-purple-500/50 transition-all"
+                >
+                  <option value="">全部价值</option>
+                  {allValues.map(val => (
+                    <option key={val} value={val} className="bg-gray-900">{val}</option>
+                  ))}
+                </select>
+                
+                {/* 清除筛选 */}
+                {(selectedUserTag || selectedPostType || selectedValue) && (
+                  <button
+                    onClick={() => {
+                      setSelectedUserTag('');
+                      setSelectedPostType('');
+                      setSelectedValue('');
+                    }}
+                    className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/30 
+                               rounded text-xs hover:bg-red-500/20 transition-all whitespace-nowrap"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-6 py-3 sm:py-6">
           <div className="max-w-7xl mx-auto">
             {/* 网格布局 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {displayedPosts.map((post) => (
                 <div
                   key={`${post.source}-${post.id}`}
@@ -571,26 +746,34 @@ const ScrollableLayout = () => {
                   <div className="flex flex-col h-full">
                     {/* 标签行 */}
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {/* ✨ 用户标签（最前） */}
+                      {postTags[`${getPostSource(post)}-${post.id}`] && postTags[`${getPostSource(post)}-${post.id}`].length > 0 && (
+                        <>
+                          {postTags[`${getPostSource(post)}-${post.id}`].map(tag => (
+                            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 
+                                                       bg-emerald-500/25 text-emerald-300 
+                                                       rounded-md text-xs font-medium 
+                                                       border border-emerald-400/40 shadow-sm">
+                              <span className="text-[10px]">🏷️</span>
+                              {tag}
+                            </span>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* 社区标签 */}
                       {getSourceBadge(post.source)}
+                      
+                      {/* 帖子类型 */}
                       <span className={`px-2 py-0.5 rounded text-xs border ${getPostTypeColor(post.analysis.post_type)}`}>
                         {post.analysis.post_type}
                       </span>
+                      
+                      {/* 价值图标 */}
                       <span className="text-xs">
                         {getValueIcon(post.analysis.value_assessment)}
                       </span>
                     </div>
-
-                    {/* ✨ 用户标签 */}
-                    {postTags[post.id] && postTags[post.id].length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {postTags[post.id].map(tag => (
-                          <span key={tag} className="px-2 py-0.5 bg-green-500/20 text-green-400 
-                                                     rounded text-xs border border-green-500/30">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
 
                     {/* 标题（优先显示中文优化标题） */}
                     <h3 className="text-base font-semibold text-white group-hover:text-blue-400 
@@ -602,16 +785,6 @@ const ScrollableLayout = () => {
                     <p className="text-sm text-white/60 line-clamp-3 flex-1">
                       {post.analysis.core_issue}
                     </p>
-
-                    {/* 关键信息预览 */}
-                    {post.analysis.key_info && post.analysis.key_info.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
-                        <div className="flex items-center gap-2 text-xs text-white/40">
-                          <span>💡</span>
-                          <span>{post.analysis.key_info.length} 个关键点</span>
-                        </div>
-                      </div>
-                    )}
 
                     {/* 社区互动数据 */}
                     {('replies_count' in post || 'participants_count' in post) && (
@@ -704,11 +877,8 @@ const ScrollableLayout = () => {
       {/* 悬停详情面板 */}
       {hoveredPost && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            setHoveredPost(null);
-            setShowTagEditor(false);
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
+          onClick={() => setHoveredPost(null)}
         >
           {/* 背景遮罩 */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -717,8 +887,8 @@ const ScrollableLayout = () => {
           <div
             ref={detailPanelRef}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-gray-900 rounded-2xl border border-white/20 shadow-2xl 
-                     max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
+            className="relative bg-gray-900 rounded-none sm:rounded-2xl border border-white/20 shadow-2xl 
+                     max-w-4xl w-full max-h-full sm:max-h-[85vh] overflow-hidden flex flex-col animate-fade-in"
           >
             {/* 头部 */}
             <div className="flex-shrink-0 p-6 border-b border-white/10">
@@ -741,30 +911,13 @@ const ScrollableLayout = () => {
                     {hoveredPost.analysis.core_issue}
                   </p>
                       </div>
-                <div className="flex items-center gap-2">
                 <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowTagEditor(true);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg
-                             bg-green-500/10 hover:bg-green-500/20 border border-green-500/30
-                             text-green-400 hover:text-green-300 transition-all text-sm"
-                  >
-                    <span>🏷️</span>
-                    <span>编辑标签</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setHoveredPost(null);
-                      setShowTagEditor(false);
-                    }}
+                  onClick={() => setHoveredPost(null)}
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
                            bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
-                </div>
                   </div>
                 </div>
 
@@ -821,11 +974,16 @@ const ScrollableLayout = () => {
         </div>
       )}
 
-      {/* ✨ 侧边栏标签编辑面板 */}
-      {showTagEditor && hoveredPost && (
+      {/* ✨ 侧边栏标签编辑面板 - 默认显示 */}
+      {hoveredPost && (
         <div 
-          className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-white/20
-                     shadow-2xl z-[60] flex flex-col animate-slide-in"
+          className="fixed 
+                     inset-x-0 bottom-0 h-2/3 
+                     lg:inset-y-0 lg:right-0 lg:left-auto lg:h-auto lg:w-80
+                     bg-gray-900 
+                     border-t lg:border-t-0 lg:border-l border-white/20
+                     shadow-2xl z-[60] flex flex-col animate-slide-in
+                     rounded-t-2xl lg:rounded-none"
         >
           {/* 头部 */}
           <div className="flex-shrink-0 p-4 border-b border-white/10 flex items-center justify-between">
@@ -834,7 +992,7 @@ const ScrollableLayout = () => {
               <span className="text-white font-semibold">编辑标签</span>
             </div>
             <button
-              onClick={() => setShowTagEditor(false)}
+              onClick={() => setHoveredPost(null)}
               className="w-8 h-8 flex items-center justify-center rounded-full 
                        bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
             >
@@ -862,8 +1020,8 @@ const ScrollableLayout = () => {
             <PostTagSelector
               source={getPostSource(hoveredPost)}
               postId={hoveredPost.id}
-              currentTags={postTags[hoveredPost.id] || []}
-              onTagsChange={(newTags) => handleTagsChange(hoveredPost.id, newTags)}
+              currentTags={postTags[`${getPostSource(hoveredPost)}-${hoveredPost.id}`] || []}
+              onTagsChange={(newTags) => handleTagsChange(`${getPostSource(hoveredPost)}-${hoveredPost.id}`, newTags)}
               compact={false}
             />
           </div>

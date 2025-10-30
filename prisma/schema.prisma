@@ -770,3 +770,20 @@ model heybox_comments {
   @@index([created_at])
   @@map("heybox_comments")
 }
+
+// 用户标签模型 - 用于保存用户对帖子的自定义标签
+model PostTag {
+  id        String   @id @default(cuid())
+  userId    String
+  source    String   // 'linuxdo', 'reddit', 'heybox'
+  postId    String
+  tags      String[] @default([])
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, source, postId])
+  @@index([userId, source])
+  @@index([userId, tags])
+  @@map("post_tags")
+}

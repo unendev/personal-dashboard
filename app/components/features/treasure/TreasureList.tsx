@@ -57,6 +57,9 @@ export function TreasureList({ className }: TreasureListProps) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [activeId, setActiveId] = useState<string>('')
   
+  // 复用上一条标签功能
+  const [lastTags, setLastTags] = useState<string[]>([])
+  
   // 分页相关
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -76,6 +79,15 @@ export function TreasureList({ className }: TreasureListProps) {
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // 追踪最后一条宝藏的标签（用于复用功能）
+  useEffect(() => {
+    if (treasures.length > 0) {
+      setLastTags(treasures[0].tags)
+    } else {
+      setLastTags([])
+    }
+  }, [treasures])
 
   // 搜索防抖：300ms 后更新实际搜索词
   useEffect(() => {
@@ -322,7 +334,29 @@ export function TreasureList({ className }: TreasureListProps) {
   }, [treasures, activeId])
 
   const handleCreateClick = () => {
-    setShowCreateModal(true)
+    // 确保宝藏列表已加载，这样 lastTags 就能被正确设置
+    if (isMounted && treasures.length === 0) {
+      // 直接从 API 加载，而不是依赖状态更新
+      (async () => {
+        try {
+          const response = await fetch(`/api/treasures?page=1&limit=${pageSize}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.length > 0) {
+              // 直接设置 lastTags，不等待状态更新
+              setLastTags(data[0].tags)
+            }
+          }
+        } catch (error) {
+          console.error('[handleCreateClick] 加载宝藏失败:', error)
+        } finally {
+          // 无论成功还是失败，都打开模态框
+          setShowCreateModal(true)
+        }
+      })()
+    } else {
+      setShowCreateModal(true)
+    }
   }
 
   const handleCreateTreasure = async (data: TreasureData) => {
@@ -642,6 +676,7 @@ export function TreasureList({ className }: TreasureListProps) {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateTreasure}
+          lastTags={lastTags}
         />
 
         {/* 编辑模态框 */}
