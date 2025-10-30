@@ -20,11 +20,13 @@ const ScrollableLayout = () => {
   const [activeSource, setActiveSource] = useState<SourceType>('all');
   const [activeSection, setActiveSection] = useState<string>('linuxdo');
   const [showAIChat, setShowAIChat] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'content' | 'tags'>('content'); // 移动端 Tab 状态
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   // ✨ 标签相关状态
   const [postTags, setPostTags] = useState<Record<string, string[]>>({});
   const [isLoadingTags, setIsLoadingTags] = useState(false);
+  const [savingTags, setSavingTags] = useState<Set<string>>(new Set());
   
   // 📱 移动端标签栏切换状态
   const [showTagsBar, setShowTagsBar] = useState(false);
@@ -91,7 +93,7 @@ const ScrollableLayout = () => {
         const response = await fetch('/api/post-tags');
         
         if (response.ok) {
-          const tagsData = await response.json();
+          const tagsData: Array<{ source: string; postId: string; tags: string[] }> = await response.json();
           console.log('✅ 加载标签成功:', tagsData.length, '条');
           
           // 将数据库返回的标签数组转换为状态格式
@@ -99,7 +101,7 @@ const ScrollableLayout = () => {
           const tagsMap: Record<string, string[]> = {};
           
           if (Array.isArray(tagsData)) {
-            tagsData.forEach((item: any) => {
+            tagsData.forEach((item) => {
               if (item.source && item.postId && Array.isArray(item.tags)) {
                 const key = `${item.source}-${item.postId}`;
                 tagsMap[key] = item.tags;
@@ -119,6 +121,16 @@ const ScrollableLayout = () => {
     };
 
     loadUserTags();
+  }, []);
+
+  // 📱 移动端标签栏切换状态
+  useEffect(() => {
+    const savedShowTagsBar = localStorage.getItem('showTagsBar');
+    if (savedShowTagsBar === 'false') {
+      setShowTagsBar(false);
+    } else {
+      setShowTagsBar(true);
+    }
   }, []);
 
   // 获取可用日期列表
@@ -227,12 +239,65 @@ const ScrollableLayout = () => {
     setHoveredPost(post);
   };
 
-  // ✨ 处理标签更新
-  const handleTagsChange = (postId: string, newTags: string[]) => {
-    setPostTags(prev => ({
-      ...prev,
-      [postId]: newTags
-    }));
+  // ✨ 保存帖子标签（乐观更新 + 错误回滚）
+  const savePostTags = async (postKey: string, newTags: string[], source: 'linuxdo' | 'reddit' | 'heybox', postId: string) => {
+    console.log('🔄 [savePostTags] 开始保存', { postKey, count: newTags.length });
+    
+    // 1. 保存旧状态（用于回滚）
+    const oldTags = postTags[postKey] || [];
+    
+    // 2. 乐观更新 UI
+    setPostTags(prev => {
+      const next = { ...prev };
+      if (newTags.length === 0) {
+        delete next[postKey];
+      } else {
+        next[postKey] = newTags;
+      }
+      return next;
+    });
+    
+    // 3. 标记为保存中
+    setSavingTags(prev => new Set(prev).add(postKey));
+    
+    // 4. 调用 API
+    try {
+      const response = await fetch('/api/post-tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source, postId, tags: newTags }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 失败: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [savePostTags] 保存成功', { deleted: result.deleted, success: result.success });
+    } catch (error) {
+      console.error('❌ [savePostTags] 保存失败，回滚状态', error);
+      
+      // 5. 失败时回滚到旧状态
+      setPostTags(prev => {
+        const next = { ...prev };
+        if (oldTags.length === 0) {
+          delete next[postKey];
+        } else {
+          next[postKey] = oldTags;
+        }
+        return next;
+      });
+      
+      // 可选：显示错误提示
+      alert('保存标签失败，请重试');
+    } finally {
+      // 6. 移除保存中标记
+      setSavingTags(prev => {
+        const next = new Set(prev);
+        next.delete(postKey);
+        return next;
+      });
+    }
   };
 
   // 获取帖子的 source
@@ -264,13 +329,14 @@ const ScrollableLayout = () => {
     return groups;
   }, [redditData]);
 
-  // 🔍 动态收集所有用户标签
+  // 🔍 动态收集所有用户标签（全局标签池）
   const allUserTags = React.useMemo(() => {
     const tags = new Set<string>();
     Object.values(postTags).forEach(tagArray => {
       tagArray.forEach(tag => tags.add(tag));
     });
-    return Array.from(tags).sort();
+    // 按字母排序
+    return Array.from(tags).sort((a, b) => a.localeCompare(b, 'zh-CN'));
   }, [postTags]);
 
   // 🔍 收集所有帖子类型
@@ -543,7 +609,11 @@ const ScrollableLayout = () => {
                 
                 {/* 📱 移动端标签栏切换按钮 */}
                 <button
-                  onClick={() => setShowTagsBar(!showTagsBar)}
+                  onClick={() => {
+                    const newState = !showTagsBar;
+                    setShowTagsBar(newState);
+                    localStorage.setItem('showTagsBar', String(newState));
+                  }}
                   className="md:hidden px-4 py-2 rounded-lg bg-emerald-500/20 
                            text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 
                            transition-all flex items-center gap-2"
@@ -1018,11 +1088,14 @@ const ScrollableLayout = () => {
           {/* 标签编辑器 */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
             <PostTagSelector
-              source={getPostSource(hoveredPost)}
-              postId={hoveredPost.id}
               currentTags={postTags[`${getPostSource(hoveredPost)}-${hoveredPost.id}`] || []}
-              onTagsChange={(newTags) => handleTagsChange(`${getPostSource(hoveredPost)}-${hoveredPost.id}`, newTags)}
-              compact={false}
+              availableTags={allUserTags}
+              onTagsChange={(newTags) => {
+                const source = getPostSource(hoveredPost);
+                const postKey = `${source}-${hoveredPost.id}`;
+                savePostTags(postKey, newTags, source, hoveredPost.id);
+              }}
+              isSaving={savingTags.has(`${getPostSource(hoveredPost)}-${hoveredPost.id}`)}
             />
           </div>
 

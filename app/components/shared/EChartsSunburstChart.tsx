@@ -324,7 +324,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   }, [sunburstData, formatTime]);
 
   // 注释掉自定义点击处理，完全使用 ECharts 原生 nodeClick: 'zoomToNode'
-  // const onChartClick = (params: any) => {
+  // const onChartClick = (params: { data?: { isLeaf?: boolean; name?: string }; name?: string; value?: number }) => {
   //   console.log('Chart clicked:', params);
   //   
   //   // 仅在叶子节点（任务项）触发自定义逻辑，其他节点由 ECharts 原生 nodeClick 处理

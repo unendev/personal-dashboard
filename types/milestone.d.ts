@@ -1,16 +1,22 @@
 // 里程碑系统类型定义
 
+// AI 关键成就数据结构
+export interface AchievementData {
+  taskId: string;
+  taskName: string;
+  categoryPath: string;
+  duration: number; // 秒
+  reason?: string; // 为什么重要
+}
+
+// Prisma JSON 兼容的类型定义
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 export interface WeeklyReviewData {
   aiTitle: string;
   aiFocus: string;
   aiInsights: string[];
-  aiKeyAchievements: Array<{
-    taskId: string;
-    taskName: string;
-    categoryPath: string;
-    duration: number; // 秒
-    reason?: string; // 为什么重要
-  }>;
+  aiKeyAchievements: AchievementData[];
 }
 
 export interface MilestoneData {
@@ -21,8 +27,8 @@ export interface MilestoneData {
   aiTitle: string;
   aiFocus: string;
   aiInsights: string[];
-  aiKeyAchievements: any; // JSON
-  confirmedAchievements: any; // JSON
+  aiKeyAchievements: JsonValue; // JSON
+  confirmedAchievements: JsonValue; // JSON
   userNotes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -34,8 +40,8 @@ export interface CreateMilestoneInput {
   aiTitle: string;
   aiFocus: string;
   aiInsights: string[];
-  aiKeyAchievements: any;
-  confirmedAchievements: any;
+  aiKeyAchievements: JsonValue;
+  confirmedAchievements: JsonValue;
   userNotes?: string;
 }
 

@@ -37,9 +37,9 @@ export function useMediaQuery(query: string): boolean {
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener('change', handler)
     } else {
-      // 旧版 API 兼容
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mediaQuery as any).addListener(handler)
+      // 旧版 API 兼容 - 使用类型断言处理旧浏览器API
+      const mediaQueryWithAddListener = mediaQuery as MediaQueryList & { addListener: (handler: (e: MediaQueryListEvent) => void) => void }
+      mediaQueryWithAddListener.addListener(handler)
     }
 
     // 清理函数
@@ -47,9 +47,9 @@ export function useMediaQuery(query: string): boolean {
       if (mediaQuery.removeEventListener) {
         mediaQuery.removeEventListener('change', handler)
       } else {
-        // 旧版 API 兼容
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (mediaQuery as any).removeListener(handler)
+        // 旧版 API 兼容 - 使用类型断言处理旧浏览器API
+        const mediaQueryWithRemoveListener = mediaQuery as MediaQueryList & { removeListener: (handler: (e: MediaQueryListEvent) => void) => void }
+        mediaQueryWithRemoveListener.removeListener(handler)
       }
     }
   }, [query])
