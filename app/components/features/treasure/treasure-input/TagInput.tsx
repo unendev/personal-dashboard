@@ -11,13 +11,15 @@ interface TagInputProps {
   onChange: (tags: string[]) => void
   suggestions?: string[]
   maxTags?: number
+  placeholderTags?: string[]  // 占位符标签（半透明显示，不是真实标签）
 }
 
 export function TagInput({ 
   tags, 
   onChange, 
   suggestions = [], 
-  maxTags = 10 
+  maxTags = 10,
+  placeholderTags = []
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -145,6 +147,20 @@ export function TagInput({
             />
           ))}
           
+          {/* 占位符标签（仅在没有真实标签时显示） */}
+          {tags.length === 0 && placeholderTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center opacity-40 pointer-events-none">
+              {placeholderTags.map((tag, index) => (
+                <HierarchicalTag
+                  key={`placeholder-${index}`}
+                  tag={tag}
+                  variant="default"
+                  size="sm"
+                />
+              ))}
+            </div>
+          )}
+          
           {/* 输入框 */}
           {tags.length < maxTags && (
             <div className="flex-1 min-w-[120px] relative flex items-center gap-2">
@@ -155,7 +171,13 @@ export function TagInput({
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onFocus={() => inputValue && setShowSuggestions(true)}
-                placeholder={tags.length === 0 ? "输入标签，支持 / 分隔层级..." : "继续添加..."}
+                placeholder={
+                  tags.length === 0 && placeholderTags.length > 0 
+                    ? "输入以替换默认标签..." 
+                    : tags.length === 0 
+                      ? "输入标签，支持 / 分隔层级..." 
+                      : "继续添加..."
+                }
                 className={cn(
                   "flex-1 w-full bg-transparent border-0 outline-none",
                   "text-white placeholder:text-gray-500 text-sm",

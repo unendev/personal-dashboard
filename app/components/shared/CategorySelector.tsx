@@ -221,9 +221,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
       onLogSaved();
     }
 
-    // 显示成功消息
-    alert('任务已添加到计时器！');
-
     // 后台异步处理数据库操作
     try {
       // 构建分类数据 - 新的两层分类体系

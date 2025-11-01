@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/app/components/ui/card';
 import CategoryZoneHeader from './CategoryZoneHeader';
+import CategorySubHeader from './CategorySubHeader';
 import QuickCreateDialog, { QuickCreateData } from './QuickCreateDialog';
 import { 
   groupTasksByCategory, 
   loadCollapsedCategories, 
-  saveCollapsedCategories
+  saveCollapsedCategories,
+  CategoryGroup
 } from '@/lib/timer-utils';
 
 interface TimerTask {
@@ -122,6 +124,82 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     });
   };
   
+  // 递归渲染分组（支持3层嵌套）
+  const renderCategoryGroup = (group: CategoryGroup, parentColor?: string): React.ReactNode => {
+    const isCollapsed = collapsedCategories.has(group.categoryPath);
+    const color = group.color || parentColor || 'blue';
+    
+    // Level 1: 一级分类（大卡片 + CategoryZoneHeader）
+    if (group.level === 1) {
+      return (
+        <Card 
+          key={group.id}
+          className="overflow-hidden border-2 hover:shadow-lg transition-shadow duration-200"
+        >
+          <CategoryZoneHeader
+            group={group}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => toggleCategoryCollapse(group.categoryPath)}
+            onQuickCreate={() => handleCategoryQuickCreate(group.categoryPath)}
+          />
+          
+          {!isCollapsed && (
+            <div className="p-4 space-y-3">
+              {/* 渲染一级的任务 */}
+              {group.tasks.length > 0 && (
+                <div>
+                  {renderTaskList(group.tasks, handleTaskClone, onBeforeOperation)}
+                </div>
+              )}
+              
+              {/* 递归渲染子分组（二级） */}
+              {group.subGroups && group.subGroups.length > 0 && (
+                <div className="space-y-3">
+                  {group.subGroups.map(subGroup => renderCategoryGroup(subGroup, color))}
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      );
+    }
+    
+    // Level 2/3: 二三级分类（简化头部）
+    const indentClass = group.level === 3 ? 'ml-4' : '';
+    
+    return (
+      <div key={group.id} className={indentClass}>
+        <div className="space-y-2">
+          <CategorySubHeader
+            group={group}
+            level={group.level as 2 | 3}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => toggleCategoryCollapse(group.categoryPath)}
+            parentColor={color}
+          />
+          
+          {!isCollapsed && (
+            <div className="space-y-2 pl-4">
+              {/* 渲染当前层级的任务 */}
+              {group.tasks.length > 0 && (
+                <div>
+                  {renderTaskList(group.tasks, handleTaskClone, onBeforeOperation)}
+                </div>
+              )}
+              
+              {/* 递归渲染子分组（三级） */}
+              {group.subGroups && group.subGroups.length > 0 && (
+                <div className="space-y-2">
+                  {group.subGroups.map(subGroup => renderCategoryGroup(subGroup, color))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
   // 如果没有任务，显示空状态
   if (categoryGroups.length === 0 && ungroupedTasks.length === 0) {
     return (
@@ -134,32 +212,8 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   
   return (
     <div className="space-y-4">
-      {/* 分组任务 */}
-      {categoryGroups.map((group) => {
-        const isCollapsed = collapsedCategories.has(group.categoryPath);
-        
-        return (
-          <Card 
-            key={group.id}
-            className="overflow-hidden border-2 hover:shadow-lg transition-shadow duration-200"
-          >
-            {/* 区域头部 */}
-            <CategoryZoneHeader
-              group={group}
-              isCollapsed={isCollapsed}
-              onToggleCollapse={() => toggleCategoryCollapse(group.categoryPath)}
-              onQuickCreate={() => handleCategoryQuickCreate(group.categoryPath)}
-            />
-            
-            {/* 任务列表（展开时显示） */}
-            {!isCollapsed && (
-              <div className="p-4">
-                {renderTaskList(group.tasks, handleTaskClone, onBeforeOperation)}
-              </div>
-            )}
-          </Card>
-        );
-      })}
+      {/* 分组任务 - 使用递归渲染支持多层嵌套 */}
+      {categoryGroups.map((group) => renderCategoryGroup(group))}
       
       {/* 不分组的任务（时间黑洞、身体锻炼）：直接显示 */}
       {ungroupedTasks.length > 0 && (

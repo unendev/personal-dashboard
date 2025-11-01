@@ -71,6 +71,8 @@ interface NestedTimerZoneProps {
   onNewChildInitialTimeChange?: (time: string) => void; // 更新子任务初始时间
   // 【新增】共享的 timer 控制器（用于全局互斥）
   timerControl?: ReturnType<typeof useTimerControl>;
+  // 【新增】请求自动启动回调（通过父组件的 pendingStartTaskId 机制）
+  onRequestAutoStart?: (taskId: string) => void;
 }
 
 const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({ 
@@ -93,7 +95,9 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   newChildInitialTime: externalNewChildInitialTime,
   onNewChildInitialTimeChange: externalOnNewChildInitialTimeChange,
   // 【新增】接收外部的 timerControl
-  timerControl: externalTimerControl
+  timerControl: externalTimerControl,
+  // 【新增】接收自动启动回调
+  onRequestAutoStart
 }) => {
   // 本地状态作为后备
   const [localShowAddChildDialog, setLocalShowAddChildDialog] = useState<string | null>(null);
@@ -133,10 +137,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     // 本地实例不设置回调（由外部 timerControl 提供）
   });
   const timerControl = externalTimerControl || localTimerControl;
-  const { startTimer: hookStartTimer, pauseTimer: hookPauseTimer, stopTimer: hookStopTimer, operationInProgress } = timerControl;
-  
-  // 【新增】操作防抖状态：记录正在执行操作的任务ID
-  // const [operationInProgress, setOperationInProgress] = useState<Set<string>>(new Set()); // 移除重复的operationInProgress
+  const { startTimer: hookStartTimer, pauseTimer: hookPauseTimer, stopTimer: hookStopTimer, isProcessing } = timerControl;
 
   // 【新增】工具函数：递归同步任务的 version
   const syncTaskVersion = useCallback((taskList: TimerTask[], taskId: string, newVersion: number): TimerTask[] => {
@@ -425,8 +426,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       categoryPath: newChildCategory.trim() || '未分类',
       elapsedTime: initialTimeInSeconds,
       initialTime: initialTimeInSeconds,
-      isRunning: true, // 自动开始计时
-      startTime: currentTime, // 设置开始时间
+      isRunning: false, // 初始不运行，通过互斥逻辑启动
+      startTime: null,
       isPaused: false,
       pausedTime: 0,
       parentId: parentId,
@@ -464,7 +465,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     // 记录操作
     if (onOperationRecord) {
       onOperationRecord('创建子任务', newChildName.trim());
-      onOperationRecord('开始计时', newChildName.trim(), '自动开始');
     }
 
     // 异步处理数据库操作（带重试机制）
@@ -475,8 +475,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       parentId,
       date: new Date().toISOString().split('T')[0],
       initialTime: initialTimeInSeconds,
-      isRunning: true,
-      startTime: currentTime,
+      isRunning: false,
+      startTime: null,
       order: newOrder
     });
     
@@ -495,8 +495,8 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             date: new Date().toISOString().split('T')[0],
             initialTime: initialTimeInSeconds,
             elapsedTime: initialTimeInSeconds,
-            isRunning: true, // 自动开始计时
-            startTime: currentTime, // 设置开始时间
+            isRunning: false, // 初始不运行，通过互斥逻辑启动
+            startTime: null,
             isPaused: false,
             pausedTime: 0,
             order: newOrder
@@ -539,8 +539,27 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       const finalTasks = replaceTempTaskRecursive(updatedTasks);
       onTasksChange(finalTasks);
       
-      // 注意：子任务已经在创建时设置为自动开始计时状态
-      console.log('✅ 子任务已自动开始计时:', newTask.name);
+      console.log('✅ 子任务创建成功:', newTask.name);
+      
+      // 通过父组件的 pendingStartTaskId 机制自动启动（推荐）
+      if (onRequestAutoStart) {
+        console.log('📤 [子任务] 请求父组件自动启动:', newTask.id);
+        onRequestAutoStart(newTask.id);
+      } else if (timerControl) {
+        // 降级方案：直接使用 timerControl（保留向后兼容，但可能有状态同步问题）
+        console.warn('⚠️ [子任务] onRequestAutoStart 未提供，使用降级方案');
+        setTimeout(async () => {
+          const result = await timerControl.startTimer(newTask.id);
+          if (result.success) {
+            console.log('✅ 子任务自动启动成功:', newTask.name);
+            if (onOperationRecord) {
+              onOperationRecord('开始计时', newTask.name, '子任务自动开始');
+            }
+          } else {
+            console.error('❌ 子任务自动启动失败:', result.reason);
+          }
+        }, 300);
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '未知错误';
       console.error('❌ 子任务创建失败（已重试3次）:', errorMsg);
@@ -803,7 +822,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   task.isPaused ? (
                     <Button 
                       onClick={() => hookStartTimer(task.id)}
-                      disabled={operationInProgress.has(task.id)}
+                      disabled={isProcessing}
                       size="sm"
                       className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
                         hasInstanceTag 
@@ -811,12 +830,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                           : "bg-green-600 hover:bg-green-700"
                       }`}
                     >
-                      {operationInProgress.has(task.id) ? '处理中...' : '继续'}
+                      {isProcessing ? '处理中...' : '继续'}
                     </Button>
                   ) : (
                   <Button 
                     onClick={() => hookPauseTimer(task.id)}
-                    disabled={operationInProgress.has(task.id)}
+                    disabled={isProcessing}
                     variant="outline"
                     size="sm"
                     className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
@@ -825,13 +844,13 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                         : ""
                     }`}
                   >
-                    {operationInProgress.has(task.id) ? '处理中...' : '暂停'}
+                    {isProcessing ? '处理中...' : '暂停'}
                   </Button>
                   )
                 ) : (
                   <Button 
                     onClick={() => hookStartTimer(task.id)}
-                    disabled={operationInProgress.has(task.id)}
+                    disabled={isProcessing}
                     size="sm"
                     className={`text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 h-auto ${
                       hasInstanceTag 
@@ -839,7 +858,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                         : "bg-blue-600 hover:bg-blue-700"
                     }`}
                   >
-                    {operationInProgress.has(task.id) ? '处理中...' : '开始'}
+                    {isProcessing ? '处理中...' : '开始'}
                   </Button>
                 )}
                 
@@ -910,6 +929,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
             newChildInitialTime={newChildInitialTime}
             onNewChildInitialTimeChange={setNewChildInitialTime}
             timerControl={timerControl}
+            onRequestAutoStart={onRequestAutoStart}
           />
         )}
       </div>

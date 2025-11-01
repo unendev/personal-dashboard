@@ -27,62 +27,187 @@ interface TimerTask {
 export interface CategoryGroup {
   id: string;                   // 唯一标识符（用于 React key）
   categoryPath: string;        // 分类路径（如 "工作/开发"）
+  categoryName: string;         // 当前层级名称（如 "工作"）
   displayName: string;          // 显示名称（从路径提取）
-  tasks: TimerTask[];           // 该分类下的所有任务（包含嵌套）
+  level: number;                // 层级 (1, 2, 3)
+  tasks: TimerTask[];           // 该分类下的直接任务
+  subGroups?: CategoryGroup[];  // 子分组（嵌套结构）
   totalTime: number;            // 分类总时间
   runningCount: number;         // 运行中的任务数
   isCollapsed: boolean;         // 是否折叠
-  color: string;                // 区域主题色
+  color?: string;               // 区域主题色（仅一级分类）
 }
 
 /**
- * 按 categoryPath 分组任务
- * 注意：只对顶级任务（没有 parentId 的）进行分组，保持子任务的嵌套结构
- * 特殊处理：时间黑洞分类的任务不参与分组
+ * 按 categoryPath 分组任务（支持3层嵌套）
+ * 
+ * @example
+ * "工作/资产/test" → 工作(level=1) > 资产(level=2) > test任务
+ * "工作/职业/test" → 工作(level=1) > 职业(level=2) > test任务
  */
 export function groupTasksByCategory(tasks: TimerTask[]): CategoryGroup[] {
-  const groups = new Map<string, TimerTask[]>();
-  
-  // 只对顶级任务（没有 parentId 的）进行分组
+  // 只处理顶层任务（无父级）
   const topLevelTasks = tasks.filter(t => !t.parentId);
   
-  // 过滤掉不参与分组的任务（时间黑洞、身体锻炼）
-  topLevelTasks.forEach(task => {
-    // 自动迁移和规范化分类路径（兼容旧数据）
-    const rawCategory = task.categoryPath || "未分类";
-    const category = migrateLegacyCategory(rawCategory);
+  // 排除特殊分类（时间黑洞、身体锻炼）
+  const tasksToGroup = topLevelTasks.filter(t =>
+    !t.categoryPath?.includes('时间黑洞') &&
+    !t.categoryPath?.includes('身体锻炼')
+  );
+  
+  // 按一级分类分组
+  const level1Map = new Map<string, TimerTask[]>();
+  
+  tasksToGroup.forEach(task => {
+    const parts = (task.categoryPath || '未分类').split('/');
+    const level1 = parts[0] || '未分类';
     
-    // 跳过不参与分组的分类（检查路径中是否包含这些关键词）
-    if (category.includes('时间黑洞') || category.includes('身体锻炼')) {
-      return;
-    }
+    const list = level1Map.get(level1) || [];
+    list.push(task);
+    level1Map.set(level1, list);
+  });
+
+  // 构建嵌套结构
+  const groups: CategoryGroup[] = [];
+  
+  // 颜色池（与 CategoryZoneHeader 对应）
+  const colors = ['blue', 'green', 'purple', 'red', 'orange', 'indigo'];
+  let colorIndex = 0;
+
+  level1Map.forEach((level1Tasks, level1Name) => {
+    // 按二级分类分组
+    const level2Map = new Map<string, TimerTask[]>();
     
-    if (!groups.has(category)) {
-      groups.set(category, []);
+    level1Tasks.forEach(task => {
+      const parts = task.categoryPath.split('/');
+      const level2 = parts.length >= 2 ? parts[1] : ''; // 空字符串表示直接在一级下
+      
+      const list = level2Map.get(level2) || [];
+      list.push(task);
+      level2Map.set(level2, list);
+    });
+
+    // 如果所有任务都是2层或更少，直接创建一级分组
+    const hasMultipleLevels = level1Tasks.some(t => t.categoryPath.split('/').length >= 2);
+    
+    if (!hasMultipleLevels) {
+      // 单层结构：直接创建一级分组
+      groups.push({
+        id: `cat-${level1Name}`,
+        categoryPath: level1Name,
+        categoryName: level1Name,
+        displayName: level1Name,
+        level: 1,
+        tasks: sortTasks(level1Tasks),
+        totalTime: calculateGroupTotalTime(level1Tasks),
+        runningCount: countRunningTasks(level1Tasks),
+        isCollapsed: false,
+        color: colors[colorIndex % colors.length]
+      });
+      colorIndex++;
+    } else {
+      // 多层结构：创建嵌套分组
+      const subGroups: CategoryGroup[] = [];
+      
+      level2Map.forEach((level2Tasks, level2Name) => {
+        if (level2Name === '') {
+          // 直接在一级分类下的任务（没有二级）
+          // 这些任务放在一级的 tasks 里
+          return;
+        }
+        
+        // 按三级分类分组
+        const level3Map = new Map<string, TimerTask[]>();
+        
+        level2Tasks.forEach(task => {
+          const parts = task.categoryPath.split('/');
+          const level3 = parts.length >= 3 ? parts[2] : ''; // 空表示直接在二级下
+          
+          const list = level3Map.get(level3) || [];
+          list.push(task);
+          level3Map.set(level3, list);
+        });
+        
+        // 检查是否有第三层
+        const hasLevel3 = level2Tasks.some(t => t.categoryPath.split('/').length >= 3);
+        
+        if (!hasLevel3) {
+          // 没有第三层，二级直接包含任务
+          subGroups.push({
+            id: `cat-${level1Name}-${level2Name}`,
+            categoryPath: `${level1Name}/${level2Name}`,
+            categoryName: level2Name,
+            displayName: level2Name,
+            level: 2,
+            tasks: sortTasks(level2Tasks),
+            totalTime: calculateGroupTotalTime(level2Tasks),
+            runningCount: countRunningTasks(level2Tasks),
+            isCollapsed: false
+          });
+        } else {
+          // 有第三层，创建嵌套
+          const level3Groups: CategoryGroup[] = [];
+          const level2DirectTasks: TimerTask[] = []; // 直接在二级下的任务
+          
+          level3Map.forEach((level3Tasks, level3Name) => {
+            if (level3Name === '') {
+              // 这些是2层任务，应该直接显示在二级下
+              level2DirectTasks.push(...level3Tasks);
+            } else {
+              // 真正的三级分类
+              level3Groups.push({
+                id: `cat-${level1Name}-${level2Name}-${level3Name}`,
+                categoryPath: `${level1Name}/${level2Name}/${level3Name}`,
+                categoryName: level3Name,
+                displayName: level3Name,
+                level: 3,
+                tasks: sortTasks(level3Tasks),
+                totalTime: calculateGroupTotalTime(level3Tasks),
+                runningCount: countRunningTasks(level3Tasks),
+                isCollapsed: false
+              });
+            }
+          });
+          
+          subGroups.push({
+            id: `cat-${level1Name}-${level2Name}`,
+            categoryPath: `${level1Name}/${level2Name}`,
+            categoryName: level2Name,
+            displayName: level2Name,
+            level: 2,
+            tasks: sortTasks(level2DirectTasks), // 二级直接包含2层任务
+            subGroups: level3Groups.length > 0 ? level3Groups : undefined,
+            totalTime: calculateGroupTotalTime(level2Tasks),
+            runningCount: countRunningTasks(level2Tasks),
+            isCollapsed: false
+          });
+        }
+      });
+      
+      // 提取直接在一级下的任务
+      const level1DirectTasks = level2Map.get('') || [];
+      
+      groups.push({
+        id: `cat-${level1Name}`,
+        categoryPath: level1Name,
+        categoryName: level1Name,
+        displayName: level1Name,
+        level: 1,
+        tasks: sortTasks(level1DirectTasks), // 一级直接包含1层任务
+        subGroups,
+        totalTime: calculateGroupTotalTime(level1Tasks),
+        runningCount: countRunningTasks(level1Tasks),
+        isCollapsed: false,
+        color: colors[colorIndex % colors.length]
+      });
+      colorIndex++;
     }
-    groups.get(category)!.push(task);
   });
   
-  // 转换为 CategoryGroup 并计算统计信息
-  return Array.from(groups.entries()).map(([categoryPath, tasks]) => {
-    const totalTime = calculateGroupTotalTime(tasks);
-    const runningCount = countRunningTasks(tasks);
-    
-    return {
-      id: categoryPath,
-      categoryPath: categoryPath,
-      displayName: formatCategoryDisplay(categoryPath, false), // 使用新的格式化函数
-      tasks: sortTasks(tasks),
-      totalTime,
-      runningCount,
-      isCollapsed: false,
-      color: generateCategoryColor(categoryPath)
-    };
-  }).sort((a, b) => {
-    // 有运行任务的分类排在前面
+  // 排序：运行中的在前，然后按总时间排序
+  return groups.sort((a, b) => {
     if (a.runningCount > 0 && b.runningCount === 0) return -1;
     if (a.runningCount === 0 && b.runningCount > 0) return 1;
-    // 按总时间降序
     return b.totalTime - a.totalTime;
   });
 }

@@ -66,7 +66,6 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         setSelectedCategory('')
         setSelectedTags([])
         setTimeInput('')
-        alert('任务已添加到计时器')
       }
     } catch (error) {
       console.error('添加任务失败:', error)

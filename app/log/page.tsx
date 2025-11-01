@@ -113,6 +113,9 @@ export default function LogPage() {
     }
   }, []);
 
+  // 【状态同步】等待任务创建完成后自动启动
+  const [pendingStartTaskId, setPendingStartTaskId] = useState<string | null>(null);
+
   // 【创建统一的 Timer 控制器】
   const timerControl = useTimerControl({
     tasks: timerTasks,
@@ -120,6 +123,78 @@ export default function LogPage() {
     onVersionConflict: handleVersionConflict,
     onTasksPaused: handleTasksPaused,
   });
+
+  // 【子任务自动启动】通过 pendingStartTaskId 机制
+  const handleRequestAutoStart = useCallback((taskId: string) => {
+    console.log('📝 [父组件] 收到自动启动请求:', taskId);
+    setPendingStartTaskId(taskId);
+  }, []);
+  
+  useEffect(() => {
+    if (pendingStartTaskId) {
+      console.log('🎬 [useEffect触发] pendingStartTaskId:', pendingStartTaskId);
+      
+      // 确保状态已完全更新后再执行
+      const timer = setTimeout(async () => {
+        // 重试逻辑：最多5次
+        let retryCount = 0;
+        const maxRetries = 5;
+        
+        while (retryCount < maxRetries) {
+          try {
+            console.log(`🚀 [自动启动] 开始执行，任务ID: ${pendingStartTaskId} (尝试 ${retryCount + 1}/${maxRetries})`);
+            const result = await timerControl.startTimer(pendingStartTaskId);
+            
+            if (result.success) {
+              console.log('✅ [自动启动] 完成:', pendingStartTaskId);
+              recordOperation('开始计时', '新任务', '自动开始');
+              break; // 成功，退出重试循环
+            } else if (result.reason === 'version_conflict') {
+              // 版本冲突：强提示用户
+              console.error('❌ [自动启动] 版本冲突:', result.conflictTaskName);
+              alert(`⚠️ 数据冲突\n\n任务"${result.conflictTaskName}"的数据已在其他地方被修改。\n\n这可能是因为：\n1. 您在其他设备/浏览器窗口操作了此任务\n2. 其他用户修改了此任务\n\n页面将自动刷新以获取最新数据。`);
+              
+              // 强制刷新数据
+              await fetchTimerTasks();
+              break; // 冲突，不重试
+            } else if (result.reason === 'processing') {
+              // 正在处理中，等待后重试
+              console.warn(`⏸️ [自动启动] 正在处理中，等待300ms后重试... (${retryCount + 1}/${maxRetries})`);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+            } else if (result.reason === 'not_found') {
+              // 未找到任务，状态可能还没同步，等待后重试
+              console.warn(`🔍 [自动启动] 未找到任务，等待300ms后重试... (${retryCount + 1}/${maxRetries})`);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+            } else {
+              console.error('❌ [自动启动] 失败:', result.reason);
+              break; // 其他错误，不重试
+            }
+          } catch (error) {
+            console.error('❌ [自动启动] 异常:', error);
+            break;
+          }
+        }
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ [自动启动] 重试次数已用尽，任务ID:', pendingStartTaskId);
+        }
+        
+        setPendingStartTaskId(null);
+      }, 200);  // 延迟200ms，确保状态更新完成
+      
+      return () => {
+        console.log('🧹 [useEffect清理] 取消定时器:', pendingStartTaskId);
+        clearTimeout(timer);
+      };
+    }
+  }, [pendingStartTaskId, timerControl, fetchTimerTasks]);
+  // 注意：recordOperation 不在依赖中，因为它是 useCallback，已经稳定了
 
   // 滚动恢复逻辑
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -330,7 +405,7 @@ export default function LogPage() {
   };
 
   // 记录操作历史
-  const recordOperation = async (action: string, taskName: string, details?: string) => {
+  const recordOperation = useCallback(async (action: string, taskName: string, details?: string) => {
     try {
       // 保存到数据库
       const response = await fetch('/api/operation-records', {
@@ -352,7 +427,7 @@ export default function LogPage() {
     } catch (error) {
       console.error('保存操作记录失败:', error);
     }
-  };
+  }, [fetchOperationRecords]);
 
   const handleAddToTimer = async (taskName: string, categoryPath: string, initialTime: number = 0, instanceTagNames?: string) => {
     // 防止重复创建
@@ -375,8 +450,8 @@ export default function LogPage() {
       instanceTag: instanceTagNames || null,
       elapsedTime: initialTime,
       initialTime: initialTime,
-      isRunning: true, // 临时任务也显示为运行状态，与数据库状态一致
-      startTime: Math.floor(Date.now() / 1000), // 立即设置开始时间
+      isRunning: false, // 初始不运行，通过互斥逻辑启动
+      startTime: null,
       isPaused: false,
       pausedTime: 0,
       order: newOrder,
@@ -400,8 +475,8 @@ export default function LogPage() {
         instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
         elapsedTime: initialTime,
         initialTime: initialTime,
-        isRunning: true, // 直接设置为运行状态，避免时序问题
-        startTime: Math.floor(Date.now() / 1000), // 立即设置开始时间
+        isRunning: false, // 初始不运行，通过互斥逻辑启动
+        startTime: null,
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
@@ -437,8 +512,10 @@ export default function LogPage() {
           });
         });
         
-        console.log('任务创建成功并自动开始:', createdTask.name);
-        recordOperation('开始计时', createdTask.name, '自动开始');
+        console.log('✅ [后台同步] 任务创建成功:', createdTask.name);
+        
+        // 触发自动启动（通过互斥逻辑）
+        setPendingStartTaskId(createdTask.id);
       } else {
         throw new Error('Failed to create task');
       }
@@ -479,8 +556,8 @@ export default function LogPage() {
       instanceTag: data.instanceTagNames.join(',') || null,
       elapsedTime: data.initialTime,
       initialTime: data.initialTime,
-      isRunning: data.autoStart,
-      startTime: data.autoStart ? Math.floor(Date.now() / 1000) : null,
+      isRunning: false, // 初始不运行，通过互斥逻辑启动
+      startTime: null,
       isPaused: false,
       pausedTime: 0,
       order: newOrder,
@@ -499,8 +576,8 @@ export default function LogPage() {
         instanceTagNames: data.instanceTagNames,
         elapsedTime: data.initialTime,
         initialTime: data.initialTime,
-        isRunning: data.autoStart,
-        startTime: data.autoStart ? Math.floor(Date.now() / 1000) : null,
+        isRunning: false, // 初始不运行，通过互斥逻辑启动
+        startTime: null,
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
@@ -534,9 +611,11 @@ export default function LogPage() {
           });
         });
         
-        console.log('快速创建任务成功:', createdTask.name);
+        console.log('✅ [后台同步] 任务创建成功:', createdTask.name);
+        
+        // 如果autoStart，触发自动启动（通过互斥逻辑）
         if (data.autoStart) {
-          recordOperation('开始计时', createdTask.name, '自动开始');
+          setPendingStartTaskId(createdTask.id);
         }
       } else {
         throw new Error('Failed to create task');
@@ -719,6 +798,7 @@ export default function LogPage() {
                 tasks={mockTimerTasks}
                 onTasksChange={() => {}} // 访客模式下不允许修改
                 onOperationRecord={() => {}} // 访客模式下不允许记录操作
+                onRequestAutoStart={() => {}} // 访客模式下不允许自动启动
               />
             </section>
 
@@ -1069,6 +1149,7 @@ export default function LogPage() {
                         onTaskClone={onTaskClone}
                         groupFilter={groupTasks.map(t => t.id)}
                         timerControl={timerControl}
+                        onRequestAutoStart={handleRequestAutoStart}
                       />
                     )}
                   />
@@ -1213,6 +1294,7 @@ export default function LogPage() {
                         groupFilter={groupTasks.map(t => t.id)}
                         onBeforeOperation={onBeforeOperation}
                         timerControl={timerControl}
+                        onRequestAutoStart={handleRequestAutoStart}
                       />
                     )}
                   />

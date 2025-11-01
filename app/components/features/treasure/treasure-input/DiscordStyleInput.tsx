@@ -58,6 +58,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   // 标签系统
   const [primaryCategory, setPrimaryCategory] = useState<string>('')
   const [topicTags, setTopicTags] = useState<string[]>([])
+  const [defaultTags, setDefaultTags] = useState<string[]>([])  // 默认标签（来自上一条宝藏）
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -158,7 +159,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         setActiveCommand('music')
       }
     } else if (!initialData) {
-      // 创建模式：重置所有状态，然后用 lastTags 预填充
+      // 创建模式：重置所有状态，然后用 lastTags 作为默认值（placeholder）
       setContent('')
       setImages([])
       setActiveCommand(null)
@@ -170,18 +171,23 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         coverUrl: ''
       })
       
-      // 预填充上一条宝藏的标签（如果存在）
+      // 设置默认标签（仅作为 placeholder，不是真实值）
       if (lastTags && lastTags.length > 0) {
         const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
         const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
         const topicTagsList = lastTags.filter(tag => !primaryCategories.includes(tag))
         
+        // 保存为默认值
         if (primaryTag) {
           setPrimaryCategory(primaryTag)
         }
-        setTopicTags(topicTagsList)
+        setDefaultTags(topicTagsList)
+        
+        // 实际标签为空
+        setTopicTags([])
       } else {
         setPrimaryCategory('')
+        setDefaultTags([])
         setTopicTags([])
       }
     }
@@ -496,16 +502,19 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     try {
       const title = extractTitle(content)
       
-      // 合并标签：主要分类 + 主题标签
+      // 合并标签：主要分类 + 主题标签（若为空则使用默认标签）
+      const finalTopicTags = topicTags.length > 0 ? topicTags : defaultTags
       const tags = [
         ...(primaryCategory ? [primaryCategory] : []),
-        ...topicTags
+        ...finalTopicTags
       ]
       
       console.log('📝 [提交] 准备提交宝藏:', { 
         title, 
         primaryCategory, 
         topicTags, 
+        defaultTags,
+        finalTopicTags,
         mergedTags: tags,
         imagesCount: images.length 
       })
@@ -581,9 +590,16 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       {/* 主题标签输入 */}
       <TagInput
         tags={topicTags}
-        onChange={setTopicTags}
+        onChange={(newTags) => {
+          setTopicTags(newTags)
+          // 用户输入时清空默认标签
+          if (newTags.length > 0 && defaultTags.length > 0) {
+            setDefaultTags([])
+          }
+        }}
         suggestions={tagSuggestions}
         maxTags={10}
+        placeholderTags={topicTags.length === 0 ? defaultTags : []}
       />
 
       {/* 输入区域 */}

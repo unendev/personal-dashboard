@@ -1,9 +1,9 @@
 /**
- * 通用计时器控制 Hook
- * 统一处理父子任务互斥、版本冲突、并发防护
+ * 通用计时器控制 Hook（简化版）
+ * 核心功能：互斥、异步锁、版本冲突检测、乐观更新
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 
 interface TimerTask {
   id: string;
@@ -35,294 +35,264 @@ interface UseTimerControlOptions {
 export function useTimerControl(options: UseTimerControlOptions) {
   const { tasks, onTasksChange, onVersionConflict, onTasksPaused } = options;
 
-  // 操作进行中的任务集合（防抖）
-  const [operationInProgress, setOperationInProgress] = useState<Set<string>>(new Set());
-  
-  // 使用 Ref 增强异步锁，避免状态更新延迟导致的并发问题
-  const operationInProgressRef = useRef<Set<string>>(new Set());
-  
-  // 超时定时器 Map，用于清理卡住的锁
-  const timeoutMapRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  // 简化异步锁：单个布尔值，防止重复点击
+  const [isProcessing, setIsProcessing] = useState(false);
 
   /**
-   * 设置异步锁（带超时保护）
+   * 递归查找任务（支持子任务）
    */
-  const setLock = useCallback((taskId: string) => {
-    operationInProgressRef.current.add(taskId);
-    setOperationInProgress(prev => new Set(prev).add(taskId));
-    
-    // 设置 30 秒超时自动清理锁
-    const timeout = setTimeout(() => {
-      console.warn(`⚠️ 任务 ${taskId} 操作超时，自动清理锁`);
-      clearLock(taskId);
-    }, 30000);
-    
-    timeoutMapRef.current.set(taskId, timeout);
-  }, []);
-
-  /**
-   * 清除异步锁（同时清理超时定时器）
-   */
-  const clearLock = useCallback((taskId: string) => {
-    operationInProgressRef.current.delete(taskId);
-    setOperationInProgress(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(taskId);
-      return newSet;
-    });
-    
-    // 清理超时定时器
-    const timeout = timeoutMapRef.current.get(taskId);
-    if (timeout) {
-      clearTimeout(timeout);
-      timeoutMapRef.current.delete(taskId);
-    }
-  }, []);
-
-  /**
-   * 递归查找所有运行中的任务（包含子任务）
-   */
-  const findAllRunningTasks = useCallback((taskList: TimerTask[]): TimerTask[] => {
-    const running: TimerTask[] = [];
-    
-    const traverse = (tasks: TimerTask[]) => {
-      tasks.forEach(task => {
-        if (task.isRunning) {
-          running.push(task);
-        }
-        if (task.children && task.children.length > 0) {
-          traverse(task.children);
-        }
-      });
-    };
-    
-    traverse(taskList);
-    return running;
-  }, []);
-
-  /**
-   * 递归查找任务
-   */
-  const findTaskById = useCallback((taskId: string, taskList: TimerTask[]): TimerTask | null => {
+  const findTaskById = useCallback((taskId: string, taskList: TimerTask[] = tasks): TimerTask | null => {
     for (const task of taskList) {
-      if (task.id === taskId) {
-        return task;
-      }
-      if (task.children && task.children.length > 0) {
+      if (task.id === taskId) return task;
+      if (task.children) {
         const found = findTaskById(taskId, task.children);
         if (found) return found;
       }
     }
     return null;
+  }, [tasks]);
+
+  /**
+   * 递归查找所有运行中的任务（支持子任务）
+   */
+  const findAllRunningTasks = useCallback((excludeId: string, taskList: TimerTask[] = tasks): TimerTask[] => {
+    const running: TimerTask[] = [];
+    for (const task of taskList) {
+      if (task.id !== excludeId && task.isRunning && !task.isPaused) {
+        running.push(task);
+      }
+      if (task.children) {
+        running.push(...findAllRunningTasks(excludeId, task.children));
+      }
+    }
+    return running;
+  }, [tasks]);
+
+  /**
+   * 递归更新任务状态（支持子任务）
+   */
+  const updateTasksRecursive = useCallback((
+    taskList: TimerTask[],
+    updater: (task: TimerTask) => TimerTask
+  ): TimerTask[] => {
+    return taskList.map(task => {
+      const updated = updater(task);
+      if (task.children) {
+        return { ...updated, children: updateTasksRecursive(task.children, updater) };
+      }
+      return updated;
+    });
   }, []);
 
   /**
-   * 原子化启动计时器
-   * 确保任意时刻只有一个任务运行（包含所有层级）
+   * 启动计时器返回结果类型
    */
-  const startTimer = useCallback(async (taskId: string) => {
-    // 【增强异步锁】使用 Ref 进行实时检查，避免状态更新延迟
-    if (operationInProgressRef.current.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
+  type StartTimerResult = 
+    | { success: true }
+    | { success: false; reason: 'version_conflict'; conflictTaskName?: string }
+    | { success: false; reason: 'not_found' }
+    | { success: false; reason: 'processing' }
+    | { success: false; reason: 'error'; error: unknown };
+
+  /**
+   * 启动计时器（简化版 + 递归支持）
+   * 逻辑：防重复 → 查找运行中任务 → 乐观更新UI → 串行API调用 → 冲突检测
+   */
+  const startTimer = useCallback(async (taskId: string): Promise<StartTimerResult> => {
+    // 1. 异步锁：防止重复点击
+    if (isProcessing) {
+      console.log('⏸️ 操作进行中，请稍候...');
+      return { success: false, reason: 'processing' };
     }
 
-    // 查找目标任务
-    const targetTask = findTaskById(taskId, tasks);
+    // 2. 递归查找目标任务
+    const targetTask = findTaskById(taskId);
     if (!targetTask) {
       console.error('❌ 未找到目标任务:', taskId);
-      return;
+      return { success: false, reason: 'not_found' };
     }
 
-    // 标记操作开始（同时更新 state 和 ref，带超时保护）
-    setLock(taskId);
+    // 3. 递归查找所有运行中的任务（互斥检查，包含子任务）
+    const runningTasks = findAllRunningTasks(taskId);
+    console.log('🔍 [互斥检查] 找到运行中任务:', runningTasks.map(t => ({ id: t.id, name: t.name })));
+
+    setIsProcessing(true);
 
     try {
-      // 查找所有运行中的任务（包含子任务）
-      const runningTasks = findAllRunningTasks(tasks);
-      const tasksToPause: Array<{ id: string; name: string; elapsedTime: number; version?: number }> = [];
       const currentTime = Math.floor(Date.now() / 1000);
 
-      console.log(`🎯 准备启动任务: ${targetTask.name}, 当前运行中的任务数: ${runningTasks.length}`);
-
-      // 原子化更新：同时暂停其他任务和启动目标任务
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          // 启动目标任务
-          if (task.id === taskId) {
-            return {
-              ...task,
-              isRunning: true,
-              isPaused: false,
-              startTime: currentTime,
-              pausedTime: 0
-            };
-          }
-
-          // 暂停其他运行中的任务
-          if (task.isRunning && task.id !== taskId) {
-            const runningTime = task.startTime ? currentTime - task.startTime : 0;
-            const newElapsedTime = task.elapsedTime + runningTime;
-
-            // 记录需要暂停的任务
-            tasksToPause.push({
-              id: task.id,
-              name: task.name,
-              elapsedTime: newElapsedTime,
-              version: task.version
-            });
-
-            return {
-              ...task,
-              elapsedTime: newElapsedTime,
-              isPaused: true,
-              isRunning: false,
-              startTime: null,
-              pausedTime: 0
-            };
-          }
-
-          // 递归处理子任务
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-
-          return task;
-        });
-      };
-
-      // 一次性更新所有任务状态（乐观更新）
-      const updatedTasks = updateTaskRecursive(tasks);
+      // 4. 乐观更新UI（递归更新，暂停所有运行中的任务）
+      const runningTaskIds = new Set(runningTasks.map(t => t.id));
+      const updatedTasks = updateTasksRecursive(tasks, (task) => {
+        // 暂停所有运行中的任务
+        if (runningTaskIds.has(task.id)) {
+          const runningTime = task.startTime ? currentTime - task.startTime : 0;
+          return {
+            ...task,
+            isRunning: false,
+            isPaused: true,
+            elapsedTime: task.elapsedTime + runningTime,
+            startTime: null,
+            pausedTime: 0
+          };
+        }
+        // 启动目标任务
+        if (task.id === taskId) {
+          return {
+            ...task,
+            isRunning: true,
+            isPaused: false,
+            startTime: currentTime,
+            pausedTime: 0
+          };
+        }
+        return task;
+      });
       onTasksChange(updatedTasks);
 
-      console.log(`✅ 本地状态已更新，启动: ${targetTask.name}, 暂停: ${tasksToPause.length}个任务`);
-
-      // 异步批量处理数据库操作
-      const apiPromises: Promise<Response | null>[] = [];
-
-      // 暂停其他运行中的任务（使用 PUT 端点）
-      tasksToPause.forEach(task => {
-        apiPromises.push(
-          fetch(`/api/timer-tasks`, {
+      // 5. 后台同步到服务器（串行执行）
+      // 5.1 先暂停所有运行中的任务
+      let currentTasks = tasks;  // 累积更新
+      if (runningTasks.length > 0) {
+        console.log(`⏸️ 暂停 ${runningTasks.length} 个运行中的任务`);
+        for (const runningTask of runningTasks) {
+          const runningTime = runningTask.startTime ? currentTime - runningTask.startTime : 0;
+          const pauseResponse = await fetch(`/api/timer-tasks`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              id: task.id,
-              version: task.version,
-              elapsedTime: task.elapsedTime,
+            body: JSON.stringify({
+              id: runningTask.id,
+              version: runningTask.version,
+              elapsedTime: runningTask.elapsedTime + runningTime,
               isPaused: true,
               isRunning: false,
               startTime: null,
               pausedTime: 0
             })
-          }).catch(error => {
-            console.error(`暂停任务失败 ${task.name}:`, error);
-            return null;
-          })
-        );
+          });
+
+        // 检测版本冲突
+        if (pauseResponse.status === 409) {
+          console.error('⚠️ [暂停操作] 版本冲突 409，任务:', runningTask.name);
+          setIsProcessing(false);
+          return { 
+            success: false, 
+            reason: 'version_conflict',
+            conflictTaskName: runningTask.name 
+          };
+        }
+
+        // 成功：解析服务器返回的新数据（包含新version）
+        const updatedPausedTask = await pauseResponse.json();
+        console.log('✅ [暂停操作] 服务器返回新数据，任务:', runningTask.name, 'version:', updatedPausedTask.version);
+        
+        // 累积更新前端tasks，确保version同步
+        currentTasks = updateTasksRecursive(currentTasks, (task) => {
+          if (task.id === runningTask.id) {
+            return {
+              ...task,
+              version: updatedPausedTask.version,  // ← 关键：更新version
+              elapsedTime: updatedPausedTask.elapsedTime,
+              isPaused: true,
+              isRunning: false,
+              startTime: null,
+              pausedTime: 0
+            };
+          }
+          return task;
+        });
+        }
+
+        // 通知上层（互斥暂停）
+        onTasksPaused?.(runningTasks.map(t => ({ id: t.id, name: t.name })));
+      }
+
+      // 5.2 启动目标任务
+      const startResponse = await fetch(`/api/timer-tasks`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          version: targetTask.version,
+          isRunning: true,
+          isPaused: false,
+          startTime: currentTime,
+          pausedTime: 0
+        })
       });
 
-      // 启动目标任务（使用 PUT 端点）
-      apiPromises.push(
-        fetch(`/api/timer-tasks`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            id: taskId,
-            version: targetTask.version,
-            isRunning: true,
-            isPaused: false,
-            startTime: currentTime,
-            pausedTime: 0
-          })
-        }).catch(error => {
-          console.error(`启动任务失败 ${targetTask.name}:`, error);
-          return null;
-        })
-      );
+      // 检测版本冲突
+      if (startResponse.status === 409) {
+        console.error('⚠️ [启动操作] 版本冲突 409，任务:', targetTask.name);
+        setIsProcessing(false);
+        return { 
+          success: false, 
+          reason: 'version_conflict',
+          conflictTaskName: targetTask.name 
+        };
+      }
 
-      // 等待所有 API 完成
-      const results = await Promise.all(apiPromises);
+      // 成功：解析服务器返回的新数据（包含新version）
+      const updatedTask = await startResponse.json();
+      console.log('✅ [启动操作] 服务器返回新数据，version:', updatedTask.version);
       
-      // 【版本冲突处理】检查是否有版本冲突
-      const hasVersionConflict = results.some(res => 
-        res && res.status === 409
-      );
-
-      if (hasVersionConflict) {
-        console.warn('⚠️ 检测到版本冲突，需要刷新数据获取最新状态');
-        // 触发版本冲突回调，让上层组件处理刷新逻辑
-        if (onVersionConflict) {
-          onVersionConflict();
+      // 更新前端tasks，确保version同步（基于累积的 currentTasks）
+      const finalTasks = updateTasksRecursive(currentTasks, (task) => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            version: updatedTask.version,  // ← 关键：更新version
+            isRunning: true,
+            startTime: currentTime,
+            isPaused: false,
+            pausedTime: 0
+          };
         }
-      }
+        return task;
+      });
+      onTasksChange(finalTasks);
 
-      // 【互斥提示】如果暂停了其他任务，通知上层
-      if (tasksToPause.length > 0 && onTasksPaused) {
-        onTasksPaused(tasksToPause.map(t => ({ id: t.id, name: t.name })));
-      }
-
-      console.log('✨ 所有 API 操作完成');
+      // 成功
+      return { success: true };
 
     } catch (error) {
-      console.error('❌ 启动计时器失败:', error);
-      // 发生错误时，可以考虑回滚状态
+      console.error('启动计时器失败:', error);
+      setIsProcessing(false);
+      return { success: false, reason: 'error', error };
     } finally {
-      // 清除操作标记（同时清理超时定时器）
-      clearLock(taskId);
+      setIsProcessing(false);
     }
-  }, [tasks, onTasksChange, operationInProgress, findTaskById, findAllRunningTasks, onVersionConflict, onTasksPaused, setLock, clearLock]);
+  }, [tasks, onTasksChange, onTasksPaused, isProcessing, findTaskById, findAllRunningTasks, updateTasksRecursive]);
 
   /**
-   * 暂停计时器
+   * 暂停计时器（简化版 + 递归支持）
    */
   const pauseTimer = useCallback(async (taskId: string) => {
-    // 【增强异步锁】使用 Ref 进行实时检查
-    if (operationInProgressRef.current.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
-    }
+    if (isProcessing) return;
 
-    const targetTask = findTaskById(taskId, tasks);
-    if (!targetTask || !targetTask.isRunning) {
-      return;
-    }
+    const targetTask = findTaskById(taskId);
+    if (!targetTask || !targetTask.isRunning) return;
 
-    // 标记操作开始（同时更新 state 和 ref，带超时保护）
-    setLock(taskId);
+    setIsProcessing(true);
 
     try {
       const currentTime = Math.floor(Date.now() / 1000);
       const runningTime = targetTask.startTime ? currentTime - targetTask.startTime : 0;
       const newElapsedTime = targetTask.elapsedTime + runningTime;
 
-      // 乐观更新
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId) {
-            return {
-              ...task,
-              elapsedTime: newElapsedTime,
-              isPaused: true,
-              isRunning: false,
-              startTime: null,
-              pausedTime: 0
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
+      // 乐观更新UI（递归更新，包含子任务）
+      const updatedTasks = updateTasksRecursive(tasks, (task) =>
+        task.id === taskId
+          ? { ...task, elapsedTime: newElapsedTime, isPaused: true, isRunning: false, startTime: null, pausedTime: 0 }
+          : task
+      );
+      onTasksChange(updatedTasks);
 
-      onTasksChange(updateTaskRecursive(tasks));
-
-      // 调用 API（使用 PUT 端点更新任务状态）
+      // 同步到服务器
       const response = await fetch(`/api/timer-tasks`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: taskId,
           version: targetTask.version,
           elapsedTime: newElapsedTime,
@@ -333,79 +303,48 @@ export function useTimerControl(options: UseTimerControlOptions) {
         })
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        
-        // 【版本冲突处理】
-        if (response.status === 409) {
-          console.warn('⚠️ 暂停时检测到版本冲突');
-          if (onVersionConflict) {
-            onVersionConflict();
-          }
-        }
-        
-        throw new Error(error.message || '暂停失败');
+      // 版本冲突检测
+      if (response.status === 409) {
+        console.warn('⚠️ 检测到数据冲突，正在刷新...');
+        onVersionConflict?.();
       }
 
     } catch (error) {
       console.error('暂停计时器失败:', error);
     } finally {
-      // 清除操作标记（同时清理超时定时器）
-      clearLock(taskId);
+      setIsProcessing(false);
     }
-  }, [tasks, onTasksChange, operationInProgress, findTaskById, onVersionConflict, setLock, clearLock]);
+  }, [tasks, onTasksChange, onVersionConflict, isProcessing, findTaskById, updateTasksRecursive]);
 
   /**
-   * 停止计时器
+   * 停止计时器（简化版 + 递归支持）
    */
   const stopTimer = useCallback(async (taskId: string) => {
-    // 【增强异步锁】使用 Ref 进行实时检查
-    if (operationInProgressRef.current.has(taskId)) {
-      console.log('⏸️ 任务操作进行中，忽略重复请求:', taskId);
-      return;
-    }
+    if (isProcessing) return;
 
-    const targetTask = findTaskById(taskId, tasks);
-    if (!targetTask || !targetTask.isRunning) {
-      return;
-    }
+    const targetTask = findTaskById(taskId);
+    if (!targetTask || !targetTask.isRunning) return;
 
-    // 标记操作开始（同时更新 state 和 ref，带超时保护）
-    setLock(taskId);
+    setIsProcessing(true);
 
     try {
       const currentTime = Math.floor(Date.now() / 1000);
       const runningTime = targetTask.startTime ? currentTime - targetTask.startTime : 0;
       const newElapsedTime = targetTask.elapsedTime + runningTime;
 
-      // 乐观更新
-      const updateTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === taskId) {
-            return {
-              ...task,
-              elapsedTime: newElapsedTime,
-              isRunning: false,
-              isPaused: false,
-              startTime: null,
-              pausedTime: 0,
-              completedAt: currentTime
-            };
-          }
-          if (task.children) {
-            return { ...task, children: updateTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
+      // 乐观更新UI（递归更新，包含子任务）
+      const updatedTasks = updateTasksRecursive(tasks, (task) =>
+        task.id === taskId
+          ? { ...task, elapsedTime: newElapsedTime, isRunning: false, isPaused: false, startTime: null, pausedTime: 0, completedAt: currentTime }
+          : task
+      );
+      onTasksChange(updatedTasks);
 
-      onTasksChange(updateTaskRecursive(tasks));
-
-      // 调用 API（使用 PUT 端点）
+      // 同步到服务器
       const response = await fetch(`/api/timer-tasks`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: taskId,
           version: targetTask.version,
           elapsedTime: newElapsedTime,
@@ -417,34 +356,26 @@ export function useTimerControl(options: UseTimerControlOptions) {
         })
       });
 
-      // 【版本冲突处理】
+      // 版本冲突检测
       if (response.status === 409) {
-        console.warn('⚠️ 停止时检测到版本冲突');
-        if (onVersionConflict) {
-          onVersionConflict();
-        }
+        console.warn('⚠️ 检测到数据冲突，正在刷新...');
+        onVersionConflict?.();
       }
 
     } catch (error) {
       console.error('停止计时器失败:', error);
     } finally {
-      // 清除操作标记（同时清理超时定时器）
-      clearLock(taskId);
+      setIsProcessing(false);
     }
-  }, [tasks, onTasksChange, operationInProgress, findTaskById, onVersionConflict, setLock, clearLock]);
+  }, [tasks, onTasksChange, onVersionConflict, isProcessing, findTaskById, updateTasksRecursive]);
 
   return {
     startTimer,
     pauseTimer,
     stopTimer,
-    findAllRunningTasks,
-    operationInProgress
+    isProcessing
   };
 }
-
-
-
-
 
 
 
