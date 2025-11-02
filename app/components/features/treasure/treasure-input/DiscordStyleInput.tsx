@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/app/components/ui/button'
 import { Paperclip, Hash, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -94,6 +94,16 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
 
     fetchTagSuggestions()
   }, [])
+
+  // 【新增】处理使用上次标签的逻辑
+  const handleUseLastTags = useCallback(() => {
+    if (!lastTags) return
+    const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
+    const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
+    setPrimaryCategory(primaryTag || '')
+    setTopicTags(lastTags.filter(tag => !primaryCategories.includes(tag)))
+    setDefaultTags(lastTags)
+  }, [lastTags])
 
   // 初始化编辑数据
   useEffect(() => {
@@ -611,11 +621,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setPrimaryCategory(lastTags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)) || '')
-              setTopicTags(lastTags.filter(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)))
-              setDefaultTags(lastTags)
-            }}
+            onClick={handleUseLastTags}
             className="text-gray-400 hover:text-white hover:bg-gray-800"
           >
             使用上次标签

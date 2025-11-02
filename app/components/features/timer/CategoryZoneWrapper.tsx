@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card } from '@/app/components/ui/card';
 import CategoryZoneHeader from './CategoryZoneHeader';
 import CategorySubHeader from './CategorySubHeader';
@@ -59,12 +59,12 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     sourceName?: string;
   } | null>(null);
   
-  // 【新增】提取 categoryPath 的最后一层名称
-  const getLastCategoryName = (categoryPath: string): string => {
+  // 【新增】提取 categoryPath 的最后一层名称（使用 useCallback 优化）
+  const getLastCategoryName = useCallback((categoryPath: string): string => {
     if (!categoryPath) return '';
     const parts = categoryPath.split('/');
     return parts[parts.length - 1] || '';
-  };
+  }, []);
   
   // 加载折叠状态
   useEffect(() => {
