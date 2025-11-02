@@ -159,7 +159,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         setActiveCommand('music')
       }
     } else if (!initialData) {
-      // 创建模式：重置所有状态，然后用 lastTags 作为默认值（placeholder）
+      // 创建模式：重置所有状态，lastTags 仅作为参考
       setContent('')
       setImages([])
       setActiveCommand(null)
@@ -171,19 +171,22 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         coverUrl: ''
       })
       
-      // 设置默认标签（仅作为 placeholder，不是真实值）
+      // 【修改】设置默认标签为参考，但不自动填入实际标签
       if (lastTags && lastTags.length > 0) {
         const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
         const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
         const topicTagsList = lastTags.filter(tag => !primaryCategories.includes(tag))
         
-        // 保存为默认值
+        // 保存为参考，但不自动应用
         if (primaryTag) {
-          setPrimaryCategory(primaryTag)
+          // 【修改】不自动设置 primaryCategory，保留参考
+          setDefaultTags([primaryTag, ...topicTagsList])
+        } else {
+          setDefaultTags(topicTagsList)
         }
-        setDefaultTags(topicTagsList)
         
         // 实际标签为空
+        setPrimaryCategory('')
         setTopicTags([])
       } else {
         setPrimaryCategory('')
@@ -601,6 +604,24 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         maxTags={10}
         placeholderTags={topicTags.length === 0 ? defaultTags : []}
       />
+
+      {/* 使用上次标签按钮 */}
+      {lastTags && lastTags.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPrimaryCategory(lastTags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)) || '')
+              setTopicTags(lastTags.filter(tag => !['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)))
+              setDefaultTags(lastTags)
+            }}
+            className="text-gray-400 hover:text-white hover:bg-gray-800"
+          >
+            使用上次标签
+          </Button>
+        </div>
+      )}
 
       {/* 输入区域 */}
       <div className={cn(

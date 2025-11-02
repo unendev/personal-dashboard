@@ -74,3 +74,5 @@ export function resetDeviceId(): void {
   localStorage.removeItem(DEVICE_NAME_KEY);
 }
 
+
+

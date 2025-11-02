@@ -54,9 +54,17 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     visible: boolean;
     type: 'category' | 'clone';
     categoryPath: string;
+    lastCategoryName?: string; // 【新增】最后一层分类名
     instanceTag?: string | null;
     sourceName?: string;
   } | null>(null);
+  
+  // 【新增】提取 categoryPath 的最后一层名称
+  const getLastCategoryName = (categoryPath: string): string => {
+    if (!categoryPath) return '';
+    const parts = categoryPath.split('/');
+    return parts[parts.length - 1] || '';
+  };
   
   // 加载折叠状态
   useEffect(() => {
@@ -103,7 +111,8 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     setQuickCreateDialog({
       visible: true,
       type: 'category',
-      categoryPath
+      categoryPath,
+      lastCategoryName: getLastCategoryName(categoryPath) // 【新增】传递最后一层名称
     });
   };
   
@@ -119,6 +128,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
       visible: true,
       type: 'clone',
       categoryPath: task.categoryPath,
+      lastCategoryName: getLastCategoryName(task.categoryPath), // 【新增】传递最后一层名称
       instanceTag: task.instanceTag,
       sourceName: task.name
     });
@@ -228,6 +238,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
           visible={quickCreateDialog.visible}
           type={quickCreateDialog.type}
           categoryPath={quickCreateDialog.categoryPath}
+          lastCategoryName={quickCreateDialog.lastCategoryName}
           instanceTag={quickCreateDialog.instanceTag}
           sourceName={quickCreateDialog.sourceName}
           userId={userId}

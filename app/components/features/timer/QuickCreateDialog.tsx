@@ -20,6 +20,7 @@ interface QuickCreateDialogProps {
   visible: boolean;
   type: 'category' | 'clone';
   categoryPath: string;
+  lastCategoryName?: string; // 【新增】最后一层分类名
   instanceTag?: string | null;
   sourceName?: string;
   userId?: string;
@@ -31,6 +32,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
   visible,
   type,
   categoryPath,
+  lastCategoryName, // 【新增】
   instanceTag,
   sourceName,
   userId = 'user-1',
@@ -51,6 +53,9 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       if (type === 'clone' && sourceName) {
         // 复制模式：使用原任务名 + " - 副本"
         setTaskName(`${sourceName} - 副本`);
+      } else if (type === 'category' && lastCategoryName) {
+        // 【新增】分类创建模式：自动填入最后一层分类名
+        setTaskName(lastCategoryName);
       } else {
         setTaskName('');
       }
@@ -64,7 +69,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       
       setInitialTime('');
     }
-  }, [visible, type, sourceName, instanceTag]);
+  }, [visible, type, sourceName, lastCategoryName, instanceTag]);
   
   const handleSubmit = () => {
     if (!taskName.trim()) {
