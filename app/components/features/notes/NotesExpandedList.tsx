@@ -3,45 +3,38 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/app/components/ui/button'
 import { Plus, FileText, ChevronRight, ChevronDown } from 'lucide-react'
-import { useNoteGrouping } from './hooks/useNoteGrouping'
 
 interface Note {
   id: string
   title: string
 }
 
-interface NotesFileBarProps {
-  notes: Note[]
-  currentNoteId: string | null
+interface NotesExpandedListProps {
+  parentNote: Note | null
+  childNotes: Note[]
+  activeNoteId: string | null
   onSelectNote: (id: string) => void
   onCreateNote: () => void
-  onDeleteNote: (id: string) => void
   onUpdateNoteTitle: (id: string, newTitle: string) => void
-  userId?: string
-  onSelectParent?: (parentId: string) => void
-  onToggleExpand?: (parentId: string, isExpanded: boolean) => void
-  groupingData?: Record<string, string[]>  // 从父组件接收 grouping 数据
+  isCreating: boolean
+  expandedChildId?: string | null
+  onToggleExpand?: (id: string) => void
 }
 
-export const NotesFileBar: React.FC<NotesFileBarProps> = ({
-  notes,
-  currentNoteId,
+export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
+  parentNote,
+  childNotes,
+  activeNoteId,
   onSelectNote,
   onCreateNote,
-  onDeleteNote,
   onUpdateNoteTitle,
-  userId = 'user-1',
-  onSelectParent,
+  isCreating,
+  expandedChildId,
   onToggleExpand,
-  groupingData,
 }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
-
-  const localGrouping = useNoteGrouping(userId)
-  // 优先使用从父组件传来的 groupingData，否则用本地 grouping
-  const grouping = groupingData ? { grouping: groupingData, isExpanded: (id: string) => localGrouping.isExpanded(id) } : { grouping: localGrouping.grouping, isExpanded: (id: string) => localGrouping.isExpanded(id) }
 
   useEffect(() => {
     if (editingNoteId && inputRef.current) {
@@ -72,57 +65,67 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
 
   const handleToggleExpand = (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation()
-    const isCurrentlyExpanded = localGrouping.isExpanded(noteId)
-    // 切换展开状态
-    localGrouping.toggleExpand(noteId)
-    // 通知父组件展开状态变化
-    onToggleExpand?.(noteId, !isCurrentlyExpanded)
+    if (onToggleExpand) {
+      onToggleExpand(noteId)
+    }
   }
 
-  // 获取顶级笔记（未分组的笔记）
-  const topLevelNotes = notes.filter(note => {
-    // 只有在分组加载完成后再进行过滤
-    if (!localGrouping.isLoaded) return true  // 加载中时显示所有笔记（等待数据）
-    
-    const currentGrouping = groupingData || localGrouping.grouping
-    for (const children of Object.values(currentGrouping)) {
-      if (children.includes(note.id)) {
-        return false  // 如果笔记在某个分组的子列表中，就不是顶级
-      }
-    }
-    return true  // 否则视为顶级
-  })
+  if (!parentNote) return null
 
   return (
-    <div className="flex items-center bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50 pr-2">
+    <div className="bg-gray-800/50 border-b border-gray-700/30 px-2">
+      {/* 子栏标题 - 显示父笔记信息 */}
+      <div className="py-1.5 px-2 text-xs text-gray-600 border-b border-gray-700/20 mb-1">
+        📁 {parentNote.title}
+      </div>
+
+      {/* 子文件列表 */}
       <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
-        {topLevelNotes.map(note => {
-          const isActive = currentNoteId === note.id
+        {/* 第一项：父文件本身 */}
+        {parentNote && (
+          <div
+            key={parentNote.id}
+            onClick={() => onSelectNote(parentNote.id)}
+            className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] font-semibold ${
+              activeNoteId === parentNote.id
+                ? 'bg-gray-700 border-blue-500'
+                : 'bg-gray-800 border-gray-700 hover:bg-gray-700/70'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <FileText
+                size={14}
+                className={activeNoteId === parentNote.id ? 'text-blue-300' : 'text-gray-400'}
+              />
+              <span className={`text-sm truncate ${activeNoteId === parentNote.id ? 'text-white' : 'text-gray-300'}`}>
+                {parentNote.title || 'Untitled'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 子文件列表 */}
+        {childNotes.map((note) => {
+          const isActive = activeNoteId === note.id
           const isEditing = editingNoteId === note.id
-          const hasChildren = (groupingData || localGrouping.grouping)[note.id]?.length > 0
-          const isExpanded = localGrouping.isExpanded(note.id)
+          const isExpanded = expandedChildId === note.id
 
           return (
             <div
               key={note.id}
-              onClick={() => {
-                if (!isEditing) {
-                  onSelectNote(note.id)
-                  onSelectParent?.(note.id)
-                }
-              }}
+              onClick={() => !isEditing && onSelectNote(note.id)}
               onDoubleClick={() => handleDoubleClick(note)}
               className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] ${
                 isActive && !isEditing
-                  ? 'bg-gray-800 border-blue-500'
-                  : 'bg-transparent border-transparent hover:bg-gray-800/50'
+                  ? 'bg-gray-700 border-blue-500'
+                  : 'bg-gray-800 border-gray-700 hover:bg-gray-700/70'
               }`}
             >
               <div className="flex items-center gap-2">
-                {/* 展开/收缩按钮 - 总是显示 */}
+                {/* 展开按钮 */}
                 <button
                   onClick={(e) => handleToggleExpand(e, note.id)}
-                  className="p-0.5 hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+                  className="p-0.5 hover:bg-gray-600 rounded transition-colors flex-shrink-0"
                   title={isExpanded ? '收缩' : '展开'}
                 >
                   {isExpanded ? (
@@ -155,16 +158,23 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
             </div>
           )
         })}
+
+        {/* 新建按钮 */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onCreateNote}
+          disabled={isCreating}
+          className="flex-shrink-0 h-8 w-8 p-0 rounded-full hover:bg-gray-700"
+          title="在此分组中创建新文件"
+        >
+          {isCreating ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+          ) : (
+            <Plus size={16} />
+          )}
+        </Button>
       </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onCreateNote}
-        className="flex-shrink-0 ml-2 h-8 w-8 p-0 rounded-full hover:bg-gray-700"
-        title="创建新笔记"
-      >
-        <Plus size={16} />
-      </Button>
     </div>
   )
 }

@@ -53,10 +53,8 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       if (type === 'clone' && sourceName) {
         // 复制模式：使用原任务名 + " - 副本"
         setTaskName(`${sourceName} - 副本`);
-      } else if (type === 'category' && lastCategoryName) {
-        // 【新增】分类创建模式：自动填入最后一层分类名
-        setTaskName(lastCategoryName);
       } else {
+        // 分类创建模式：保持为空，使用 placeholder 提示
         setTaskName('');
       }
       
@@ -72,8 +70,11 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
   }, [visible, type, sourceName, lastCategoryName, instanceTag]);
   
   const handleSubmit = () => {
-    if (!taskName.trim()) {
-      alert('请输入任务名称');
+    // 获取最终的任务名：用户输入或使用分类名
+    const finalTaskName = taskName.trim() || lastCategoryName || '';
+
+    if (!finalTaskName.trim()) {
+      alert('请输入任务名称或先选择分类');
       return;
     }
     
@@ -81,7 +82,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
     saveAutoStartPreference(autoStart);
     
     onCreate({
-      name: taskName.trim(),
+      name: finalTaskName,
       categoryPath,
       instanceTagNames: selectedTags,
       initialTime: parseTimeToSeconds(initialTime),
@@ -101,6 +102,13 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       handleSubmit();
     }
   };
+
+  // 计算任务名 placeholder
+  const taskNamePlaceholder = type === 'clone' 
+    ? '输入新的任务名称（或保持不变）'
+    : lastCategoryName 
+      ? `输入任务名称（默认使用：${lastCategoryName}）`
+      : '输入任务名称';
   
   return (
     <Dialog open={visible} onOpenChange={onClose}>
@@ -108,7 +116,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-xl">⚡</span>
-            复制任务
+            {type === 'clone' ? '复制任务' : '快速创建'}
           </DialogTitle>
         </DialogHeader>
         
@@ -143,7 +151,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="输入任务名称"
+              placeholder={taskNamePlaceholder}
               className="mt-1"
               autoFocus
             />
@@ -201,7 +209,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!taskName.trim()}
+            disabled={!taskName.trim() && !lastCategoryName}
             className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-6"
           >
             {autoStart ? '⏱️ 创建并开始' : '✅ 创建'}

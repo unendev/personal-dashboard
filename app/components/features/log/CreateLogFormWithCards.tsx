@@ -41,9 +41,22 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
     return undefined
   }
 
+  // 提取分类路径的最后一层名称
+  const getLastCategoryName = (): string => {
+    if (!selectedCategory) return ''
+    const parts = selectedCategory.split('/')
+    return parts[parts.length - 1] || ''
+  }
+
   const handleSubmit = async () => {
-    if (!taskName.trim()) {
-      alert('请输入任务名称')
+    // 获取分类最后一层名称
+    const lastCategoryName = getLastCategoryName()
+    
+    // 如果任务名为空，使用分类名；否则使用用户输入
+    const finalTaskName = taskName.trim() || lastCategoryName
+
+    if (!finalTaskName.trim()) {
+      alert('请输入任务名称或先选择分类')
       return
     }
 
@@ -59,7 +72,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
         // 解析时间输入
         const initialTime = parseTimeInput(timeInput)
-        onAddToTimer(taskName.trim(), selectedCategory, initialTime, tagsString)
+        onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString)
         
         // 重置表单
         setTaskName('')
@@ -74,6 +87,11 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       setIsLoading(false)
     }
   }
+
+  // 计算任务名 placeholder
+  const taskNamePlaceholder = selectedCategory 
+    ? `输入任务名称（默认使用：${getLastCategoryName()}）...` 
+    : '输入要创建的任务名称...'
 
   return (
     <div className="space-y-6 py-4">
@@ -97,7 +115,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         <Input
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
-          placeholder="输入要创建的任务名称..."
+          placeholder={taskNamePlaceholder}
           className="text-base"
         />
       </div>

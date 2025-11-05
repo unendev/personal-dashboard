@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/app/components/ui/button';
-import { CategoryGroup, formatTime, getRunningTasks } from '@/lib/timer-utils';
+import { CategoryGroup, formatTime, getRunningTasks, countAllTasksRecursively } from '@/lib/timer-utils';
 
 interface CategoryZoneHeaderProps {
   group: CategoryGroup;
@@ -116,7 +116,7 @@ const CategoryZoneHeader: React.FC<CategoryZoneHeaderProps> = ({
               {group.displayName}
             </span>
             <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">
-              ({group.tasks.length}个任务)
+              ({countAllTasksRecursively(group)}个任务)
             </span>
           </div>
         </div>

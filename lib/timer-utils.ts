@@ -423,3 +423,26 @@ export function parseTimeToSeconds(timeStr: string): number {
   return hoursNum * 3600 + minutesNum * 60;
 }
 
+/**
+ * 递归统计分组中的所有任务总数（包括子分组）
+ * 
+ * 优化说明：
+ * - 使用迭代而非递归可避免深层嵌套时的栈溢出，但此处分组通常仅 3 层
+ * - 当前递归深度浅，递归实现更易读、维护
+ * 
+ * @example
+ * 如果一级分组有 2 个直接任务，子分组中有 5 个任务
+ * countAllTasksRecursively(group) === 7
+ */
+export function countAllTasksRecursively(group: CategoryGroup): number {
+  let count = group.tasks.length;
+  
+  if (group.subGroups && group.subGroups.length > 0) {
+    group.subGroups.forEach(subGroup => {
+      count += countAllTasksRecursively(subGroup);
+    });
+  }
+  
+  return count;
+}
+

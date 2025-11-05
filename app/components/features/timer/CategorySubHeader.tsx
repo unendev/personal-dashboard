@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/app/components/ui/button';
-import { CategoryGroup, formatTime, getRunningTasks } from '@/lib/timer-utils';
+import { CategoryGroup, formatTime, getRunningTasks, countAllTasksRecursively } from '@/lib/timer-utils';
 import { cn } from '@/lib/utils';
 
 interface CategorySubHeaderProps {
@@ -94,7 +94,7 @@ const CategorySubHeader: React.FC<CategorySubHeaderProps> = ({
           </span>
           
           <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
-            ({group.tasks.length})
+            ({countAllTasksRecursively(group)})
           </span>
         </div>
         
@@ -142,7 +142,7 @@ const CategorySubHeader: React.FC<CategorySubHeaderProps> = ({
         </span>
         
         <span className="text-xs text-gray-500 shrink-0">
-          ({group.tasks.length})
+          ({countAllTasksRecursively(group)})
         </span>
       </div>
       
@@ -162,6 +162,7 @@ const CategorySubHeader: React.FC<CategorySubHeaderProps> = ({
 };
 
 export default CategorySubHeader;
+
 
 
 

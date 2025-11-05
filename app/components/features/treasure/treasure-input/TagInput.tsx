@@ -12,6 +12,7 @@ interface TagInputProps {
   suggestions?: string[]
   maxTags?: number
   placeholderTags?: string[]  // 占位符标签（半透明显示，不是真实标签）
+  onPlaceholderFocus?: () => void  // 当点击输入框且存在占位符标签时触发
 }
 
 export function TagInput({ 
@@ -19,7 +20,8 @@ export function TagInput({
   onChange, 
   suggestions = [], 
   maxTags = 10,
-  placeholderTags = []
+  placeholderTags = [],
+  onPlaceholderFocus
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -170,7 +172,13 @@ export function TagInput({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                onFocus={() => inputValue && setShowSuggestions(true)}
+                onFocus={() => {
+                  // 点击输入框时，如果存在占位符标签，触发清空回调
+                  if (placeholderTags.length > 0 && onPlaceholderFocus) {
+                    onPlaceholderFocus()
+                  }
+                  inputValue && setShowSuggestions(true)
+                }}
                 placeholder={
                   tags.length === 0 && placeholderTags.length > 0 
                     ? "输入以替换默认标签..." 

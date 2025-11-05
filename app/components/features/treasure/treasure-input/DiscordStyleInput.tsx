@@ -497,6 +497,20 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     }
   }
 
+  // 验证是否可以提交
+  const canSubmit = (): boolean => {
+    // 1. 必须选择主要分类
+    if (!primaryCategory) return false
+    
+    // 2. 必须有内容或图片
+    if (!content.trim() && images.length === 0) return false
+    
+    // 3. 不能在上传中或提交中
+    if (isSubmitting || uploadingImages.length > 0) return false
+    
+    return true
+  }
+
   // 提交
   const handleSubmit = async () => {
     if (!content.trim() && images.length === 0) return
@@ -613,6 +627,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         suggestions={tagSuggestions}
         maxTags={10}
         placeholderTags={topicTags.length === 0 ? defaultTags : []}
+        onPlaceholderFocus={() => {
+          // 点击输入框时立即清空默认标签，显示干净的输入框
+          setDefaultTags([])
+        }}
       />
 
       {/* 使用上次标签按钮 */}
@@ -747,7 +765,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
           
           <Button
             onClick={handleSubmit}
-            disabled={(!content.trim() && images.length === 0) || isSubmitting || uploadingImages.length > 0}
+            disabled={!canSubmit()}
             className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
           >
             {isSubmitting ? (

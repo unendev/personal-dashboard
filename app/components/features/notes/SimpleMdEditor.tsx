@@ -7,12 +7,15 @@ import Typography from '@tiptap/extension-typography'
 import Image from '@tiptap/extension-image'
 import { Extension } from '@tiptap/core'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSession } from 'next-auth/react'
 import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { mergeAttributes } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { Save, Maximize2, Minimize2, ChevronDown } from 'lucide-react'
 import { NotesFileBar } from './NotesFileBar'
+import { NotesExpandedList } from './NotesExpandedList'
+import { useNoteGrouping } from './hooks/useNoteGrouping'
 import { SwapLineExtension } from '@/lib/swap-line-extension'
 import { Details } from '@/lib/tiptap-extensions/details'
 import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
@@ -237,6 +240,14 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [showOutline, setShowOutline] = useState(false) // 默认不显示
   const outlineTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 选中的父文件ID - 用于显示子栏
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
+  
+  // 使用 useNoteGrouping 作为唯一的分组数据源
+  const { data: session } = useSession()
+  const userId = session?.user?.id || 'user-1' // 从 session 获取 userId
+  const grouping = useNoteGrouping(userId)
 
   type OutlineItem = {
     id: string
@@ -472,7 +483,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     await loadNoteContent(noteId);
   };
 
-  const handleCreateNote = async (selectNewNote = true) => {
+  const handleCreateNote = async (selectNewNote = true, parentId?: string) => {
     // 清除任何待处理的自动保存
     clearPendingSave();
     await saveIfDirty();
@@ -486,7 +497,17 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       });
       if (!response.ok) throw new Error('Failed to create note');
       const newNote: Note = await response.json();
-      await loadNotesList(); // Refresh the list
+      
+      // 关键：先添加到分组（如果有 parentId），这样新笔记不会显示为顶级
+      if (parentId) {
+        // 同步添加到分组，然后再添加到列表
+        grouping.addToGroup(parentId, newNote.id);
+      }
+      
+      // 添加到笔记列表
+      setNotesList(prev => [...prev, newNote]);
+      
+      // 选中新笔记
       if (selectNewNote) {
         isSystemUpdate.current = true;
         try {
@@ -929,15 +950,47 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           border-radius: 4px;
         }
       `}</style>
-      <NotesFileBar 
+      <NotesFileBar
         notes={notesList}
-        activeNoteId={currentNoteId}
+        currentNoteId={currentNoteId}
         onSelectNote={handleSelectNote}
-        onCreateNote={handleCreateNote}
+        onCreateNote={() => handleCreateNote()}
         onDeleteNote={handleDeleteNote}
         onUpdateNoteTitle={handleUpdateTitle}
-        isCreating={isCreatingNote}
+        userId={userId}
+        onSelectParent={setSelectedParentId}
+        groupingData={grouping.grouping}
+        onToggleExpand={(parentId: string, isExpanded: boolean) => {
+          // 如果展开，显示子栏；如果收缩，隐藏子栏
+          if (isExpanded) {
+            setSelectedParentId(parentId)
+          } else {
+            setSelectedParentId(null)
+          }
+        }}
       />
+
+      {/* 展开列表 - 显示某个笔记的子笔记 */}
+      {selectedParentId && (
+        <NotesExpandedList
+          parentNote={notesList.find(n => n.id === selectedParentId) || null}
+          childNotes={grouping.getChildren(selectedParentId)
+            .map((childId: string) => notesList.find(n => n.id === childId))
+            .filter(Boolean) as Note[]}
+          activeNoteId={currentNoteId}
+          onSelectNote={handleSelectNote}
+          onCreateNote={() => handleCreateNote(true, selectedParentId)}
+          onUpdateNoteTitle={handleUpdateTitle}
+          isCreating={isCreatingNote}
+          expandedChildId={selectedParentId}
+          onToggleExpand={(childId: string) => {
+            // 子栏内文件的展开/收缩逻辑
+            if (selectedParentId) {
+              grouping.toggleExpand(childId)
+            }
+          }}
+        />
+      )}
       <div className="flex items-center justify-end gap-2 text-sm text-gray-400 my-2 flex-shrink-0 px-2">
         {lastSaved && <span>已保存 {lastSaved.toLocaleTimeString()}</span>}
         {isSaving && <span className="text-blue-400">保存中...</span>}
@@ -1032,6 +1085,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           )}
         </div>
       </div>
+
       {/* ... styles and fullscreen portal ... */}
     </div>
   )
