@@ -328,11 +328,16 @@ function TwitterStyleCardComponent({
         const firstImage = treasure.images[0]
         const strategy = getImageDisplayStrategy(firstImage, isMobile)
         
+        // 根据图片宽高比设置容器样式
+        const aspectRatio = firstImage.width && firstImage.height
+          ? `${firstImage.width} / ${firstImage.height}`
+          : undefined
+        
         return (
           <div 
-            className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer group"
+            className="mt-3 rounded-2xl overflow-hidden border border-white/10 bg-gray-900/20 flex items-center justify-center cursor-pointer group min-h-[200px]"
             onClick={() => setSelectedImageIndex(0)}
-            style={{ maxHeight: strategy.maxHeight }}
+            style={aspectRatio ? { aspectRatio, maxHeight: strategy.maxHeight } : { maxHeight: strategy.maxHeight }}
           >
             <LazyNextImage
               src={firstImage.url}
@@ -358,11 +363,15 @@ function TwitterStyleCardComponent({
           <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
             {treasure.images.map((image, index) => {
               const strategy = getImageDisplayStrategy(image, isMobile)
+              const aspectRatio = image.width && image.height
+                ? `${image.width} / ${image.height}`
+                : undefined
               return (
                 <div 
                   key={image.id} 
-                  className="relative h-64 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                  className="relative bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center min-h-[200px]"
                   onClick={() => setSelectedImageIndex(index)}
+                  style={aspectRatio ? { aspectRatio } : undefined}
                 >
                   <LazyNextImage
                     src={image.url}
@@ -389,12 +398,17 @@ function TwitterStyleCardComponent({
       else if (imageCount === 3) {
         const firstImageStrategy = getImageDisplayStrategy(treasure.images[0], isMobile)
         
+        const firstImageAspectRatio = treasure.images[0].width && treasure.images[0].height
+          ? `${treasure.images[0].width} / ${treasure.images[0].height}`
+          : undefined
+        
         return (
           <div className="mt-3 grid grid-cols-2 gap-2">
             {/* 第一张大图 */}
             <div 
-              className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+              className="col-span-2 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center min-h-[300px]"
               onClick={() => setSelectedImageIndex(0)}
+              style={firstImageAspectRatio ? { aspectRatio: firstImageAspectRatio } : undefined}
             >
               <LazyNextImage
                 src={treasure.images[0].url}
@@ -415,11 +429,15 @@ function TwitterStyleCardComponent({
             {/* 后两张小图 */}
             {treasure.images.slice(1, 3).map((image, index) => {
               const strategy = getImageDisplayStrategy(image, isMobile)
+              const aspectRatio = image.width && image.height
+                ? `${image.width} / ${image.height}`
+                : undefined
               return (
                 <div 
                   key={image.id}
-                  className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                  className="bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center min-h-[200px]"
                   onClick={() => setSelectedImageIndex(index + 1)}
+                  style={aspectRatio ? { aspectRatio } : undefined}
                 >
                   <LazyNextImage
                     src={image.url}
@@ -446,13 +464,18 @@ function TwitterStyleCardComponent({
       else {
         const firstImageStrategy = getImageDisplayStrategy(treasure.images[0], isMobile)
         
+        const firstImageAspectRatio = treasure.images[0].width && treasure.images[0].height
+          ? `${treasure.images[0].width} / ${treasure.images[0].height}`
+          : undefined
+        
         return (
           <div className="mt-3">
             <div className="grid grid-cols-2 gap-2">
               {/* 第一张大图 */}
               <div 
-                className="col-span-2 h-72 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                className="col-span-2 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center min-h-[300px]"
                 onClick={() => setSelectedImageIndex(0)}
+                style={firstImageAspectRatio ? { aspectRatio: firstImageAspectRatio } : undefined}
               >
                 <LazyNextImage
                   src={treasure.images[0].url}
@@ -473,11 +496,15 @@ function TwitterStyleCardComponent({
               {/* 第2、3张小图 */}
               {treasure.images.slice(1, 3).map((image, index) => {
                 const strategy = getImageDisplayStrategy(image, isMobile)
+                const aspectRatio = image.width && image.height
+                  ? `${image.width} / ${image.height}`
+                  : undefined
                 return (
                   <div 
                     key={image.id}
-                    className="h-40 bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center"
+                    className="bg-gray-900/20 rounded-xl overflow-hidden border border-white/10 cursor-pointer group flex items-center justify-center min-h-[200px]"
                     onClick={() => setSelectedImageIndex(index + 1)}
+                    style={aspectRatio ? { aspectRatio } : undefined}
                   >
                     <LazyNextImage
                       src={image.url}

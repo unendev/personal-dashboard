@@ -14,7 +14,7 @@ interface LogPageHeaderProps {
   operationHistory: OperationRecord[];
   isOperationHistoryExpanded: boolean;
   onToggleOperationHistory: () => void;
-  operationHistoryRef: React.RefObject<HTMLDivElement>;
+  operationHistoryRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /**

@@ -196,6 +196,7 @@ export default function LogPage() {
       categoryPath: category,
       instanceTagNames: [],
       initialTime: 0,
+      autoStart: false,
     });
   };
 

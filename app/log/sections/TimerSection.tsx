@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react';
+import { useTimerControl } from '@/app/hooks/useTimerControl';
 import { TimerProvider } from '@/app/features/timer/context/TimerContext';
 import NestedTimerZone from '@/app/components/features/timer/NestedTimerZone';
 import CategoryZoneWrapper from '@/app/components/features/timer/CategoryZoneWrapper';
@@ -18,19 +19,19 @@ interface TimerSectionProps {
   className?: string;
   
   // 回调
-  onTasksChange: (tasks: TimerTask[]) => void;
+  onTasksChange: (tasks: TimerTask[] | ((prev: TimerTask[]) => TimerTask[])) => void;
   onDateChange: (date: string) => void;
-  onQuickCreate: (data: QuickCreateData) => void;
+  onQuickCreate: (data: QuickCreateData) => Promise<void>;
   onVersionConflict: () => void;
   onTasksPaused: (tasks: Array<{ id: string; name: string }>) => void;
   onOperationRecord: (action: string, taskName: string, details?: string) => void;
   onRequestAutoStart: (taskId: string) => void;
   
   // Timer 控制
-  timerControl: any;
+  timerControl: ReturnType<typeof useTimerControl>;
   
   // 滚动控制
-  scrollContainerRef?: React.RefObject<HTMLDivElement>;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   onSaveScrollPosition?: () => void;
   onSaveScrollPositionNow?: () => void;
 }
@@ -128,6 +129,7 @@ export function TimerSection({
     </section>
   );
 }
+
 
 
 

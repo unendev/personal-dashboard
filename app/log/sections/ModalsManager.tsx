@@ -79,7 +79,7 @@ export function ModalsManager({
         isOpen={isDailyProgressOpen}
         onClose={onCloseDailyProgress}
         targetDate={progressTargetDate}
-        onConfirm={onProgressConfirmed}
+        onConfirmed={onProgressConfirmed}
       />
     </>
   );

@@ -92,7 +92,7 @@ export function TimerTaskList({
     return (
       <div className="text-center py-8 text-gray-400">
         <p>暂无任务</p>
-        <p className="text-sm mt-2">点击 "快速创建" 添加新任务</p>
+        <p className="text-sm mt-2">{'点击 "快速创建" 添加新任务'}</p>
       </div>
     );
   }

@@ -97,7 +97,7 @@ export function useLogPageState(userId: string) {
       if (response.ok) {
         const records = await response.json();
         // 转换时间戳
-        const formattedRecords = records.map((record: any) => ({
+        const formattedRecords = records.map((record: { id: string; action: string; taskName: string; timestamp: string; details?: string }) => ({
           ...record,
           timestamp: new Date(record.timestamp),
         }));

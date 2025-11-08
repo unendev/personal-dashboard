@@ -37,9 +37,15 @@ function ImagePreviewItem({
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
+  // 根据图片实际宽高比设置容器样式
+  const aspectRatio = image.width && image.height 
+    ? `${image.width} / ${image.height}` 
+    : undefined
+
   return (
     <div
-      className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+      className="relative group rounded-lg overflow-hidden bg-gray-100 border border-gray-200 min-h-[200px]"
+      style={aspectRatio ? { aspectRatio } : undefined}
     >
       {/* 加载状态 */}
       {isLoading && !hasError && (
@@ -61,7 +67,7 @@ function ImagePreviewItem({
         src={image.url}
         alt={image.alt || `图片 ${index + 1}`}
         className={cn(
-          "w-full h-full object-cover transition-opacity",
+          "w-full h-full object-contain transition-opacity",
           isLoading && "opacity-0",
           hasError && "hidden"
         )}
@@ -124,10 +130,13 @@ export function ImageUploadPreview({
         ))}
 
         {/* 上传中的图片 */}
-        {uploadingImages.map((uploading) => (
+        {uploadingImages.map((uploading) => {
+          // 尝试从文件获取图片尺寸（如果可能）
+          const file = uploading.file
+          return (
           <div
             key={uploading.id}
-            className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+            className="relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200 min-h-[200px]"
           >
             {/* 预览图 */}
             <img
@@ -152,7 +161,8 @@ export function ImageUploadPreview({
               />
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

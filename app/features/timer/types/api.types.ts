@@ -60,7 +60,7 @@ export interface BatchUpdateOrderRequest {
 /**
  * 任务响应（单个任务）
  */
-export interface TaskResponse extends TimerTask {}
+export type TaskResponse = TimerTask;
 
 /**
  * 任务列表响应
