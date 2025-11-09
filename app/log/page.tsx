@@ -189,15 +189,33 @@ export default function LogPage() {
   };
 
   // ============ 任务创建处理 ============
-  const handleAddToTimer = async (taskName: string, category: string) => {
-    // 创建任务并添加到计时器
-    await timerOps.handleQuickCreate({
-      name: taskName,
-      categoryPath: category,
-      instanceTagNames: [],
-      initialTime: 0,
-      autoStart: false,
-    });
+  const handleAddToTimer = async (
+    taskName: string, 
+    category: string, 
+    initialTime?: number, 
+    instanceTagNames?: string
+  ) => {
+    try {
+      // 将 instanceTagNames 字符串转换为数组
+      const instanceTagNamesArray = instanceTagNames 
+        ? instanceTagNames.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
+      
+      // 创建任务并添加到计时器
+      await timerOps.handleQuickCreate({
+        name: taskName,
+        categoryPath: category,
+        instanceTagNames: instanceTagNamesArray,
+        initialTime: initialTime || 0, // 使用传入的时长，默认为 0
+        autoStart: false,
+      });
+      
+      // 成功后关闭模态框
+      modals.closeCreateLogModal();
+    } catch (error) {
+      console.error('创建任务失败:', error);
+      // 失败时不关闭模态框，让用户重试
+    }
   };
 
   // ============ 页面加载状态 ============
