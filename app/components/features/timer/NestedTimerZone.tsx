@@ -254,6 +254,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return;
     }
 
+    // 修正时长计算：输入是分钟，需要转换为秒
     const initialTimeInSeconds = newChildInitialTime ? parseInt(newChildInitialTime, 10) * 60 : 0;
 
     // 找到父任务
@@ -324,8 +325,11 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           name: newChildName,
           categoryPath: newChildCategory || parentTask.categoryPath,
           initialTime: initialTimeInSeconds,
-            parentId: parentId,
+          elapsedTime: 0, // 新任务的已运行时间应该为 0
+          parentId: parentId,
           order: (parentTask.children || []).length,
+          date: new Date().toISOString().split('T')[0], // 添加 date 字段
+          userId: 'user-1', // 添加 userId 字段
           }),
       }, 3);
 

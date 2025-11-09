@@ -131,8 +131,8 @@ export function useTimerOperations(
       name: data.name,
       categoryPath: data.categoryPath,
       instanceTag: data.instanceTagNames.join(',') || null,
-      elapsedTime: data.initialTime,
-      initialTime: data.initialTime,
+      elapsedTime: 0, // 新任务的已运行时间应该为 0
+      initialTime: data.initialTime, // 初始时长正确应用
       isRunning: false,
       startTime: null,
       isPaused: false,
@@ -152,8 +152,8 @@ export function useTimerOperations(
         categoryPath: data.categoryPath,
         instanceTag: data.instanceTagNames.join(',') || null,
         instanceTagNames: data.instanceTagNames,
-        elapsedTime: data.initialTime,
-        initialTime: data.initialTime,
+        elapsedTime: 0, // 新任务的已运行时间应该为 0
+        initialTime: data.initialTime, // 初始时长正确应用
         isRunning: false,
         startTime: null,
         isPaused: false,

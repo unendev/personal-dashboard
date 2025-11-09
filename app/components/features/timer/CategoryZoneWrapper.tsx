@@ -118,8 +118,15 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   
   // 处理快速创建
   const handleQuickCreate = async (data: QuickCreateData) => {
-    await onQuickCreate(data);
-    setQuickCreateDialog(null);
+    try {
+      await onQuickCreate(data);
+    } catch (error) {
+      console.error('创建任务失败:', error);
+      // 即使失败也关闭对话框，避免用户困惑
+    } finally {
+      // 确保对话框在操作完成后关闭
+      setQuickCreateDialog(null);
+    }
   };
   
   // 打开任务级复制创建对话框

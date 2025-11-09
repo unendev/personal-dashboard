@@ -76,6 +76,9 @@ export async function POST(request: NextRequest) {
       ? instanceTagNames.map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
       : [];
     
+    // 如果 date 未提供，使用当前日期（YYYY-MM-DD 格式）
+    const taskDate = date || new Date().toISOString().split('T')[0];
+    
     const newTask = await TimerDB.addTask({
       userId,
       name,
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
       isPaused: false,
       pausedTime: 0,
       completedAt: completedAt || null,
-      date: date!,
+      date: taskDate,
       parentId: parentId || null, // 支持父任务ID
       order: order !== undefined ? order : 0, // 支持排序，默认0确保新任务显示在最下面
       version: 1 // 【乐观锁】初始版本号

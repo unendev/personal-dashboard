@@ -69,7 +69,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
     }
   }, [visible, type, sourceName, lastCategoryName, instanceTag]);
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // 获取最终的任务名：用户输入或使用分类名
     const finalTaskName = taskName.trim() || lastCategoryName || '';
 
@@ -81,19 +81,36 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
     // 保存自动计时偏好
     saveAutoStartPreference(autoStart);
     
-    onCreate({
-      name: finalTaskName,
-      categoryPath,
-      instanceTagNames: selectedTags,
-      initialTime: parseTimeToSeconds(initialTime),
-      autoStart
-    });
+    // 保存表单数据（在重置前保存，用于错误恢复）
+    const savedTaskName = taskName;
+    const savedInitialTime = initialTime;
+    const savedSelectedTags = [...selectedTags];
+    const parsedInitialTime = parseTimeToSeconds(initialTime);
     
-    // 重置表单
+    // 重置表单（在提交前重置，避免重复提交）
     setTaskName('');
     setInitialTime('');
     setSelectedTags([]);
-    onClose();
+    
+    try {
+      // onCreate 可能是异步的，等待其完成
+      await onCreate({
+        name: finalTaskName,
+        categoryPath,
+        instanceTagNames: savedSelectedTags,
+        initialTime: parsedInitialTime,
+        autoStart
+      });
+      // 成功后关闭对话框（如果 onCreate 没有关闭）
+      onClose();
+    } catch (error) {
+      console.error('创建任务失败:', error);
+      // 失败时不关闭对话框，让用户重试
+      // 恢复表单数据以便用户修改
+      setTaskName(savedTaskName);
+      setInitialTime(savedInitialTime);
+      setSelectedTags(savedSelectedTags);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
