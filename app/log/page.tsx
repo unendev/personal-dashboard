@@ -195,25 +195,54 @@ export default function LogPage() {
     initialTime?: number, 
     instanceTagNames?: string
   ) => {
+    // 📝 [handleAddToTimer] 日志：接收到的参数
+    console.log('📝 [handleAddToTimer] 接收到的参数:', {
+      taskName,
+      category,
+      initialTime,
+      instanceTagNames,
+      initialTimeType: typeof initialTime,
+      initialTimeIsUndefined: initialTime === undefined,
+      initialTimeIsNull: initialTime === null
+    });
+    
     try {
       // 将 instanceTagNames 字符串转换为数组
       const instanceTagNamesArray = instanceTagNames 
         ? instanceTagNames.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
         : [];
       
+      const finalInitialTime = initialTime || 0;
+      
+      // 📝 [handleAddToTimer] 日志：转换后的数据
+      console.log('📝 [handleAddToTimer] 转换后的数据:', {
+        instanceTagNamesArray,
+        finalInitialTime,
+        finalInitialTimeInMinutes: finalInitialTime / 60,
+        willPassToHandleQuickCreate: {
+          name: taskName,
+          categoryPath: category,
+          instanceTagNames: instanceTagNamesArray,
+          initialTime: finalInitialTime,
+          autoStart: false
+        }
+      });
+      
       // 创建任务并添加到计时器
       await timerOps.handleQuickCreate({
         name: taskName,
         categoryPath: category,
         instanceTagNames: instanceTagNamesArray,
-        initialTime: initialTime || 0, // 使用传入的时长，默认为 0
+        initialTime: finalInitialTime, // 使用传入的时长，默认为 0
         autoStart: false,
       });
+      
+      console.log('✅ [handleAddToTimer] 任务创建成功，准备关闭模态框');
       
       // 成功后关闭模态框
       modals.closeCreateLogModal();
     } catch (error) {
-      console.error('创建任务失败:', error);
+      console.error('❌ [handleAddToTimer] 创建任务失败:', error);
       // 失败时不关闭模态框，让用户重试
     }
   };

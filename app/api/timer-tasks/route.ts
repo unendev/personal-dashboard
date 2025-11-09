@@ -44,11 +44,25 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 打印请求体用于调试
-    console.log('创建任务请求数据:', JSON.stringify(body, null, 2));
+    // 📝 [API] 日志：接收到的请求体
+    console.log('📝 [API /timer-tasks] 接收到的请求体:', {
+      ...body,
+      initialTime: body.initialTime,
+      initialTimeType: typeof body.initialTime,
+      initialTimeInMinutes: body.initialTime ? body.initialTime / 60 : 0,
+      requestBodyString: JSON.stringify(body, null, 2)
+    });
     
     // 验证基本字段
     const validated = createTimerTaskSchema.parse(body);
+    
+    // 📝 [API] 日志：验证后的数据
+    console.log('📝 [API /timer-tasks] 验证后的数据:', {
+      ...validated,
+      initialTime: validated.initialTime,
+      initialTimeType: typeof validated.initialTime,
+      initialTimeInMinutes: validated.initialTime ? validated.initialTime / 60 : 0
+    });
     
     const { 
       userId = 'user-1', // 默认用户ID（应该从认证获取）
@@ -69,7 +83,7 @@ export async function POST(request: NextRequest) {
       parentId
     } = validated;
 
-    console.log('✅ 验证通过，开始创建任务...');
+    console.log('✅ [API /timer-tasks] 验证通过，开始创建任务...');
     
     // 清理 instanceTagNames 数组：去除空格和空字符串
     const cleanedInstanceTagNames = instanceTagNames 
@@ -79,12 +93,13 @@ export async function POST(request: NextRequest) {
     // 如果 date 未提供，使用当前日期（YYYY-MM-DD 格式）
     const taskDate = date || new Date().toISOString().split('T')[0];
     
-    const newTask = await TimerDB.addTask({
+    // 📝 [API] 日志：准备创建的任务数据
+    const taskDataToCreate = {
       userId,
       name,
       categoryPath,
-      instanceTag: instanceTag || null, // 保留：向后兼容的实例标签字段
-      instanceTagNames: cleanedInstanceTagNames, // 新增：事务项名称数组
+      instanceTag: instanceTag || null,
+      instanceTagNames: cleanedInstanceTagNames,
       elapsedTime: elapsedTime,
       initialTime: initialTime,
       isRunning: isRunning || false,
@@ -93,12 +108,33 @@ export async function POST(request: NextRequest) {
       pausedTime: 0,
       completedAt: completedAt || null,
       date: taskDate,
-      parentId: parentId || null, // 支持父任务ID
-      order: order !== undefined ? order : 0, // 支持排序，默认0确保新任务显示在最下面
-      version: 1 // 【乐观锁】初始版本号
+      parentId: parentId || null,
+      order: order !== undefined ? order : 0,
+      version: 1
+    };
+    
+    console.log('📝 [API /timer-tasks] 准备创建的任务数据:', {
+      ...taskDataToCreate,
+      initialTime: taskDataToCreate.initialTime,
+      initialTimeInMinutes: taskDataToCreate.initialTime / 60,
+      elapsedTime: taskDataToCreate.elapsedTime,
+      elapsedTimeInMinutes: taskDataToCreate.elapsedTime / 60
     });
+    
+    const newTask = await TimerDB.addTask(taskDataToCreate);
 
-    console.log('✅ 任务创建成功，ID:', newTask.id);
+    console.log('✅ [API /timer-tasks] 任务创建成功，ID:', newTask.id);
+    
+    // 📝 [API] 日志：创建成功后的任务数据
+    console.log('📝 [API /timer-tasks] 创建成功后的任务数据:', {
+      id: newTask.id,
+      name: newTask.name,
+      initialTime: newTask.initialTime,
+      initialTimeInMinutes: newTask.initialTime / 60,
+      elapsedTime: newTask.elapsedTime,
+      elapsedTimeInMinutes: newTask.elapsedTime / 60,
+      categoryPath: newTask.categoryPath
+    });
 
     // 序列化处理：确保所有 Date 对象转换为 ISO 字符串
     const serializedTask = JSON.parse(JSON.stringify(newTask, (key, value) => {

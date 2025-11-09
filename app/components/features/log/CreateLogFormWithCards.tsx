@@ -72,6 +72,18 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
         // 解析时间输入
         const initialTime = parseTimeInput(timeInput)
+        
+        // 📝 [CreateLogFormWithCards] 日志：表单提交数据
+        console.log('📝 [CreateLogFormWithCards] 表单提交数据:', {
+          finalTaskName,
+          selectedCategory,
+          timeInput, // 原始输入
+          initialTime, // 解析后的秒数
+          selectedTags,
+          tagsString,
+          parseTimeInputResult: initialTime
+        })
+        
         onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString)
         
         // 重置表单
@@ -81,7 +93,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         setTimeInput('')
       }
     } catch (error) {
-      console.error('添加任务失败:', error)
+      console.error('❌ [CreateLogFormWithCards] 添加任务失败:', error)
       alert('添加任务失败，请重试')
     } finally {
       setIsLoading(false)

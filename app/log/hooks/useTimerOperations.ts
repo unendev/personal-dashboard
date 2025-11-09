@@ -118,8 +118,18 @@ export function useTimerOperations(
   // ============ 快速创建任务 ============
   
   const handleQuickCreate = useCallback(async (data: QuickCreateData) => {
+    // 📝 [handleQuickCreate] 日志：接收到的数据
+    console.log('📝 [handleQuickCreate] 接收到的数据:', {
+      ...data,
+      initialTime: data.initialTime,
+      initialTimeType: typeof data.initialTime,
+      initialTimeInMinutes: data.initialTime ? data.initialTime / 60 : 0,
+      initialTimeIsUndefined: data.initialTime === undefined,
+      initialTimeIsNull: data.initialTime === null
+    });
+    
     if (isCreatingTask) {
-      console.log('任务正在创建中，请稍候...');
+      console.log('⏸️ [handleQuickCreate] 任务正在创建中，请稍候...');
       return;
     }
 
@@ -142,6 +152,12 @@ export function useTimerOperations(
       updatedAt: new Date().toISOString()
     };
 
+    // 📝 [handleQuickCreate] 日志：临时任务数据
+    console.log('📝 [handleQuickCreate] 创建的临时任务:', {
+      ...tempTask,
+      initialTimeInMinutes: tempTask.initialTime / 60
+    });
+
     // 乐观更新 UI
     setTimerTasks([tempTask, ...timerTasks]);
     recordOperation('快速创建任务', data.name, `分类: ${data.categoryPath}`);
@@ -163,6 +179,14 @@ export function useTimerOperations(
         userId: userId
       };
 
+      // 📝 [handleQuickCreate] 日志：发送到 API 的数据
+      console.log('📝 [handleQuickCreate] 发送到 API 的数据:', {
+        ...newTask,
+        initialTime: newTask.initialTime,
+        initialTimeInMinutes: newTask.initialTime / 60,
+        requestBody: JSON.stringify(newTask, null, 2)
+      });
+
       const response = await fetch('/api/timer-tasks', {
         method: 'POST',
         headers: {
@@ -174,11 +198,20 @@ export function useTimerOperations(
       if (response.ok) {
         const createdTask = await response.json();
         
+        // 📝 [handleQuickCreate] 日志：API 响应数据
+        console.log('📝 [handleQuickCreate] API 响应数据:', {
+          ...createdTask,
+          initialTime: createdTask.initialTime,
+          initialTimeInMinutes: createdTask.initialTime ? createdTask.initialTime / 60 : 0,
+          elapsedTime: createdTask.elapsedTime,
+          elapsedTimeInMinutes: createdTask.elapsedTime ? createdTask.elapsedTime / 60 : 0
+        });
+        
         // 用真实任务替换临时任务
         setTimerTasks(prevTasks => {
           return prevTasks.map(task => {
             if (task.id !== tempTask.id) return task;
-            return {
+            const updatedTask = {
               ...createdTask,
               isRunning: createdTask.isRunning,
               isPaused: createdTask.isPaused,
@@ -187,15 +220,30 @@ export function useTimerOperations(
               order: createdTask.order ?? task.order,
               instanceTag: createdTask.instanceTag ?? task.instanceTag
             };
+            
+            // 📝 [handleQuickCreate] 日志：更新后的任务数据
+            console.log('📝 [handleQuickCreate] 更新后的任务数据:', {
+              ...updatedTask,
+              initialTime: updatedTask.initialTime,
+              initialTimeInMinutes: updatedTask.initialTime ? updatedTask.initialTime / 60 : 0
+            });
+            
+            return updatedTask;
           });
         });
         
-        console.log('✅ [后台同步] 任务创建成功:', createdTask.name);
+        console.log('✅ [handleQuickCreate] 任务创建成功:', createdTask.name);
         
         // 触发自动启动
         setPendingStartTaskId(createdTask.id);
       } else {
-        throw new Error('Failed to create task');
+        const errorText = await response.text();
+        console.error('❌ [handleQuickCreate] API 响应错误:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Failed to create task: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error('Failed to add task:', error);
