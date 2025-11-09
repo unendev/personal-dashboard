@@ -65,40 +65,36 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       return
     }
 
-    setIsLoading(true)
-    try {
-      if (onAddToTimer) {
-        // 将事务项数组转换为逗号分隔的字符串
-        const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
-        // 解析时间输入
-        const initialTime = parseTimeInput(timeInput)
-        
-        // 📝 [CreateLogFormWithCards] 日志：表单提交数据
-        console.log('📝 [CreateLogFormWithCards] 表单提交数据:', {
-          finalTaskName,
-          selectedCategory,
-          timeInput, // 原始输入
-          initialTime, // 解析后的秒数
-          selectedTags,
-          tagsString,
-          parseTimeInputResult: initialTime
-        })
-        
-        // 等待 onAddToTimer 完成，确保模态框在任务创建成功后关闭
-        await onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString)
-        
-        console.log('✅ [CreateLogFormWithCards] onAddToTimer 完成')
-        
-        // 重置表单
-        setTaskName('')
-        setSelectedCategory('')
-        setSelectedTags([])
-        setTimeInput('')
-      }
-    } catch (error) {
-      console.error('❌ [CreateLogFormWithCards] 添加任务失败:', error)
-      alert('添加任务失败，请重试')
-    } finally {
+    if (onAddToTimer) {
+      // 将事务项数组转换为逗号分隔的字符串
+      const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
+      // 解析时间输入
+      const initialTime = parseTimeInput(timeInput)
+      
+      // 📝 [CreateLogFormWithCards] 日志：表单提交数据
+      console.log('📝 [CreateLogFormWithCards] 表单提交数据:', {
+        finalTaskName,
+        selectedCategory,
+        timeInput, // 原始输入
+        initialTime, // 解析后的秒数
+        selectedTags,
+        tagsString,
+        parseTimeInputResult: initialTime
+      })
+      
+      // 立即重置表单和关闭加载状态（乐观更新）
+      setTaskName('')
+      setSelectedCategory('')
+      setSelectedTags([])
+      setTimeInput('')
+      setIsLoading(false)
+      
+      // 异步创建任务（不阻塞 UI）
+      onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString).catch((error) => {
+        console.error('❌ [CreateLogFormWithCards] 添加任务失败:', error)
+        alert(`添加任务失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`)
+      })
+    } else {
       setIsLoading(false)
     }
   }

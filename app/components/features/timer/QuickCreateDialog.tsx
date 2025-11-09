@@ -92,25 +92,21 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
     setInitialTime('');
     setSelectedTags([]);
     
-    try {
-      // onCreate 可能是异步的，等待其完成
-      await onCreate({
-        name: finalTaskName,
-        categoryPath,
-        instanceTagNames: savedSelectedTags,
-        initialTime: parsedInitialTime,
-        autoStart
-      });
-      // 成功后关闭对话框（如果 onCreate 没有关闭）
+    // 立即关闭对话框（乐观更新，不等待 API）
     onClose();
-    } catch (error) {
+    
+    // 异步创建任务（不阻塞 UI）
+    onCreate({
+      name: finalTaskName,
+      categoryPath,
+      instanceTagNames: savedSelectedTags,
+      initialTime: parsedInitialTime,
+      autoStart
+    }).catch((error) => {
       console.error('创建任务失败:', error);
-      // 失败时不关闭对话框，让用户重试
-      // 恢复表单数据以便用户修改
-      setTaskName(savedTaskName);
-      setInitialTime(savedInitialTime);
-      setSelectedTags(savedSelectedTags);
-    }
+      // 失败时显示错误提示，但不阻止对话框关闭
+      alert(`任务创建失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
+    });
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -228,22 +228,25 @@ export default function LogPage() {
         }
       });
       
-      // 创建任务并添加到计时器
-      await timerOps.handleQuickCreate({
+      // 立即关闭模态框（乐观更新，不等待 API）
+      modals.closeCreateLogModal();
+      
+      // 异步创建任务（不阻塞 UI）
+      timerOps.handleQuickCreate({
         name: taskName,
         categoryPath: category,
         instanceTagNames: instanceTagNamesArray,
         initialTime: finalInitialTime, // 使用传入的时长，默认为 0
         autoStart: false,
+      }).catch((error) => {
+        console.error('❌ [handleAddToTimer] 创建任务失败:', error);
+        // 失败时显示错误提示，但不阻止模态框关闭
+        alert(`任务创建失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
       });
-      
-      console.log('✅ [handleAddToTimer] 任务创建成功，准备关闭模态框');
-      
-      // 成功后关闭模态框
-      modals.closeCreateLogModal();
     } catch (error) {
-      console.error('❌ [handleAddToTimer] 创建任务失败:', error);
-      // 失败时不关闭模态框，让用户重试
+      console.error('❌ [handleAddToTimer] 处理失败:', error);
+      // 如果关闭模态框失败，仍然显示错误
+      alert(`处理失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 

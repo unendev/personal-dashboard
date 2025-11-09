@@ -182,9 +182,12 @@ export function useTimerOperations(
       elapsedTimeInMinutes: tempTask.elapsedTime / 60
     });
 
-    // 乐观更新 UI
+    // 乐观更新 UI（立即更新，不等待 API）
     setTimerTasks([tempTask, ...timerTasks]);
     recordOperation('快速创建任务', data.name, `分类: ${data.categoryPath}`);
+    
+    // 立即重置创建状态，允许创建框关闭
+    setIsCreatingTask(false);
 
     try {
       // 如果指定了 initialTime，则 elapsedTime 应该等于 initialTime（表示已完成预设时间）
@@ -296,9 +299,8 @@ export function useTimerOperations(
       
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       alert(`任务创建失败: ${errorMessage}\n\n请检查网络连接后重试`);
-    } finally {
-      setIsCreatingTask(false);
     }
+    // 注意：isCreatingTask 已在乐观更新后立即重置，不需要在 finally 中再次设置
   }, [isCreatingTask, timerTasks, setTimerTasks, userId, recordOperation]);
   
   // ============ 自动启动逻辑 ============
