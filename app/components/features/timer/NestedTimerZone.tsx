@@ -58,8 +58,6 @@ interface NestedTimerZoneProps {
   onShowAddChildDialog?: (taskId: string | null) => void;
   newChildName?: string;
   onNewChildNameChange?: (name: string) => void;
-  newChildCategory?: string;
-  onNewChildCategoryChange?: (category: string) => void;
   newChildInitialTime?: string;
   onNewChildInitialTimeChange?: (time: string) => void;
   // 共享的 timer 控制器
@@ -84,8 +82,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   onShowAddChildDialog: externalOnShowAddChildDialog,
   newChildName: externalNewChildName,
   onNewChildNameChange: externalOnNewChildNameChange,
-  newChildCategory: externalNewChildCategory,
-  onNewChildCategoryChange: externalOnNewChildCategoryChange,
   newChildInitialTime: externalNewChildInitialTime,
   onNewChildInitialTimeChange: externalOnNewChildInitialTimeChange,
   // 接收外部的 timerControl
@@ -95,7 +91,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   // ========== 本地状态 ==========
   const [localShowAddChildDialog, setLocalShowAddChildDialog] = useState<string | null>(null);
   const [localNewChildName, setLocalNewChildName] = useState('');
-  const [localNewChildCategory, setLocalNewChildCategory] = useState('');
   const [localNewChildInitialTime, setLocalNewChildInitialTime] = useState('');
   const [localCollapsedTasks, setLocalCollapsedTasks] = useState<Set<string>>(new Set());
   
@@ -104,8 +99,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
   const setShowAddChildDialog = externalOnShowAddChildDialog || setLocalShowAddChildDialog;
   const newChildName = externalNewChildName !== undefined ? externalNewChildName : localNewChildName;
   const setNewChildName = externalOnNewChildNameChange || setLocalNewChildName;
-  const newChildCategory = externalNewChildCategory !== undefined ? externalNewChildCategory : localNewChildCategory;
-  const setNewChildCategory = externalOnNewChildCategoryChange || setLocalNewChildCategory;
   const newChildInitialTime = externalNewChildInitialTime !== undefined ? externalNewChildInitialTime : localNewChildInitialTime;
   const setNewChildInitialTime = externalOnNewChildInitialTimeChange || setLocalNewChildInitialTime;
   
@@ -275,12 +268,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
       return;
     }
 
-    // 创建临时子任务
+    // 创建临时子任务（子任务默认继承父任务的分类路径）
     const tempChildId = `temp-child-${Date.now()}`;
     const tempTask: TimerTask = {
       id: tempChildId,
       name: newChildName,
-      categoryPath: newChildCategory || parentTask.categoryPath,
+      categoryPath: parentTask.categoryPath, // 子任务继承父任务的分类路径
       initialTime: initialTimeInSeconds,
       elapsedTime: 0,
       isRunning: false,
@@ -313,7 +306,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     onTasksChange(updatedTasks);
     setShowAddChildDialog(null);
     setNewChildName('');
-    setNewChildCategory('');
     setNewChildInitialTime('');
 
     // 异步创建任务
@@ -323,7 +315,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
         headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
           name: newChildName,
-          categoryPath: newChildCategory || parentTask.categoryPath,
+          categoryPath: parentTask.categoryPath, // 子任务继承父任务的分类路径
           initialTime: initialTimeInSeconds,
           elapsedTime: 0, // 新任务的已运行时间应该为 0
             parentId: parentId,
@@ -421,11 +413,6 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                 }
               }}
             />
-                  <Input
-              placeholder="分类（可选，默认继承父任务）"
-                    value={newChildCategory}
-                    onChange={(e) => setNewChildCategory(e.target.value)}
-                  />
                   <Input
                     type="number"
               placeholder="初始时间（分钟，可选）"

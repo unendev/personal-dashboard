@@ -136,12 +136,15 @@ export function useTimerOperations(
     setIsCreatingTask(true);
     
     const newOrder = 0;
+    // 如果指定了 initialTime，则 elapsedTime 应该等于 initialTime（表示已完成预设时间）
+    const elapsedTime = data.initialTime > 0 ? data.initialTime : 0;
+    
     const tempTask: TimerTask = {
       id: `temp-${Date.now()}`,
       name: data.name,
       categoryPath: data.categoryPath,
       instanceTag: data.instanceTagNames.join(',') || null,
-      elapsedTime: 0, // 新任务的已运行时间应该为 0
+      elapsedTime: elapsedTime, // 如果指定了 initialTime，则已运行时间等于初始时间
       initialTime: data.initialTime, // 初始时长正确应用
       isRunning: false,
       startTime: null,
@@ -163,12 +166,15 @@ export function useTimerOperations(
     recordOperation('快速创建任务', data.name, `分类: ${data.categoryPath}`);
 
     try {
+      // 如果指定了 initialTime，则 elapsedTime 应该等于 initialTime（表示已完成预设时间）
+      const elapsedTimeForAPI = data.initialTime > 0 ? data.initialTime : 0;
+      
       const newTask = {
         name: data.name,
         categoryPath: data.categoryPath,
         instanceTag: data.instanceTagNames.join(',') || null,
         instanceTagNames: data.instanceTagNames,
-        elapsedTime: 0, // 新任务的已运行时间应该为 0
+        elapsedTime: elapsedTimeForAPI, // 如果指定了 initialTime，则已运行时间等于初始时间
         initialTime: data.initialTime, // 初始时长正确应用
         isRunning: false,
         startTime: null,
@@ -217,6 +223,7 @@ export function useTimerOperations(
               isPaused: createdTask.isPaused,
               startTime: createdTask.startTime,
               elapsedTime: createdTask.elapsedTime,
+              initialTime: createdTask.initialTime, // 确保 initialTime 被正确传递
               order: createdTask.order ?? task.order,
               instanceTag: createdTask.instanceTag ?? task.instanceTag
             };
