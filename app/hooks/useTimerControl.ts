@@ -100,8 +100,9 @@ export function useTimerControl(options: UseTimerControlOptions) {
    */
   const startTimer = useCallback(async (taskId: string): Promise<StartTimerResult> => {
     // 1. 异步锁：防止重复点击
+    console.log('🔍 [startTimer] 检查 isProcessing:', isProcessing, 'taskId:', taskId);
     if (isProcessing) {
-      console.log('⏸️ 操作进行中，请稍候...');
+      console.log('⏸️ [startTimer] 操作进行中，请稍候...');
       return { success: false, reason: 'processing' };
     }
 
@@ -116,6 +117,7 @@ export function useTimerControl(options: UseTimerControlOptions) {
     const runningTasks = findAllRunningTasks(taskId);
     console.log('🔍 [互斥检查] 找到运行中任务:', runningTasks.map(t => ({ id: t.id, name: t.name })));
 
+    console.log('🔒 [startTimer] 设置 isProcessing = true');
     setIsProcessing(true);
 
     try {
@@ -256,10 +258,12 @@ export function useTimerControl(options: UseTimerControlOptions) {
       return { success: true };
 
     } catch (error) {
-      console.error('启动计时器失败:', error);
+      console.error('❌ [startTimer] 启动计时器失败:', error);
+      console.log('🔓 [startTimer] catch 块：设置 isProcessing = false');
       setIsProcessing(false);
       return { success: false, reason: 'error', error };
     } finally {
+      console.log('🔓 [startTimer] finally 块：设置 isProcessing = false');
       setIsProcessing(false);
     }
   }, [tasks, onTasksChange, onTasksPaused, isProcessing, findTaskById, findAllRunningTasks, updateTasksRecursive]);

@@ -102,7 +102,7 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
         autoStart
       });
       // 成功后关闭对话框（如果 onCreate 没有关闭）
-      onClose();
+    onClose();
     } catch (error) {
       console.error('创建任务失败:', error);
       // 失败时不关闭对话框，让用户重试

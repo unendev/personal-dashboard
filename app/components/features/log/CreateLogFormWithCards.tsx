@@ -84,7 +84,10 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
           parseTimeInputResult: initialTime
         })
         
-        onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString)
+        // 等待 onAddToTimer 完成，确保模态框在任务创建成功后关闭
+        await onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString)
+        
+        console.log('✅ [CreateLogFormWithCards] onAddToTimer 完成')
         
         // 重置表单
         setTaskName('')

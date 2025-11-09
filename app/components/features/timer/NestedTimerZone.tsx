@@ -326,7 +326,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           categoryPath: newChildCategory || parentTask.categoryPath,
           initialTime: initialTimeInSeconds,
           elapsedTime: 0, // 新任务的已运行时间应该为 0
-          parentId: parentId,
+            parentId: parentId,
           order: (parentTask.children || []).length,
           date: new Date().toISOString().split('T')[0], // 添加 date 字段
           userId: 'user-1', // 添加 userId 字段
