@@ -412,7 +412,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
                   addChildTask(showAddChildDialog);
                 }
               }}
-            />
+                  />
                   <Input
                     type="number"
               placeholder="初始时间（分钟，可选）"

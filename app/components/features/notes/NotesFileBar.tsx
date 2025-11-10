@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/app/components/ui/button'
-import { Plus, FileText, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, FileText, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 import { useNoteGrouping } from './hooks/useNoteGrouping'
 
 interface Note {
@@ -79,6 +79,15 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
     onToggleExpand?.(noteId, !isCurrentlyExpanded)
   }
 
+  const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation()
+    const note = notes.find(n => n.id === noteId)
+    const noteTitle = note?.title || '此笔记'
+    if (window.confirm(`确定要删除笔记 "${noteTitle}" 吗？此操作无法撤销。`)) {
+      onDeleteNote(noteId)
+    }
+  }
+
   // 获取顶级笔记（未分组的笔记）
   const topLevelNotes = notes.filter(note => {
     // 只有在分组加载完成后再进行过滤
@@ -118,7 +127,7 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
                   : 'bg-transparent border-transparent hover:bg-gray-800/50'
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 {/* 展开/收缩按钮 - 总是显示 */}
                 <button
                   onClick={(e) => handleToggleExpand(e, note.id)}
@@ -147,11 +156,21 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
                     className="bg-gray-700 text-white text-sm p-0.5 rounded border border-blue-500 focus:outline-none w-full"
                   />
                 ) : (
-                  <span className={`text-sm truncate ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                  <span className={`text-sm truncate flex-1 ${isActive ? 'text-white' : 'text-gray-300'}`}>
                     {note.title || 'Untitled'}
                   </span>
                 )}
               </div>
+              {/* 删除按钮 - hover 时显示 */}
+              {!isEditing && (
+                <button
+                  onClick={(e) => handleDeleteNote(e, note.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all flex-shrink-0 ml-1"
+                  title="删除笔记"
+                >
+                  <Trash2 size={12} className="text-red-400 hover:text-red-300" />
+                </button>
+              )}
             </div>
           )
         })}

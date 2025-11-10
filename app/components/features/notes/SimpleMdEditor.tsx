@@ -16,6 +16,7 @@ import { Save, Maximize2, Minimize2, ChevronDown } from 'lucide-react'
 import { NotesFileBar } from './NotesFileBar'
 import { NotesExpandedList } from './NotesExpandedList'
 import { useNoteGrouping } from './hooks/useNoteGrouping'
+import { useNoteCache } from './hooks/useNoteCache'
 import { SwapLineExtension } from '@/lib/swap-line-extension'
 import { Details } from '@/lib/tiptap-extensions/details'
 import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
@@ -248,6 +249,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   const { data: session } = useSession()
   const userId = session?.user?.id || 'user-1' // 从 session 获取 userId
   const grouping = useNoteGrouping(userId)
+  const noteCache = useNoteCache(userId)
 
   type OutlineItem = {
     id: string
@@ -399,21 +401,70 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     }
   }, []);
 
-  const loadNoteContent = useCallback(async (noteId: string) => {
+  const loadNoteContent = useCallback(async (noteId: string, useCache = true) => {
     if (!editor) return;
+    
+    // 先检查缓存，如果有缓存则立即显示（避免加载延迟）
+    if (useCache) {
+      const cachedContent = noteCache.getCached(noteId);
+      if (cachedContent !== null) {
+        // 立即显示缓存内容
+        isSystemUpdate.current = true;
+        try {
+          editor.commands.setContent(cachedContent);
+          setInitialContent(cachedContent);
+        } finally {
+          isSystemUpdate.current = false;
+        }
+        
+        // 检查是否需要后台更新（缓存超过5分钟）
+        if (noteCache.needsBackgroundUpdate(noteId)) {
+          // 后台静默更新，不阻塞 UI
+          fetch(`/api/notes/${noteId}`)
+            .then(response => {
+              if (!response.ok) throw new Error('Failed to fetch note content');
+              return response.json();
+            })
+            .then((note: Note) => {
+              // 更新缓存和编辑器内容（如果用户还在查看这个笔记）
+              noteCache.setCached(noteId, note.content || '');
+              if (currentNoteId === noteId && editor.getHTML() === cachedContent) {
+                // 用户还在查看这个笔记且内容未修改，静默更新
+                isSystemUpdate.current = true;
+                try {
+                  editor.commands.setContent(note.content || '');
+                  setInitialContent(note.content || '');
+                } finally {
+                  isSystemUpdate.current = false;
+                }
+              }
+            })
+            .catch(error => {
+              console.error(`Background update failed for note ${noteId}:`, error);
+              // 静默失败，不影响用户体验
+            });
+        }
+        return; // 使用缓存，不需要加载
+      }
+    }
+    
+    // 没有缓存，正常加载
     isLoadingContent.current = true;
     try {
       const response = await fetch(`/api/notes/${noteId}`);
       if (!response.ok) throw new Error('Failed to fetch note content');
       const note: Note = await response.json();
-      editor.commands.setContent(note.content || '');
-      setInitialContent(note.content || '');
+      const content = note.content || '';
+      editor.commands.setContent(content);
+      setInitialContent(content);
+      // 更新缓存
+      noteCache.setCached(noteId, content);
     } catch (error) {
       console.error(`Error loading note ${noteId}:`, error);
     } finally {
       setTimeout(() => { isLoadingContent.current = false; }, 100);
     }
-  }, [editor]);
+  }, [editor, noteCache, currentNoteId]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -452,6 +503,8 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       if (response.ok) {
         setLastSaved(new Date());
         setInitialContent(content);
+        // 保存成功后立即更新缓存（确保缓存是最新的，不会覆盖新内容）
+        noteCache.setCached(currentNoteId, content);
       } else {
         throw new Error('Failed to save');
       }
@@ -461,7 +514,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     } finally {
       setIsSaving(false);
     }
-  }, [currentNoteId]);
+  }, [currentNoteId, noteCache]);
 
   const saveIfDirty = async () => {
     if (editor && editor.getHTML() !== initialContent) {
@@ -529,6 +582,9 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
     try {
       const response = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete note');
+      
+      // 删除成功后清除缓存
+      noteCache.invalidateCache(noteId);
       
       const remainingNotes = await loadNotesList();
       if (remainingNotes.length > 0) {
@@ -980,6 +1036,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
           activeNoteId={currentNoteId}
           onSelectNote={handleSelectNote}
           onCreateNote={() => handleCreateNote(true, selectedParentId)}
+          onDeleteNote={handleDeleteNote}
           onUpdateNoteTitle={handleUpdateTitle}
           isCreating={isCreatingNote}
           expandedChildId={selectedParentId}

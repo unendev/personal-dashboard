@@ -233,16 +233,16 @@ export default function LogPage() {
       
       // 异步创建任务（不阻塞 UI）
       timerOps.handleQuickCreate({
-        name: taskName,
-        categoryPath: category,
+      name: taskName,
+      categoryPath: category,
         instanceTagNames: instanceTagNamesArray,
         initialTime: finalInitialTime, // 使用传入的时长，默认为 0
-        autoStart: false,
+      autoStart: false,
       }).catch((error) => {
         console.error('❌ [handleAddToTimer] 创建任务失败:', error);
         // 失败时显示错误提示，但不阻止模态框关闭
         alert(`任务创建失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
-      });
+    });
     } catch (error) {
       console.error('❌ [handleAddToTimer] 处理失败:', error);
       // 如果关闭模态框失败，仍然显示错误

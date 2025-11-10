@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ThreeLayerCategorySelector } from '../../shared/ThreeLayerCategorySelector'
 import { EnhancedInstanceTagInput } from '../../shared/EnhancedInstanceTagInput'
 import { Input } from '@/app/components/ui/input'
@@ -8,15 +8,23 @@ import { Button } from '@/app/components/ui/button'
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => void
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => Promise<void>
+  initialCategory?: string // 初始分类路径（用于复制任务）
 }
 
-export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: CreateLogFormWithCardsProps) {
+export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer, initialCategory }: CreateLogFormWithCardsProps) {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [taskName, setTaskName] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [timeInput, setTimeInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // 设置初始分类（用于复制任务）
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory)
+    }
+  }, [initialCategory])
 
   // 解析时间输入（支持两种格式：数字分钟 或 1h30m）
   const parseTimeInput = (input: string): number | undefined => {
@@ -65,11 +73,11 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       return
     }
 
-    if (onAddToTimer) {
-      // 将事务项数组转换为逗号分隔的字符串
-      const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
-      // 解析时间输入
-      const initialTime = parseTimeInput(timeInput)
+      if (onAddToTimer) {
+        // 将事务项数组转换为逗号分隔的字符串
+        const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
+        // 解析时间输入
+        const initialTime = parseTimeInput(timeInput)
       
       // 📝 [CreateLogFormWithCards] 日志：表单提交数据
       console.log('📝 [CreateLogFormWithCards] 表单提交数据:', {
@@ -81,12 +89,12 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
         tagsString,
         parseTimeInputResult: initialTime
       })
-      
+        
       // 立即重置表单和关闭加载状态（乐观更新）
-      setTaskName('')
-      setSelectedCategory('')
-      setSelectedTags([])
-      setTimeInput('')
+        setTaskName('')
+        setSelectedCategory('')
+        setSelectedTags([])
+        setTimeInput('')
       setIsLoading(false)
       
       // 异步创建任务（不阻塞 UI）
@@ -161,7 +169,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer }: Cre
       <div className="flex gap-3">
         <Button
           onClick={handleSubmit}
-          disabled={isLoading || !taskName.trim() || !selectedCategory}
+          disabled={isLoading || !selectedCategory || (!taskName.trim() && !getLastCategoryName())}
           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (

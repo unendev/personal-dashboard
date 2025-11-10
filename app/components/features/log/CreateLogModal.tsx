@@ -8,14 +8,16 @@ interface CreateLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => void;
+  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  initialCategory?: string; // 初始分类路径（用于复制任务）
 }
 
 const CreateLogModal: React.FC<CreateLogModalProps> = ({ 
   isOpen, 
   onClose, 
   onLogSaved, 
-  onAddToTimer 
+  onAddToTimer,
+  initialCategory
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -29,6 +31,7 @@ const CreateLogModal: React.FC<CreateLogModalProps> = ({
           <CreateLogFormWithCards 
             onLogSaved={onLogSaved}
             onAddToTimer={onAddToTimer}
+            initialCategory={initialCategory}
           />
         </div>
       </DialogContent>

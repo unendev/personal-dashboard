@@ -25,7 +25,7 @@ interface QuickCreateDialogProps {
   sourceName?: string;
   userId?: string;
   onClose: () => void;
-  onCreate: (data: QuickCreateData) => void;
+  onCreate: (data: QuickCreateData) => Promise<void>;
 }
 
 const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({

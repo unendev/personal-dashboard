@@ -5,6 +5,7 @@ import { Card } from '@/app/components/ui/card';
 import CategoryZoneHeader from './CategoryZoneHeader';
 import CategorySubHeader from './CategorySubHeader';
 import QuickCreateDialog, { QuickCreateData } from './QuickCreateDialog';
+import CreateLogModal from '@/app/components/features/log/CreateLogModal';
 import { 
   groupTasksByCategory, 
   loadCollapsedCategories, 
@@ -49,15 +50,17 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   // 折叠状态
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   
-  // 快速创建对话框状态
+  // 快速创建对话框状态（用于分类创建）
   const [quickCreateDialog, setQuickCreateDialog] = useState<{
     visible: boolean;
-    type: 'category' | 'clone';
+    type: 'category';
     categoryPath: string;
-    lastCategoryName?: string; // 【新增】最后一层分类名
-    instanceTag?: string | null;
-    sourceName?: string;
+    lastCategoryName?: string;
   } | null>(null);
+  
+  // 复制任务模态框状态（使用 CreateLogModal）
+  const [cloneModalOpen, setCloneModalOpen] = useState(false);
+  const [cloneTaskCategory, setCloneTaskCategory] = useState<string>('');
   
   // 【新增】提取 categoryPath 的最后一层名称（使用 useCallback 优化）
   const getLastCategoryName = useCallback((categoryPath: string): string => {
@@ -129,15 +132,34 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     });
   };
   
-  // 打开任务级复制创建对话框
+  // 打开任务级复制创建对话框（使用 CreateLogModal）
   const handleTaskClone = (task: TimerTask) => {
-    setQuickCreateDialog({
-      visible: true,
-      type: 'clone',
-      categoryPath: task.categoryPath,
-      lastCategoryName: getLastCategoryName(task.categoryPath), // 【新增】传递最后一层名称
-      instanceTag: task.instanceTag,
-      sourceName: task.name
+    setCloneTaskCategory(task.categoryPath);
+    setCloneModalOpen(true);
+  };
+  
+  // 处理复制任务（将 CreateLogModal 的数据转换为 QuickCreateData）
+  const handleCloneTask = async (
+    taskName: string,
+    categoryPath: string,
+    initialTime?: number,
+    instanceTagNames?: string
+  ) => {
+    setCloneModalOpen(false);
+    
+    // 转换为 QuickCreateData 格式
+    const quickCreateData: QuickCreateData = {
+      name: taskName,
+      categoryPath,
+      instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(t => t.trim()).filter(Boolean) : [],
+      initialTime: initialTime || 0,
+      autoStart: false // 复制任务默认不自动开始
+    };
+    
+    // 调用 onQuickCreate
+    await onQuickCreate(quickCreateData).catch((error) => {
+      console.error('复制任务失败:', error);
+      alert(`复制任务失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
     });
   };
   
@@ -239,20 +261,26 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
         </div>
       )}
       
-      {/* 快速创建对话框 */}
-      {quickCreateDialog && (
+      {/* 快速创建对话框（仅用于分类创建） */}
+      {quickCreateDialog && quickCreateDialog.type === 'category' && (
         <QuickCreateDialog
           visible={quickCreateDialog.visible}
-          type={quickCreateDialog.type}
+          type="category"
           categoryPath={quickCreateDialog.categoryPath}
           lastCategoryName={quickCreateDialog.lastCategoryName}
-          instanceTag={quickCreateDialog.instanceTag}
-          sourceName={quickCreateDialog.sourceName}
           userId={userId}
           onClose={() => setQuickCreateDialog(null)}
           onCreate={handleQuickCreate}
         />
       )}
+      
+      {/* 复制任务模态框（使用 CreateLogModal） */}
+      <CreateLogModal
+        isOpen={cloneModalOpen}
+        onClose={() => setCloneModalOpen(false)}
+        onAddToTimer={handleCloneTask}
+        initialCategory={cloneTaskCategory}
+      />
     </div>
   );
 };
