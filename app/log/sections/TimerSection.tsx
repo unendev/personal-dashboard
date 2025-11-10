@@ -64,33 +64,35 @@ export function TimerSection({
   onSaveScrollPositionNow,
 }: TimerSectionProps) {
   return (
-    <section className={`bg-gray-800 rounded-lg border-2 border-gray-600 p-6 min-h-[650px] flex flex-col ${className}`}>
-      {/* 标题和日期选择器 */}
-      <div className="mb-4 pb-3 border-b-2 border-gray-600">
-        <div className={`flex ${isMobile ? 'flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' : 'items-center justify-between'}`}>
-          <h3 className="text-xl font-bold text-white flex items-center gap-3">
-            <span className="text-2xl">⏱️</span>
-            计时器
-          </h3>
-          {/* 单天日期选择器 */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-300">日期:</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className="border border-gray-600 bg-gray-800/80 rounded px-2 py-1 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+    <section className={`h-full flex flex-col ${isMobile ? 'px-4 py-6 min-h-[650px]' : 'border-r border-gray-700/50 min-h-screen'} ${className}`}>
+        {/* 日期选择器（移动端） */}
+        {isMobile && (
+          <div className="mb-4 pb-3 border-b-2 border-gray-600">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <span className="text-2xl">⏱️</span>
+                计时器
+              </h3>
+              {/* 单天日期选择器 */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-300">日期:</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => onDateChange(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="border border-gray-600 bg-gray-800/80 rounded px-2 py-1 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      {/* Timer 任务列表 */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={onSaveScrollPosition}
-        className={isMobile ? 'max-h-[600px] overflow-y-auto' : 'flex-1 overflow-y-auto max-h-[550px]'}
+        )}
+        
+        {/* Timer 任务列表 */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={onSaveScrollPosition}
+          className={isMobile ? 'max-h-[600px] overflow-y-auto' : 'flex-1 overflow-y-auto'}
         style={isMobile ? {
           touchAction: 'pan-y',
           WebkitOverflowScrolling: 'touch',

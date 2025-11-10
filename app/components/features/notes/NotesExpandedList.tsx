@@ -86,7 +86,7 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   if (!parentNote) return null
 
   return (
-    <div className="bg-gray-800/50 border-b border-gray-700/30 px-2">
+    <div className="bg-gray-800/50 border-b border-gray-700/30 px-2 relative z-30">
       {/* 子栏标题 - 显示父笔记信息 */}
       <div className="py-1.5 px-2 text-xs text-gray-600 border-b border-gray-700/20 mb-1">
         📁 {parentNote.title}
@@ -136,7 +136,24 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
           return (
             <div
               key={note.id}
-              onClick={() => !isEditing && onSelectNote(note.id)}
+              onClick={(e) => {
+                console.log('🟣 [NotesExpandedList] 点击事件触发:', {
+                  noteId: note.id,
+                  noteTitle: note.title,
+                  isEditing,
+                  onSelectNote: typeof onSelectNote,
+                  eventTarget: e.target,
+                  currentTarget: e.currentTarget,
+                  timestamp: new Date().toISOString()
+                })
+                e.stopPropagation()
+                if (!isEditing) {
+                  console.log('🟣 [NotesExpandedList] 调用 onSelectNote:', note.id)
+                  onSelectNote(note.id)
+                } else {
+                  console.log('🟣 [NotesExpandedList] 跳过点击（正在编辑）')
+                }
+              }}
               onDoubleClick={() => handleDoubleClick(note)}
               className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] ${
                 isActive && !isEditing

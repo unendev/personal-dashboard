@@ -275,6 +275,9 @@ export default function LogPage() {
         isOperationHistoryExpanded={pageState.isOperationHistoryExpanded}
         onToggleOperationHistory={handleToggleOperationHistory}
         operationHistoryRef={pageState.operationHistoryRef}
+        selectedDate={pageState.selectedDate}
+        onDateChange={pageState.setSelectedDate}
+        showDatePicker={!pageState.isMobile}
       />
 
       {/* 模态框管理器 */}
@@ -294,7 +297,7 @@ export default function LogPage() {
         onProgressConfirmed={modals.handleProgressConfirmed}
       />
 
-      <div className="w-full px-6 md:px-8 py-6 pt-20 overflow-x-hidden">
+      <div className="w-full overflow-x-hidden">
         {/* 移动端标签导航 */}
         {pageState.isMobile && (
           <MobileTabNav
@@ -327,7 +330,7 @@ export default function LogPage() {
             )}
 
             {pageState.activeSection === 'notes' && (
-              <NotesSection />
+              <NotesSection isMobile={true} />
             )}
 
             {pageState.activeSection === 'stats' && (
@@ -357,7 +360,10 @@ export default function LogPage() {
         ) : (
           /* 桌面端：双栏布局 + 统计区域 */
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 mb-0 min-h-screen relative">
+              {/* 渐变过渡效果 */}
+              <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-gray-600/60 to-transparent -translate-x-1/2 pointer-events-none blur-[1px] z-0"></div>
+              <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-700/80 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
               {/* 计时器 */}
               <TimerSection
                 tasks={pageState.timerTasks}
@@ -382,16 +388,18 @@ export default function LogPage() {
               <NotesSection className="order-2 lg:order-1" />
             </div>
 
-            {/* 统计区域 */}
-            <StatsSection
-              userId={userId}
-              tasks={pageState.rangeTimerTasks}
-              dateRange={pageState.dateRange}
-              mode="desktop"
-              onDateRangeChange={pageState.setDateRange}
-              onOpenDailyProgress={modals.openDailyProgress}
-              onOpenTreasure={modals.openTreasureModal}
-            />
+            {/* 统计区域 - 显示在双栏下方 */}
+            <div className="w-full bg-gray-900/40 backdrop-blur-sm">
+              <StatsSection
+                userId={userId}
+                tasks={pageState.rangeTimerTasks}
+                dateRange={pageState.dateRange}
+                mode="desktop"
+                onDateRangeChange={pageState.setDateRange}
+                onOpenDailyProgress={modals.openDailyProgress}
+                onOpenTreasure={modals.openTreasureModal}
+              />
+            </div>
           </>
         )}
       </div>

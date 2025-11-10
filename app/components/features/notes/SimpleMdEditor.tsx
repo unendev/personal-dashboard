@@ -223,9 +223,10 @@ interface Note {
 
 interface SimpleMdEditorProps {
   className?: string
+  fullHeight?: boolean
 }
 
-export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) {
+export default function SimpleMdEditor({ className = '', fullHeight = false }: SimpleMdEditorProps) {
   const [notesList, setNotesList] = useState<Note[]>([]);
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
@@ -735,7 +736,7 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
   }
 
   const renderEditorContent = (isModal = false) => (
-    <div className={isModal ? 'h-full flex flex-col' : className}>
+    <div className={isModal || fullHeight ? 'h-full flex flex-col' : className}>
       <style jsx global>{`
         /* TipTap编辑器Markdown样式 */
         .ProseMirror {
@@ -1009,7 +1010,10 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
       <NotesFileBar
         notes={notesList}
         currentNoteId={currentNoteId}
-        onSelectNote={handleSelectNote}
+        onSelectNote={(id) => {
+          console.log('🟢 [SimpleMdEditor] handleSelectNote 被调用:', id)
+          handleSelectNote(id)
+        }}
         onCreateNote={() => handleCreateNote()}
         onDeleteNote={handleDeleteNote}
         onUpdateNoteTitle={handleUpdateTitle}
@@ -1079,24 +1083,32 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
             </Button>
           </div>
       </div>
-      <div className={isModal ? 'flex flex-1 min-h-0 relative' : 'flex relative'}>
-        <div className="flex-1 min-w-0">
+      <div className={isModal || fullHeight ? 'flex flex-1 min-h-0 relative' : 'flex relative'}>
+        <div className="flex-1 min-w-0 relative">
           <div 
             className="overflow-y-auto"
-            style={{ height: isModal ? '100%' : '400px' }}
+            style={{ height: isModal || fullHeight ? '100%' : '400px' }}
           >
             <EditorContent editor={editor} />
           </div>
-        </div>
 
-        {/* Right-side outline sidebar - 位于编辑器内部 */}
-        <div 
-          className="hidden md:block absolute right-0 top-0 h-full z-10"
-          onMouseEnter={handleOutlineMouseEnter}
-          onMouseLeave={handleOutlineMouseLeave}
-        >
-          {showOutline ? (
-            <div className="w-72 h-full bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl overflow-hidden flex flex-col transition-all">
+          {/* Right-side outline sidebar - 位于编辑器内部，不覆盖文件列表 */}
+          <div 
+            className="hidden md:block absolute right-0 top-0 bottom-0 z-[5] pointer-events-none"
+            onMouseEnter={(e) => {
+              console.log('🟡 [SimpleMdEditor] outline sidebar mouse enter')
+              handleOutlineMouseEnter()
+            }}
+            onMouseLeave={(e) => {
+              console.log('🟡 [SimpleMdEditor] outline sidebar mouse leave')
+              handleOutlineMouseLeave()
+            }}
+            onClick={(e) => {
+              console.log('🟡 [SimpleMdEditor] outline sidebar clicked (不应该发生)', e.target)
+            }}
+          >
+            {showOutline ? (
+              <div className="w-72 h-full bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl overflow-hidden flex flex-col transition-all pointer-events-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-700/50 flex-shrink-0">
                 <div className="text-sm font-medium text-gray-300">文档大纲</div>
                 <div className="text-xs text-gray-500">鼠标移出自动收起</div>
@@ -1129,17 +1141,18 @@ export default function SimpleMdEditor({ className = '' }: SimpleMdEditorProps) 
                   </ul>
                 )}
               </div>
-            </div>
-          ) : (
-            <div
-              className="bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 p-3 shadow-lg hover:bg-gray-800/95 transition-all group rounded-l-lg"
-              title="悬浮展开大纲"
-            >
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200 transform rotate-180 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          )}
+              </div>
+            ) : (
+              <div
+                className="bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 p-3 shadow-lg hover:bg-gray-800/95 transition-all group rounded-l-lg"
+                title="悬浮展开大纲"
+              >
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200 transform rotate-180 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

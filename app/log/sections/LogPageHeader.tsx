@@ -15,6 +15,10 @@ interface LogPageHeaderProps {
   isOperationHistoryExpanded: boolean;
   onToggleOperationHistory: () => void;
   operationHistoryRef: React.RefObject<HTMLDivElement | null>;
+  // 日期选择器相关
+  selectedDate?: string;
+  onDateChange?: (date: string) => void;
+  showDatePicker?: boolean;
 }
 
 /**
@@ -35,6 +39,9 @@ export function LogPageHeader({
   isOperationHistoryExpanded,
   onToggleOperationHistory,
   operationHistoryRef,
+  selectedDate,
+  onDateChange,
+  showDatePicker = false,
 }: LogPageHeaderProps) {
   const handleLogout = async () => {
     markManualLogout();
@@ -43,8 +50,8 @@ export function LogPageHeader({
   };
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-50">
-      <div className="flex items-center justify-end gap-3 max-w-7xl mx-auto flex-wrap">
+    <div className="fixed top-4 right-4 z-50">
+      <div className="flex items-center justify-end gap-3 flex-wrap">
         {/* 用户信息 */}
         {userName || userEmail ? (
           <div className="flex items-center gap-1.5 md:gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-full px-2 md:px-3 py-1.5 md:py-2 shadow-sm text-xs md:text-sm">
@@ -88,6 +95,20 @@ export function LogPageHeader({
           <span className="text-base md:text-lg">✏️</span>
           <span className="text-xs md:text-sm font-medium text-gray-200">记录</span>
         </button>
+
+        {/* 日期选择器（桌面端） */}
+        {showDatePicker && selectedDate && onDateChange && (
+          <div className="hidden md:flex items-center gap-2 bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-lg px-3 py-1.5 shadow-sm">
+            <label className="text-sm text-gray-300">日期:</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => onDateChange(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="border border-gray-600 bg-gray-800/80 rounded px-2 py-1 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+        )}
 
         {/* 操作记录按钮 */}
         <div className="relative hidden md:block" ref={operationHistoryRef}>

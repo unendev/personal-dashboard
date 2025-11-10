@@ -371,18 +371,7 @@ body {
   display: none !important;
 }
 
-/* 响应式设计 */
-@media (min-width: 1024px) {
-  .log-page-layout .grid {
-    gap: 2rem;
-  }
-}
-
-@media (max-width: 1023px) {
-  .log-page-layout .grid {
-    gap: 1.5rem;
-  }
-}
+/* 响应式设计 - 全屏布局已通过 Tailwind 类控制，无需额外样式 */
 
 /* 确保页面加载时的平滑过渡 */
 .log-page-layout {
