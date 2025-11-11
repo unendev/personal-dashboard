@@ -493,7 +493,7 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={`grid grid-cols-1 xl:grid-cols-[288px_1fr_320px] gap-6 w-full mx-auto px-4 pb-8 pt-20 ${className}`}>
+    <div className={`grid grid-cols-1 xl:grid-cols-[288px_1fr_320px] gap-6 w-full mx-auto px-4 pb-8 pt-4 ${className}`}>
       {/* 左侧大纲面板 */}
       <aside className="hidden xl:block self-start">
         <div className="bg-[#1e293b] rounded-xl border border-white/10">
@@ -508,7 +508,7 @@ export function TreasureList({ className }: TreasureListProps) {
       {/* 中间内容区域 */}
       <div className="flex flex-col min-w-0 max-w-2xl mx-auto w-full pb-20">
         {/* 搜索栏 */}
-        <div className="sticky top-20 z-10 pb-4 pt-2 px-4 mb-4">
+        <div className="sticky top-4 z-10 pb-4 pt-2 px-4 mb-4">
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
