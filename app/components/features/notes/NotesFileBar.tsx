@@ -103,9 +103,7 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
   })
 
   return (
-    <div 
-      className="flex items-center bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50 pr-2 relative z-30"
-    >
+    <div className="flex items-center bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50 pr-2">
       <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
         {topLevelNotes.map(note => {
           const isActive = currentNoteId === note.id
@@ -116,23 +114,10 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
           return (
             <div
               key={note.id}
-              onClick={(e) => {
-                console.log('🔵 [NotesFileBar] 点击事件触发:', {
-                  noteId: note.id,
-                  noteTitle: note.title,
-                  isEditing,
-                  onSelectNote: typeof onSelectNote,
-                  eventTarget: e.target,
-                  currentTarget: e.currentTarget,
-                  timestamp: new Date().toISOString()
-                })
-                e.stopPropagation() // 防止事件冒泡
+              onClick={() => {
                 if (!isEditing) {
-                  console.log('🔵 [NotesFileBar] 调用 onSelectNote:', note.id)
                   onSelectNote(note.id)
                   onSelectParent?.(note.id)
-                } else {
-                  console.log('🔵 [NotesFileBar] 跳过点击（正在编辑）')
                 }
               }}
               onDoubleClick={() => handleDoubleClick(note)}

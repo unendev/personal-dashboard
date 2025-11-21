@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TimerDB } from '@/lib/timer-db';
 import { createTimerTaskSchema } from '@/lib/validations/timer-task';
 import { ZodError } from 'zod';
+import { getEffectiveDateString } from '@/lib/timer-utils';
 
 // GET /api/timer-tasks - 获取用户的所有任务
 export async function GET(request: NextRequest) {
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       : [];
     
     // 如果 date 未提供，使用当前日期（YYYY-MM-DD 格式）
-    const taskDate = date || new Date().toISOString().split('T')[0];
+    const taskDate = date || getEffectiveDateString(new Date(), 2);
     
     // 📝 [API] 日志：准备创建的任务数据
     const taskDataToCreate = {

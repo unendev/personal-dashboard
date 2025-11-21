@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 模态框优化样式 */
 .modal-backdrop {
@@ -71,20 +73,19 @@
 }
 
 :root {
-  /* 深蓝紫色主题 - 明亮暗色配色（提升对比度） */
-  --bg-primary: #1e293b;
-  --bg-secondary: #334155;
-  --bg-tertiary: #475569;
-  --bg-card: #2d3748;
-  --border-primary: #64748b;
-  --border-secondary: #94a3b8;
-  --text-primary: #e2e8f0;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --accent-blue: #60a5fa;
-  --accent-blue-hover: #3b82f6;
-  --card-shadow: 0 1px 3px rgba(30, 41, 59, 0.12), 0 1px 2px rgba(30, 41, 59, 0.24);
-  --card-shadow-hover: 0 3px 6px rgba(30, 41, 59, 0.15), 0 2px 4px rgba(30, 41, 59, 0.12);
+  /* 神秘/悬疑主题颜色 */
+  --color-mystery-bg: 42 42 42; /* #2a2a2a */
+  --color-mystery-paper: 243 233 210; /* #f3e9d2 */
+  --color-mystery-ink: 58 58 58; /* #3a3a3a */
+  --color-mystery-ink-light: 90 90 90; /* #5a5a5a */
+  --color-mystery-highlight: 199 161 122; /* #c7a17a */
+
+  /* 定义暗黑模式下的颜色 */
+  --color-mystery-bg-dark: 26 26 26; /* #1a1a1a */
+  --color-mystery-paper-dark: 58 58 58; /* #3a3a3a */
+  --color-mystery-ink-dark: 243 233 210; /* #f3e9d2 */
+  --color-mystery-ink-light-dark: 190 190 190; /* #bebebe */
+  --color-mystery-highlight-dark: 210 170 130; /* #d2aabe */
 }
 
 * {
@@ -93,20 +94,23 @@
 
 html,
 body {
-  background: radial-gradient(
-    ellipse 150% 100% at 50% 0%,
-    #334155 0%,
-    #1e293b 40%,
-    #0f172a 100%
-  );
-  background-attachment: fixed;
+  background-color: rgb(var(--color-mystery-bg));
+  background-attachment: fixed; /* Keep fixed background */
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-special-elite), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   overflow-x: hidden;
   max-width: 100vw;
-  color: var(--text-primary);
+  color: rgb(var(--color-mystery-ink-light));
+}
+
+/* 调整暗黑模式 */
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background-color: rgb(var(--color-mystery-bg-dark));
+    color: rgb(var(--color-mystery-ink-light-dark));
+  }
 }
 
 /* 自定义滚动条样式 */
@@ -854,10 +858,112 @@ aside::-webkit-scrollbar-thumb:hover {
 /* 响应式容器边距工具类 */
 @layer utilities {
   .container-padding {
-    @apply px-6 md:px-8 lg:px-10 xl:px-12;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
   
   .container-padding-y {
-    @apply py-6 md:py-8;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
   }
+  
+  @media (min-width: 768px) {
+    .container-padding {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+    
+    .container-padding-y {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .container-padding {
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .container-padding {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+}
+
+/* 核心组件神秘主题风格 */
+.card-mystery {
+  background-color: rgb(var(--color-mystery-paper));
+  color: rgb(var(--color-mystery-ink));
+  border: 1px solid rgb(var(--color-mystery-ink) / 0.2);
+  box-shadow: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-mystery:hover {
+  border-color: rgb(var(--color-mystery-highlight));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.button-mystery {
+  background-color: transparent;
+  border: 1px solid rgb(var(--color-mystery-highlight));
+  color: rgb(var(--color-mystery-highlight));
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.button-mystery:hover {
+  background-color: rgb(var(--color-mystery-highlight));
+  color: rgb(var(--color-mystery-paper));
+}
+
+.input-mystery {
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid rgb(var(--color-mystery-highlight));
+  border-radius: 0;
+  transition: all 0.2s ease;
+  padding: 0.5rem 0;
+  outline-offset: 2px;
+}
+
+.input-mystery:focus {
+  border-bottom-color: rgb(var(--color-mystery-highlight));
+  outline: 2px solid rgb(var(--color-mystery-highlight));
+}
+
+/* Dark mode adjustments for custom classes */
+.dark .card-mystery {
+  background-color: rgb(var(--color-mystery-paper-dark));
+  color: rgb(var(--color-mystery-ink-dark));
+  border: 1px solid rgb(var(--color-mystery-ink-dark) / 0.2);
+}
+
+.dark .card-mystery:hover {
+  border-color: rgb(var(--color-mystery-highlight-dark));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .button-mystery {
+  border-color: rgb(var(--color-mystery-highlight-dark));
+  color: rgb(var(--color-mystery-highlight-dark));
+}
+
+.dark .button-mystery:hover {
+  background-color: rgb(var(--color-mystery-highlight-dark));
+  color: rgb(var(--color-mystery-paper-dark));
+}
+
+.dark .input-mystery {
+  border-bottom-color: rgb(var(--color-mystery-highlight-dark));
+}
+
+.dark .input-mystery:focus {
+  border-bottom-color: rgb(var(--color-mystery-highlight-dark));
 }

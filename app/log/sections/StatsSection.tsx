@@ -71,7 +71,7 @@ export function StatsSection({
     <>
       {desktopActions}
       
-      <section className={`bg-gray-800 ${mode === 'desktop' ? 'border-t border-gray-700/50 pt-6 px-0' : 'px-4 py-6 mb-6'} ${className}`}>
+      <section className={`${mode === 'desktop' ? 'border-t border-gray-700/50 pt-6 px-0' : 'px-4 py-6 mb-6'} ${className}`}>
         {/* 标题与日期选择器 */}
         <div className={`mb-6 pb-4 ${mode === 'desktop' ? 'border-b border-gray-700/50 px-4 md:px-6' : 'border-b-2 border-gray-600'}`}>
           <div className={mode === 'desktop' ? 'flex flex-col gap-4 md:flex-row md:items-center md:justify-between' : ''}>

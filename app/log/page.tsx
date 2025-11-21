@@ -389,7 +389,7 @@ export default function LogPage() {
             </div>
 
             {/* 统计区域 - 显示在双栏下方 */}
-            <div className="w-full bg-gray-800">
+            <div className="w-full bg-gray-900/40 backdrop-blur-sm">
               <StatsSection
                 userId={userId}
                 tasks={pageState.rangeTimerTasks}

@@ -392,6 +392,35 @@ export function loadAutoStartPreference(): boolean {
 // ============ 时间格式化 ============
 
 /**
+ * 根据自定义的切分时间点（例如凌晨2点）获取给定日期的“有效日期”字符串 (YYYY-MM-DD)。
+ *
+ * @param inputDate 输入的日期对象。
+ * @param cutoffHour 每日切分的小时数 (0-23)，默认为 2 (凌晨2点)。
+ * @returns YYYY-MM-DD 格式的有效日期字符串。
+ */
+export function getEffectiveDateString(inputDate: Date, cutoffHour: number = 2): string {
+  const date = new Date(inputDate); // 避免修改原始对象
+
+  // 创建一个表示当天切分时间点的日期对象 (本地时区)
+  const cutoffTimeToday = new Date(date);
+  cutoffTimeToday.setHours(cutoffHour, 0, 0, 0);
+
+  let effectiveDate = new Date(date);
+
+  // 如果当前时间在切分时间点之前 (例如，00:00 到 01:59)，则属于前一天
+  if (date.getTime() < cutoffTimeToday.getTime()) {
+    effectiveDate.setDate(effectiveDate.getDate() - 1);
+  }
+
+  // 格式化为 YYYY-MM-DD (本地时区)
+  const year = effectiveDate.getFullYear();
+  const month = (effectiveDate.getMonth() + 1).toString().padStart(2, '0'); // 月份从0开始
+  const day = effectiveDate.getDate().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * 格式化时间显示
  */
 export function formatTime(seconds: number): string {

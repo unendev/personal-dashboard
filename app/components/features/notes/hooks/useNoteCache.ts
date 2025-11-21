@@ -20,7 +20,7 @@ interface NoteCache {
 export function useNoteCache(userId: string) {
   const memoryCache = useRef<Map<string, CachedNote>>(new Map())
   const storageKey = `notes-cache-${userId}`
-  const CACHE_EXPIRY_MS = 5 * 60 * 1000 // 5分钟，超过此时间后台静默更新
+  const CACHE_EXPIRY_MS = 30 * 1000 // 30秒，超过此时间后台静默更新
 
   // 从 localStorage 加载缓存
   useEffect(() => {

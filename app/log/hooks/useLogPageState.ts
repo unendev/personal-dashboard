@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getEffectiveDateString } from '@/lib/timer-utils';
 import { DateRangeValue } from '@/app/components/shared/DateRangePicker';
 import { TimerTask } from '@/app/features/timer/types';
 import { CategoryCache } from '@/lib/category-cache';
@@ -29,7 +30,7 @@ export interface OperationRecord {
 export function useLogPageState(userId: string) {
   // ============ 基础状态 ============
   const [isPageReady, setIsPageReady] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getEffectiveDateString(new Date(), 2));
   const [isMobile, setIsMobile] = useState(false);
   
   // 时间段选择（用于统计和AI总结）

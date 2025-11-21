@@ -327,21 +327,47 @@ async def fetch_post_replies(page, post_url, post_title):
     """
     try:
         logger.info(f"  ⏳ 访问帖子: {post_title[:40]}...")
-        await page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
-        
-        # 等待关键元素出现（最多10秒）
+        # 使用 load 等待页面加载完成（比 networkidle 更宽松，避免持续请求导致超时）
+        # networkidle 要求500ms内无网络请求，某些网站可能永远达不到
         try:
-            await page.wait_for_selector('.topic-post', timeout=10000)
+            await page.goto(post_url, wait_until="load", timeout=60000)
+        except Exception as goto_error:
+            # 如果 load 也超时，尝试 domcontentloaded（更宽松）
+            logger.warning(f"    ⚠️ load 超时，尝试 domcontentloaded: {goto_error}")
+            await page.goto(post_url, wait_until="domcontentloaded", timeout=30000)
+        
+        # 额外等待JS渲染（Discourse论坛需要JS动态加载内容）
+        await asyncio.sleep(3)
+        
+        # 等待关键元素出现（增加到20秒，给JS更多时间）
+        try:
+            await page.wait_for_selector('.topic-post', timeout=20000, state="visible")
             logger.info(f"    ✓ 页面加载成功")
         except Exception as e:
             logger.warning(f"    ⚠️ 等待.topic-post超时: {e}")
-            # 尝试备用选择器
+            # 尝试额外等待并重试
+            logger.info(f"    ⏳ 额外等待5秒后重试...")
+            await asyncio.sleep(5)
             try:
-                await page.wait_for_selector('article', timeout=5000)
-                logger.info(f"    ✓ 找到article元素")
+                await page.wait_for_selector('.topic-post', timeout=15000, state="visible")
+                logger.info(f"    ✓ 重试成功，找到.topic-post")
             except:
-                logger.error(f"    ✗ 页面结构异常，无法找到帖子内容")
-                return None
+                # 尝试备用选择器
+                try:
+                    await page.wait_for_selector('article', timeout=10000, state="visible")
+                    logger.info(f"    ✓ 找到article元素（备用方案）")
+                except:
+                    logger.error(f"    ✗ 页面结构异常，无法找到帖子内容")
+                    # 保存页面快照用于调试
+                    try:
+                        html = await page.content()
+                        debug_file = f"../debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                        with open(debug_file, 'w', encoding='utf-8') as f:
+                            f.write(html)
+                        logger.info(f"    📄 已保存页面HTML到: {debug_file}")
+                    except:
+                        pass
+                    return None
         
         # 提取所有帖子容器（Discourse标准结构）
         posts_elements = await page.query_selector_all('.topic-post')
@@ -500,37 +526,82 @@ async def fetch_linuxdo_posts():
     async with async_playwright() as p:
         browser = None
         try:
-            # 启动浏览器
+            # 启动浏览器（增强配置以绕过 Cloudflare）
             launch_options = {
                 "headless": HEADLESS,
-                "args": ['--no-sandbox', '--disable-dev-shm-usage']
+                "args": [
+                    '--no-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled',  # 隐藏自动化特征
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-site-isolation-trials',
+                    '--disable-web-security',
+                    '--window-size=1920,1080',  # 设置真实窗口大小
+                ]
             }
             if USE_PROXY:
                 launch_options["proxy"] = {"server": PROXY_URL}
             
             browser = await p.chromium.launch(**launch_options)
             
-            # 创建上下文（模拟真实浏览器）
+            # 创建上下文（增强真实浏览器指纹）
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                viewport={"width": 1920, "height": 1080},  # 真实视口大小
+                locale="zh-CN",
+                timezone_id="Asia/Shanghai",
+                permissions=["geolocation"],
+                geolocation={"latitude": 39.9042, "longitude": 116.4074},  # 北京坐标
+                color_scheme="light",
                 extra_http_headers={
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
                     "Accept-Encoding": "gzip, deflate, br",
                     "DNT": "1",
                     "Connection": "keep-alive",
                     "Upgrade-Insecure-Requests": "1",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                    "Cache-Control": "max-age=0",
                 }
             )
+            
+            # 注入 JavaScript 以隐藏自动化特征
+            await context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                
+                // 覆盖 plugins
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                
+                // 覆盖 languages
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['zh-CN', 'zh', 'en']
+                });
+                
+                // Chrome 对象
+                window.chrome = {
+                    runtime: {}
+                };
+            """)
             
             # 应用反爬虫策略
             stealth = Stealth()
             await stealth.apply_stealth_async(context)
             page = await context.new_page()
 
-            # 预热：访问首页建立会话
+            # 预热：访问首页建立会话（增强 Cloudflare 处理）
             logger.info(f"⏳ 访问首页预热: {WARM_UP_URL}")
             await page.goto(WARM_UP_URL, wait_until="domcontentloaded", timeout=60000)
+            
+            # 检测并等待 Cloudflare 挑战
+            await wait_for_cloudflare_challenge(page, timeout=30)
+            
             logger.info("✓ 预热完成")
             await asyncio.sleep(3)
 

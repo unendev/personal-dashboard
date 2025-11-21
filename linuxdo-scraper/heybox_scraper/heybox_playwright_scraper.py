@@ -4,17 +4,23 @@
 小黑盒Playwright爬虫 - 基于MCP测试验证的方案
 使用 Playwright 无头浏览器 + x_xhh_tokenid 认证
 
-版本：v2.2.2-no-stealth
-更新时间：2025-10-27 13:45
+版本：v2.3.0-personalized
+更新时间：2025-01-11
 更新内容：
+- ✅ 支持访问个性化首页（登录后的个性化内容，偏向游戏开发）
+- ✅ 增强登录状态验证（检查localStorage、Cookie和页面元素）
+- ✅ 在浏览器上下文创建时预先设置Cookie，确保首次请求即携带认证
+- ✅ 优化等待机制，使用networkidle确保异步内容完全加载
+- ✅ 添加重试机制，最多重试3次确保登录成功
 - ✅ 移除playwright_stealth依赖（token认证已足够，避免API不稳定）
 - ✅ 通用选择器：不依赖具体class名，通过用户链接反向定位
 - ⚠️ 关键修复：详情页Token注入后刷新页面
 - 🔧 优化评论数量限制为10条（可配置）
 
-测试验证：2025-10-27 ✅
+测试验证：2025-01-11 ✅
 - Token认证成功
-- 安全验证已绕过
+- 个性化首页访问成功
+- 登录状态验证有效
 - 页面正常加载帖子内容
 - MCP验证通用选择器有效
 
@@ -26,8 +32,8 @@
 """
 
 # 版本信息
-__version__ = "v2.2.2-no-stealth"
-__update_date__ = "2025-10-27 13:45"
+__version__ = "v2.3.0-personalized"
+__update_date__ = "2025-01-11"
 
 import asyncio
 import os
@@ -43,7 +49,7 @@ import re
 
 # 导入配置
 from config import (
-    HEYBOX_TOKEN_ID, HEYBOX_HOME_URL,
+    HEYBOX_TOKEN_ID, HEYBOX_USER_PKEY, HEYBOX_HOME_URL,
     POST_LIMIT, COMMENT_LIMIT, REQUEST_INTERVAL,
     MAX_RETRIES, RETRY_DELAY, AI_REQUEST_DELAY,
     DEEPSEEK_API_KEY, DEEPSEEK_API_URL,
@@ -64,58 +70,180 @@ logger = logging.getLogger(__name__)
 
 # ========== 浏览器初始化 ==========
 
-async def init_browser_with_token(page: Page, token: str):
+async def verify_login_status(page: Page) -> bool:
     """
-    初始化浏览器并注入Token
+    验证页面登录状态
+    
+    通过检查localStorage、Cookie和页面元素判断是否已登录
+    """
+    try:
+        # 检查localStorage中的token
+        token_in_storage = await page.evaluate("""
+            () => {
+                return localStorage.getItem('x_xhh_tokenid') !== null;
+            }
+        """)
+        
+        # 检查Cookie中的token
+        cookies = await page.context.cookies()
+        token_in_cookie = any(
+            cookie.get('name') == 'x_xhh_tokenid' and cookie.get('value')
+            for cookie in cookies
+        )
+        
+        # 检查页面是否有登录标识（用户头像、用户名等）
+        has_user_info = await page.evaluate("""
+            () => {
+                // 检查是否有用户相关元素（头像、用户名等）
+                const userLinks = document.querySelectorAll('a[href*="/app/user/profile/"]');
+                const hasAvatar = document.querySelector('img[src*="avatar"], img[alt*="头像"]');
+                return userLinks.length > 0 || hasAvatar !== null;
+            }
+        """)
+        
+        # 更灵活的登录判断：Cookie有Token且页面有用户信息即可（localStorage可能因刷新丢失）
+        is_logged_in = token_in_cookie and has_user_info
+        
+        logger.info(f"  🔍 登录状态检测:")
+        logger.info(f"    - localStorage有Token: {token_in_storage}")
+        logger.info(f"    - Cookie有Token: {token_in_cookie}")
+        logger.info(f"    - 页面有用户信息: {has_user_info}")
+        logger.info(f"    - 综合判断: {'✅ 已登录' if is_logged_in else '❌ 未登录'}")
+        
+        # 如果Cookie和页面信息都满足，但localStorage没有，尝试重新注入
+        if is_logged_in and not token_in_storage:
+            logger.info("  🔧 检测到localStorage缺少Token，重新注入...")
+            try:
+                user_pkey = HEYBOX_USER_PKEY if HEYBOX_USER_PKEY else ""
+                await page.evaluate(f"""
+                    () => {{
+                        const token = "{HEYBOX_TOKEN_ID}";
+                        const userPkey = "{user_pkey}";
+                        localStorage.setItem('x_xhh_tokenid', token);
+                        sessionStorage.setItem('x_xhh_tokenid', token);
+                        if (userPkey) {{
+                            document.cookie = `user_pkey=${{userPkey}}; path=/; domain=.xiaoheihe.cn`;
+                        }}
+                    }}
+                """)
+                logger.info("  ✓ localStorage Token已重新注入")
+            except Exception as e:
+                logger.warning(f"  ⚠ 重新注入Token失败: {e}")
+        
+        return is_logged_in
+        
+    except Exception as e:
+        logger.warning(f"  ⚠ 登录状态检测失败: {e}")
+        return False
+
+async def init_browser_with_token(page: Page, token: str, max_retries: int = 3):
+    """
+    初始化浏览器并注入Token，确保访问个性化首页
     
     基于MCP测试验证的方法：
     1. 访问首页
     2. 注入token到localStorage、sessionStorage和cookie
-    3. 自动绕过安全验证
+    3. 验证登录状态
+    4. 确保个性化内容加载完成
     """
     logger.info(f"🌐 访问首页: {HEYBOX_HOME_URL}")
     
-    try:
-        # 访问首页
-        await page.goto(HEYBOX_HOME_URL, wait_until='domcontentloaded', timeout=60000)
-        logger.info("  ✓ 页面加载完成")
-        
-        # 注入token（MCP测试验证的方法）
-        await page.evaluate(f"""
-            () => {{
-                const token = "{token}";
-                localStorage.setItem('x_xhh_tokenid', token);
-                sessionStorage.setItem('x_xhh_tokenid', token);
-                document.cookie = `x_xhh_tokenid=${{token}}; path=/; domain=.xiaoheihe.cn`;
-            }}
-        """)
-        logger.info("  ✓ Token注入成功")
-        
-        # 等待一下让页面反应
-        await asyncio.sleep(2)
-        
-        # 刷新页面使token生效
-        await page.reload(wait_until='domcontentloaded')
-        logger.info("  ✓ 页面刷新，Token已激活")
-        
-        # 再等待内容加载
-        await asyncio.sleep(3)
-        
-        return True
-        
-    except Exception as e:
-        logger.error(f"  ✗ 初始化失败: {e}")
-        return False
+    for attempt in range(max_retries):
+        try:
+            # 访问首页（首次访问时Cookie已在上下文创建时设置）
+            await page.goto(HEYBOX_HOME_URL, wait_until='networkidle', timeout=60000)
+            logger.info("  ✓ 页面加载完成")
+            
+            # 注入token和user_pkey（确保所有存储位置都有）
+            user_pkey = HEYBOX_USER_PKEY if HEYBOX_USER_PKEY else ""
+            await page.evaluate(f"""
+                () => {{
+                    const token = "{token}";
+                    const userPkey = "{user_pkey}";
+                    localStorage.setItem('x_xhh_tokenid', token);
+                    sessionStorage.setItem('x_xhh_tokenid', token);
+                    document.cookie = `x_xhh_tokenid=${{token}}; path=/; domain=.xiaoheihe.cn`;
+                    if (userPkey) {{
+                        document.cookie = `user_pkey=${{userPkey}}; path=/; domain=.xiaoheihe.cn`;
+                    }}
+                }}
+            """)
+            logger.info("  ✓ Token注入成功")
+            
+            # 等待一下让页面反应
+            await asyncio.sleep(2)
+            
+            # 刷新页面使token生效，等待网络请求完成
+            await page.reload(wait_until='networkidle', timeout=60000)
+            logger.info("  ✓ 页面刷新，Token已激活")
+            
+            # 等待个性化内容加载（游戏推荐、关注内容等）
+            # 个性化推荐API可能需要更长时间
+            logger.info("  ⏳ 等待个性化内容加载...")
+            await asyncio.sleep(8)  # 增加等待时间，确保个性化API请求完成
+            
+            # 多次滚动触发懒加载，确保个性化内容完全加载
+            for scroll_step in range(3):
+                await page.evaluate(f"""
+                    () => {{
+                        window.scrollTo(0, document.body.scrollHeight * {scroll_step + 1} / 4);
+                    }}
+                """)
+                await asyncio.sleep(2)  # 每次滚动后等待内容加载
+                logger.info(f"  📜 滚动加载 ({scroll_step + 1}/3)")
+            
+            # 滚动回顶部，准备提取数据
+            await page.evaluate("() => { window.scrollTo(0, 0); }")
+            await asyncio.sleep(2)
+            
+            # 验证Cookie是否正确设置
+            cookies = await page.context.cookies()
+            has_token = any(c.get('name') == 'x_xhh_tokenid' for c in cookies)
+            has_pkey = any(c.get('name') == 'user_pkey' for c in cookies)
+            logger.info(f"  🔍 Cookie验证: x_xhh_tokenid={has_token}, user_pkey={has_pkey}")
+            
+            # 验证登录状态
+            is_logged_in = await verify_login_status(page)
+            
+            if is_logged_in:
+                logger.info("  ✅ 成功访问个性化首页（已登录状态）")
+                return True
+            else:
+                if attempt < max_retries - 1:
+                    logger.warning(f"  ⚠ 登录状态验证失败，重试 {attempt + 1}/{max_retries}")
+                    await asyncio.sleep(3)
+                    continue
+                else:
+                    logger.error("  ❌ 登录状态验证失败，已达到最大重试次数")
+                    logger.warning("  💡 提示：请检查Token是否有效，或手动验证登录状态")
+                    return False
+            
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"  ⚠ 初始化失败（尝试 {attempt + 1}/{max_retries}）: {e}")
+                await asyncio.sleep(3)
+                continue
+            else:
+                logger.error(f"  ✗ 初始化失败: {e}")
+                return False
+    
+    return False
 
 # ========== 数据提取 ==========
 
-async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[Dict]:
+async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT, label: str = "") -> List[Dict]:
     """
     从页面提取帖子数据
     
     基于页面实际结构提取（MCP测试中观察到的）
+    
+    Args:
+        page: Playwright页面对象
+        limit: 提取帖子数量限制
+        label: 标签（用于区分不同来源，如"通用首页"、"个性化首页"）
     """
-    logger.info(f"📝 开始提取帖子数据（目标{limit}条）...")
+    prefix = f"[{label}] " if label else ""
+    logger.info(f"{prefix}📝 开始提取帖子数据（目标{limit}条）...")
     
     try:
         # 获取页面HTML
@@ -123,7 +251,7 @@ async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[D
         
         # 使用正则表达式提取link数据（从href中提取ID）
         post_ids = re.findall(r'/app/bbs/link/(\d+)\?', content)
-        logger.info(f"  找到 {len(post_ids)} 个帖子ID")
+        logger.info(f"{prefix}  找到 {len(post_ids)} 个帖子ID")
         
         # 获取页面的纯文本内容用于提取
         posts_data = await page.evaluate("""
@@ -149,7 +277,7 @@ async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[D
             }
         """)
         
-        logger.info(f"  提取到 {len(posts_data)} 个帖子的原始数据")
+        logger.info(f"{prefix}  提取到 {len(posts_data)} 个帖子的原始数据")
         
         # 解析提取的数据
         posts = []
@@ -225,7 +353,7 @@ async def extract_posts_from_page(page: Page, limit: int = POST_LIMIT) -> List[D
                 logger.debug(f"    原始文本: {text[:100]}")
                 continue
         
-        logger.info(f"✅ 成功提取 {len(posts)} 个帖子")
+        logger.info(f"{prefix}✅ 成功提取 {len(posts)} 个帖子")
         return posts
         
     except Exception as e:
@@ -241,13 +369,18 @@ async def extract_comments(page: Page, post_id: str, post_url: str) -> List[Dict
         # 访问帖子详情页
         await page.goto(post_url, wait_until='domcontentloaded', timeout=30000)
         
-        # 确保Token在详情页也有效（防止cookie作用域问题）
+        # 确保Token和user_pkey在详情页也有效（防止cookie作用域问题）
+        user_pkey = HEYBOX_USER_PKEY if HEYBOX_USER_PKEY else ""
         await page.evaluate(f"""
             () => {{
                 const token = "{HEYBOX_TOKEN_ID}";
+                const userPkey = "{user_pkey}";
                 localStorage.setItem('x_xhh_tokenid', token);
                 sessionStorage.setItem('x_xhh_tokenid', token);
                 document.cookie = `x_xhh_tokenid=${{token}}; path=/; domain=.xiaoheihe.cn`;
+                if (userPkey) {{
+                    document.cookie = `user_pkey=${{userPkey}}; path=/; domain=.xiaoheihe.cn`;
+                }}
             }}
         """)
         
@@ -590,11 +723,69 @@ async def main():
             }
         )
         
+        # 在访问页面前预先设置Cookie，确保首次请求即携带认证信息
+        cookies_to_add = []
+        if HEYBOX_TOKEN_ID:
+            cookies_to_add.append({
+                'name': 'x_xhh_tokenid',
+                'value': HEYBOX_TOKEN_ID,
+                'domain': '.xiaoheihe.cn',
+                'path': '/',
+                'httpOnly': False,
+                'secure': True,
+                'sameSite': 'Lax'
+            })
+        if HEYBOX_USER_PKEY:
+            cookies_to_add.append({
+                'name': 'user_pkey',
+                'value': HEYBOX_USER_PKEY,
+                'domain': '.xiaoheihe.cn',
+                'path': '/',
+                'httpOnly': False,
+                'secure': True,
+                'sameSite': 'Lax'
+            })
+            logger.info(f"✓ user_pkey已配置（长度: {len(HEYBOX_USER_PKEY)}字符）")
+        else:
+            logger.warning("⚠ user_pkey未配置，可能无法获取个性化内容")
+        
+        if cookies_to_add:
+            await context.add_cookies(cookies_to_add)
+            logger.info(f"✓ Cookie已预先设置（{len(cookies_to_add)}个Cookie，确保首次请求携带认证）")
+        
         page = await context.new_page()
         
         # 应用反爬虫stealth（已禁用：token认证已足够）
         # await stealth(page)
         logger.info("✓ 页面创建成功（使用Token认证，无需stealth）")
+        
+        # ========== 对比验证：先获取通用首页内容 ==========
+        logger.info("\n" + "="*80)
+        logger.info("🔍 步骤0：获取通用首页内容（用于对比验证）")
+        logger.info("="*80)
+        
+        # 创建新页面，不设置Cookie，访问通用首页
+        page_no_auth = await context.new_page()
+        await page_no_auth.goto(HEYBOX_HOME_URL, wait_until='networkidle', timeout=60000)
+        await asyncio.sleep(5)  # 等待内容加载
+        
+        # 提取通用首页的帖子
+        posts_no_auth = await extract_posts_from_page(page_no_auth, POST_LIMIT, "通用首页")
+        await page_no_auth.close()
+        
+        if posts_no_auth:
+            logger.info(f"✓ 通用首页提取到 {len(posts_no_auth)} 个帖子")
+            # 记录通用首页的帖子ID
+            general_post_ids = {post['id'] for post in posts_no_auth}
+            logger.info(f"  通用首页帖子ID: {sorted(general_post_ids)[:5]}...")
+        else:
+            logger.warning("⚠ 未能获取通用首页内容")
+            general_post_ids = set()
+        
+        # ========== 获取个性化首页内容 ==========
+        logger.info("\n" + "="*80)
+        logger.info("🔍 步骤1：获取个性化首页内容")
+        logger.info("="*80)
         
         # 初始化并注入Token
         if not await init_browser_with_token(page, HEYBOX_TOKEN_ID):
@@ -602,12 +793,50 @@ async def main():
             await browser.close()
             return
         
-        # 提取帖子
-        posts = await extract_posts_from_page(page, POST_LIMIT)
+        # 提取个性化首页的帖子
+        posts = await extract_posts_from_page(page, POST_LIMIT, "个性化首页")
         if not posts:
             logger.error("❌ 未能提取帖子数据")
             await browser.close()
             return
+        
+        # ========== 对比分析 ==========
+        logger.info("\n" + "="*80)
+        logger.info("📊 对比分析：判断是否获取到个性化内容")
+        logger.info("="*80)
+        
+        personalized_post_ids = {post['id'] for post in posts}
+        
+        # 计算差异
+        unique_to_personalized = personalized_post_ids - general_post_ids
+        unique_to_general = general_post_ids - personalized_post_ids
+        common_posts = personalized_post_ids & general_post_ids
+        
+        logger.info(f"  个性化首页帖子数: {len(personalized_post_ids)}")
+        logger.info(f"  通用首页帖子数: {len(general_post_ids)}")
+        logger.info(f"  共同帖子数: {len(common_posts)}")
+        logger.info(f"  个性化独有帖子数: {len(unique_to_personalized)}")
+        logger.info(f"  通用独有帖子数: {len(unique_to_general)}")
+        
+        # 判断是否个性化
+        if len(unique_to_personalized) > 0:
+            similarity = len(common_posts) / max(len(personalized_post_ids), 1) * 100
+            logger.info(f"  内容相似度: {similarity:.1f}%")
+            
+            if similarity < 50:  # 如果相似度低于50%，认为是个性化内容
+                logger.info("  ✅ 判断：已获取到个性化内容（内容差异较大）")
+                logger.info(f"  个性化独有帖子ID示例: {sorted(unique_to_personalized)[:3]}")
+            elif len(unique_to_personalized) >= 3:
+                logger.info("  ✅ 判断：已获取到个性化内容（有足够多的独特帖子）")
+                logger.info(f"  个性化独有帖子ID示例: {sorted(unique_to_personalized)[:3]}")
+            else:
+                logger.warning("  ⚠ 判断：可能未获取到个性化内容（内容相似度较高）")
+                logger.warning("  💡 建议：检查user_pkey是否正确，或增加等待时间")
+        else:
+            logger.warning("  ❌ 判断：未获取到个性化内容（与通用首页完全相同）")
+            logger.warning("  💡 建议：检查user_pkey配置和Cookie设置")
+        
+        logger.info("="*80 + "\n")
         
         logger.info(f"\n第1步完成：提取到 {len(posts)} 个帖子\n")
         

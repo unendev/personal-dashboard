@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# ========== 小黑盒API配置 ==========
+# ========== 小黑盒配置 ==========
 HEYBOX_TOKEN_ID = os.getenv("HEYBOX_TOKEN_ID", "")
-HEYBOX_BASE_URL = "https://api.xiaoheihe.cn"
+HEYBOX_USER_PKEY = os.getenv("HEYBOX_USER_PKEY", "")
 HEYBOX_HOME_URL = "https://www.xiaoheihe.cn/app/bbs/home"
 
 # ========== 爬取配置 ==========
@@ -32,35 +32,18 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 # ========== GitHub Actions检测 ==========
 IS_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
-# ========== 请求头配置 ==========
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://www.xiaoheihe.cn/",
-    "Origin": "https://www.xiaoheihe.cn",
-}
-
 # ========== 代理配置 ==========
 PROXY_URL = os.getenv("PROXY_URL", "")
 USE_PROXY = PROXY_URL and PROXY_URL.lower() != "none" and not IS_GITHUB_ACTIONS
 
 def get_proxies():
-    """获取代理配置"""
+    """获取代理配置（用于Playwright）"""
     if USE_PROXY:
         return {
             "http": PROXY_URL,
             "https": PROXY_URL
         }
     return None
-
-def get_auth_headers():
-    """获取认证请求头"""
-    headers = HEADERS.copy()
-    if HEYBOX_TOKEN_ID:
-        headers["x-xhh-tokenid"] = HEYBOX_TOKEN_ID
-    return headers
 
 # ========== 环境检查 ==========
 def check_config():

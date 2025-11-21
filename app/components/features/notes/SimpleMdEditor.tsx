@@ -480,7 +480,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
       if (notes.length > 0) {
         const lastNoteId = notes[0].id; // Assuming list is sorted by updatedAt desc
         setCurrentNoteId(lastNoteId);
-        await loadNoteContent(lastNoteId);
+        await loadNoteContent(lastNoteId, false);
       }
       setIsLoading(false);
     };
