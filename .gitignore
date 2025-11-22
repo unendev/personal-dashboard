@@ -53,3 +53,9 @@ next-env.d.ts
 
 # OSS 配置文件（包含敏感密钥）
 oss-config.txt
+
+# 调试文件
+debug_*.html
+**/debug_*.html
+*.log
+scraper.log
