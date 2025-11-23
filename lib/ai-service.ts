@@ -109,7 +109,7 @@ export class AIService {
     const categories: Record<string, number> = {};
     
     tasks.forEach(task => {
-      const category = task.categoryPath.split('/')[0] || '未分类';
+      const category = (task.categoryPath || '未分类').split('/')[0] || '未分类';
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
@@ -125,8 +125,8 @@ export class AIService {
       pausedTasks: tasksWithoutTime.length,
       tasks: tasks.map(task => ({
         id: task.id,
-        name: task.name,
-        categoryPath: task.categoryPath,
+        name: task.name || '未命名任务',
+        categoryPath: task.categoryPath || '未分类',
         elapsedTime: task.elapsedTime,
         completedAt: task.completedAt,
         isRunning: task.isRunning,
@@ -318,7 +318,7 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
     const categories: Record<string, number> = {};
     
     tasks.forEach(task => {
-      const category = task.categoryPath.split('/')[0] || '未分类';
+      const category = (task.categoryPath || '未分类').split('/')[0] || '未分类';
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
@@ -352,8 +352,8 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
       insights,
       tasks: tasks.map(task => ({
         id: task.id,
-        name: task.name,
-        categoryPath: task.categoryPath,
+        name: task.name || '未命名任务',
+        categoryPath: task.categoryPath || '未分类',
         elapsedTime: task.elapsedTime,
         completedAt: task.completedAt
       }))
@@ -379,7 +379,7 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
     const categories: Record<string, number> = {};
     
     tasks.forEach(task => {
-      const category = task.categoryPath.split('/')[0] || '未分类';
+      const category = (task.categoryPath || '未分类').split('/')[0] || '未分类';
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
@@ -406,8 +406,8 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
       insights,
       tasks: tasks.map(task => ({
         id: task.id,
-        name: task.name,
-        categoryPath: task.categoryPath,
+        name: task.name || '未命名任务',
+        categoryPath: task.categoryPath || '未分类',
         elapsedTime: task.elapsedTime,
         completedAt: task.completedAt
       }))
@@ -458,7 +458,13 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
       }
 
       // 2. 数据预处理
-      const analysisData = this.prepareWeeklyAnalysisData(tasks, startDate, endDate);
+      const normalizedTasks = tasks.map(task => ({
+        id: task.id,
+        name: task.name || '未命名任务',
+        categoryPath: task.categoryPath || '未分类',
+        elapsedTime: task.elapsedTime
+      }));
+      const analysisData = this.prepareWeeklyAnalysisData(normalizedTasks, startDate, endDate);
 
       // 3. 调用 DeepSeek API 生成周报
       const weeklyReview = await this.callDeepSeekForWeeklyReview(analysisData);
@@ -486,7 +492,7 @@ ${data.tasks.filter(task => task.elapsedTime >= 1800).slice(0, 10).map(task =>
     // 按分类聚合时间
     const categories: Record<string, number> = {};
     tasks.forEach((task) => {
-      const category = task.categoryPath.split('/')[0] || '未分类';
+      const category = (task.categoryPath || '未分类').split('/')[0] || '未分类';
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
@@ -640,7 +646,7 @@ ${data.keyTasks
     const categories: Record<string, number> = {};
 
     tasks.forEach((task) => {
-      const category = task.categoryPath.split('/')[0] || '未分类';
+      const category = (task.categoryPath || '未分类').split('/')[0] || '未分类';
       categories[category] = (categories[category] || 0) + task.elapsedTime;
     });
 
@@ -657,13 +663,15 @@ ${data.keyTasks
         `完成了${tasks.length}个任务的时间投入`,
         `平均每个任务投入${Math.round(totalTime / tasks.length / 60)}分钟`,
       ],
-      aiKeyAchievements: topTasks.map((task) => ({
-        taskId: task.id,
-        taskName: task.name,
-        categoryPath: task.categoryPath,
-        duration: task.elapsedTime,
-        reason: '重要的时间投入',
-      })),
+      aiKeyAchievements: topTasks
+        .filter(task => task.name) // 过滤掉没有名称的任务
+        .map((task) => ({
+          taskId: task.id,
+          taskName: task.name!,
+          categoryPath: task.categoryPath || '未分类',
+          duration: task.elapsedTime,
+          reason: '重要的时间投入',
+        })),
     };
   }
 }

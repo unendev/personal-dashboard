@@ -1,0 +1,1 @@
+ALTER TABLE "instance_tags" DROP CONSTRAINT "instance_tags_name_userId_key";

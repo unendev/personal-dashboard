@@ -405,7 +405,7 @@ export function getEffectiveDateString(inputDate: Date, cutoffHour: number = 2):
   const cutoffTimeToday = new Date(date);
   cutoffTimeToday.setHours(cutoffHour, 0, 0, 0);
 
-  let effectiveDate = new Date(date);
+  const effectiveDate = new Date(date);
 
   // 如果当前时间在切分时间点之前 (例如，00:00 到 01:59)，则属于前一天
   if (date.getTime() < cutoffTimeToday.getTime()) {

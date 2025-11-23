@@ -31,7 +31,7 @@ export default async function DashboardPage() {
   const stories = await getStories();
 
   // Mock data as per the plan
-  const user = session?.user ?? { name: 'Guest', image: '' };
+  const user = session?.user ?? { id: 'guest', name: 'Guest', image: '' };
   const userStats = {
     completed: 5,
     favorited: 2,

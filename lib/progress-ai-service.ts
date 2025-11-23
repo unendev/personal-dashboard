@@ -79,8 +79,17 @@ export class ProgressAIService {
         skillProfiles.map((s) => [s.skillName, s.proficiency])
       );
 
-      // 3. 调用AI进行深度分析
-      const analysis = await this.callAIForAnalysis(tasks, skillMap, targetDate);
+      // 3. 数据预处理：转换任务数据格式
+      const normalizedTasks = tasks
+        .filter(task => task.name && task.categoryPath) // 过滤掉无效任务
+        .map(task => ({
+          name: task.name!,
+          elapsedTime: task.elapsedTime,
+          categoryPath: task.categoryPath!
+        }));
+
+      // 4. 调用AI进行深度分析
+      const analysis = await this.callAIForAnalysis(normalizedTasks, skillMap, targetDate);
 
       return analysis;
     } catch (error) {

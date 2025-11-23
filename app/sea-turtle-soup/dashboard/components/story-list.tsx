@@ -38,10 +38,14 @@ export default function StoryList({ stories, userStoryStates }: StoryListProps) 
                 <CardTitle className="mr-2 text-[rgb(var(--color-mystery-ink))] dark:text-[rgb(var(--color-mystery-ink-dark))]">{story.title}</CardTitle>
                 <div className="flex items-center gap-1">
                   {storyState === 'completed' && (
-                    <CheckCircle className="h-4 w-4 text-green-700 dark:text-green-400" title="已完成" />
+                    <span title="已完成">
+                      <CheckCircle className="h-4 w-4 text-green-700 dark:text-green-400" />
+                    </span>
                   )}
                   {storyState === 'favorited' && (
-                    <Star className="h-4 w-4 text-yellow-700 dark:text-yellow-400 fill-yellow-700 dark:fill-yellow-400" title="已收藏" />
+                    <span title="已收藏">
+                      <Star className="h-4 w-4 text-yellow-700 dark:text-yellow-400 fill-yellow-700 dark:fill-yellow-400" />
+                    </span>
                   )}
                   <span
                     className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap 

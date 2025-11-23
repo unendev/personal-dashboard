@@ -75,7 +75,7 @@ export async function mergeDuplicateTimerTasks(userId: string): Promise<MergeRes
 
       result.details.push({
         primaryTaskId: primaryTask.id,
-        primaryTaskName: primaryTask.name,
+        primaryTaskName: primaryTask.name || '未命名任务',
         mergedTaskIds: mergedTaskIds,
         totalElapsedTime: accumulatedElapsedTime,
         totalInitialTime: accumulatedInitialTime,

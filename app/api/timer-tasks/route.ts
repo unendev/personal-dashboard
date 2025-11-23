@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
       date: taskDate,
       parentId: parentId || null,
       order: order !== undefined ? order : 0,
-      version: 1
+      version: 1,
+      taskDefinitionId: null
     };
     
     console.log('📝 [API /timer-tasks] 准备创建的任务数据:', {

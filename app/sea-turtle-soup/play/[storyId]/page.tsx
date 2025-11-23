@@ -34,9 +34,9 @@ async function getStoryTitle(storyId: string): Promise<string> {
 export default async function SeaTurtleSoupPlayPage({
   params,
 }: {
-  params: { storyId: string };
+  params: Promise<{ storyId: string }>;
 }) {
-  const { storyId } = params;
+  const { storyId } = await params;
   const initialTitle = await getStoryTitle(storyId);
 
   return <SoupPlayerClient storyId={storyId} initialTitle={initialTitle} />;

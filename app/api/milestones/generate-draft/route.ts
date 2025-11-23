@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
         categoryStats[category] = { hours: 0, tasks: [] };
       }
       categoryStats[category].hours += task.elapsedTime / 3600;
-      categoryStats[category].tasks.push(task.name);
+      if (task.name) {
+        categoryStats[category].tasks.push(task.name);
+      }
     });
 
     // 找出主要关注领域
@@ -69,10 +71,10 @@ export async function POST(request: NextRequest) {
     // 生成关键成果（选择时长较长的任务）
     const keyAchievements = tasks
       .slice(0, 10) // 取前10个任务
-      .filter(task => task.elapsedTime >= 1800) // 至少30分钟
+      .filter(task => task.elapsedTime >= 1800 && task.name) // 至少30分钟且有名称
       .map(task => ({
         taskId: task.id,
-        taskName: task.name,
+        taskName: task.name!,
         categoryPath: task.categoryPath || '未分类',
         duration: task.elapsedTime,
         reason: `投入了${Math.round(task.elapsedTime / 60)}分钟，是本周重要的学习/工作内容`,
