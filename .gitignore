@@ -53,3 +53,6 @@ next-env.d.ts
 
 # OSS 配置文件（包含敏感密钥）
 oss-config.txt
+
+/.archive/
+

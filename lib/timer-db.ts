@@ -35,20 +35,19 @@ export const TimerDB = {
   getTasksByDate: async (userId: string, date: string): Promise<TimerTask[]> => {
     try {
       const tasks = await prisma.timerTask.findMany({
-        where: { 
-          userId,
-          date 
-        },
-        include: {
-          children: {
-            include: {
-              children: true // 递归包含子任务
-            },
-            orderBy: { createdAt: 'desc' }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      });
+                where: {
+                  userId,
+                  date 
+                },
+                include: {
+                  children: {
+                    include: {
+                      children: true // 递归包含子任务
+                    },
+                    orderBy: { order: 'asc' }
+                  }
+                },
+                orderBy: { order: 'asc' }      });
 
       // 只返回顶级任务（没有父任务的任务）
       return tasks.filter(task => !(task as any).parentId);

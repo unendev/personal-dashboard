@@ -317,7 +317,7 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
           name: newChildName,
           categoryPath: parentTask.categoryPath, // 子任务继承父任务的分类路径
           initialTime: initialTimeInSeconds,
-          elapsedTime: 0, // 新任务的已运行时间应该为 0
+          elapsedTime: initialTimeInSeconds,
             parentId: parentId,
           order: (parentTask.children || []).length,
           date: new Date().toISOString().split('T')[0], // 添加 date 字段

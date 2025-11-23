@@ -35,9 +35,9 @@ export function useLogPageState(userId: string) {
   
   // 时间段选择（用于统计和AI总结）
   const [dateRange, setDateRange] = useState<DateRangeValue>({
-    startDate: '',
-    endDate: '',
-    label: '本周'
+    startDate: getEffectiveDateString(new Date(), 2),
+    endDate: getEffectiveDateString(new Date(), 2),
+    label: '今日'
   });
   
   // 移动端区域切换
