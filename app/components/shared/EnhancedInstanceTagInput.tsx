@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, KeyboardEvent } from 'react'
 import { InstanceTagCache } from '@/lib/instance-tag-cache'
 import { Button } from '@/app/components/ui/button'
-import { Plus, Clock, Sparkles } from 'lucide-react'
+import { Plus, Clock, Sparkles, Tags } from 'lucide-react'
 import { safeFetchJSON } from '@/lib/fetch-utils'
 
 interface InstanceTag {
@@ -39,6 +39,7 @@ export function EnhancedInstanceTagInput({
   const [isCreating, setIsCreating] = useState(false)
   const [recentTags, setRecentTags] = useState<string[]>([])
   const [isMobile, setIsMobile] = useState(false)
+  const [isBrowsingAll, setIsBrowsingAll] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -399,67 +400,111 @@ export function EnhancedInstanceTagInput({
           </Button>
         )}
 
+        {/* 浏览全部按钮 */}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setIsBrowsingAll(prev => !prev);
+            setShowSuggestions(true);
+            if(inputRef.current) inputRef.current.focus();
+          }}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-auto"
+          title="浏览所有标签"
+        >
+          <Tags className={`h-4 w-4 ${isBrowsingAll ? 'text-blue-500' : 'text-gray-400 hover:text-gray-600'}`} />
+        </Button>
+
         {/* 建议下拉浮窗（包含最近使用和推荐） */}
         {showSuggestions && (
           <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-            {/* 最近使用 */}
-            {recentTags.length > 0 && !inputValue && (
-              <div className="border-b border-gray-200 dark:border-gray-700">
-                <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
-                  <Clock className="h-3 w-3" />
-                  最近使用
-                </div>
-                {recentTags.map((tag) => {
-                  const displayName = tag.replace(/^#/, '')
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => addTag(tag)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                    >
-                      <span className="text-xs">🔖</span>
-                      {displayName}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* 搜索建议 */}
-            {filteredSuggestions.length > 0 && (
+            {isBrowsingAll ? (
+              // 浏览全部模式
               <div>
                 <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
-                  <Sparkles className="h-3 w-3" />
-                  建议
+                  <Tags className="h-3 w-3" />
+                  所有标签
                 </div>
-                {filteredSuggestions.map((suggestion, index) => {
-                  const displayName = suggestion.replace(/^#/, '')
+                {availableTags.map((tag) => {
+                  const displayName = tag.name.replace(/^#/, '')
                   return (
                     <button
-                      key={suggestion}
+                      key={tag.id}
                       type="button"
-                      onClick={() => addTag(suggestion)}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
-                        index === selectedIndex
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
+                      onClick={() => addTag(tag.name)}
+                      disabled={tags.includes(tag.name)}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {index === selectedIndex && <span className="text-xs">→</span>}
                       <span className="text-xs">🏷️</span>
                       {displayName}
                     </button>
                   )
                 })}
               </div>
-            )}
+            ) : (
+              // 默认建议模式
+              <>
+                {/* 最近使用 */}
+                {recentTags.length > 0 && (
+                  <div className="border-b border-gray-200 dark:border-gray-700">
+                    <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
+                      <Clock className="h-3 w-3" />
+                      最近使用
+                    </div>
+                    {recentTags.map((tag) => {
+                      const displayName = tag.replace(/^#/, '')
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => addTag(tag)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-xs">🔖</span>
+                          {displayName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
-            {/* 无建议时显示提示 */}
-            {!filteredSuggestions.length && inputValue && (
-              <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                按 Enter 创建新标签
-              </div>
+                {/* 搜索建议 */}
+                {filteredSuggestions.length > 0 && (
+                  <div>
+                    <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
+                      <Sparkles className="h-3 w-3" />
+                      建议
+                    </div>
+                    {filteredSuggestions.map((suggestion, index) => {
+                      const displayName = suggestion.replace(/^#/, '')
+                      return (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => addTag(suggestion)}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
+                            index === selectedIndex
+                              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {index === selectedIndex && <span className="text-xs">→</span>}
+                          <span className="text-xs">🏷️</span>
+                          {displayName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* 无建议时显示提示 */}
+                {!filteredSuggestions.length && inputValue && (
+                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                    按 Enter 创建新标签
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
