@@ -53,6 +53,9 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
       if (type === 'clone' && sourceName) {
         // 复制模式：使用原任务名 + " - 副本"
         setTaskName(`${sourceName} - 副本`);
+      } else if (instanceTag) {
+        // 事物项标签模式：使用事物项作为默认任务名
+        setTaskName(instanceTag);
       } else {
         // 分类创建模式：保持为空，使用 placeholder 提示
         setTaskName('');
@@ -188,6 +191,23 @@ const QuickCreateDialog: React.FC<QuickCreateDialogProps> = ({
           </div>
           
           {/* 事物项标签 */}
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              事务项 (可选)
+            </label>
+            {selectedTags.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedTags([])}
+                className="text-xs text-gray-500 hover:text-red-500 h-auto px-2 py-1"
+                aria-label="清空所有已选标签"
+              >
+                清空
+              </Button>
+            )}
+          </div>
           <EnhancedInstanceTagInput
             tags={selectedTags}
             onChange={setSelectedTags}

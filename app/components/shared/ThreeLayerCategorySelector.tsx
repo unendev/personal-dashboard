@@ -5,6 +5,7 @@ import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/app/components/ui/input'
 import { Button } from '@/app/components/ui/button'
 import { CategoryCache } from '@/lib/category-cache'
+import { cn } from '@/lib/utils';
 
 interface CategoryNode {
   id: string
@@ -12,9 +13,10 @@ interface CategoryNode {
   children?: CategoryNode[]
 }
 
-interface CustomCategories {
-  [key: string]: string[]
-}
+// 【删除】 CustomCategories 接口
+// interface CustomCategories {
+//   [key: string]: string[]
+// }
 
 interface ThreeLayerCategorySelectorProps {
   value: string
@@ -36,8 +38,8 @@ export function ThreeLayerCategorySelector({
   const [selectedMid, setSelectedMid] = useState('')
   const [selectedSub, setSelectedSub] = useState('')
 
-  // 自定义分类状态
-  const [customCategories, setCustomCategories] = useState<CustomCategories>({})
+  // 【删除】自定义分类状态
+  // const [customCategories, setCustomCategories] = useState<CustomCategories>({})
   const [showAddTopDialog, setShowAddTopDialog] = useState(false)
   const [showAddMidDialog, setShowAddMidDialog] = useState(false)
   const [newTopName, setNewTopName] = useState('')
@@ -50,17 +52,6 @@ export function ThreeLayerCategorySelector({
     const loadCategories = async () => {
       setIsLoading(true)
       try {
-        // 1. 优先从缓存加载（立即显示）
-        const cachedData = CategoryCache.loadFromStorage()
-        if (cachedData && cachedData.length > 0) {
-          setAllCategories(cachedData)
-          setIsLoading(false)
-          // 后台异步检查更新
-          checkForUpdates()
-          return
-        }
-
-        // 2. 无缓存时使用预加载（自动处理缓存）
         const freshData = await CategoryCache.preload()
         setAllCategories(freshData)
       } catch (error) {
@@ -71,38 +62,25 @@ export function ThreeLayerCategorySelector({
       }
     }
 
-    // 后台检查更新
-    const checkForUpdates = async () => {
-      try {
-        const response = await fetch('/api/log-categories')
-        if (!response.ok) return
-        
-        const newData = await response.json()
-        const currentData = CategoryCache.getCategories()
-        
-        // 简单对比数据是否变化
-        if (JSON.stringify(newData) !== JSON.stringify(currentData)) {
-          console.log('检测到分类数据更新，刷新缓存')
-          CategoryCache.updateCategories(newData)
-          setAllCategories(newData)
-        }
-      } catch (error) {
-        console.log('后台检查分类更新失败:', error)
-      }
-    }
-
     loadCategories()
 
-    // 加载自定义分类
-    const saved = localStorage.getItem('customCategories')
-    if (saved) {
-      try {
-        setCustomCategories(JSON.parse(saved))
-      } catch (e) {
-        console.error('加载自定义分类失败:', e)
-      }
-    }
+    // 【删除】从 localStorage 加载自定义分类的代码
+    // const saved = localStorage.getItem('customCategories')
+    // if (saved) {
+    //   try {
+    //     setCustomCategories(JSON.parse(saved))
+    //   } catch (e) {
+    //     console.error('加载自定义分类失败:', e)
+    //   }
+    // }
   }, [])
+
+  // 【新增】保存当前选择的分类
+  useEffect(() => {
+    if (value) {
+      localStorage.setItem('lastSelectedCategoryPath', value)
+    }
+  }, [value])
 
   // 解析路径并更新选择状态
   useEffect(() => {
@@ -115,48 +93,19 @@ export function ThreeLayerCategorySelector({
   }, [value, allCategories])
 
   // 获取顶层分类
-  const topCategories = [
-    ...allCategories.map(cat => ({ name: cat.name, id: cat.id, isCustom: false })),
-    ...Object.keys(customCategories)
-      .filter(key => !key.includes('/'))
-      .map(name => ({ name, id: `custom-${name}`, isCustom: true }))
-  ]
+  const topCategories = allCategories.map(cat => ({ name: cat.name, id: cat.id }))
 
   // 获取中层分类
   const getMidCategories = () => {
-    // 从真实数据中查找
     const topCat = allCategories.find(cat => cat.name === selectedTop)
-    const fromData = topCat?.children || []
-
-    // 从自定义中查找
-    const customMids = (customCategories[selectedTop] || [])
-      .filter(m => !m.includes('/'))
-      .map(mid => ({
-        name: mid,
-        isCustom: true
-      }))
-
-    return [
-      ...fromData.map(cat => ({ name: cat.name, isCustom: false })),
-      ...customMids
-    ]
+    return topCat?.children?.map(cat => ({ name: cat.name, id: cat.id })) || []
   }
 
   // 获取底层分类
   const getSubCategories = () => {
-    // 从真实数据中查找
     const topCat = allCategories.find(cat => cat.name === selectedTop)
     const midCat = topCat?.children?.find(cat => cat.name === selectedMid)
-    const fromData = midCat?.children?.map(cat => ({ name: cat.name, isCustom: false })) || []
-
-    // 从自定义中查找 (存储格式: "顶层/中层/底层")
-    const key = `${selectedTop}/${selectedMid}`
-    const customSubs = (customCategories[key] || []).map(sub => ({
-      name: sub,
-      isCustom: true
-    }))
-
-    return [...fromData, ...customSubs]
+    return midCat?.children?.map(cat => ({ name: cat.name, id: cat.id })) || []
   }
 
   const midCategories = getMidCategories()
@@ -202,87 +151,153 @@ export function ThreeLayerCategorySelector({
   }
 
   // 添加顶层
-  const addTopCategory = () => {
+  const addTopCategory = async () => {
     if (!newTopName.trim()) return
-    if (topCategories.find(cat => cat.name === newTopName)) {
+    if (topCategories.find(cat => cat.name === newTopName.trim())) {
       alert('该分类已存在')
       return
     }
 
-    const updated = { ...customCategories, [newTopName]: [] }
-    setCustomCategories(updated)
-    localStorage.setItem('customCategories', JSON.stringify(updated))
-    setNewTopName('')
-    setShowAddTopDialog(false)
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'top', name: newTopName.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '创建失败');
+      }
+
+      // 重新加载所有分类数据
+      alert('顶层分类创建成功');
+      setIsLoading(true);
+      const freshData = await CategoryCache.preload();
+      setAllCategories(freshData);
+      setIsLoading(false);
+      
+      // 保持当前选择，但清空新增输入框
+      setNewTopName('');
+      setShowAddTopDialog(false);
+    } catch (error: any) {
+      alert(`创建失败: ${error.message}`);
+    }
   }
 
   // 添加中层
-  const addMidCategory = () => {
+  const addMidCategory = async () => {
     if (!selectedTop || !newMidName.trim()) return
-    if (midCategories.find(cat => cat.name === newMidName)) {
+    if (midCategories.find(cat => cat.name === newMidName.trim())) {
       alert('该分类已存在')
       return
     }
 
-    const updated = {
-      ...customCategories,
-      [selectedTop]: [...(customCategories[selectedTop] || []), newMidName]
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'mid', parentPath: selectedTop, name: newMidName.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '创建失败');
+      }
+
+      // 重新加载所有分类数据
+      alert('中层分类创建成功');
+      setIsLoading(true);
+      const freshData = await CategoryCache.preload();
+      setAllCategories(freshData);
+      setIsLoading(false);
+      
+      // 保持当前选择，但清空新增输入框
+      setNewMidName('');
+      setShowAddMidDialog(false);
+    } catch (error: any) {
+      alert(`创建失败: ${error.message}`);
     }
-    setCustomCategories(updated)
-    localStorage.setItem('customCategories', JSON.stringify(updated))
-    setNewMidName('')
-    setShowAddMidDialog(false)
   }
 
   // 添加底层
-  const addSubCategory = () => {
+  const addSubCategory = async () => {
     if (!selectedMid || !newSubName.trim()) return
-    if (subCategories.find(cat => cat.name === newSubName)) {
+    if (subCategories.find(cat => cat.name === newSubName.trim())) {
       alert('该分类已存在')
       return
     }
 
-    const key = `${selectedTop}/${selectedMid}`
-    const updated = {
-      ...customCategories,
-      [key]: [...(customCategories[key] || []), newSubName]
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'sub', parentPath: `${selectedTop}/${selectedMid}`, name: newSubName.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '创建失败');
+      }
+
+      // 重新加载所有分类数据
+      alert('底层分类创建成功');
+      setIsLoading(true);
+      const freshData = await CategoryCache.preload();
+      setAllCategories(freshData);
+      setIsLoading(false);
+      
+      // 保持当前选择，但清空新增输入框
+      setNewSubName('');
+      setShowAddSubDialog(false);
+    } catch (error: any) {
+      alert(`创建失败: ${error.message}`);
     }
-    setCustomCategories(updated)
-    localStorage.setItem('customCategories', JSON.stringify(updated))
-    setNewSubName('')
-    setShowAddSubDialog(false)
   }
 
   // 删除分类
-  const deleteCategory = (type: 'top' | 'mid' | 'sub', name: string) => {
-    if (!confirm(`确定删除"${name}"吗？`)) return
+  const deleteCategory = async (type: 'top' | 'mid' | 'sub', name: string) => {
+    if (!confirm(`确定删除分类 "${name}" 吗？这也会删除其所有子分类。`)) return;
 
-    const updated = { ...customCategories }
-    if (type === 'top') {
-      delete updated[name]
-      Object.keys(updated).forEach(key => {
-        if (key.startsWith(`${name}/`)) {
-          delete updated[key]
-        }
-      })
-    } else if (type === 'mid' && selectedTop) {
-      updated[selectedTop] = (updated[selectedTop] || []).filter(m => m !== name)
-      Object.keys(updated).forEach(key => {
-        if (key.startsWith(`${selectedTop}/${name}/`)) {
-          delete updated[key]
-        }
-      })
-    } else if (type === 'sub' && selectedTop && selectedMid) {
-      const key = `${selectedTop}/${selectedMid}`
-      updated[key] = (updated[key] || []).filter(s => s !== name)
-      if (!updated[key] || updated[key].length === 0) {
-        delete updated[key]
+    let path = '';
+    if (type === 'mid') path = selectedTop;
+    if (type === 'sub') path = `${selectedTop}/${selectedMid}`;
+
+    try {
+      const response = await fetch('/api/log-categories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, path, name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除失败');
       }
-    }
 
-    setCustomCategories(updated)
-    localStorage.setItem('customCategories', JSON.stringify(updated))
-  }
+      // 重新加载所有分类数据
+      alert('分类已成功删除');
+      setIsLoading(true);
+      const freshData = await CategoryCache.preload();
+      setAllCategories(freshData);
+      setIsLoading(false);
+      
+      // 清理选择
+      if (type === 'top') {
+        setSelectedTop('');
+        setSelectedMid('');
+        setSelectedSub('');
+      } else if (type === 'mid') {
+        setSelectedMid('');
+        setSelectedSub('');
+      } else if (type === 'sub') {
+        setSelectedSub('');
+      }
+      onChange(''); // 清空父组件的选中路径
+    } catch (error: any) {
+      alert(`删除失败: ${error.message}`);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-sm text-gray-500">加载分类中...</div>
@@ -360,7 +375,10 @@ export function ThreeLayerCategorySelector({
                 <button
                   onClick={() => deleteCategory('top', cat.name)}
                   data-delete-btn
-                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-all shadow-lg hidden"
+                  className={cn(
+                    "absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-all shadow-lg",
+                    selectedTop !== cat.name && "hidden" // 默认隐藏，只有选中时才显示
+                  )}
                   title="删除此分类"
                 >
                   <Trash2 className="h-3 w-3" />

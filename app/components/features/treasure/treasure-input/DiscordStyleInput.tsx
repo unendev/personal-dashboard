@@ -10,6 +10,7 @@ import { SlashCommandPanel } from './SlashCommandPanel'
 import { MusicCardForm } from './MusicCardForm'
 import { PrimaryCategorySelector } from './PrimaryCategorySelector'
 import { TagInput } from './TagInput'
+import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag' // 【新增】
 
 interface DiscordStyleInputProps {
   onSubmit: (data: TreasureData) => Promise<void>
@@ -17,6 +18,7 @@ interface DiscordStyleInputProps {
   initialData?: TreasureData & { id?: string }
   mode?: 'create' | 'edit'
   lastTags?: string[]
+  recentTags?: string[] // 【新增】
 }
 
 interface UploadingImage {
@@ -35,7 +37,7 @@ interface ImageWithPreview {
   previewUrl?: string   // 用于预览的签名 URL
 }
 
-export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create', lastTags }: DiscordStyleInputProps) {
+export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create', lastTags, recentTags }: DiscordStyleInputProps) {
   const [content, setContent] = useState('')
   const [images, setImages] = useState<ImageWithPreview[]>([])
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([])
@@ -613,6 +615,27 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         value={primaryCategory}
         onChange={setPrimaryCategory}
       />
+
+      {/* 【新增】最近使用的标签 */}
+      {recentTags && recentTags.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-700/50">
+          <span className="text-sm text-gray-400 mr-1">最近使用:</span>
+          {recentTags.map(tag => (
+            <HierarchicalTag
+              key={tag}
+              tag={tag}
+              variant="default"
+              size="sm"
+              onClick={() => {
+                // 如果标签不存在，则添加
+                if (!topicTags.includes(tag)) {
+                  setTopicTags(prev => [...prev, tag])
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* 主题标签输入 */}
       <TagInput

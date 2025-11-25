@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import type { PrismaClient } from '@prisma/client';
 
 // Type definitions for category structure
 interface CategoryNode {
@@ -11,7 +12,7 @@ interface CategoryNode {
 interface DeleteRequest {
   type: 'top' | 'mid' | 'sub';
   path: string;
-  name: string;
+  name:string;
 }
 
 interface CreateRequest {
@@ -155,6 +156,35 @@ export async function POST(request: Request) {
   }
 }
 
+// Helper function to get all descendant IDs using an iterative approach
+async function getAllDescendantIds(categoryId: string, prismaClient: PrismaClient): Promise<string[]> {
+  const allIds: string[] = [];
+  const queue: string[] = [categoryId];
+  const visited: Set<string> = new Set();
+  
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (visited.has(currentId)) {
+      continue;
+    }
+    visited.add(currentId);
+    allIds.push(currentId);
+    
+    const children = await prismaClient.logCategory.findMany({
+      where: { parentId: currentId },
+      select: { id: true },
+    });
+    
+    for (const child of children) {
+      if (!visited.has(child.id)) {
+        queue.push(child.id);
+      }
+    }
+  }
+  
+  return allIds;
+}
+
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();
@@ -167,7 +197,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    let categoryToDelete: DatabaseCategory | null = null;
+    let categoryToDelete: { id: string; name: string } | null = null;
     
     if (type === 'top') {
       // Delete top-level category
@@ -175,7 +205,8 @@ export async function DELETE(request: Request) {
         where: {
           name: name,
           parentId: null
-        }
+        },
+        select: { id: true, name: true },
       });
     } else if (type === 'mid') {
       // Delete mid-level category - categoryPath is the top category name
@@ -194,7 +225,8 @@ export async function DELETE(request: Request) {
         where: {
           name: name,
           parentId: topCategory.id
-        }
+        },
+        select: { id: true, name: true },
       });
     } else if (type === 'sub') {
       // Delete sub-level category - categoryPath is "topName/midName"
@@ -226,7 +258,8 @@ export async function DELETE(request: Request) {
         where: {
           name: name,
           parentId: midCategory.id
-        }
+        },
+        select: { id: true, name: true },
       });
     } else {
       console.error('Invalid delete type:', type);
@@ -237,14 +270,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: '分类不存在' }, { status: 404 });
     }
     
-    // Delete the category (cascade will handle children)
-    await prisma.logCategory.delete({
-      where: {
-        id: categoryToDelete.id
-      }
-    });
+    // Get all descendant IDs including the category itself
+    const idsToDelete = await getAllDescendantIds(categoryToDelete.id, prisma);
     
-    console.log('Deleted category:', categoryToDelete.name);
+    // Delete the category and all its descendants in a single, efficient operation
+    await prisma.logCategory.deleteMany({
+      where: {
+        id: {
+          in: idsToDelete,
+        },
+      },
+    });
+
+    console.log('Deleted category and its children:', categoryToDelete.name);
     
     // Fetch updated categories
     const updatedCategories = await prisma.logCategory.findMany({

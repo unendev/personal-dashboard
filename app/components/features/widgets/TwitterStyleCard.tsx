@@ -868,6 +868,20 @@ function TwitterStyleCardComponent({
                   <Share2 className="h-4 w-4" />
                 </Button>
 
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(treasure.id)
+                    }}
+                    className="gap-2 text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+
                 {/* 更多操作 */}
                 <div className="relative" ref={actionsRef}>
                   <Button
@@ -895,19 +909,6 @@ function TwitterStyleCardComponent({
                         >
                           <Edit className="h-4 w-4" />
                           编辑
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowActions(false)
-                            onDelete(treasure.id)
-                          }}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          删除
                         </button>
                       )}
                     </div>
@@ -1186,6 +1187,20 @@ function TwitterStyleCardComponent({
                     <Share2 className="h-4 w-4" />
                   </Button>
 
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(treasure.id)
+                      }}
+                      className="gap-2 text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+
                   {/* 更多操作 */}
                   <div className="relative" ref={actionsRef}>
                     <Button
@@ -1213,19 +1228,6 @@ function TwitterStyleCardComponent({
                           >
                             <Edit className="h-4 w-4" />
                             编辑
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setShowActions(false)
-                              onDelete(treasure.id)
-                            }}
-                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-red-400 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            删除
                           </button>
                         )}
                       </div>

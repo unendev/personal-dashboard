@@ -248,7 +248,7 @@ export function TagInput({
               <span className="text-gray-600">|</span>
               <span className="flex items-center gap-1 text-blue-400">
                 <ChevronDown className="h-3 w-3" />
-                {filteredSuggestions.length} 个建议
+                {filteredSuggestions.length} 个所有标签
               </span>
             </>
           )}

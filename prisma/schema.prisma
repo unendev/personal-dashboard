@@ -533,6 +533,7 @@ model Article {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   publishedAt      DateTime?
+  order            Int               @default(0)
   author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   treasureRefs     TreasureReference[]
 
@@ -663,6 +664,7 @@ model Note {
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  order     Int      @default(0)
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   

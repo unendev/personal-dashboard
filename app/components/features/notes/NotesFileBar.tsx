@@ -1,13 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/app/components/ui/button'
 import { Plus, FileText, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 import { useNoteGrouping } from './hooks/useNoteGrouping'
 
+// 使用与 SimpleMdEditor.tsx 统一的 Note 接口
 interface Note {
   id: string
   title: string
+  order: number // 增加 order 属性
 }
 
 interface NotesFileBarProps {
@@ -21,6 +23,7 @@ interface NotesFileBarProps {
   onSelectParent?: (parentId: string) => void
   onToggleExpand?: (parentId: string, isExpanded: boolean) => void
   groupingData?: Record<string, string[]>  // 从父组件接收 grouping 数据
+  onReorderNotes: (reorderedNotes: Note[]) => void // 添加新的排序回调
 }
 
 export const NotesFileBar: React.FC<NotesFileBarProps> = ({
@@ -34,14 +37,18 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
   onSelectParent,
   onToggleExpand,
   groupingData,
+  onReorderNotes, // 接收排序回调
 }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const localGrouping = useNoteGrouping(userId)
-  // 优先使用从父组件传来的 groupingData，否则用本地 grouping
   const grouping = groupingData ? { grouping: groupingData, isExpanded: (id: string) => localGrouping.isExpanded(id) } : { grouping: localGrouping.grouping, isExpanded: (id: string) => localGrouping.isExpanded(id) }
+
+  // 拖拽相关状态
+  const draggedItemRef = useRef<number | null>(null) // 记录被拖拽项在 topLevelNotes 中的索引
+  const dragOverItemRef = useRef<number | null>(null) // 记录拖拽进入的目标项在 topLevelNotes 中的索引
 
   useEffect(() => {
     if (editingNoteId && inputRef.current) {
@@ -73,9 +80,7 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
   const handleToggleExpand = (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation()
     const isCurrentlyExpanded = localGrouping.isExpanded(noteId)
-    // 切换展开状态
     localGrouping.toggleExpand(noteId)
-    // 通知父组件展开状态变化
     onToggleExpand?.(noteId, !isCurrentlyExpanded)
   }
 
@@ -88,32 +93,93 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
     }
   }
 
-  // 获取顶级笔记（未分组的笔记）
-  const topLevelNotes = notes.filter(note => {
-    // 只有在分组加载完成后再进行过滤
-    if (!localGrouping.isLoaded) return true  // 加载中时显示所有笔记（等待数据）
-    
-    const currentGrouping = groupingData || localGrouping.grouping
-    for (const children of Object.values(currentGrouping)) {
-      if (children.includes(note.id)) {
-        return false  // 如果笔记在某个分组的子列表中，就不是顶级
+  const topLevelNotes = notes
+    .filter(note => {
+      if (!localGrouping.isLoaded) return true
+      const currentGrouping = groupingData || localGrouping.grouping
+      for (const children of Object.values(currentGrouping)) {
+        if (children.includes(note.id)) {
+          return false
+        }
       }
+      return true
+    })
+    .sort((a, b) => (a.order || 0) - (b.order || 0)); // 按 order 字段排序
+
+  // ========== 拖拽处理函数 ==========
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    draggedItemRef.current = index
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', topLevelNotes[index].id) // 传递笔记ID
+  }
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault()
+    dragOverItemRef.current = index
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // dragOverItemRef.current = null;
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault() // 必须阻止默认行为才能触发 drop 事件
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const draggedIndex = draggedItemRef.current
+    const dropIndex = dragOverItemRef.current
+
+    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) {
+      draggedItemRef.current = null
+      dragOverItemRef.current = null
+      return
     }
-    return true  // 否则视为顶级
-  })
+
+    const reorderedTopLevelNotes = [...topLevelNotes]
+    const [draggedNote] = reorderedTopLevelNotes.splice(draggedIndex, 1)
+    reorderedTopLevelNotes.splice(dropIndex, 0, draggedNote)
+
+    // 更新 order 字段
+    const updatedNotes = reorderedTopLevelNotes.map((note, idx) => ({ ...note, order: idx }))
+    onReorderNotes(updatedNotes) // 通知父组件进行持久化
+
+    draggedItemRef.current = null
+    dragOverItemRef.current = null
+  }
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    draggedItemRef.current = null
+    dragOverItemRef.current = null
+  }
+
 
   return (
     <div className="flex items-center bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50 pr-2">
       <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
-        {topLevelNotes.map(note => {
+        {topLevelNotes.map((note, index) => {
           const isActive = currentNoteId === note.id
           const isEditing = editingNoteId === note.id
-          const hasChildren = (groupingData || localGrouping.grouping)[note.id]?.length > 0
           const isExpanded = localGrouping.isExpanded(note.id)
+          const isDraggingOver = dragOverItemRef.current === index && draggedItemRef.current !== index;
+
 
           return (
             <div
               key={note.id}
+              // 拖拽属性
+              draggable={!isEditing} // 编辑状态下不可拖拽
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              data-note-id={note.id} // 用于调试和识别
+              data-note-title={note.title} // 用于调试和识别
+
               onClick={() => {
                 if (!isEditing) {
                   onSelectNote(note.id)
@@ -125,7 +191,7 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
                 isActive && !isEditing
                   ? 'bg-gray-800 border-blue-500'
                   : 'bg-transparent border-transparent hover:bg-gray-800/50'
-              }`}
+              } ${isDraggingOver ? 'border-dashed border-blue-500 bg-blue-900/20' : ''}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {/* 展开/收缩按钮 - 总是显示 */}

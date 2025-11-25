@@ -32,6 +32,7 @@ interface TreasureInputModalProps {
   initialData?: TreasureData & { id?: string }
   mode?: 'create' | 'edit'
   lastTags?: string[]
+  recentTags?: string[] // 【新增】
 }
 
 export function TreasureInputModal({ 
@@ -40,7 +41,8 @@ export function TreasureInputModal({
   onSubmit,
   initialData,
   mode = 'create',
-  lastTags
+  lastTags,
+  recentTags // 【新增】
 }: TreasureInputModalProps) {
   const [isMounted, setIsMounted] = useState(false)
 
@@ -95,6 +97,7 @@ export function TreasureInputModal({
               initialData={initialData}
               mode={mode}
               lastTags={lastTags}
+              recentTags={recentTags} // 【新增】
             />
           </div>
         </DialogPrimitive.Content>

@@ -59,6 +59,8 @@ export function TreasureList({ className }: TreasureListProps) {
   
   // 复用上一条标签功能
   const [lastTags, setLastTags] = useState<string[]>([])
+  // 【新增】最近使用的标签（从 localStorage 加载）
+  const [recentTags, setRecentTags] = useState<string[]>([])
   
   // 分页相关
   const [page, setPage] = useState(1)
@@ -78,6 +80,15 @@ export function TreasureList({ className }: TreasureListProps) {
   // 确保组件在客户端挂载
   useEffect(() => {
     setIsMounted(true)
+    // 【新增】从 localStorage 加载最近使用的标签
+    const storedRecentTags = localStorage.getItem('recentTreasureTags')
+    if (storedRecentTags) {
+      try {
+        setRecentTags(JSON.parse(storedRecentTags))
+      } catch (e) {
+        console.error('Failed to parse recentTreasureTags from localStorage', e)
+      }
+    }
   }, [])
 
   // 追踪最后一条宝藏的标签（用于复用功能）
@@ -379,6 +390,13 @@ export function TreasureList({ className }: TreasureListProps) {
           { id: newTreasure.id, createdAt: newTreasure.createdAt, tags: newTreasure.tags },
           ...prev
         ])
+
+        // 【新增】更新最近使用的标签
+        setRecentTags(prevTags => {
+          const updatedTags = Array.from(new Set([...newTreasure.tags, ...prevTags])).slice(0, 20)
+          localStorage.setItem('recentTreasureTags', JSON.stringify(updatedTags))
+          return updatedTags
+        })
       }
     } catch (error) {
       console.error('创建宝藏失败:', error)
@@ -467,6 +485,13 @@ export function TreasureList({ className }: TreasureListProps) {
         
         setShowEditModal(false)
         setEditingTreasure(null)
+
+        // 【新增】更新最近使用的标签
+        setRecentTags(prevTags => {
+          const updatedTags = Array.from(new Set([...updatedTreasure.tags, ...prevTags])).slice(0, 20)
+          localStorage.setItem('recentTreasureTags', JSON.stringify(updatedTags))
+          return updatedTags
+        })
       }
     } catch (error) {
       console.error('更新宝藏失败:', error)
@@ -677,6 +702,7 @@ export function TreasureList({ className }: TreasureListProps) {
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateTreasure}
           lastTags={lastTags}
+          recentTags={recentTags} // 【新增】
         />
 
         {/* 编辑模态框 */}
@@ -703,6 +729,7 @@ export function TreasureList({ className }: TreasureListProps) {
               musicUrl: editingTreasure.musicUrl,
               musicCoverUrl: editingTreasure.musicCoverUrl
             }}
+            recentTags={recentTags} // 【新增】
           />
         )}
 

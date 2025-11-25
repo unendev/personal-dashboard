@@ -219,6 +219,7 @@ interface Note {
   id: string;
   title: string;
   content?: string;
+  order: number; // Add order property for sorting
 }
 
 interface SimpleMdEditorProps {
@@ -606,6 +607,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
 
   const handleUpdateTitle = async (noteId: string, newTitle: string) => {
     // Optimistically update the UI
+    const originalNotes = notesList;
     setNotesList(notesList.map(n => n.id === noteId ? { ...n, title: newTitle } : n));
 
     try {
@@ -625,7 +627,81 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
       console.error('Error updating title:', error);
       alert('标题更新失败');
       // Revert on error
-      await loadNotesList();
+      setNotesList(originalNotes);
+    }
+  };
+
+  const handleReorderNotes = async (reorderedNotes: Note[]) => {
+    const originalNotes = [...notesList];
+    
+    // Create a map for quick lookup of reordered notes
+    const reorderedMap = new Map(reorderedNotes.map(n => [n.id, n]));
+    
+    // Create a new list that respects the new order for reordered items,
+    // and keeps the original order for other items (like children in other groups).
+    const newNotesList = originalNotes
+      .map(note => reorderedMap.get(note.id) || note)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    setNotesList(newNotesList);
+
+    try {
+      const response = await fetch('/api/notes/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: reorderedNotes.map(({ id, order }) => ({ id, order })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save order');
+      }
+    } catch (error) {
+      console.error('Error reordering notes:', error);
+      alert('保存排序失败');
+      // Revert on error
+      setNotesList(originalNotes);
+    }
+  };
+
+  const handleReorderChildNotes = async (parentId: string, reorderedChildNotes: Note[]) => {
+    const originalNotes = [...notesList];
+
+    // Create a map for quick lookup of the reordered child notes
+    const reorderedMap = new Map(reorderedChildNotes.map(n => [n.id, n]));
+
+    // Update the main notes list by only modifying the order of the affected children
+    const updatedNotesList = originalNotes.map(note => {
+      const reorderedChildNote = reorderedMap.get(note.id);
+      if (reorderedChildNote) {
+        return { ...note, order: reorderedChildNote.order };
+      }
+      return note;
+    });
+    setNotesList(updatedNotesList);
+
+    // Also update the grouping data optimistically
+    grouping.updateGroup(parentId, reorderedChildNotes.map(n => n.id));
+
+    try {
+      const response = await fetch('/api/notes/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: reorderedChildNotes.map(({ id, order }) => ({ id, order })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save child order');
+      }
+    } catch (error) {
+      console.error('Error reordering child notes:', error);
+      alert('保存子笔记排序失败');
+      // Revert on error
+      setNotesList(originalNotes);
+      grouping.updateGroup(parentId, originalNotes.filter(n => grouping.getGroup(parentId)?.includes(n.id)).map(n => n.id));
     }
   };
 
@@ -1017,6 +1093,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
         onCreateNote={() => handleCreateNote()}
         onDeleteNote={handleDeleteNote}
         onUpdateNoteTitle={handleUpdateTitle}
+        onReorderNotes={handleReorderNotes}
         userId={userId}
         onSelectParent={setSelectedParentId}
         groupingData={grouping.grouping}
@@ -1050,6 +1127,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
               grouping.toggleExpand(childId)
             }
           }}
+          onReorderChildNotes={handleReorderChildNotes}
         />
       )}
       <div className="flex items-center justify-end gap-2 text-sm text-gray-400 my-2 flex-shrink-0 px-2">

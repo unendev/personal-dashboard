@@ -88,29 +88,46 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   }, [tasks, calculateTotalTime]);
 
 
-  // 构建 分类 模式的 ECharts 旭日图数据（严格父=子求和，避免数值重叠；第三层可选并支持"其他"聚合）
+  // 构建 分类 模式的 ECharts 旭日图数据（合并同名任务，支持"其他"聚合）
   const buildCategorySunburstData = React.useCallback(() => {
-    // 过滤顶级任务，避免子任务被重复统计（calculateTotalTime 已包含子任务时间）
+    // 定义聚合后的任务结构
+    interface AggregatedTask {
+      id: string; // 使用 name 作为聚合后的唯一ID
+      name: string;
+      elapsedTime: number;
+      categoryPath: string;
+    }
+
+    // 过滤顶级任务
     const topLevelTasks = tasks.filter(task => !task.parentId);
     
-    // 预聚合成两级分类结构：First -> Second -> TaskDetail[]
-    const firstLevelMap = new Map<string, Map<string, TaskDetail[]>>();
+    // 预聚合成两级分类结构: First -> Second -> Map<TaskName, AggregatedTask>
+    const firstLevelMap = new Map<string, Map<string, Map<string, AggregatedTask>>>();
+    
     topLevelTasks.forEach(task => {
+      if (!task.name) return; // 忽略没有名称的任务
+      
       const category = task.categoryPath || '未分类';
       const taskTotalTime = calculateTotalTime(task);
       const parts = category.split('/');
       const first = parts[0] || '未分类';
       const second = parts.length >= 2 ? parts[1] : '其他';
 
-      const secondMap = firstLevelMap.get(first) || new Map<string, TaskDetail[]>();
-      const list = secondMap.get(second) || [];
-      list.push({
-        id: task.id,
-        name: task.name,
-        elapsedTime: taskTotalTime,
-        categoryPath: `${first}/${second}`
-      });
-      secondMap.set(second, list);
+      const secondMap = firstLevelMap.get(first) || new Map<string, Map<string, AggregatedTask>>();
+      const taskMap = secondMap.get(second) || new Map<string, AggregatedTask>();
+      
+      const existingTask = taskMap.get(task.name);
+      if (existingTask) {
+        existingTask.elapsedTime += taskTotalTime;
+      } else {
+        taskMap.set(task.name, {
+          id: task.name, // 使用任务名称作为聚合后的ID
+          name: task.name,
+          elapsedTime: taskTotalTime,
+          categoryPath: `${first}/${second}`
+        });
+      }
+      secondMap.set(second, taskMap);
       firstLevelMap.set(first, secondMap);
     });
 
@@ -118,15 +135,33 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       name: string;
       value: number;
       children: SunburstNode[];
-      itemStyle?: { color: string };
-      // 叶子元数据（仅叶子存在）
+      itemStyle?: { color: string; borderColor?: string }; // 允许定义边框颜色
       fullName?: string;
       taskId?: string;
       categoryPath?: string;
       isLeaf?: boolean;
+      label?: { show: boolean }; // 允许隐藏标签
+      emphasis?: { itemStyle?: { color: string } }; // 允许定义高亮样式
     }
 
-    const root: SunburstNode = { name: '总时间', value: 0, children: [] };
+    const root: SunburstNode = {
+      name: '总时间',
+      value: 0,
+      children: [],
+      // 【修改】让根节点完全透明且无交互
+      itemStyle: {
+        color: 'transparent',
+        borderColor: 'transparent'
+      },
+      label: {
+        show: false
+      },
+      emphasis: {
+        itemStyle: {
+          color: 'transparent'
+        }
+      }
+    };
     const colors = [
       '#5470c6', '#91cc75', '#fac858', '#ee6666',
       '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
@@ -134,23 +169,15 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
     ];
     let colorIndex = 0;
 
-    // 构造第一层
     firstLevelMap.forEach((secondMap, firstName) => {
-      const firstNode: SunburstNode = {
-        name: firstName,
-        value: 0,
-        children: [],
-        itemStyle: { color: colors[colorIndex % colors.length] }
-      };
+      const firstNode: SunburstNode = { name: firstName, value: 0, children: [], itemStyle: { color: colors[colorIndex % colors.length] } };
       colorIndex++;
 
-      // 构造第二层
-      secondMap.forEach((taskList, secondName) => {
-        // 分类下的全部任务时间
+      secondMap.forEach((taskMap, secondName) => {
+        const taskList = Array.from(taskMap.values()); // 从Map转换回数组以进行排序和筛选
         const totalCategoryTime = taskList.reduce((s, t) => s + t.elapsedTime, 0);
 
-        // 选择要展开为叶子的任务
-        let selected: TaskDetail[] = [];
+        let selected: AggregatedTask[] = [];
         if (showAllLeaf) {
           selected = [...taskList].sort((a, b) => b.elapsedTime - a.elapsedTime);
         } else {
@@ -158,7 +185,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
           const byTopN = sorted.slice(0, Math.max(0, detailTopN || 0));
           const byPercent = sorted.filter(t => totalCategoryTime > 0 && (t.elapsedTime / totalCategoryTime) >= (detailMinPercent || 0));
           const bySeconds = sorted.filter(t => t.elapsedTime >= (minLeafSeconds || 0));
-          const mergedMap = new Map<string, TaskDetail>();
+          const mergedMap = new Map<string, AggregatedTask>();
           [...byTopN, ...byPercent, ...bySeconds].forEach(t => mergedMap.set(t.id, t));
           selected = Array.from(mergedMap.values()).sort((a, b) => b.elapsedTime - a.elapsedTime);
         }
@@ -166,15 +193,9 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         const selectedSum = selected.reduce((s, t) => s + t.elapsedTime, 0);
         const otherSum = Math.max(0, totalCategoryTime - selectedSum);
 
-        const secondNode: SunburstNode = {
-          name: secondName,
-          value: 0,
-          children: [],
-          itemStyle: { color: colors[colorIndex % colors.length] }
-        };
+        const secondNode: SunburstNode = { name: secondName, value: 0, children: [], itemStyle: { color: colors[colorIndex % colors.length] } };
         colorIndex++;
 
-        // 第三层：选中的任务叶子
         selected.forEach((t, idx) => {
           const truncated = t.name.length > 8 ? t.name.substring(0, 8) + '...' : t.name;
           secondNode.children.push({
@@ -189,27 +210,18 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
           });
         });
 
-        // 第三层：其他聚合
         if (!showAllLeaf && selected.length > 0 && otherSum > 0) {
-          secondNode.children.push({
-            name: '其他',
-            value: otherSum,
-            children: [],
-            itemStyle: { color: colors[colorIndex % colors.length] }
-          });
+          secondNode.children.push({ name: '其他', value: otherSum, children: [], itemStyle: { color: colors[colorIndex % colors.length] } });
         }
 
-        // 二级节点取子节点之和，避免父子数值重叠
         secondNode.value = secondNode.children.reduce((s, c) => s + c.value, 0);
         firstNode.children.push(secondNode);
       });
 
-      // 一级节点取子节点之和
       firstNode.value = firstNode.children.reduce((s, c) => s + c.value, 0);
       root.children.push(firstNode);
     });
 
-    // 根节点取子节点之和
     root.value = root.children.reduce((s, c) => s + c.value, 0);
     if (root.value <= 0) root.value = 1;
     
@@ -247,8 +259,32 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
 
   // 构建 事务项 模式的 ECharts 旭日图数据（根 → 叶：各事务项），支持选择过滤
   const buildInstanceSunburstData = React.useCallback(() => {
-    interface SunburstNode { name: string; value: number; children: SunburstNode[] }
-    const root: SunburstNode = { name: '总时间', value: 0, children: [] };
+    interface SunburstNode {
+      name: string;
+      value: number;
+      children: SunburstNode[];
+      itemStyle?: { color: string; borderColor?: string };
+      label?: { show: boolean };
+      emphasis?: { itemStyle?: { color: string } };
+    }
+    const root: SunburstNode = {
+      name: '总时间',
+      value: 0,
+      children: [],
+      // 【修改】让根节点完全透明且无交互
+      itemStyle: {
+        color: 'transparent',
+        borderColor: 'transparent'
+      },
+      label: {
+        show: false
+      },
+      emphasis: {
+        itemStyle: {
+          color: 'transparent'
+        }
+      }
+    };
     const filtered = selectedInstanceTags.length > 0
       ? instanceStats.filter(it => selectedInstanceTags.includes(it.instanceTag))
       : instanceStats;
@@ -295,7 +331,6 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         data: [sunburstData],
         radius: [0, '95%'],
         center: ['50%', '50%'],
-        nodeClick: 'zoomToNode',
         sort: 'desc',
         itemStyle: {
           borderWidth: 2,
@@ -392,12 +427,32 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         style={{ height: '500px', width: '100%' }}
         opts={{ renderer: 'canvas' }}
         onEvents={{
-          click: (params: { data?: { name?: string } }) => {
-            const chartInstance = (window as unknown as Record<string, unknown>).__echartInstance as { dispatchAction: (action: { type: string; targetNodeId?: string }) => void } | undefined;
-            if (chartInstance && params?.data) {
-              // 手动触发缩放到点击的节点
-              // 注意：echarts-for-react 中 nodeClick: 'zoomToNode' 不工作
-              // 必须通过 dispatchAction 手动触发
+          click: (params: any) => {
+            const chartInstance = (window as any).__echartInstance;
+            if (!chartInstance || !params.data) {
+              return;
+            }
+
+            // 获取当前的根节点名称
+            const currentOption = chartInstance.getOption();
+            const currentRootName = currentOption.series[0].data[0].name;
+
+            // 如果点击的是当前的中心节点
+            if (params.data.name === currentRootName) {
+              // 检查是否有父节点可供返回
+              const ancestors = params.treePathInfo;
+              // treePathInfo 包含从根到当前节点的所有节点，最后一个是自己
+              if (ancestors && ancestors.length > 1) {
+                // 倒数第二个是父节点
+                const parentNode = ancestors[ancestors.length - 2];
+                chartInstance.dispatchAction({
+                  type: 'sunburstRootToNode',
+                  targetNodeId: parentNode.name
+                });
+              }
+              // 如果没有父节点（即点击的是最顶层的"总时间"），则不执行任何操作
+            } else {
+              // 点击的是子节点，放大到该节点
               chartInstance.dispatchAction({
                 type: 'sunburstRootToNode',
                 targetNodeId: params.data.name

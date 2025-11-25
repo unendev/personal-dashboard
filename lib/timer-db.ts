@@ -79,32 +79,22 @@ export const TimerDB = {
 
         // 如果有事务项，创建关联
         if (instanceTagNames && instanceTagNames.length > 0) {
-          for (const tagName of instanceTagNames) {
-            // 查找或创建事务项
-            let instanceTag = await tx.instanceTag.findFirst({
-              where: {
-                name: tagName,
-                userId: taskData.userId
-              }
-            });
-
-            if (!instanceTag) {
-              instanceTag = await tx.instanceTag.create({
+          const tagLinkPromises = instanceTagNames.map(tagName =>
+            tx.instanceTag.upsert({
+              where: { userId_name: { userId: taskData.userId, name: tagName } },
+              update: {},
+              create: { name: tagName, userId: taskData.userId },
+            }).then(instanceTag => 
+              tx.timerTaskInstanceTag.create({
                 data: {
-                  name: tagName,
-                  userId: taskData.userId
-                }
-              });
-            }
+                  timerTaskId: newTask.id,
+                  instanceTagId: instanceTag.id,
+                },
+              })
+            )
+          );
 
-            // 创建关联
-            await tx.timerTaskInstanceTag.create({
-              data: {
-                timerTaskId: newTask.id,
-                instanceTagId: instanceTag.id
-              }
-            });
-          }
+          await Promise.all(tagLinkPromises);
 
           // 重新获取任务以包含新的事务项关联
           const updatedTask = await tx.timerTask.findUnique({
@@ -123,6 +113,8 @@ export const TimerDB = {
         }
 
         return newTask;
+      }, {
+        timeout: 15000 // 增加事务超时时间至 15 秒
       });
 
       return result;

@@ -372,7 +372,7 @@ const InstanceTagSelector: React.FC<InstanceTagSelectorProps> = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="absolute right-0 top-0 h-7 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute right-0 top-0 h-7 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 transition-opacity"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteTag(tag.id, tag.name);

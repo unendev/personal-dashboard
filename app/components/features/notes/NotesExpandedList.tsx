@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/app/components/ui/button'
 import { Plus, FileText, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 
 interface Note {
   id: string
   title: string
+  order: number;
 }
 
 interface NotesExpandedListProps {
@@ -20,6 +21,7 @@ interface NotesExpandedListProps {
   isCreating: boolean
   expandedChildId?: string | null
   onToggleExpand?: (id: string) => void
+  onReorderChildNotes: (parentId: string, reorderedChildNotes: Note[]) => void;
 }
 
 export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
@@ -33,10 +35,15 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   isCreating,
   expandedChildId,
   onToggleExpand,
+  onReorderChildNotes,
 }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  // Drag and Drop state
+  const draggedItemRef = useRef<number | null>(null)
+  const dragOverItemRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (editingNoteId && inputRef.current) {
@@ -44,6 +51,8 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
       inputRef.current.select()
     }
   }, [editingNoteId])
+
+  const sortedChildNotes = [...childNotes].sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const handleSaveTitle = () => {
     if (editingNoteId && editingTitle.trim() !== '') {
@@ -83,20 +92,65 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
     }
   }
 
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    draggedItemRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', sortedChildNotes[index].id);
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    dragOverItemRef.current = index;
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // dragOverItemRef.current = null;
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const draggedIndex = draggedItemRef.current;
+    const dropIndex = dragOverItemRef.current;
+
+    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex || !parentNote) {
+      draggedItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+
+    const reorderedChildNotes = [...sortedChildNotes];
+    const [draggedNote] = reorderedChildNotes.splice(draggedIndex, 1);
+    reorderedChildNotes.splice(dropIndex, 0, draggedNote);
+
+    const updatedNotes = reorderedChildNotes.map((note, idx) => ({ ...note, order: idx }));
+    onReorderChildNotes(parentNote.id, updatedNotes);
+
+    draggedItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    draggedItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
   if (!parentNote) return null
 
   return (
     <div className="bg-gray-800/50 border-b border-gray-700/30 px-2 relative z-30">
-      {/* 子栏标题 - 显示父笔记信息 */}
       <div className="py-1.5 px-2 text-xs text-gray-600 border-b border-gray-700/20 mb-1">
         📁 {parentNote.title}
       </div>
 
-      {/* 子文件列表 */}
       <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
-        {/* 第一项：父文件本身 */}
         {parentNote && (
-          <div
+           <div
             key={parentNote.id}
             onClick={() => onSelectNote(parentNote.id)}
             className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] font-semibold ${
@@ -114,7 +168,6 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
                 {parentNote.title || 'Untitled'}
               </span>
             </div>
-            {/* 删除按钮 - hover 时显示 */}
             {onDeleteNote && (
               <button
                 onClick={(e) => handleDeleteNote(e, parentNote.id)}
@@ -126,43 +179,35 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
             )}
           </div>
         )}
-
-        {/* 子文件列表 */}
-        {childNotes.map((note) => {
+        
+        {sortedChildNotes.map((note, index) => {
           const isActive = activeNoteId === note.id
           const isEditing = editingNoteId === note.id
           const isExpanded = expandedChildId === note.id
+          const isDraggingOver = dragOverItemRef.current === index && draggedItemRef.current !== index;
 
           return (
             <div
               key={note.id}
+              draggable={!isEditing}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
               onClick={(e) => {
-                console.log('🟣 [NotesExpandedList] 点击事件触发:', {
-                  noteId: note.id,
-                  noteTitle: note.title,
-                  isEditing,
-                  onSelectNote: typeof onSelectNote,
-                  eventTarget: e.target,
-                  currentTarget: e.currentTarget,
-                  timestamp: new Date().toISOString()
-                })
                 e.stopPropagation()
-                if (!isEditing) {
-                  console.log('🟣 [NotesExpandedList] 调用 onSelectNote:', note.id)
-                  onSelectNote(note.id)
-                } else {
-                  console.log('🟣 [NotesExpandedList] 跳过点击（正在编辑）')
-                }
+                if (!isEditing) onSelectNote(note.id)
               }}
               onDoubleClick={() => handleDoubleClick(note)}
               className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] ${
                 isActive && !isEditing
                   ? 'bg-gray-700 border-blue-500'
                   : 'bg-gray-800 border-gray-700 hover:bg-gray-700/70'
-              }`}
+              } ${isDraggingOver ? 'border-dashed border-blue-500 bg-blue-900/20' : ''}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* 展开按钮 */}
                 <button
                   onClick={(e) => handleToggleExpand(e, note.id)}
                   className="p-0.5 hover:bg-gray-600 rounded transition-colors flex-shrink-0"
@@ -195,7 +240,6 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
                   </span>
                 )}
               </div>
-              {/* 删除按钮 - hover 时显示 */}
               {!isEditing && onDeleteNote && (
                 <button
                   onClick={(e) => handleDeleteNote(e, note.id)}
@@ -209,7 +253,6 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
           )
         })}
 
-        {/* 新建按钮 */}
         <Button
           size="sm"
           variant="ghost"

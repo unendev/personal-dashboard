@@ -60,11 +60,16 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer, initi
     // 获取分类最后一层名称
     const lastCategoryName = getLastCategoryName()
     
-    // 如果任务名为空，使用分类名；否则使用用户输入
-    const finalTaskName = taskName.trim() || lastCategoryName
+    // 【修改】如果任务名为空，优先使用第一个事务项标签作为任务名；否则使用分类名
+    let finalTaskName = taskName.trim()
+    if (!finalTaskName && selectedTags.length > 0) {
+      finalTaskName = selectedTags[0] // 使用第一个事务项标签作为任务名
+    } else if (!finalTaskName) {
+      finalTaskName = lastCategoryName // 如果没有事务项标签，则使用分类名
+    }
 
     if (!finalTaskName.trim()) {
-      alert('请输入任务名称或先选择分类')
+      alert('请输入任务名称或先选择分类或事务项')
       return
     }
 
