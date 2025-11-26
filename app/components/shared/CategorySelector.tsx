@@ -42,10 +42,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ className, onLogSav
 
   useEffect(() => {
     const load = async () => {
-      // 首先尝试从本地存储加载缓存
-      const cachedData = CategoryCache.loadFromStorage();
-      if (cachedData && cachedData.length > 0) {
-        console.log('使用本地存储的分类数据:', cachedData);
+      // 首先尝试从缓存加载
+      const cachedData = CategoryCache.getCategories();
+      if (cachedData && cachedData.length > 0 && CategoryCache.isReady()) {
+        console.log('使用缓存的分类数据:', cachedData);
         setCategories(cachedData);
         setIsCategoriesLoading(false);
         

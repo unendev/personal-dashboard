@@ -427,9 +427,17 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
         style={{ height: '500px', width: '100%' }}
         opts={{ renderer: 'canvas' }}
         onEvents={{
-          click: (params: any) => {
-            const chartInstance = (window as any).__echartInstance;
-            if (!chartInstance || !params.data) {
+          click: (params: unknown) => {
+            const chartInstance = (window as { 
+              __echartInstance?: { 
+                getOption: () => { series: Array<{ data: Array<{ name: string }> }> }; 
+                dispatchAction: (action: { type: string; targetNodeId?: string }) => void;
+              } 
+            }).__echartInstance;
+            if (!chartInstance) return;
+            
+            const paramsObj = params as { data?: { name?: string }; treePathInfo?: Array<{ name?: string }> };
+            if (!paramsObj.data) {
               return;
             }
 
@@ -438,9 +446,9 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
             const currentRootName = currentOption.series[0].data[0].name;
 
             // 如果点击的是当前的中心节点
-            if (params.data.name === currentRootName) {
+            if (paramsObj.data.name === currentRootName) {
               // 检查是否有父节点可供返回
-              const ancestors = params.treePathInfo;
+              const ancestors = paramsObj.treePathInfo;
               // treePathInfo 包含从根到当前节点的所有节点，最后一个是自己
               if (ancestors && ancestors.length > 1) {
                 // 倒数第二个是父节点
@@ -455,7 +463,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
               // 点击的是子节点，放大到该节点
               chartInstance.dispatchAction({
                 type: 'sunburstRootToNode',
-                targetNodeId: params.data.name
+                targetNodeId: paramsObj.data.name || ''
               });
             }
           }

@@ -196,18 +196,41 @@ export function useNoteGrouping(userId: string | undefined) {
     [expandedNotes]
   )
 
+  // 获取分组（getGroup 的别名，用于兼容）
+  const getGroup = useCallback(
+    (parentId: string): string[] | undefined => {
+      return grouping[parentId]
+    },
+    [grouping]
+  )
+
+  // 更新整个组的顺序
+  const updateGroup = useCallback(
+    (parentId: string, childIds: string[]) => {
+      setGrouping((prev) => {
+        const newGrouping = { ...prev }
+        newGrouping[parentId] = childIds
+        saveGrouping(newGrouping)
+        return newGrouping
+      })
+    },
+    [saveGrouping]
+  )
+
   return {
     grouping,
     expandedNotes,
     isLoaded,
     toggleExpand,
     getChildren,
+    getGroup,
     addToGroup,
     removeFromGroup,
     reorderInGroup,
     reorderTopLevel,
     hasChildren,
     isExpanded,
+    updateGroup,
   }
 }
 

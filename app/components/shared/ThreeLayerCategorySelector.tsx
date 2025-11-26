@@ -180,8 +180,8 @@ export function ThreeLayerCategorySelector({
       // 保持当前选择，但清空新增输入框
       setNewTopName('');
       setShowAddTopDialog(false);
-    } catch (error: any) {
-      alert(`创建失败: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`创建失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 
@@ -215,8 +215,8 @@ export function ThreeLayerCategorySelector({
       // 保持当前选择，但清空新增输入框
       setNewMidName('');
       setShowAddMidDialog(false);
-    } catch (error: any) {
-      alert(`创建失败: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`创建失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 
@@ -250,8 +250,8 @@ export function ThreeLayerCategorySelector({
       // 保持当前选择，但清空新增输入框
       setNewSubName('');
       setShowAddSubDialog(false);
-    } catch (error: any) {
-      alert(`创建失败: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`创建失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 
@@ -294,8 +294,8 @@ export function ThreeLayerCategorySelector({
         setSelectedSub('');
       }
       onChange(''); // 清空父组件的选中路径
-    } catch (error: any) {
-      alert(`删除失败: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 

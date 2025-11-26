@@ -6,7 +6,24 @@
 
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+const originalUrl = process.env.POSTGRES_PRISMA_URL;
+
+if (!originalUrl) {
+  console.error('❌ POSTGRES_PRISMA_URL environment variable not found!');
+  process.exit(1);
+}
+
+// Robustly add connect_timeout to the database URL
+const separator = originalUrl.includes('?') ? '&' : '?';
+const urlWithTimeout = `${originalUrl}${separator}connect_timeout=60`;
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: urlWithTimeout,
+    },
+  },
+});
 
 async function wakeDatabase() {
   console.log('🔄 唤醒数据库...')
