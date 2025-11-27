@@ -46,8 +46,62 @@ model User {
   books                       Book[]
   readingProgress             ReadingProgress[]
   bookNotes                   BookNote[]
+  russianLearningNotes        RussianLearningNote[]
+  flashcards                  Flashcard[]
+  conversations               Conversation[]
 
   @@map("users")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "user" or "assistant"
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+  @@map("chat_messages")
+}
+
+model RussianLearningNote {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  sourceText String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("russian_learning_notes")
+}
+
+model Flashcard {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  front        String   @db.Text
+  back         String   @db.Text
+  stage        Int      @default(0)
+  nextReviewAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("flashcards")
 }
 
 model Account {

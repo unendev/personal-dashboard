@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { clearManualLogout } from "@/app/hooks/useDevSession"
 
 export default function LoginForm() {
@@ -12,6 +12,8 @@ export default function LoginForm() {
   const [isDemoLoading, setIsDemoLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
 
   // 确保示例账号存在
   useEffect(() => {
@@ -24,6 +26,8 @@ export default function LoginForm() {
     setIsLoading(true)
     setError("")
 
+    console.log("Login initiated, callbackUrl:", callbackUrl); // 添加日志
+
     try {
       const result = await signIn("credentials", {
         email,
@@ -34,9 +38,9 @@ export default function LoginForm() {
       if (result?.error) {
         setError("邮箱或密码错误")
       } else {
-        // 登录成功，清除手动登出标记，重定向到日志页面
+        // 登录成功，清除手动登出标记，重定向到 callbackUrl
         clearManualLogout()
-        router.push('/log')
+        router.push(callbackUrl)
       }
     } catch {
       setError("登录失败，请重试")
@@ -48,6 +52,8 @@ export default function LoginForm() {
   const handleDemoLogin = async () => {
     setIsDemoLoading(true)
     setError("")
+
+    console.log("Demo login initiated, callbackUrl:", callbackUrl); // 添加日志
 
     try {
       // 获取示例账号信息
@@ -63,9 +69,9 @@ export default function LoginForm() {
       if (result?.error) {
         setError("示例账号登录失败")
       } else {
-        // 登录成功，清除手动登出标记，重定向到首页
+        // 登录成功，清除手动登出标记，重定向到 callbackUrl
         clearManualLogout()
-        router.push('/')
+        router.push(callbackUrl)
       }
     } catch {
       setError("示例账号登录失败，请重试")

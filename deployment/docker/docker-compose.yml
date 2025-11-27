@@ -8,10 +8,7 @@ services:
       - docker.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      # You can uncomment the following line to expose the database to your host machine for debugging
-      # Be aware of security implications.
-      # - "5432:5432"
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
