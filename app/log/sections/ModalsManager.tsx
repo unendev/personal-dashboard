@@ -10,7 +10,7 @@ interface ModalsManagerProps {
   isCreateLogModalOpen: boolean;
   onCloseCreateLogModal: () => void;
   onLogSaved: () => void;
-  onAddToTimer: (taskName: string, category: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  onAddToTimer: (taskName: string, category: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
   
   // QuickCreateModal (藏宝阁)
   isTreasureModalOpen: boolean;

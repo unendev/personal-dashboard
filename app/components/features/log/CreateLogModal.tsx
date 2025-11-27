@@ -8,7 +8,7 @@ interface CreateLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
   initialCategory?: string; // 初始分类路径（用于复制任务）
 }
 

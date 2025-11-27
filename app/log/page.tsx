@@ -191,7 +191,8 @@ export default function LogPage() {
   // ============ 任务创建处理 ============
   const handleAddToTimer = async (
     taskName: string, 
-    category: string, 
+    category: string,
+    date: string, // 【新增】
     initialTime?: number, 
     instanceTagNames?: string
   ) => {
@@ -199,6 +200,7 @@ export default function LogPage() {
     console.log('📝 [handleAddToTimer] 接收到的参数:', {
       taskName,
       category,
+      date, // 【新增】
       initialTime,
       instanceTagNames,
       initialTimeType: typeof initialTime,
@@ -222,6 +224,7 @@ export default function LogPage() {
         willPassToHandleQuickCreate: {
           name: taskName,
           categoryPath: category,
+          date: date, // 【新增】
           instanceTagNames: instanceTagNamesArray,
           initialTime: finalInitialTime,
           autoStart: false
@@ -235,6 +238,7 @@ export default function LogPage() {
       timerOps.handleQuickCreate({
       name: taskName,
       categoryPath: category,
+      date: date, // 【新增】
         instanceTagNames: instanceTagNamesArray,
         initialTime: finalInitialTime, // 使用传入的时长，默认为 0
       autoStart: false,

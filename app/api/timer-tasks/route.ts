@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
       ? instanceTagNames.map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
       : [];
     
-    // 如果 date 未提供，使用当前日期（YYYY-MM-DD 格式）
-    const taskDate = date || getEffectiveDateString(new Date(), 2);
+    // 如果 date 未提供，则验证会失败，这里直接使用
+    const taskDate = date;
     
     // 📝 [API] 日志：准备创建的任务数据
     const taskDataToCreate = {

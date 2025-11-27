@@ -21,8 +21,7 @@ export const createTimerTaskSchema = z.object({
   
   date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须为 YYYY-MM-DD')
-    .optional(),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须为 YYYY-MM-DD'),
   
   elapsedTime: z
     .number()

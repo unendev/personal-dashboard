@@ -8,7 +8,7 @@ import { Button } from '@/app/components/ui/button'
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void
-  onAddToTimer?: (taskName: string, categoryPath: string, initialTime?: number, instanceTagNames?: string) => Promise<void>
+  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>
   initialCategory?: string // 初始分类路径（用于复制任务）
 }
 
@@ -83,11 +83,14 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer, initi
         const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : undefined
         // 解析时间输入
         const initialTime = parseTimeInput(timeInput)
+        // 【新增】获取本地日期
+        const localDate = new Date().toLocaleDateString('en-CA');
       
       // 📝 [CreateLogFormWithCards] 日志：表单提交数据
       console.log('📝 [CreateLogFormWithCards] 表单提交数据:', {
         finalTaskName,
         selectedCategory,
+        localDate,
         timeInput, // 原始输入
         initialTime, // 解析后的秒数
         selectedTags,
@@ -103,7 +106,7 @@ export default function CreateLogFormWithCards({ onLogSaved, onAddToTimer, initi
       setIsLoading(false)
       
       // 异步创建任务（不阻塞 UI）
-      onAddToTimer(finalTaskName, selectedCategory, initialTime, tagsString).catch((error) => {
+      onAddToTimer(finalTaskName, selectedCategory, localDate, initialTime, tagsString).catch((error) => {
         console.error('❌ [CreateLogFormWithCards] 添加任务失败:', error)
         alert(`添加任务失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`)
       })
