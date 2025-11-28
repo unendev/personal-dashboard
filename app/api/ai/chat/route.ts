@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText } from 'ai'; // Import streaming utilities
 
@@ -17,15 +17,17 @@ export async function POST(req: NextRequest) {
       content: '你是一个循循善诱的俄语老师。请主要使用中文进行教学和解释。在对话中，请使用简单、日常的俄语短语或单词作为例子，并总是在旁边附上中文翻译。你的目标是为初学者创造一个没有压力的学习环境。'
     };
 
+    const deepseek = createOpenAI({
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      baseURL: 'https://api.deepseek.com/v1',
+    });
+
     const result = await streamText({
-      model: openai('deepseek-chat', {
-        apiKey: process.env.DEEPSEEK_API_KEY,
-        baseURL: 'https://api.deepseek.com/v1',
-      }),
+      model: deepseek('deepseek-chat'),
       messages: [systemPrompt, ...messages],
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
 
   } catch (error) {
     console.error('Error calling DeepSeek API:', error);

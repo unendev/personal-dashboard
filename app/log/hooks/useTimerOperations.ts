@@ -10,7 +10,7 @@ interface QuickCreateData {
   categoryPath: string;
   instanceTagNames: string[];
   initialTime: number;
-  date: string;
+  date?: string;
   autoStart: boolean;
 }
 
@@ -136,7 +136,7 @@ export function useTimerOperations(
   
   // ============ 快速创建任务 ============
   
-  const handleQuickCreate = useCallback(async (data: { name: string; categoryPath: string; date: string, instanceTagNames: string[]; initialTime: number; autoStart: boolean; }) => {
+  const handleQuickCreate = useCallback(async (data: QuickCreateData) => {
     // 📝 [handleQuickCreate] 日志：接收到的数据
     console.log('📝 [handleQuickCreate] 接收到的数据:', {
       ...data,
@@ -222,7 +222,7 @@ export function useTimerOperations(
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
-        date: data.date,
+        date: data.date || new Date().toISOString().split('T')[0],
         userId: userId
       };
 

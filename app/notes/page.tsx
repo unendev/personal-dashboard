@@ -36,7 +36,7 @@ export default async function NotesPage() {
             <div key={note.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
               {note.sourceText && (
                 <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 mb-2 italic text-gray-600 dark:text-gray-400">
-                  <p>"{note.sourceText}"</p>
+                  <p>{note.sourceText}</p>
                 </blockquote>
               )}
               <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{note.content}</p>

@@ -110,8 +110,25 @@ export function TextInteractionWrapper({ children }: TextInteractionWrapperProps
     if (containerRef.current && containerRef.current.contains(target)) {
       const range = document.caretRangeFromPoint(event.clientX, event.clientY);
       if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-        range.expand('word');
-        let clickedWord = range.toString().trim();
+        // Get the text content and find the word boundaries
+        const textContent = range.startContainer.textContent || '';
+        const offset = range.startOffset;
+        
+        // Find word boundaries
+        let start = offset;
+        let end = offset;
+        
+        // Move start backwards until we hit a word boundary
+        while (start > 0 && !/\s/.test(textContent[start - 1])) {
+          start--;
+        }
+        
+        // Move end forwards until we hit a word boundary
+        while (end < textContent.length && !/\s/.test(textContent[end])) {
+          end++;
+        }
+        
+        let clickedWord = textContent.substring(start, end).trim();
         clickedWord = clickedWord.replace(/^[.,;:!?"'‘’“”«»-]+|[.,;:!?"'‘’“”«»-]+$/g, '');
 
         if (clickedWord.length > 0) {

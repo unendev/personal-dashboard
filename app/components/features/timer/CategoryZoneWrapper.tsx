@@ -142,6 +142,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   const handleCloneTask = async (
     taskName: string,
     categoryPath: string,
+    date: string,
     initialTime?: number,
     instanceTagNames?: string
   ) => {
