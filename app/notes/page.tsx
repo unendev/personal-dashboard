@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 const prisma = new PrismaClient();
 
@@ -27,7 +28,7 @@ export default async function NotesPage() {
 
       {notes.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">
-          您还没有创建任何笔记。快去 <a href="/russian" className="text-blue-500 hover:underline">学习页面</a> 添加一些吧！
+          您还没有创建任何笔记。快去 <Link href="/russian" className="text-blue-500 hover:underline">学习页面</Link> 添加一些吧！
         </p>
       ) : (
         <div className="space-y-4">

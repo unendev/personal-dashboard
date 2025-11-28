@@ -197,7 +197,7 @@ export async function getConversationMessages(conversationId: string) {
   });
   
   log('getConversationMessages', { status: 'success', count: messages.length });
-  return messages.map(msg => ({ role: msg.role as 'user' | 'assistant' | 'system', content: msg.content }));
+  return messages.map(msg => ({ id: msg.id, role: msg.role as 'user' | 'assistant' | 'system', content: msg.content }));
 }
 
 

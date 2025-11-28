@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { TextInteractionWrapper } from './TextInteractionWrapper';
-import { useChat } from 'ai/react'; // Import useChat hook
+import { useChat } from '@ai-sdk/react'; // Import useChat hook
 import { saveChatMessage, updateConversationTitle } from '../../russian/actions'; // Import server actions
 
 interface Message {

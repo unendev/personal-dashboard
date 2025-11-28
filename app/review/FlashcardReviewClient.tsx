@@ -1,6 +1,9 @@
+"use client";
+
 import { useState, useTransition } from 'react';
 import { Flashcard } from '@prisma/client';
 import { updateFlashcardReview } from '../russian/actions';
+import Link from 'next/link';
 
 interface FlashcardReviewClientProps {
   initialCards: Flashcard[];
@@ -32,9 +35,9 @@ export function FlashcardReviewClient({ initialCards }: FlashcardReviewClientPro
       <div className="text-center">
         <h2 className="text-2xl font-bold text-green-600">复习完成！</h2>
         <p className="text-gray-500 dark:text-gray-400 mt-2">今天的所有卡片都已复习完毕。</p>
-        <a href="/russian" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        <Link href="/russian" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
           返回学习页面
-        </a>
+        </Link>
       </div>
     );
   }
