@@ -53,16 +53,16 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
     messages,
     sendMessage,
     status,
-    setMessages,
+    setMessages: _setMessages,
   } = useChat({
-    // @ts-expect-error
+    // @ts-expect-error - AI SDK expects a different api property shape
     api: '/api/aichat',
     initialMessages: initialMessages,
     body: useChatBody,
     onFinish: onFinishCallback,
     onError: onErrorCallback,
   });
-  // @ts-expect-error
+  // @ts-expect-error - status type may differ from AI SDK
   const isLoading = status === 'in_progress';
 
   // Auto-scroll to the latest message
@@ -88,7 +88,7 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
     }
     
     // Then let useChat handle the rest (sending to API, streaming assistant response)
-    // @ts-expect-error
+    // @ts-expect-error - sendMessage expects a different argument shape
     sendMessage({ content: localInput, role: 'user' }); // Use sendMessage with the current input
   };
 
@@ -97,13 +97,13 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
 
       {/* Chat Messages Area */}
       <div ref={chatContainerRef} className="flex-grow bg-white dark:bg-gray-800 shadow-inner rounded-lg p-4 overflow-y-auto space-y-4">
-        {messages.map((msg, index) => (
+        {messages.map((msg, _index) => (
           // We filter out system messages from rendering
           msg.role !== 'system' && (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xl lg:max-w-2xl px-4 py-2 rounded-lg shadow ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'}`}>
                 <TextInteractionWrapper>
-                  {/* @ts-expect-error */}
+                  {/* @ts-expect-error - UIMessage content may be of different type */}
                   <p className="text-lg whitespace-pre-wrap">{msg.content}</p>
                 </TextInteractionWrapper>
               </div>
