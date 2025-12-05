@@ -51,14 +51,23 @@ export function useTTS(options: UseTtsOptions = {}) {
     utterance.pitch = pitch;
     utterance.volume = volume;
 
-    // Try to find a suitable Russian voice
-    const russianVoice = voices.find(
-      (voice) => voice.lang === lang && voice.localService
-    );
+    // 【优化】优先选择高质量的俄语语音
+    const sortedVoices = voices
+      .filter(voice => voice.lang === lang)
+      .sort((a, b) => {
+        if (a.name.includes('Google')) return -1;
+        if (b.name.includes('Google')) return 1;
+        if (a.localService && !b.localService) return -1;
+        if (!a.localService && b.localService) return 1;
+        return 0;
+      });
+
+    const russianVoice = sortedVoices[0];
+
     if (russianVoice) {
       utterance.voice = russianVoice;
     } else {
-      console.warn(`No local voice found for ${lang}. Using default.`);
+      console.warn(`No suitable voice found for ${lang}. Using default.`);
     }
 
     utterance.onstart = () => setIsSpeaking(true);

@@ -385,20 +385,22 @@ export function EnhancedInstanceTagInput({
             disabled={isCreating || tags.length >= maxTags}
             className="flex-1 min-w-[120px] outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50"
           />
+
+          {/* 【修改】移动端输入时显示明确的“添加”按钮 */}
+          {isMobile && inputValue.trim() && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => addTag(inputValue)}
+              disabled={isCreating}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 h-auto rounded-lg text-sm"
+            >
+              添加
+            </Button>
+          )}
         </div>
 
-        {/* 移动端浮动添加按钮 */}
-        {isMobile && inputValue.trim() && (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => addTag(inputValue)}
-            disabled={isCreating}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 h-auto rounded-lg text-xs shadow-lg"
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        )}
+        {/* 【删除】旧的移动端浮动添加按钮 */}
 
         {/* 浏览全部按钮 */}
         <Button

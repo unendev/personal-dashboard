@@ -5,7 +5,7 @@ services:
     image: postgres:15-alpine
     restart: always
     env_file:
-      - docker.env
+      - deployment/docker/docker.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,11 +17,14 @@ services:
 
   app:
     build:
-      context: ../
+      context: .
       dockerfile: Dockerfile
+      args:
+        - POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}
+        - POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
     restart: always
     env_file:
-      - docker.env
+      - deployment/docker/docker.env
     ports:
       - "3000:3000"
     depends_on:

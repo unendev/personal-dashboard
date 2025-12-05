@@ -35,6 +35,7 @@ interface TimerTask {
 interface CategoryZoneWrapperProps {
   tasks: TimerTask[];
   userId?: string;
+  selectedDate?: string;
   onQuickCreate: (data: QuickCreateData) => Promise<void>;
   onBeforeOperation?: () => void; // 新增：在操作前执行的回调
   renderTaskList: (tasks: TimerTask[], onTaskClone: (task: TimerTask) => void, onBeforeOperation?: () => void) => React.ReactNode;
@@ -43,6 +44,7 @@ interface CategoryZoneWrapperProps {
 const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
   tasks,
   userId = 'user-1',
+  selectedDate,
   onQuickCreate,
   onBeforeOperation,
   renderTaskList
@@ -125,7 +127,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     setQuickCreateDialog(null);
     
     // 异步创建任务（不阻塞 UI）
-    onQuickCreate(data).catch((error) => {
+    onQuickCreate({ ...data, date: selectedDate }).catch((error) => {
       console.error('创建任务失败:', error);
       // 失败时显示错误提示，但不阻止对话框关闭
       alert(`任务创建失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
@@ -154,7 +156,8 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
       categoryPath,
       instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(t => t.trim()).filter(Boolean) : [],
       initialTime: initialTime || 0,
-      autoStart: false // 复制任务默认不自动开始
+      autoStart: false, // 复制任务默认不自动开始
+      date: selectedDate
     };
     
     // 调用 onQuickCreate

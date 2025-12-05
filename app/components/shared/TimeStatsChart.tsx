@@ -206,7 +206,7 @@ const TimeStatsChart: React.FC<TimeStatsChartProps> = ({ tasks, userId, dateRang
           <span className="text-xl">🌅</span>
           时间分布旭日图
         </h3>
-        <EChartsSunburstChart tasks={tasks} userId={userId} />
+        <EChartsSunburstChart tasks={tasks} userId={userId} dateRange={dateRange} />
       </div>
     </div>
   );

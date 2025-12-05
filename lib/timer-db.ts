@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TimerTask as PrismaTimerTask } from '@prisma/client';
+import { Prisma, TimerTask as PrismaTimerTask } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export interface TimerTask extends PrismaTimerTask {
@@ -152,15 +152,15 @@ export const TimerDB = {
     taskCount: number;
   }[]> => {
     try {
-      const whereClause: { userId: string; instanceTag?: { not: null } } = { 
+      const whereClause: Prisma.TimerTaskWhereInput = { 
         userId,
         instanceTag: { not: null }
       };
 
       if (startDate && endDate) {
-        (whereClause as any).date = {
-          gte: startDate,
-          lte: endDate
+        whereClause.createdAt = {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
         };
       }
 

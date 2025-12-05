@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react'; // Added useState and useEffect
 import { useRouter, useParams } from 'next/navigation';
 import { deleteConversation } from '../../russian/actions';
 
@@ -10,10 +10,19 @@ interface DeleteConversationButtonProps {
 }
 
 export function DeleteConversationButton({ conversationId, conversationTitle }: DeleteConversationButtonProps) {
+  const [isMounted, setIsMounted] = useState(false); // State to track mount status
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const params = useParams();
   const isActive = params.conversationId === conversationId;
+
+  useEffect(() => {
+    setIsMounted(true); // Set to true once component has mounted on client
+  }, []);
+
+  if (!isMounted) {
+    return null; // Don't render on server or until client-side mount
+  }
 
   const handleDelete = () => {
     const isConfirmed = window.confirm(`您确定要删除对话“${conversationTitle}”吗？此操作无法撤销。`);
@@ -64,3 +73,4 @@ export function DeleteConversationButton({ conversationId, conversationTitle }: 
     </button>
   );
 }
+

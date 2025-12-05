@@ -15,33 +15,45 @@ export const authOptions: NextAuthOptions = {
         password: { label: "密码", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log('Authorize: No credentials provided');
+            return null
           }
-        })
 
-        if (!user || !('password' in user) || !user.password) {
-          return null
-        }
+          console.log(`Authorize: Attempting to find user with email: ${credentials.email}`);
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            }
+          })
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+          if (!user || !('password' in user) || !user.password) {
+            console.log('Authorize: User not found or user has no password');
+            return null
+          }
 
-        if (!isPasswordValid) {
-          return null
-        }
+          console.log('Authorize: User found, comparing password');
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          if (!isPasswordValid) {
+            console.log('Authorize: Invalid password');
+            return null
+          }
+
+          console.log('Authorize: Password valid, returning user');
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          }
+        } catch (error) {
+          console.error("Authorize Error:", error);
+          // Return null to indicate failure, but the error is now logged.
+          return null;
         }
       }
     }),

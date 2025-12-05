@@ -28,11 +28,12 @@ interface EChartsSunburstChartProps {
   minLeafSeconds?: number;       // 每个二级分类展示时长 >= 此秒数的任务
   showAllLeaf?: boolean;         // 是否强制展示所有叶子（为 true 时忽略聚合）
   userId?: string;               // 用户ID（用于事务项总时长统计）
+  dateRange?: DateRangeValue;
 }
 
 interface TaskDetail {
   id: string;
-  name: string;
+  name:string;
   elapsedTime: number;
   categoryPath: string;
 }
@@ -43,7 +44,8 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
   detailMinPercent = 0.1,
   minLeafSeconds = 600,
   showAllLeaf = false,
-  userId = 'user-1'
+  userId = 'user-1',
+  dateRange
 }) => {
   // 视图模式：按分类（使用传入 tasks），或按事务项（全量总时长）
   const [viewMode, setViewMode] = React.useState<'category' | 'instance'>('category');
@@ -242,7 +244,11 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       try {
         setLoadingInstance(true);
         setInstanceError(null);
-        const res = await fetch(`/api/timer-tasks/stats/by-instance?userId=${encodeURIComponent(userId)}`);
+        let url = `/api/timer-tasks/stats/by-instance?userId=${encodeURIComponent(userId)}`;
+        if (dateRange?.startDate && dateRange?.endDate) {
+          url += `&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+        }
+        const res = await fetch(url);
         if (!res.ok) throw new Error('failed');
         const json = await res.json();
         if (!aborted) {
@@ -255,7 +261,7 @@ const EChartsSunburstChart: React.FC<EChartsSunburstChartProps> = ({
       }
     })();
     return () => { aborted = true };
-  }, [viewMode, userId]);
+  }, [viewMode, userId, dateRange]);
 
   // 构建 事务项 模式的 ECharts 旭日图数据（根 → 叶：各事务项），支持选择过滤
   const buildInstanceSunburstData = React.useCallback(() => {

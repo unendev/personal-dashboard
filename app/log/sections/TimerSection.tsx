@@ -113,6 +113,7 @@ export function TimerSection({
             userId={userId}
             onQuickCreate={onQuickCreate}
             onBeforeOperation={onSaveScrollPositionNow}
+            selectedDate={selectedDate}
             renderTaskList={(groupTasks, onTaskClone, onBeforeOperation) => (
               <NestedTimerZone
                 tasks={tasks}

@@ -23,7 +23,7 @@ export default async function RussianChatPage({ params }: RussianChatPageProps) 
   console.log(`[Page: /russian/[id]] - Fetched ${initialMessages.length} initial messages.`);
   
   return (
-    <div className="flex-grow flex flex-col p-4">
+    <div>
         {/* Render the client component */}
         <ChatClient initialMessages={initialMessages} conversationId={conversationId} />
     </div>

@@ -71,6 +71,11 @@ const envSchema = z.object({
   ER_NICKNAME: z.string().optional(),
 
   // ==========================================
+  // AI 服务 (可选)
+  // ==========================================
+  DEEPSEEK_API_KEY: z.string().optional(),
+
+  // ==========================================
   // 开发环境配置 (可选)
   // ==========================================
   NEXT_PUBLIC_DISABLE_DEV_AUTO_LOGIN: z
