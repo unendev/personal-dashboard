@@ -14,6 +14,7 @@ export interface QuickCreateData {
   instanceTagNames: string[];
   initialTime: number;
   autoStart: boolean;
+  date?: string;
 }
 
 interface QuickCreateDialogProps {
