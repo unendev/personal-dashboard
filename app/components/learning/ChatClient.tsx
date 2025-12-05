@@ -29,7 +29,10 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
       content = String(message.content);
     } else if ('parts' in message && Array.isArray(message.parts)) {
       // If message uses parts, concatenate text parts
-      content = message.parts.map((p: any) => p.text || p.content || '').filter(Boolean).join(' ');
+      content = message.parts.map((p: unknown) => {
+        const part = p as { text?: string; content?: string };
+        return part.text || part.content || '';
+      }).filter(Boolean).join(' ');
     } else {
       // Fallback to empty string
       content = '';
@@ -52,14 +55,14 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
     status,
     setMessages,
   } = useChat({
-    // @ts-ignore
+    // @ts-expect-error
     api: '/api/aichat',
     initialMessages: initialMessages,
     body: useChatBody,
     onFinish: onFinishCallback,
     onError: onErrorCallback,
   });
-  // @ts-ignore
+  // @ts-expect-error
   const isLoading = status === 'in_progress';
 
   // Auto-scroll to the latest message
@@ -85,7 +88,7 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
     }
     
     // Then let useChat handle the rest (sending to API, streaming assistant response)
-    // @ts-ignore
+    // @ts-expect-error
     sendMessage({ content: localInput, role: 'user' }); // Use sendMessage with the current input
   };
 
@@ -100,7 +103,7 @@ export function ChatClient({ initialMessages, conversationId }: ChatClientProps)
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xl lg:max-w-2xl px-4 py-2 rounded-lg shadow ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'}`}>
                 <TextInteractionWrapper>
-                  {/* @ts-ignore */}
+                  {/* @ts-expect-error */}
                   <p className="text-lg whitespace-pre-wrap">{msg.content}</p>
                 </TextInteractionWrapper>
               </div>
