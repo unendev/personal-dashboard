@@ -11,6 +11,7 @@ interface ModalsManagerProps {
   onCloseCreateLogModal: () => void;
   onLogSaved: () => void;
   onAddToTimer: (taskName: string, category: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  selectedDate?: string;
   
   // QuickCreateModal (藏宝阁)
   isTreasureModalOpen: boolean;
@@ -36,6 +37,7 @@ export function ModalsManager({
   onCloseCreateLogModal,
   onLogSaved,
   onAddToTimer,
+  selectedDate,
   isTreasureModalOpen,
   treasureModalType,
   onCloseTreasureModal,
@@ -54,6 +56,7 @@ export function ModalsManager({
         onClose={onCloseCreateLogModal}
         onLogSaved={onLogSaved}
         onAddToTimer={onAddToTimer}
+        selectedDate={selectedDate}
       />
 
       {/* 藏宝阁模态框 */}

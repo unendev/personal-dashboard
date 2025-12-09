@@ -90,7 +90,6 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
     
     return Object.entries(tagCount)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 20) // 只显示前20个
   }, [treasures])
 
   // 如果没有数据，不渲染

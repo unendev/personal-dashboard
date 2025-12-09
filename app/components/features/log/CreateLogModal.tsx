@@ -10,6 +10,7 @@ interface CreateLogModalProps {
   onLogSaved?: () => void;
   onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
   initialCategory?: string; // 初始分类路径（用于复制任务）
+  selectedDate?: string;
 }
 
 const CreateLogModal: React.FC<CreateLogModalProps> = ({ 
@@ -17,7 +18,8 @@ const CreateLogModal: React.FC<CreateLogModalProps> = ({
   onClose, 
   onLogSaved, 
   onAddToTimer,
-  initialCategory
+  initialCategory,
+  selectedDate
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -32,6 +34,7 @@ const CreateLogModal: React.FC<CreateLogModalProps> = ({
             onLogSaved={onLogSaved}
             onAddToTimer={onAddToTimer}
             initialCategory={initialCategory}
+            selectedDate={selectedDate}
           />
         </div>
       </DialogContent>

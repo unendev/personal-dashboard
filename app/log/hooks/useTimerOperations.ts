@@ -10,8 +10,8 @@ interface QuickCreateData {
   categoryPath: string;
   instanceTagNames: string[];
   initialTime: number;
-  date?: string;
   autoStart: boolean;
+  date?: string;
 }
 
 /**
@@ -28,6 +28,7 @@ export function useTimerOperations(
   timerTasks: TimerTask[],
   setTimerTasks: React.Dispatch<React.SetStateAction<TimerTask[]>>,
   userId: string,
+  selectedDate: string,
   fetchTimerTasks: () => Promise<void>,
   fetchOperationRecords: () => Promise<void>
 ) {
@@ -222,7 +223,7 @@ export function useTimerOperations(
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
-        date: data.date || new Date().toISOString().split('T')[0],
+        date: data.date || selectedDate,
         userId: userId
       };
 
@@ -309,7 +310,7 @@ export function useTimerOperations(
       alert(`任务创建失败: ${errorMessage}\n\n请检查网络连接后重试`);
     }
     // 注意：isCreatingTask 已在乐观更新后立即重置，不需要在 finally 中再次设置
-  }, [isCreatingTask, timerTasks, setTimerTasks, userId, recordOperation]);
+  }, [isCreatingTask, timerTasks, setTimerTasks, userId, recordOperation, selectedDate]);
   
   // ============ 自动启动逻辑 ============
   

@@ -115,7 +115,7 @@ export function EnhancedTagPanel({ tags, selectedTag, onTagClick }: EnhancedTagP
           </button>
 
           {expandedGroups.has('navigation') && (
-            <div className="space-y-1 pl-2 max-h-[240px] overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-900 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600">
+            <div className="space-y-1 pl-2 overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-900 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600">
               {Object.entries(navigationTree).map(([level1, level2s]) => (
                 <div key={level1} className="space-y-1">
                   <button

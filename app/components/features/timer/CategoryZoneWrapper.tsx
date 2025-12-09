@@ -127,7 +127,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
     setQuickCreateDialog(null);
     
     // 异步创建任务（不阻塞 UI）
-    onQuickCreate({ ...data, date: selectedDate }).catch((error) => {
+    onQuickCreate(data).catch((error) => {
       console.error('创建任务失败:', error);
       // 失败时显示错误提示，但不阻止对话框关闭
       alert(`任务创建失败: ${error instanceof Error ? error.message : '未知错误'}\n\n请检查网络连接后重试`);
@@ -157,7 +157,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
       instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(t => t.trim()).filter(Boolean) : [],
       initialTime: initialTime || 0,
       autoStart: false, // 复制任务默认不自动开始
-      date: selectedDate
+      date,
     };
     
     // 调用 onQuickCreate
@@ -284,6 +284,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
         onClose={() => setCloneModalOpen(false)}
         onAddToTimer={handleCloneTask}
         initialCategory={cloneTaskCategory}
+        selectedDate={selectedDate}
       />
     </div>
   );

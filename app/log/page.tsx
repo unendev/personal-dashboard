@@ -29,6 +29,7 @@ export default function LogPage() {
     pageState.timerTasks,
     pageState.setTimerTasks,
     userId,
+    pageState.selectedDate,
     pageState.fetchTimerTasks,
     pageState.fetchOperationRecords
   );
@@ -192,7 +193,7 @@ export default function LogPage() {
   const handleAddToTimer = async (
     taskName: string, 
     category: string,
-    date: string, // 【新增】
+    date: string,
     initialTime?: number, 
     instanceTagNames?: string
   ) => {
@@ -200,7 +201,7 @@ export default function LogPage() {
     console.log('📝 [handleAddToTimer] 接收到的参数:', {
       taskName,
       category,
-      date, // 【新增】
+      date,
       initialTime,
       instanceTagNames,
       initialTimeType: typeof initialTime,
@@ -224,7 +225,7 @@ export default function LogPage() {
         willPassToHandleQuickCreate: {
           name: taskName,
           categoryPath: category,
-          date: date, // 【新增】
+          date: date,
           instanceTagNames: instanceTagNamesArray,
           initialTime: finalInitialTime,
           autoStart: false
@@ -236,12 +237,12 @@ export default function LogPage() {
       
       // 异步创建任务（不阻塞 UI）
       timerOps.handleQuickCreate({
-      name: taskName,
-      categoryPath: category,
-      date: date, // 【新增】
+        name: taskName,
+        categoryPath: category,
+        date: date,
         instanceTagNames: instanceTagNamesArray,
         initialTime: finalInitialTime, // 使用传入的时长，默认为 0
-      autoStart: false,
+        autoStart: false,
       }).catch((error) => {
         console.error('❌ [handleAddToTimer] 创建任务失败:', error);
         // 失败时显示错误提示，但不阻止模态框关闭
@@ -299,6 +300,7 @@ export default function LogPage() {
         progressTargetDate={modals.progressTargetDate}
         onCloseDailyProgress={modals.closeDailyProgress}
         onProgressConfirmed={modals.handleProgressConfirmed}
+        selectedDate={pageState.selectedDate}
       />
 
       <div className="w-full overflow-x-hidden">
