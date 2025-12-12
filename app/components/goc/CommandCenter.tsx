@@ -61,6 +61,10 @@ export default function CommandCenter() {
         ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/goc-chat`
         : '/api/goc-chat';
       
+      // 添加超时处理
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,9 +75,31 @@ export default function CommandCenter() {
           mode: aiMode, 
           model: selectedModel
         }),
+        signal: controller.signal,
       });
       
-      if (!response.ok || !response.body) throw new Error('Network response was not ok.');
+      clearTimeout(timeoutId);
+      
+      // 检查 HTTP 响应状态码
+      if (!response.ok) {
+        // 尝试获取错误信息
+        let errorMessage = `HTTP 错误! 状态码: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // 如果响应不是 JSON，尝试获取文本
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = `${errorMessage} - ${errorText}`;
+          } catch (textError) {
+            // 忽略文本解析错误
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      
+      if (!response.body) throw new Error('响应体为空');
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -100,7 +126,16 @@ export default function CommandCenter() {
 
     } catch (error) {
       console.error("Fetch stream error:", error);
-      // Optionally, add an error message to the chat
+      // 向聊天添加错误消息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const errorMessageId = crypto.randomUUID();
+      addMessage({ 
+        id: errorMessageId, 
+        role: 'assistant', 
+        content: `抱歉，处理您的请求时出错了: ${errorMessage}`, 
+        createdAt: Date.now(), 
+        userName: 'NEXUS AI' 
+      });
     } finally {
       setLiveStreamingMessage(null); // Clear streaming message
       setIsLoading(false);
