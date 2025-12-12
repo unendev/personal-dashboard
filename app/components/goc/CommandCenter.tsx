@@ -56,7 +56,12 @@ export default function CommandCenter() {
     const playerList = [{ id: me?.id, name: me?.info?.name }, ...others.map(u => ({ id: u.id, name: u.info?.name || "Unknown" }))];
     
     try {
-      const response = await fetch('/api/goc-chat', {
+      // 使用绝对路径确保正确性
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL 
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/goc-chat`
+        : '/api/goc-chat';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
