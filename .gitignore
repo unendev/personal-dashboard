@@ -56,3 +56,6 @@ oss-config.txt
 
 /.archive/
 
+!doc/上下文.md
+!doc/gemini切换.md
+.aider*
