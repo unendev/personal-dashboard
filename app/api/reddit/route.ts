@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     
     // 统计各板块数量
     const subredditMap = new Map<string, number>();
-    posts.forEach(post => {
+    posts.forEach((post: typeof posts[number]) => {
       if (post.subreddit) {
         subredditMap.set(post.subreddit, (subredditMap.get(post.subreddit) || 0) + 1);
       }

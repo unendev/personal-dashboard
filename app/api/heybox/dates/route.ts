@@ -18,7 +18,7 @@ export async function GET() {
     // 按日期分组统计
     const dateMap = new Map<string, number>();
     
-    posts.forEach(post => {
+    posts.forEach((post: typeof posts[number]) => {
       if (post.timestamp) {
         const date = new Date(post.timestamp).toISOString().split('T')[0];
         dateMap.set(date, (dateMap.get(date) || 0) + 1);

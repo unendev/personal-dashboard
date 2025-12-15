@@ -26,7 +26,7 @@ export async function GET() {
     // 按日期分组并格式化
     const dateMap = new Map<string, number>();
     
-    dates.forEach(post => {
+    dates.forEach((post: typeof dates[number]) => {
       if (post.timestamp) {
         const dateStr = post.timestamp.toISOString().split('T')[0];
         dateMap.set(dateStr, (dateMap.get(dateStr) || 0) + 1);

@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
 
     // 统计标签使用次数
     const tagCounts: Record<string, number> = {};
-    treasures.forEach(treasure => {
-      treasure.tags.forEach(tag => {
+    treasures.forEach((treasure: typeof treasures[number]) => {
+      treasure.tags.forEach((tag: string) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
     });

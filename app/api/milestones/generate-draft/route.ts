@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     
     // 按分类聚合任务
     const categoryStats: Record<string, { hours: number; tasks: string[] }> = {};
-    tasks.forEach(task => {
+    tasks.forEach((task: typeof tasks[number]) => {
       const category = task.categoryPath || '未分类';
       if (!categoryStats[category]) {
         categoryStats[category] = { hours: 0, tasks: [] };
