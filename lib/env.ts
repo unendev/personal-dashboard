@@ -25,11 +25,9 @@ const envSchema = z.object({
     .min(32, 'NEXTAUTH_SECRET 至少需要 32 个字符'),
 
   // ==========================================
-  // 超级管理员密钥 (必需)
+  // 超级管理员密钥 (可选)
   // ==========================================
-  SUPER_ADMIN_KEY: z
-    .string()
-    .min(8, 'SUPER_ADMIN_KEY 至少需要 8 个字符'),
+  SUPER_ADMIN_KEY: z.string().optional(),
 
   // ==========================================
   // Node 环境 (必需)
