@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 计算基本统计
-    const totalSeconds = tasks.reduce((sum, task) => sum + task.elapsedTime, 0);
+    const totalSeconds = tasks.reduce((sum: number, task: typeof tasks[number]) => sum + task.elapsedTime, 0);
     const totalHours = totalSeconds / 3600;
     
     // 按分类聚合任务
