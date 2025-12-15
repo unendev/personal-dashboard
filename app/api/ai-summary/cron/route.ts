@@ -152,7 +152,7 @@ export async function GET() {
     return NextResponse.json({
       date: yesterdayStr,
       summaryCount: summaries.length,
-      summaries: summaries.map(s => ({
+      summaries: summaries.map((s: typeof summaries[number]) => ({
         userId: s.userId,
         date: s.date,
         createdAt: s.createdAt,
