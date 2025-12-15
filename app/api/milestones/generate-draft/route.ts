@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     // 生成关键成果（选择时长较长的任务）
     const keyAchievements = tasks
       .slice(0, 10) // 取前10个任务
-      .filter(task => task.elapsedTime >= 1800 && task.name) // 至少30分钟且有名称
-      .map(task => ({
+      .filter((task: typeof tasks[number]) => task.elapsedTime >= 1800 && task.name) // 至少30分钟且有名称
+      .map((task: typeof tasks[number]) => ({
         taskId: task.id,
         taskName: task.name!,
         categoryPath: task.categoryPath || '未分类',
