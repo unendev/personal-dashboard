@@ -5,7 +5,7 @@ import { TagInput } from '../components/features/treasure/treasure-input/TagInpu
 import { PrimaryCategorySelector } from '../components/features/treasure/treasure-input/PrimaryCategorySelector'
 
 export default function TestTagsPage() {
-  const [primaryCategory, setPrimaryCategory] = useState('')
+  const [primaryCategory, setPrimaryCategory] = useState<string[]>([])
   const [topicTags, setTopicTags] = useState<string[]>([])
   const [suggestions] = useState(['javascript', 'react', 'typescript', 'frontend', 'backend', 'design'])
 
@@ -22,7 +22,7 @@ export default function TestTagsPage() {
             onChange={setPrimaryCategory}
           />
           <div className="mt-4 text-sm text-white/60">
-            当前选择：{primaryCategory || '无'}
+            当前选择：{primaryCategory.length > 0 ? primaryCategory.join(', ') : '无'}
           </div>
         </div>
 
@@ -49,7 +49,7 @@ export default function TestTagsPage() {
             </div>
             <pre className="bg-gray-900 p-4 rounded text-sm text-green-400 overflow-x-auto">
               {JSON.stringify([
-                ...(primaryCategory ? [primaryCategory] : []),
+                ...primaryCategory,
                 ...topicTags
               ], null, 2)}
             </pre>

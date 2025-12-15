@@ -15,18 +15,14 @@ export async function POST(request: Request) {
   // 生成基于用户名的 SVG 头像
   const avatarDataUrl = generateAvatarDataUrl(name);
   
-  const user = {
-    id: userId,
-    info: {
-      name: name || "Player",
-      color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-      picture: avatarDataUrl,
-    }
+  const userInfo = {
+    name: name || "Player",
+    avatar: avatarDataUrl,
   };
 
   const session = liveblocks.prepareSession(
-    user.id,
-    { userInfo: { ...user.info } }
+    userId,
+    { userInfo }
   );
 
   // Give the user full access to the room

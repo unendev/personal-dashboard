@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const encoder = new TextEncoder();
         try {
           for await (const chunk of response) {
-            const content = chunk.choices?.delta?.content || '';
+            const content = chunk.choices?.[0]?.delta?.content || '';
             if (content) {
               controller.enqueue(encoder.encode(content));
             }

@@ -33,25 +33,24 @@ export default function AIReaderAssistant() {
   const [selectedBubble, setSelectedBubble] = useState<ReaderBubble | null>(null);
   const [input, setInput] = useState('');
 
-  // AI SDK Hook
-  const { messages, append, isLoading, setMessages } = useChat({
-    api: '/api/chat',
-    onFinish: (msg: any) => {
-      try {
-        const content = getTextContent(msg).trim();
-        const analysisMatch = content.match(/分析：\s*([\s\S]*?)(?:\n\n追问方向：|$)/);
-        const questionsMatch = content.match(/追问方向：\s*([\s\S]*)/);
-        
-        const parsedResponse: AIResponseContent = {
-          analysis: analysisMatch ? analysisMatch[1].trim() : content,
-          followUpQuestions: questionsMatch ? questionsMatch[1].split(/\n|- /).map((q: string) => q.trim()).filter((q: string) => q.length > 0) : [],
-        };
-        console.log('Parsed AI Response:', parsedResponse);
-      } catch (e) {
-        console.warn('Failed to parse AI response for follow-up questions:', e);
-      }
-    },
-  }) as any;
+  // AI SDK Hook - using type assertion for compatibility
+  const chatResult = useChat() as any;
+  const messages = chatResult.messages || [];
+  const isLoading = chatResult.isLoading || chatResult.status === 'streaming';
+  const setMessages = chatResult.setMessages || (() => {});
+  
+  const append = useCallback(async (message: { role: string; content: string }) => {
+    if (chatResult.append) {
+      return chatResult.append(message);
+    }
+    // Fallback: use handleSubmit with input
+    if (chatResult.setInput && chatResult.handleSubmit) {
+      chatResult.setInput(message.content);
+      // Trigger submit
+      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+      return chatResult.handleSubmit(fakeEvent);
+    }
+  }, [chatResult]);
 
   useEffect(() => {
     const handleBubbleClick = (e: CustomEvent<string>) => {

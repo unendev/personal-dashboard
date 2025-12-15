@@ -21,7 +21,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, memo, useTransition } from "react";
 import { useStorage, useMutation, useSelf, useOthers, useRoom } from "@liveblocks/react/suspense";
 import { LiveList } from "@liveblocks/client";
 import { useChat } from '@ai-sdk/react';
@@ -53,6 +53,14 @@ const toolDisplayInfo: Record<string, { icon: React.ReactNode; label: string; co
 const ReasoningBlock = ({ content, isStreaming = false }: { content: string; isStreaming?: boolean }) => {
   const [expanded, setExpanded] = useState(true); // 默认展开
   
+  // 自动滚动到底部（流式时）
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isStreaming && contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [content, isStreaming]);
+  
   return (
     <div className="my-2 border border-purple-500/30 rounded-lg overflow-hidden bg-purple-950/20">
       <button
@@ -65,7 +73,10 @@ const ReasoningBlock = ({ content, isStreaming = false }: { content: string; isS
         {expanded ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
       </button>
       {expanded && (
-        <div className="px-3 py-2 text-xs text-purple-300/70 border-t border-purple-500/20 max-h-48 overflow-y-auto custom-scrollbar">
+        <div 
+          ref={contentRef}
+          className="px-3 py-2 text-xs text-purple-300/70 border-t border-purple-500/20 max-h-48 overflow-y-auto custom-scrollbar"
+        >
           <pre className="whitespace-pre-wrap font-mono">{content}</pre>
           {isStreaming && <span className="inline-block w-2 h-3 bg-purple-400 animate-pulse ml-0.5" />}
         </div>
@@ -161,7 +172,7 @@ export default function CommandCenter() {
     return 'deepseek-chat';
   });
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  const [localInput, setLocalInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null); // 使用 ref 避免打字时重新渲染
   const [lastSentNotes, setLastSentNotes] = useState<string>("");
   const [aiModeEnabled, setAiModeEnabled] = useState(true); // AI 模式开关
   const [thinkingEnabled, setThinkingEnabled] = useState(true); // 思考模式开关
@@ -209,14 +220,17 @@ export default function CommandCenter() {
 
 
   // --- Vercel AI SDK v5 with DefaultChatTransport ---
-  // 重要：所有工具都在服务端执行，客户端不需要处理工具调用
-  // 服务端工具会自动执行并返回结果，客户端只需显示消息
+  // 使用 useMemo 避免每次渲染都创建新的 transport 实例
+  const chatTransport = useMemo(() => new DefaultChatTransport({
+    api: '/api/chat/goc',
+  }), []);
+  
   const { messages, sendMessage, status } = useChat({
     id: roomId,
-    transport: new DefaultChatTransport({
-      api: '/api/chat/goc',
-    }),
+    transport: chatTransport,
   });
+  
+
 
   const isLoading = status === 'streaming' || status === 'submitted';
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -285,30 +299,34 @@ export default function CommandCenter() {
     lastSyncTime.current = now;
   }, [messages, status]);
 
-  // Debug: 追踪流式更新
-  useEffect(() => {
-    if (status === 'streaming' && messages.length > 0) {
-      const lastMsg = messages[messages.length - 1] as any;
-      if (lastMsg.role === 'assistant' && lastMsg.parts) {
-        const reasoningParts = lastMsg.parts.filter((p: any) => p.type === 'reasoning');
-        const textParts = lastMsg.parts.filter((p: any) => p.type === 'text');
-        if (reasoningParts.length > 0 || textParts.length > 0) {
-          console.log(`[Stream] reasoning: ${reasoningParts.length}, text: ${textParts.length}, ` +
-            `reasoning.text: ${reasoningParts[0]?.text?.length || 0} chars`);
-        }
-      }
-    }
-  }, [messages, status]);
 
+
+  // 智能滚动：只在用户已经在底部附近时才自动滚动
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottom = useRef(true);
+  
+  // 追踪用户是否在底部
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      // 如果距离底部小于 100px，认为在底部
+      isNearBottom.current = scrollHeight - scrollTop - clientHeight < 100;
+    }
+  };
+  
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // 只在用户已经在底部时才自动滚动
+    if (isNearBottom.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, sharedMessages]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!localInput.trim() || isLoading) return;
+    const inputValue = inputRef.current?.value || '';
+    if (!inputValue.trim() || isLoading) return;
 
-    const trimmedInput = localInput.trim();
+    const trimmedInput = inputValue.trim();
     
     // 判断是否发送给 AI：
     // 1. AI 模式开启时，所有消息发给 AI
@@ -326,14 +344,14 @@ export default function CommandCenter() {
         createdAt: Date.now(),
       };
       syncPlayerMessage(playerMsg);
-      setLocalInput("");
+      if (inputRef.current) inputRef.current.value = '';
       return;
     }
     
     // 移除 @AI 前缀（如果有）
     const aiQuery = hasAIPrefix ? trimmedInput.replace(/^@ai\s*/i, '') : trimmedInput;
     if (!aiQuery) {
-      setLocalInput("");
+      if (inputRef.current) inputRef.current.value = '';
       return;
     }
 
@@ -362,7 +380,7 @@ export default function CommandCenter() {
     // 使用 v5 的 sendMessage API
     sendMessage({ text: aiQuery }, { body });
     
-    setLocalInput("");
+    if (inputRef.current) inputRef.current.value = '';
   };
 
   // Helper to extract text content from UIMessage
@@ -400,11 +418,9 @@ export default function CommandCenter() {
   };
 
   // 合并本地消息和共享消息，去重
-  // 策略：优先使用本地消息（有完整 parts），共享消息补充缺失的
-  // 最终按 createdAt 排序，确保时间顺序正确
-  const displayMessages = (() => {
+  // 使用 useMemo 避免每次输入都重新计算消息列表
+  const displayMessages = useMemo(() => {
     const localIds = new Set(messages.map((m: any) => m.id));
-    // 只获取不在本地的共享消息
     const sharedOnly = (sharedMessages || []).filter((m: any) => !localIds.has(m.id));
     
     if (sharedOnly.length === 0 && messages.length === 0) return [];
@@ -413,20 +429,18 @@ export default function CommandCenter() {
       return sharedOnly.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
     }
     
-    // 合并并按 createdAt 排序
-    // 为本地消息添加 createdAt（如果没有）
     const now = Date.now();
     const allMessages = [
       ...messages.map((m: any, idx: number) => ({
         ...m,
-        createdAt: m.createdAt || (now - (messages.length - idx) * 1000), // 没有时间戳则按顺序生成
+        createdAt: m.createdAt || (now - (messages.length - idx) * 1000),
         _isLocal: true,
       })),
       ...sharedOnly.map((m: any) => ({ ...m, _isLocal: false })),
     ];
     
     return allMessages.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
-  })();
+  }, [messages, sharedMessages]);
 
 
   return (
@@ -535,7 +549,11 @@ export default function CommandCenter() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 pt-32 space-y-4 custom-scrollbar">
+      <div 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 pt-32 space-y-4 custom-scrollbar"
+      >
         {displayMessages.map((m: any) => {
           if (m.role === 'system' || m.role === 'tool') return null;
           
@@ -599,9 +617,10 @@ export default function CommandCenter() {
                         // 如果有 reasoning 内容，在最前面显示
                         if (accumulatedReasoning) {
                           const isReasoningStreaming = reasoningState === 'streaming' || status === 'streaming';
+                          // 直接渲染，不用 unshift，避免 key 问题
                           renderedParts.unshift(
                             <ReasoningBlock 
-                              key="reasoning-block" 
+                              key={`reasoning-${m.id}-${accumulatedReasoning.length}`} 
                               content={accumulatedReasoning} 
                               isStreaming={isReasoningStreaming}
                             />
@@ -679,8 +698,7 @@ export default function CommandCenter() {
       <div className="p-4 border-t border-zinc-800 bg-[#0a0a0a]">
         <form onSubmit={onSubmit} className="flex gap-2 relative">
           <input 
-            value={localInput} 
-            onChange={(e) => setLocalInput(e.target.value)} 
+            ref={inputRef}
             placeholder={aiModeEnabled ? "向 AI 发送指令..." : "群聊消息... (@AI 可触发 AI)"} 
             className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3 pl-4 text-zinc-100 focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-zinc-600" 
             disabled={isLoading} 

@@ -77,6 +77,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.13.12
         version: 3.13.13(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@tiptap/core':
+        specifier: ^3.7.0
+        version: 3.13.0(@tiptap/pm@3.13.0)
       '@tiptap/extension-image':
         specifier: ^3.7.0
         version: 3.13.0(@tiptap/core@3.13.0(@tiptap/pm@3.13.0))
@@ -92,6 +95,9 @@ importers:
       '@tiptap/extension-typography':
         specifier: ^3.7.0
         version: 3.13.0(@tiptap/core@3.13.0(@tiptap/pm@3.13.0))
+      '@tiptap/pm':
+        specifier: ^3.13.0
+        version: 3.13.0
       '@tiptap/react':
         specifier: ^3.6.5
         version: 3.13.0(@floating-ui/dom@1.7.4)(@tiptap/core@3.13.0(@tiptap/pm@3.13.0))(@tiptap/pm@3.13.0)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -173,6 +179,9 @@ importers:
       openai:
         specifier: ^6.10.0
         version: 6.10.0(ws@8.18.3)(zod@4.1.13)
+      prosemirror-state:
+        specifier: ^1.4.3
+        version: 1.4.4
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -212,6 +221,9 @@ importers:
       zod:
         specifier: ^4.1.13
         version: 4.1.13
+      zustand:
+        specifier: ^4.5.5
+        version: 4.5.7(@types/react@19.2.7)(immer@11.0.1)(react@19.1.0)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3

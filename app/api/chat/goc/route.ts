@@ -102,7 +102,7 @@ async function logToolCall(roomId: string, toolName: string, args: any, result: 
 
 export async function POST(req: Request) {
   const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  console.log(`[API/GOC-CHAT] [${requestId}] Request received`);
+  console.log(`[GOC] Request: ${requestId}`);
   
   try {
     const body = await req.json();
@@ -282,6 +282,7 @@ ${modeInstruction}
       selectedModel = google(actualModelId);
       
       // 只有当 enableThinking 为 true 时才启用思考
+      // 注意：Gemini 的 thinking 模式可能会导致非流式输出（API 限制）
       if (enableThinking && (actualModelId.includes('gemini-3') || actualModelId.includes('gemini-2.5'))) {
         const thinkingConfig: any = { includeThoughts: true };
         
@@ -298,7 +299,9 @@ ${modeInstruction}
           google: { thinkingConfig } satisfies GoogleGenerativeAIProviderOptions,
         };
         
-        console.log(`[GOC] Gemini thinkingConfig:`, JSON.stringify(thinkingConfig));
+        console.log(`[GOC] Gemini with thinking enabled`);
+      } else {
+        console.log(`[GOC] Gemini without thinking (should stream)`);
       }
     } else {
       // DeepSeek 模型
@@ -316,16 +319,22 @@ ${modeInstruction}
       toolChoice,
       stopWhen: stepCountIs(5),
       providerOptions,
+
     });
 
     // 只有当 enableThinking 为 true 时才发送 reasoning
-    // sendReasoning: true 会发送 reasoning 类型的 stream part
+    // 添加 Transfer-Encoding 和 Connection 头来确保流式传输正常工作
     return result.toUIMessageStreamResponse({
       sendReasoning: enableThinking === true,
+      headers: {
+        'Transfer-Encoding': 'chunked',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache',
+      },
     });
 
   } catch (error: any) {
-    console.error(`[API/GOC-CHAT] Error:`, error);
+    console.error(`[GOC] Error:`, error?.message);
     return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

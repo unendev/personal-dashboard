@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
             content,
             type,
             tags,
-            theme, // 【新增】
+            theme: theme ? (Array.isArray(theme) ? theme : [theme]) : undefined,
             musicTitle, 
             musicArtist,        musicAlbum,
         musicUrl,

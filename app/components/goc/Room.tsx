@@ -73,7 +73,14 @@ export function Room({ children, roomId, userName }: { children: ReactNode; room
           currentUrl: null,
         }}
       >
-        <ClientSideSuspense fallback={<div>Loading GOC...</div>}>
+        <ClientSideSuspense fallback={
+          <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <div className="text-cyan-400 text-sm">连接中...</div>
+            </div>
+          </div>
+        }>
           <RoomDataTracker roomId={roomId}>
             {children}
           </RoomDataTracker>
