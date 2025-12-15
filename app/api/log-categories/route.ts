@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import type { PrismaClient } from '@prisma/client';
 
 // Type definitions for category structure
 interface CategoryNode {
@@ -157,7 +156,7 @@ export async function POST(request: Request) {
 }
 
 // Helper function to get all descendant IDs using an iterative approach
-async function getAllDescendantIds(categoryId: string, prismaClient: PrismaClient): Promise<string[]> {
+async function getAllDescendantIds(categoryId: string, prismaClient: typeof prisma): Promise<string[]> {
   const allIds: string[] = [];
   const queue: string[] = [categoryId];
   const visited: Set<string> = new Set();
