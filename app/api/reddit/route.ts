@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.count - a.count);
     
     // 生成摘要
-    const highValuePosts = posts.filter(p => p.value_assessment === '高');
+    const highValuePosts = posts.filter((p: typeof posts[number]) => p.value_assessment === '高');
     
     return NextResponse.json({
       meta: {
