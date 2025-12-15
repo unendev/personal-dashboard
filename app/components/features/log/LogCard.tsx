@@ -1,4 +1,5 @@
 import React from 'react';
+import { MarkdownView } from "@/app/components/shared/MarkdownView";
 
 interface LogActivityInstance {
   id: string;
@@ -77,7 +78,11 @@ export default function LogCard({ log }: LogCardProps) {
     <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400 mb-4">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          {log.content && <p className="text-gray-800">{log.content}</p>}
+          {log.content && (
+            <div className="text-gray-800">
+              <MarkdownView content={log.content} variant="light" />
+            </div>
+          )}
           {!log.content && !hasCategoriesContent && <p className="text-gray-500 italic">无日志内容或每日总结</p>}
         </div>
         <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
@@ -99,5 +104,3 @@ export default function LogCard({ log }: LogCardProps) {
     </div>
   );
 }
-
-

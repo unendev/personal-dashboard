@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Card } from '@/app/components/ui/card'
 import { Button } from '@/app/components/ui/button'
 import { 
@@ -16,6 +14,7 @@ import {
   Share2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MarkdownView } from '@/app/components/shared/MarkdownView'
 
 interface TextCardProps {
   treasure: {
@@ -55,113 +54,7 @@ export function TextCard({
     
     return (
       <div className="prose prose-sm max-w-none">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-          h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-gray-900 mt-1 mb-2">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-gray-900 mt-1 mb-2">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-gray-900 mt-1 mb-2">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="mb-2 text-gray-700">
-              {children}
-            </p>
-          ),
-          strong: ({ children }) => (
-            <strong className="font-semibold text-gray-900">
-              {children}
-            </strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic text-gray-600">
-              {children}
-            </em>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-blue-300 pl-4 italic text-gray-600 my-2">
-              {children}
-            </blockquote>
-          ),
-          code: ({ children, className }) => {
-            const isInline = !className
-            if (isInline) {
-              return (
-                <code className="bg-gray-100 px-1 py-0.5 rounded text-sm text-gray-800">
-                  {children}
-                </code>
-              )
-            }
-            return (
-              <code className={cn("text-gray-800", className)}>
-                {children}
-              </code>
-            )
-          },
-          pre: ({ children }) => (
-            <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto my-2">
-              {children}
-            </pre>
-          ),
-          ul: ({ children }) => (
-            <ul className="ml-4 mb-2 space-y-1 list-disc">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="ml-4 mb-2 space-y-1 list-decimal">
-              {children}
-            </ol>
-          ),
-          li: ({ children }) => (
-            <li className="text-gray-700">
-              {children}
-            </li>
-          ),
-          a: ({ children, href }) => (
-            <a 
-              href={href} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 underline"
-            >
-              {children}
-            </a>
-          ),
-          hr: () => (
-            <hr className="border-gray-300 my-4" />
-          ),
-          table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="min-w-full border border-gray-300 rounded-lg">
-                {children}
-              </table>
-            </div>
-          ),
-          th: ({ children }) => (
-            <th className="border border-gray-300 px-3 py-2 bg-gray-50 text-gray-900 font-semibold text-left">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="border border-gray-200 px-3 py-2 text-gray-700">
-              {children}
-            </td>
-          )
-          }}
-        >
-          {treasure.content}
-        </ReactMarkdown>
+        <MarkdownView content={treasure.content} variant="light" />
       </div>
     )
   }
@@ -278,6 +171,3 @@ export function TextCard({
     </Card>
   )
 }
-
-
-

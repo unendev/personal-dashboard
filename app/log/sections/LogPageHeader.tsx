@@ -125,7 +125,7 @@ export function LogPageHeader({
           
           {/* 操作记录下拉面板 */}
           {isOperationHistoryExpanded && (
-            <div className="absolute top-full right-0 mt-2 w-72 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
+            <div className="absolute top-full right-0 mt-2 w-72 bg-gray-900/90 backdrop-blur-md border border-gray-700/50 rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-gray-200">操作记录</h3>
                 <button 

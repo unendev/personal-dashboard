@@ -177,7 +177,7 @@ const CategoryZoneWrapper: React.FC<CategoryZoneWrapperProps> = ({
       return (
         <Card 
           key={group.id}
-          className="overflow-hidden border-2 hover:shadow-lg transition-shadow duration-200"
+          className="overflow-hidden border border-white/10 hover:shadow-lg transition-shadow duration-200 bg-gray-900/40 backdrop-blur-sm"
         >
           <CategoryZoneHeader
             group={group}

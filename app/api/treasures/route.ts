@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           createdAt: true,
-          tags: true
+          tags: true,
+          theme: true // 【新增】统计数据需要 theme
         },
         orderBy: { createdAt: 'desc' }
       });
@@ -135,30 +136,31 @@ export async function POST(request: NextRequest) {
     // 验证输入数据
     const validated = createTreasureSchema.parse(body);
     
-    const { 
-      title, 
-      content, 
-      type, 
-      tags, 
-      musicTitle, 
-      musicArtist, 
-      musicAlbum, 
-      musicUrl,
-      musicCoverUrl,
-      images
-    } = validated;
-
-    // 创建宝藏
-    const treasure = await prisma.treasure.create({
-      data: {
-        userId,
-        title,
-        content,
-        type,
-        tags,
-        musicTitle,
-        musicArtist,
-        musicAlbum,
+        const { 
+          title, 
+          content, 
+          type, 
+          tags, 
+          theme, // 【新增】
+          musicTitle, 
+          musicArtist, 
+          musicAlbum, 
+          musicUrl,
+          musicCoverUrl,
+          images
+        } = validated;
+    
+        // 创建宝藏
+        const treasure = await prisma.treasure.create({
+          data: {
+            userId,
+            title,
+            content,
+            type,
+            tags,
+            theme, // 【新增】
+            musicTitle, 
+            musicArtist,        musicAlbum,
         musicUrl,
         musicCoverUrl,
         images: {

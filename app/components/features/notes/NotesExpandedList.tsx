@@ -143,7 +143,7 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   if (!parentNote) return null
 
   return (
-    <div className="bg-gray-800/50 border-b border-gray-700/30 px-2 relative z-30">
+    <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-2 relative z-30">
       <div className="py-1.5 px-2 text-xs text-gray-600 border-b border-gray-700/20 mb-1">
         📁 {parentNote.title}
       </div>
@@ -155,8 +155,8 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
             onClick={() => onSelectNote(parentNote.id)}
             className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] font-semibold ${
               activeNoteId === parentNote.id
-                ? 'bg-gray-700 border-blue-500'
-                : 'bg-gray-800 border-gray-700 hover:bg-gray-700/70'
+                ? 'bg-gray-800 border-blue-500'
+                : 'bg-transparent border-transparent hover:bg-gray-800/50'
             }`}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -203,8 +203,8 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
               onDoubleClick={() => handleDoubleClick(note)}
               className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] ${
                 isActive && !isEditing
-                  ? 'bg-gray-700 border-blue-500'
-                  : 'bg-gray-800 border-gray-700 hover:bg-gray-700/70'
+                  ? 'bg-gray-800 border-blue-500'
+                  : 'bg-transparent border-transparent hover:bg-gray-800/50'
               } ${isDraggingOver ? 'border-dashed border-blue-500 bg-blue-900/20' : ''}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">

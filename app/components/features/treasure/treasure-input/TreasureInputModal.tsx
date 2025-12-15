@@ -11,6 +11,7 @@ export interface TreasureData {
   content: string
   type: 'TEXT' | 'IMAGE' | 'MUSIC'
   tags: string[]
+  theme?: string[] | null // 【修改】支持多个theme，作为数组
   images: Array<{
     url: string
     alt?: string

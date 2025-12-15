@@ -17,6 +17,7 @@ import { TimerSection } from './sections/TimerSection';
 import { NotesSection } from './sections/NotesSection';
 import { StatsSection } from './sections/StatsSection';
 import { ModalsManager } from './sections/ModalsManager';
+import { PrivacyLayer } from './sections/PrivacyLayer';
 
 export default function LogPage() {
   // ============ 认证 ============
@@ -86,7 +87,7 @@ export default function LogPage() {
     ];
 
     return (
-      <div className="log-page-layout">
+      <div className="log-page-gradient-layout">
         {/* 访客提示栏 */}
         <div className="fixed top-4 left-4 right-4 z-40">
           <div className="flex items-center justify-between max-w-6xl mx-auto">
@@ -269,7 +270,10 @@ export default function LogPage() {
 
   // ============ 主内容渲染 ============
   return (
-    <div className="log-page-layout">
+    <div className="log-page-gradient-layout">
+      {/* 隐私幕布层 */}
+      <PrivacyLayer />
+
       {/* 页面头部 */}
       <LogPageHeader
         userName={session?.user?.name}

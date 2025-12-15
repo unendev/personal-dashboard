@@ -74,6 +74,18 @@ const envSchema = z.object({
   // AI 服务 (可选)
   // ==========================================
   DEEPSEEK_API_KEY: z.string().optional(),
+  GOOGLE_API_KEY: z.string().optional(),
+  
+  // ==========================================
+  // 代理配置 (可选，用于本地开发)
+  // ==========================================
+  HTTPS_PROXY: z.string().optional(),
+  HTTP_PROXY: z.string().optional(),
+
+  // ==========================================
+  // Liveblocks (必需 - 用于多人协作)
+  // ==========================================
+  LIVEBLOCKS_SECRET_KEY: z.string().optional(),
 
   // ==========================================
   // 开发环境配置 (可选)
@@ -117,7 +129,7 @@ function validateEnv() {
       throw new Error('环境变量配置错误，请检查 .env 文件')
     }
 
-    const data = parsed.data as Record<string, unknown>
+    const data = parsed.data as z.infer<typeof envSchema>
     // 归一化 DATABASE_URL，供 Prisma 使用
     const normalizedDatabaseUrl = pickDatabaseUrl(process.env as Record<string, string | undefined>)
     return { ...data, DATABASE_URL: normalizedDatabaseUrl }

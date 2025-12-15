@@ -58,7 +58,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   })
   
   // 标签系统
-  const [primaryCategory, setPrimaryCategory] = useState<string>('')
+  const [primaryCategories, setPrimaryCategories] = useState<string[]>([])
   const [topicTags, setTopicTags] = useState<string[]>([])
   const [defaultTags, setDefaultTags] = useState<string[]>([])  // 默认标签（来自上一条宝藏）
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
@@ -100,10 +100,10 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   // 【新增】处理使用上次标签的逻辑
   const handleUseLastTags = useCallback(() => {
     if (!lastTags) return
-    const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
-    const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
-    setPrimaryCategory(primaryTag || '')
-    setTopicTags(lastTags.filter(tag => !primaryCategories.includes(tag)))
+    const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
+    const primaryTags = lastTags.filter(tag => primaryCategoryList.includes(tag))
+    setPrimaryCategories(primaryTags)
+    setTopicTags(lastTags.filter(tag => !primaryCategoryList.includes(tag)))
     setDefaultTags(lastTags)
   }, [lastTags])
 
@@ -135,14 +135,30 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       setContent(fullContent)
       
       // 初始化标签系统
-      if (initialData.tags && initialData.tags.length > 0) {
-        const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
-        const primaryTag = initialData.tags.find(tag => primaryCategories.includes(tag))
-        const topicTagsList = initialData.tags.filter(tag => !primaryCategories.includes(tag))
-        
-        if (primaryTag) {
-          setPrimaryCategory(primaryTag)
-        }
+      const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
+      let initialPrimaryCategories: string[] = []
+
+      // 1. 优先从 theme 获取（现在支持多个）
+      if (initialData.theme && Array.isArray(initialData.theme)) {
+        // theme 是数组，转为首字母大写以匹配组件状态
+        initialPrimaryCategories = initialData.theme
+          .map(t => t.charAt(0).toUpperCase() + t.slice(1))
+          .filter(t => primaryCategoryList.includes(t))
+      }
+
+      // 2. 其次从 tags 获取（兼容旧数据）
+      if (initialPrimaryCategories.length === 0 && initialData.tags && initialData.tags.length > 0) {
+        const found = initialData.tags.filter(tag => primaryCategoryList.includes(tag))
+        if (found.length > 0) initialPrimaryCategories = found
+      }
+
+      if (initialPrimaryCategories.length > 0) {
+        setPrimaryCategories(initialPrimaryCategories)
+      }
+
+      // 设置主题标签（排除主要分类标签）
+      if (initialData.tags) {
+        const topicTagsList = initialData.tags.filter(tag => !primaryCategoryList.includes(tag))
         setTopicTags(topicTagsList)
       }
       
@@ -185,23 +201,23 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
       
       // 【修改】设置默认标签为参考，但不自动填入实际标签
       if (lastTags && lastTags.length > 0) {
-        const primaryCategories = ['Life', 'Knowledge', 'Thought', 'Root']
-        const primaryTag = lastTags.find(tag => primaryCategories.includes(tag))
-        const topicTagsList = lastTags.filter(tag => !primaryCategories.includes(tag))
+        const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
+        const primaryTags = lastTags.filter(tag => primaryCategoryList.includes(tag))
+        const topicTagsList = lastTags.filter(tag => !primaryCategoryList.includes(tag))
         
         // 保存为参考，但不自动应用
-        if (primaryTag) {
-          // 【修改】不自动设置 primaryCategory，保留参考
-          setDefaultTags([primaryTag, ...topicTagsList])
+        if (primaryTags.length > 0) {
+          // 【修改】不自动设置 primaryCategories，保留参考
+          setDefaultTags([...primaryTags, ...topicTagsList])
         } else {
           setDefaultTags(topicTagsList)
         }
         
         // 实际标签为空
-        setPrimaryCategory('')
+        setPrimaryCategories([])
         setTopicTags([])
       } else {
-        setPrimaryCategory('')
+        setPrimaryCategories([])
         setDefaultTags([])
         setTopicTags([])
       }
@@ -501,8 +517,8 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
 
   // 验证是否可以提交
   const canSubmit = (): boolean => {
-    // 1. 必须选择主要分类
-    if (!primaryCategory) return false
+    // 1. 必须选择至少一个主要分类
+    if (primaryCategories.length === 0) return false
     
     // 2. 必须有内容或图片
     if (!content.trim() && images.length === 0) return false
@@ -531,20 +547,19 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     try {
       const title = extractTitle(content)
       
-      // 合并标签：主要分类 + 主题标签（若为空则使用默认标签）
+      // 合并标签：仅包含主题标签（若为空则使用默认标签）
+      // 【修改】primaryCategories 不再加入 tags，而是作为 theme 字段
       const finalTopicTags = topicTags.length > 0 ? topicTags : defaultTags
-      const tags = [
-        ...(primaryCategory ? [primaryCategory] : []),
-        ...finalTopicTags
-      ]
+      const tags = finalTopicTags
       
       console.log('📝 [提交] 准备提交宝藏:', { 
         title, 
-        primaryCategory, 
+        primaryCategories, 
         topicTags, 
         defaultTags,
         finalTopicTags,
         mergedTags: tags,
+        themes: primaryCategories.map(c => c.toLowerCase()),
         imagesCount: images.length 
       })
       
@@ -570,6 +585,7 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         content: contentWithoutTitle, // 不包含标题的内容
         type,
         tags,
+        theme: primaryCategories.length > 0 ? primaryCategories.map(c => c.toLowerCase()) : null, // 【修改】支持多个theme，作为数组
         images: imagesToSubmit,
         ...(type === 'MUSIC' && {
           musicTitle: musicData.title,
@@ -612,8 +628,8 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     >
       {/* 主要分类选择 */}
       <PrimaryCategorySelector
-        value={primaryCategory}
-        onChange={setPrimaryCategory}
+        value={primaryCategories}
+        onChange={setPrimaryCategories}
       />
 
       {/* 【新增】最近使用的标签 */}

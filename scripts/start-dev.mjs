@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import net from 'net';
 
-const START_PORT = 9999;
+const START_PORT = 10000;
 const MAX_PORTS_TO_TRY = 10;
 const HOST = '0.0.0.0'; // Use 0.0.0.0 to avoid permission issues with 127.0.0.1
 

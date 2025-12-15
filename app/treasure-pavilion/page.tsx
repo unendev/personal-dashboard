@@ -8,7 +8,7 @@ export default function TreasurePavilionPage() {
   const { data: session, status } = useDevSession()
 
   return (
-    <div className="log-page-layout">
+    <div className="treasure-page-layout">
       <div className="w-full container-padding py-8">
         {/* 宝藏列表 */}
         <TreasureList />

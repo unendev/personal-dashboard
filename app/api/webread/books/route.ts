@@ -1,57 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const title = formData.get('title') as string;
-    const author = formData.get('author') as string;
-
-    if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-    }
-
-    // 验证文件类型
-    if (!file.name.toLowerCase().endsWith('.epub')) {
-      return NextResponse.json({ error: 'Only EPUB files are allowed' }, { status: 400 });
-    }
-
-    // 验证文件大小 (50MB 限制)
-    if (file.size > 50 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 50MB' }, { status: 400 });
-    }
-
-    // 上传到 Vercel Blob
-    const blob = await put(`${Date.now()}-${file.name}`, file, {
-      access: 'public',
-    });
-
-    // 存储元数据到数据库
-    const book = await prisma.book.create({
-      data: {
-        title: title || file.name.replace('.epub', ''),
-        author: author || null,
-        fileUrl: blob.url,
-        fileSize: file.size,
-        userId: session.user.id,
-      },
-    });
-
-    return NextResponse.json(book);
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,11 +31,18 @@ export async function GET(request: NextRequest) {
         orderBy: { uploadDate: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          author: true,
+          coverUrl: true,
+          fileSize: true,
+          uploadDate: true,
           readingProgress: {
             where: { userId: session.user.id },
+            select: { progress: true, currentChapter: true },
             take: 1,
-          },
+          }
         },
       }),
       prisma.book.count({ where }),
@@ -105,3 +62,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch books' }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+    try {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+  
+      const body = await request.json();
+      const { title, author, fileUrl, fileSize, coverUrl } = body;
+  
+      if (!title || !fileUrl) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+  
+      const book = await prisma.book.create({
+        data: {
+          title,
+          author,
+          fileUrl,
+          fileSize,
+          coverUrl,
+          userId: session.user.id,
+        },
+      });
+  
+      return NextResponse.json(book);
+    } catch (error) {
+      console.error('Create book error:', error);
+      return NextResponse.json({ error: 'Failed to create book record' }, { status: 500 });
+    }
+  }

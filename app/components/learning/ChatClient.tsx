@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { TextInteractionWrapper } from './TextInteractionWrapper';
+import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import React from 'react';
 import { saveChatMessage, updateConversationTitle } from '../../russian/actions';
-import { useChat, type UIMessage } from '@ai-sdk/react';
+import { TextInteractionWrapper } from './TextInteractionWrapper';
 
 interface Message {
   id: string;
@@ -12,136 +14,248 @@ interface Message {
 }
 
 interface ChatClientProps {
-  initialMessages: Message[];
+  initialMessages: any[];
   conversationId: string;
 }
 
+// Helper component to handle mixed content (strings + elements) within Markdown
+const InteractiveChildren = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <>
+      {React.Children.map(children, (child) => {
+        if (typeof child === 'string') {
+          return <TextInteractionWrapper>{child}</TextInteractionWrapper>;
+        }
+        return child;
+      })}
+    </>
+  );
+};
+
+// Custom Markdown Components Configuration
+const markdownComponents = {
+  p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed"><InteractiveChildren>{children}</InteractiveChildren></p>,
+  li: ({ children }: any) => <li className="mb-1 ml-4"><InteractiveChildren>{children}</InteractiveChildren></li>,
+  h1: ({ children }: any) => <h1 className="text-xl font-bold mt-4 mb-2"><InteractiveChildren>{children}</InteractiveChildren></h1>,
+  h2: ({ children }: any) => <h2 className="text-lg font-bold mt-3 mb-2"><InteractiveChildren>{children}</InteractiveChildren></h2>,
+  h3: ({ children }: any) => <h3 className="text-md font-bold mt-2 mb-1"><InteractiveChildren>{children}</InteractiveChildren></h3>,
+  strong: ({ children }: any) => <strong className="font-semibold text-blue-300"><InteractiveChildren>{children}</InteractiveChildren></strong>,
+  em: ({ children }: any) => <em className="italic text-gray-300"><InteractiveChildren>{children}</InteractiveChildren></em>,
+  code: ({ children, className }: any) => {
+    // Don't wrap code blocks with interactive text (avoid splitting code)
+    const isInline = !className;
+    return isInline ? (
+      <code className="bg-gray-800 px-1 py-0.5 rounded text-sm text-yellow-300 font-mono">{children}</code>
+    ) : (
+      <code className="block bg-gray-900 p-2 rounded text-sm text-gray-300 overflow-x-auto font-mono my-2 border border-gray-700">{children}</code>
+    );
+  },
+  ul: ({ children }: any) => <ul className="list-disc ml-5 mb-2 space-y-1">{children}</ul>,
+  ol: ({ children }: any) => <ol className="list-decimal ml-5 mb-2 space-y-1">{children}</ol>,
+  blockquote: ({ children }: any) => <blockquote className="border-l-2 border-gray-500 pl-3 italic text-gray-400 my-2">{children}</blockquote>,
+};
+
 export function ChatClient({ initialMessages, conversationId }: ChatClientProps) {
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [localInput, setLocalInput] = useState('');
-
-  const onFinishCallback = useCallback(async (options: { message: UIMessage }) => {
-    const message = options.message; // Extract the message object
-
-    // Extract content from UIMessage (could be in parts or content)
-    let content: string | undefined;
-    if ('content' in message && message.content != null) {
-      content = String(message.content);
-    } else if ('parts' in message && Array.isArray(message.parts)) {
-      // If message uses parts, concatenate text parts
-      content = message.parts.map((p: unknown) => {
-        const part = p as { text?: string; content?: string };
-        return part.text || part.content || '';
-      }).filter(Boolean).join(' ');
-    } else {
-      // Fallback to empty string
-      content = '';
-    }
-
-    if (content && message.role === 'assistant') {
-      await saveChatMessage({ conversationId, role: 'assistant', content });
-    }
-  }, [conversationId]); // Dependency on conversationId
-
-  const onErrorCallback = useCallback((error: Error) => {
-    console.error('ChatClient: useChat onError triggered. Full error object:', error);
-  }, []); // No dependencies for this simple log
-
-  const useChatBody = useMemo(() => ({ conversationId: conversationId }), [conversationId]); // Memoize body object
-
-  const {
-    messages,
-    sendMessage,
-    status,
-    setMessages: _setMessages,
-  } = useChat({
-    // @ts-expect-error - AI SDK expects a different api property shape
-    api: '/api/aichat',
-    initialMessages: initialMessages,
-    body: useChatBody,
-    onFinish: onFinishCallback,
-    onError: onErrorCallback,
+  // Normalize initial messages
+  const [messages, setMessages] = useState<Message[]>(() => {
+    return (initialMessages || []).map((m: any) => ({
+      id: m.id || Math.random().toString(36).substring(7),
+      role: m.role,
+      content: m.content || (Array.isArray(m.parts) ? m.parts.map((p: any) => p.text).join('') : '')
+    }));
   });
-  // @ts-expect-error - status type may differ from AI SDK
-  const isLoading = status === 'in_progress';
+  
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false); 
+  const [isThinking, setIsThinking] = useState(false); 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to the latest message
+  // Auto-scroll
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages, chatContainerRef]);
+  }, [messages, isThinking]);
 
-  const handleUserSubmit = async (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!localInput?.trim()) {
-      return;
-    }
+    if (!input.trim() || isLoading) return;
 
-    // Save user message to database first
-    await saveChatMessage({ conversationId, role: 'user', content: localInput });
+    const userContent = input;
+    const userMessage: Message = {
+      id: Math.random().toString(36).substring(7),
+      role: 'user',
+      content: userContent
+    };
 
-    // Auto-titling: if this is the first user message in a new conversation
-    if (initialMessages.length === 0 && messages.filter(m => m.role !== 'system').length === 0) { // filter out system messages
-      const title = localInput.substring(0, 20) + (localInput.length > 20 ? '...' : '');
-      await updateConversationTitle(conversationId, title);
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+    setIsThinking(true);
+
+    try {
+      saveChatMessage({ conversationId, role: 'user', content: userContent });
+
+      if (messages.length === 0) {
+        const title = userContent.substring(0, 20) + (userContent.length > 20 ? '...' : '');
+        updateConversationTitle(conversationId, title);
+      }
+
+      const systemMessage = {
+        role: 'system' as const,
+        content: '你是一位经验丰富的俄语老师。当我说中文时，请用中文解释相关的俄语知识（单词、语法、表达）；当我说俄语时，请纠正我的错误并用自然的俄语与我对话。请循循善诱，解释清晰。'
+      };
+
+      const historyMessages = messages.filter(m => m.role !== 'system');
+
+      const apiMessages = [systemMessage, ...historyMessages, userMessage].map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          conversationId 
+        }),
+      });
+
+      if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+      if (!response.body) throw new Error('No response body');
+
+      const assistantMessageId = Math.random().toString(36).substring(7);
+      
+      setIsThinking(false);
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: ''
+      }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullAssistantContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let contentToAdd = '';
+          if (line.startsWith('0:')) {
+            try {
+              const jsonStr = line.substring(2); 
+              contentToAdd = JSON.parse(jsonStr);
+            } catch (e) { }
+          } else {
+             contentToAdd = line;
+          }
+
+          if (contentToAdd) {
+            fullAssistantContent += contentToAdd;
+            setMessages(prev => prev.map(m => 
+              m.id === assistantMessageId 
+                ? { ...m, content: fullAssistantContent }
+                : m
+            ));
+          }
+        }
+      }
+
+      if (fullAssistantContent) {
+        saveChatMessage({ conversationId, role: 'assistant', content: fullAssistantContent });
+      }
+
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+    } finally {
+      setIsLoading(false);
+      setIsThinking(false);
     }
-    
-    // Then let useChat handle the rest (sending to API, streaming assistant response)
-    // @ts-expect-error - sendMessage expects a different argument shape
-    sendMessage({ content: localInput, role: 'user' }); // Use sendMessage with the current input
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full bg-gray-900 text-gray-100">
+      
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4"
+      >
+        {messages.length === 0 && <div className="text-gray-500 text-center mt-10 text-lg">暂无消息，开始对话吧！</div>}
+        
+        {messages.map((m, index) => {
+          const isLast = index === messages.length - 1;
+          const isStreaming = isLoading && isLast && m.role === 'assistant';
 
-      {/* Chat Messages Area */}
-      <div ref={chatContainerRef} className="flex-grow bg-white dark:bg-gray-800 shadow-inner rounded-lg p-4 overflow-y-auto space-y-4">
-        {messages.map((msg, _index) => (
-          // We filter out system messages from rendering
-          msg.role !== 'system' && (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xl lg:max-w-2xl px-4 py-2 rounded-lg shadow ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'}`}>
-                <TextInteractionWrapper>
-                  {/* @ts-expect-error - UIMessage content may be of different type */}
-                  <p className="text-lg whitespace-pre-wrap">{msg.content}</p>
-                </TextInteractionWrapper>
+          if (m.role === 'system') return null;
+
+          return (
+            <div 
+              key={m.id} 
+              className={`flex ${m.role === 'user' 
+                  ? 'justify-end' 
+                  : 'justify-start'
+              }`}
+            >
+              <div 
+                className={`max-w-[85%] lg:max-w-[75%] p-3 rounded-xl shadow-md ${m.role === 'user' 
+                  ? 'bg-blue-600 text-white rounded-br-none' 
+                  : 'bg-gray-700 text-gray-100 rounded-bl-none'
+                }`}
+              >
+                <div className="font-sans text-base">
+                  {isStreaming ? (
+                    // Stream plain text to prevent selection jumping
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                  ) : (
+                    // Render Interactive Markdown
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={markdownComponents}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
               </div>
             </div>
-          )
-        ))}
-        {isLoading && (
+          );
+        })}
+
+        {isThinking && (
           <div className="flex justify-start">
-            <div className="max-w-xl lg:max-w-2xl px-4 py-2 rounded-lg shadow bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-              <p className="text-lg animate-pulse">正在生成回复...</p>
+            <div className="max-w-[70%] lg:max-w-[60%] p-3 rounded-xl shadow-md bg-gray-700 text-gray-100 rounded-bl-none">
+              <span className="animate-pulse">...</span>
             </div>
           </div>
         )}
+
       </div>
 
-      {/* Input Area */}
-      <div className="mt-4">
-        <form onSubmit={handleUserSubmit} className="flex space-x-2">
-          <input
-            type="text"
-            value={localInput}
-            onChange={(e) => {
-              setLocalInput(e.target.value);
-            }}
-            className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Спроси меня что-нибудь на русском..."
+      <div className="p-4 border-t border-gray-800 bg-gray-900">
+        <form onSubmit={sendMessage} className="flex gap-3">
+            <input
+            className="flex-1 border border-gray-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-gray-100 placeholder-gray-400 transition-all duration-200"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="输入你的消息..."
             disabled={isLoading}
-          />
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
-            disabled={!localInput?.trim() || isLoading}
-          >
+            />
+            <button 
+            type="submit" 
+            disabled={isLoading || !input.trim()}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200"
+            >
             {isLoading ? '发送中...' : '发送'}
-          </button>
+            </button>
         </form>
       </div>
     </div>
   );
 }
-

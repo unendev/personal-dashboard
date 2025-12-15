@@ -64,10 +64,10 @@ export function TimerSection({
   onSaveScrollPositionNow,
 }: TimerSectionProps) {
   return (
-    <section className={`h-full flex flex-col ${isMobile ? 'px-4 py-6 min-h-[650px]' : 'border-r border-gray-700/50 min-h-screen'} ${className}`}>
+    <section className={`h-full flex flex-col ${isMobile ? 'px-4 py-6 min-h-[650px]' : 'border-r border-white/5 min-h-screen'} ${className}`}>
         {/* 日期选择器（移动端） */}
         {isMobile && (
-          <div className="mb-4 pb-3 border-b-2 border-gray-600">
+          <div className="mb-4 pb-3 border-b border-white/10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-xl font-bold text-white flex items-center gap-3">
                 <span className="text-2xl">⏱️</span>
@@ -81,7 +81,7 @@ export function TimerSection({
                   value={selectedDate}
                   onChange={(e) => onDateChange(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
-                  className="border border-gray-600 bg-gray-800/80 rounded px-2 py-1 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded px-2 py-1 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
             </div>

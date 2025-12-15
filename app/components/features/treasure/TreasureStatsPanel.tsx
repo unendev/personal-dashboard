@@ -11,6 +11,7 @@ interface TreasureStatsPanelProps {
     id: string
     createdAt: string
     tags: string[]
+    theme?: string[] | null // 【修改】支持多个theme
   }>
   onTagClick?: (tag: string) => void
   selectedTag?: string
@@ -77,19 +78,30 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
 
   // 计算标签统计
   const tagStats = useMemo(() => {
-    const tagCount: Record<string, number> = {}
+    // Key: "theme|tag" -> Value
+    const statsMap: Record<string, { name: string, count: number, theme: string | null }> = {}
     
     treasures.forEach(t => {
+      // 【修改】处理theme数组
+      const themes = Array.isArray(t.theme) ? t.theme : (t.theme ? [t.theme] : [])
+      const themeStr = themes.length > 0 ? themes.map(th => th.toLowerCase()).join(',') : null
+      
       t.tags.forEach(tag => {
         // 排除主要分类
         if (!['Life', 'Knowledge', 'Thought', 'Root'].includes(tag)) {
-          tagCount[tag] = (tagCount[tag] || 0) + 1
+          // 聚合 (Theme, Tag) 组合
+          const key = `${themeStr || 'none'}|${tag}`
+          
+          if (!statsMap[key]) {
+            statsMap[key] = { name: tag, count: 0, theme: themeStr }
+          }
+          statsMap[key].count++
         }
       })
     })
     
-    return Object.entries(tagCount)
-      .sort((a, b) => b[1] - a[1])
+    return Object.values(statsMap)
+      .sort((a, b) => b.count - a.count)
   }, [treasures])
 
   // 如果没有数据，不渲染
@@ -112,7 +124,7 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
 
   // 计算标签字体大小
   const getTagSize = (count: number): 'sm' | 'md' | 'lg' | 'xl' => {
-    const maxCount = Math.max(...tagStats.map(t => t[1]), 1)
+    const maxCount = Math.max(...tagStats.map(t => t.count), 1)
     const ratio = count / maxCount
 
     if (ratio > 0.75) return 'xl'
@@ -241,21 +253,21 @@ export function TreasureStatsPanel({ treasures, onTagClick, selectedTag }: Treas
         ) : tagViewMode === 'cloud' ? (
           /* 标签云视图 */
           <div className="flex flex-wrap gap-2 items-center justify-center">    
-            {tagStats.map(([tag, count]) => (
+            {tagStats.map((stat) => (
               <HierarchicalTag
-                key={tag}
-                tag={tag}
+                key={stat.name}
+                tag={stat.name}
                 variant="cloud"
-                size={getTagSize(count) as 'sm' | 'md' | 'lg' | 'xl'}
-                isSelected={selectedTag === tag}
-                onClick={() => onTagClick?.(tag)}
+                size={getTagSize(stat.count) as 'sm' | 'md' | 'lg' | 'xl'}
+                isSelected={selectedTag === stat.name}
+                onClick={() => onTagClick?.(stat.name)}
               />
             ))}
           </div>
         ) : (
           /* 分组树视图 */
           <EnhancedTagPanel
-            tags={tagStats.map(([name, count]) => ({ name, count }))}
+            tags={tagStats}
             selectedTag={selectedTag}
             onTagClick={onTagClick || (() => {})}
           />

@@ -1,93 +1,52 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# 依赖目录
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Testing
+coverage/
 
-# 包管理器锁文件 - 根据项目使用的包管理器选择是否忽略
-# 通常建议提交锁文件以确保依赖一致性，但为了减少 token 消耗可以忽略
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Production
+.next/
+out/
+build/
+dist/
 
-# 构建输出
-/.next/
-/out/
-/build/
-/dist/
-/.output/
-
-# 测试覆盖率
-/coverage
-
-# 系统文件
+# Misc
 .DS_Store
 *.pem
-
-# 调试日志
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# 环境变量文件（可根据需要选择提交）
-.env*
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Vercel
-.vercel
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# 本地数据库
-prisma/dev.db
-
-# 本地数据文件
-data/logs.json
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# 临时文件
-*.tmp
-*.temp
-
-# 日志文件
-*.log
-
-# 缓存目录
-.cache
-.turbo
-
-# IDE 配置
+# Editor directories and files
 .vscode/
 .idea/
-*.swp
-*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# 操作系统临时文件
-Thumbs.db
+# Package manager lock files (use pnpm only)
+package-lock.json
+yarn.lock
 
-# 其他
-*.md
-
-# OSS 配置文件（包含敏感密钥）
-oss-config.txt
-
-# 归档目录
-/.archive/
-
-# 文档文件（但保留特定文档）
-!doc/上下文.md
-!doc/gemini切换.md
-
-# 开发工具
+# IDE
+.cursor/
+.claude/
 .aider*
+
+# Cache
+.next/
+.turbo/
+dist/

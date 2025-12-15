@@ -15,7 +15,7 @@ interface NotesSectionProps {
  */
 export function NotesSection({ className = '', isMobile = false }: NotesSectionProps) {
   return (
-    <section className={`h-full flex flex-col bg-gray-800 ${isMobile ? 'px-4 py-6 min-h-[650px]' : 'min-h-screen'} ${className}`}>
+    <section className={`h-full flex flex-col bg-gray-900/40 backdrop-blur-sm border-l border-white/5 ${isMobile ? 'px-4 py-6 min-h-[650px]' : 'min-h-screen'} ${className}`}>
       {isMobile && (
         <h3 className="text-xl font-bold text-white mb-4 pb-3 border-b-2 border-gray-600 flex items-center gap-3">
           <span className="text-2xl">📝</span>

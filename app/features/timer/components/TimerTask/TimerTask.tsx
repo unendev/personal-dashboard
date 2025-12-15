@@ -155,8 +155,8 @@ export function TimerTask({
     <div ref={setNodeRef} style={{ ...style, ...indentStyle }} {...attributes}>
       <Card 
         className={`transition-all duration-200 mb-3 text-white ${
-          // 基础背景色
-          hasInstanceTag ? 'bg-slate-800' : 'bg-gray-900'
+          // 基础背景色 - 玻璃态改造
+          hasInstanceTag ? 'bg-orange-900/20 backdrop-blur-sm' : 'bg-gray-900/40 backdrop-blur-sm'
         } ${
           // 边框颜色
           task.isRunning 

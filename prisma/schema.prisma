@@ -7,6 +7,7 @@ datasource db {
   provider  = "postgresql"
   url       = env("POSTGRES_PRISMA_URL")
   directUrl = env("POSTGRES_URL_NON_POOLING")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
@@ -100,6 +101,14 @@ model Flashcard {
   nextReviewAt DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // FSRS Fields
+  stability    Float    @default(0)
+  difficulty   Float    @default(0)
+  elapsedDays  Float    @default(0)
+  scheduledDays Float   @default(0)
+  reps         Int      @default(0)
+  lastReview   DateTime?
 
   @@map("flashcards")
 }
@@ -488,7 +497,7 @@ model Treasure {
   musicAlbum    String?
   musicUrl      String?
   musicCoverUrl String?
-  theme         String?
+  theme         String[]            @default([])
   likesCount    Int                 @default(0)
   images        Image[]
   likes         TreasureLike[]
@@ -783,22 +792,30 @@ model ReadingProgress {
 }
 
 model BookNote {
-  id        String   @id @default(cuid())
-  bookId    String
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String      @id @default(cuid())
+  bookId      String
+  book        Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  chapter   String
-  text      String   // 高亮或笔记的原文
-  note      String?  // 用户添加的笔记
-  highlight String?  // 高亮颜色
-  position  Json     // 在书中的位置信息
+  chapter     String?
+  text        String      @db.Text   // 原文
+  note        String?     @db.Text   // 用户添加的笔记/AI 分析结果
+  highlight   String?                // 高亮颜色
+  position    String                 // CFI for precise location/range
+  type        BookNoteType @default(NOTE) // 笔记类型 (NOTE, AI_INSIGHT, HIGHLIGHT)
+  aiContent   Json?                  // 完整 AI 响应，如果 type 是 AI_INSIGHT
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   
   @@map("book_notes")
+}
+
+enum BookNoteType {
+  NOTE
+  AI_INSIGHT
+  HIGHLIGHT
 }
 
 // ============================================================================

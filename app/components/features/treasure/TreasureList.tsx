@@ -19,6 +19,7 @@ interface Treasure {
   content?: string
   type: 'TEXT' | 'IMAGE' | 'MUSIC'
   tags: string[]
+  theme?: string[] | null // 【修改】支持多个theme，作为数组
   createdAt: string
   updatedAt: string
   musicTitle?: string
@@ -345,29 +346,8 @@ export function TreasureList({ className }: TreasureListProps) {
   }, [treasures, activeId])
 
   const handleCreateClick = () => {
-    // 确保宝藏列表已加载，这样 lastTags 就能被正确设置
-    if (isMounted && treasures.length === 0) {
-      // 直接从 API 加载，而不是依赖状态更新
-      (async () => {
-        try {
-          const response = await fetch(`/api/treasures?page=1&limit=${pageSize}`)
-          if (response.ok) {
-            const data = await response.json()
-            if (data.length > 0) {
-              // 直接设置 lastTags，不等待状态更新
-              setLastTags(data[0].tags)
-            }
-          }
-        } catch (error) {
-          console.error('[handleCreateClick] 加载宝藏失败:', error)
-        } finally {
-          // 无论成功还是失败，都打开模态框
-          setShowCreateModal(true)
-        }
-      })()
-    } else {
-      setShowCreateModal(true)
-    }
+    // 立刻打开模态框，不等待数据加载
+    setShowCreateModal(true)
   }
 
   const handleCreateTreasure = async (data: TreasureData) => {
@@ -620,30 +600,66 @@ export function TreasureList({ className }: TreasureListProps) {
                   <div className="flex items-center gap-3 mb-2 px-1">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
                       {(() => {
-                        const primaryCategory = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
-                        if (primaryCategory) {
+                        // 获取所有主要分类
+                        let primaryCategories: string[] = []
+                        
+                        if (treasure.theme && Array.isArray(treasure.theme)) {
+                          primaryCategories = treasure.theme
+                            .map(t => t.charAt(0).toUpperCase() + t.slice(1))
+                            .filter(t => ['Life', 'Knowledge', 'Thought', 'Root'].includes(t))
+                        }
+                        
+                        // 如果没有从theme获取，则从tags查找
+                        if (primaryCategories.length === 0) {
+                          const found = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
+                          if (found) primaryCategories = [found]
+                        }
+                        
+                        // 映射表 key 必须是首字母大写
+                        if (primaryCategories.length > 0) {
                           const categoryEmoji: Record<string, string> = {
                             'Life': '🌱',
                             'Knowledge': '📚',
                             'Thought': '💭',
                             'Root': '🌳'
                           }
-                          return <span className="text-xl">{categoryEmoji[primaryCategory]}</span>
+                          // 显示第一个分类的emoji
+                          const emoji = categoryEmoji[primaryCategories[0]];
+                          if (emoji) return <span className="text-xl">{emoji}</span>;
                         }
+                        
                         return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
                       })()}
                     </div>
                     <div className="flex flex-col">
                       {(() => {
-                        const primaryCategory = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
-                        if (primaryCategory) {
+                        // 获取所有主要分类
+                        let primaryCategories: string[] = []
+                        
+                        if (treasure.theme && Array.isArray(treasure.theme)) {
+                          primaryCategories = treasure.theme
+                            .map(t => t.charAt(0).toUpperCase() + t.slice(1))
+                            .filter(t => ['Life', 'Knowledge', 'Thought', 'Root'].includes(t))
+                        }
+                        
+                        // 如果没有从theme获取，则从tags查找
+                        if (primaryCategories.length === 0) {
+                          const found = treasure.tags.find(tag => ['Life', 'Knowledge', 'Thought', 'Root'].includes(tag))
+                          if (found) primaryCategories = [found]
+                        }
+
+                        if (primaryCategories.length > 0) {
                           const categoryLabel: Record<string, string> = {
                             'Life': '生活',
                             'Knowledge': '知识',
                             'Thought': '思考',
                             'Root': '根源'
                           }
-                          return <span className="text-sm font-medium text-white/90">{categoryLabel[primaryCategory]}</span>
+                          // 显示所有分类标签
+                          const labels = primaryCategories
+                            .map(cat => categoryLabel[cat] || cat)
+                            .join(' / ')
+                          return <span className="text-sm font-medium text-white/90">{labels}</span>
                         }
                         return <span className="text-sm font-medium text-white/90">未分类</span>
                       })()}

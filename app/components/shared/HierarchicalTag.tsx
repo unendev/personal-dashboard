@@ -33,9 +33,12 @@ export function HierarchicalTag({
   const colorScheme = getTagColorScheme(tagType)
   const typeLabel = getTagTypeLabel(tagType)
   
+  // 如果标签以 # 开头，显示时去掉，因为 UI 会自己加 # 或图标
+  const displayTag = tag.startsWith('#') ? tag.slice(1) : tag
+  
   // 检测层级标签（包含斜杠）
-  const isHierarchical = tag.includes('/')
-  const parts = isHierarchical ? tag.split('/') : [tag]
+  const isHierarchical = displayTag.includes('/')
+  const parts = isHierarchical ? displayTag.split('/') : [displayTag]
 
   // 尺寸样式映射
   const sizeStyles = {
@@ -83,7 +86,7 @@ export function HierarchicalTag({
             ))}
           </span>
         ) : (
-          tag
+          displayTag
         )}
       </button>
     )
@@ -114,7 +117,7 @@ export function HierarchicalTag({
           ))}
         </span>
       ) : (
-        tag
+        displayTag
       )}
       {onRemove && (
         <button

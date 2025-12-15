@@ -1,8 +1,11 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { PrismaClient } from '@prisma/client';
 import { getConversationMessages } from '../actions';
-import { ChatClient } from '../../components/learning/ChatClient';
+import { LearningOverlay } from '../../components/learning/LearningOverlay';
+
+const prisma = new PrismaClient();
 
 interface RussianChatPageProps {
   params: Promise<{
@@ -19,13 +22,44 @@ export default async function RussianChatPage({ params }: RussianChatPageProps) 
     redirect('/api/auth/signin');
   }
 
-  const initialMessages = await getConversationMessages(conversationId);
-  console.log(`[Page: /russian/[id]] - Fetched ${initialMessages.length} initial messages.`);
+  // Parallel data fetching for performance
+  const [initialMessages, notes, dueFlashcards, allFlashcards, totalFlashcardsCount] = await Promise.all([
+    getConversationMessages(conversationId),
+    prisma.russianLearningNote.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20, // Limit to recent notes for performance
+    }),
+    prisma.flashcard.findMany({
+      where: {
+        userId: session.user.id,
+        nextReviewAt: { lte: new Date() },
+      },
+      orderBy: { nextReviewAt: 'asc' },
+      take: 10,
+    }),
+    prisma.flashcard.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 100, // List view limit
+    }),
+    prisma.flashcard.count({
+      where: { userId: session.user.id }
+    })
+  ]);
+
+  console.log(`[Page: /russian/[id]] - Fetched ${initialMessages.length} msgs, ${notes.length} notes, ${dueFlashcards.length} due cards.`);
   
   return (
-    <div>
-        {/* Render the client component */}
-        <ChatClient initialMessages={initialMessages} conversationId={conversationId} />
+    <div className="h-screen bg-gray-950">
+        <LearningOverlay 
+          initialMessages={initialMessages} 
+          conversationId={conversationId}
+          notes={notes}
+          flashcards={dueFlashcards}
+          allFlashcards={allFlashcards}
+          totalFlashcardsCount={totalFlashcardsCount}
+        />
     </div>
   );
 }

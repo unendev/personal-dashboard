@@ -1186,8 +1186,8 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
             }}
           >
             {showOutline ? (
-              <div className="w-72 h-full bg-gray-900/95 backdrop-blur-sm border-l border-gray-700/50 shadow-2xl overflow-hidden flex flex-col transition-all pointer-events-auto">
-              <div className="flex items-center justify-between p-4 border-b border-gray-700/50 flex-shrink-0">
+              <div className="w-72 h-full bg-gray-900/80 backdrop-blur-md border-l border-white/5 shadow-2xl overflow-hidden flex flex-col transition-all pointer-events-auto">
+              <div className="flex items-center justify-between p-4 border-b border-white/5 flex-shrink-0">
                 <div className="text-sm font-medium text-gray-300">文档大纲</div>
                 <div className="text-xs text-gray-500">鼠标移出自动收起</div>
               </div>

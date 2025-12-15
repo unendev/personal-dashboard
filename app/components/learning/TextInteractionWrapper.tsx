@@ -1,214 +1,136 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { FloatingToolbar, ToolbarAction } from './FloatingToolbar';
-import { useTTS } from '../../hooks/use-tts';
-import { AiExplanationModal } from './AiExplanationModal';
-import { NoteCardCreator } from './NoteCardCreator';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTTS } from './useTTS';
+import { createNote } from '../../russian/actions';
+import { Volume2, BookPlus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+// Debounce helper function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<F>): void => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+}
 
 interface TextInteractionWrapperProps {
-  children: React.ReactNode;
+  children: string;
 }
-
-interface ToolbarState {
-  show: boolean;
-  top: number;
-  left: number;
-  selectedText: string;
-}
-
-const LONG_PRESS_THRESHOLD = 300; // milliseconds
 
 export function TextInteractionWrapper({ children }: TextInteractionWrapperProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const { speak, cancel } = useTTS({ lang: 'ru-RU' });
-  const [toolbar, setToolbar] = useState<ToolbarState>({
-    show: false,
-    top: 0,
-    left: 0,
-    selectedText: '',
-  });
-  const [showAiExplanationModal, setShowAiExplanationModal] = useState(false);
-  const [showNoteCardCreator, setShowNoteCardCreator] = useState(false);
-  const [noteCardCreatorMode, setNoteCardCreatorMode] = useState<'note' | 'card'>('note');
+  const { speak } = useTTS();
+  const router = useRouter();
+  const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string } | null>(null);
+  const containerRef = useRef<HTMLSpanElement>(null);
 
-  const handleMouseDown = useCallback(() => {
-    // Start a timer. If MouseUp doesn't clear it before threshold, it's a long press.
-    timerRef.current = setTimeout(() => {
-      // This timeout is just to mark a long press intent.
-      // The actual speech trigger is in handleMouseUp.
-      console.log("Timer fired: potential long press detected.");
-    }, LONG_PRESS_THRESHOLD);
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    // Clear the timer immediately, regardless of whether it fired or not
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+  // Debounced menu display logic
+  const showSelectionMenu = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      setSelectionMenu(null);
+      return;
     }
 
-    const selection = window.getSelection();
-    const selectedText = selection ? selection.toString().trim() : '';
-    
-    if (selection && selectedText.length > 0 && containerRef.current?.contains(selection.anchorNode)) {
-      // If there's a selection (either quick drag or long press drag), speak it
-      console.log("Selected text:", selectedText, "Speaking automatically...");
-      speak(selectedText);
+    const text = selection.toString().trim();
+    if (!text) return;
 
+    if (containerRef.current && containerRef.current.contains(selection.anchorNode)) {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Always show toolbar for other actions (explain, note, card)
-      setToolbar({
-        show: true,
-        top: rect.top - containerRect.top,
-        left: rect.left - containerRect.left + rect.width / 2,
-        selectedText,
+      
+      setSelectionMenu({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
+        text: text
       });
-    } else {
-      // Hide toolbar if selection is cleared or outside the container
-      if (toolbar.show) {
-        setToolbar((prev) => ({ ...prev, show: false }));
-        cancel();
-      }
     }
-  }, [toolbar.show, cancel, speak]);
+  }, []);
 
-  const handleToolbarAction = (action: ToolbarAction) => {
-    console.log(`Action: ${action}, Text: "${toolbar.selectedText}"`);
-    // 'speak' action is now handled automatically on selection, so it's removed from toolbar
-    if (action === 'explain') {
-      setShowAiExplanationModal(true);
-    } else if (action === 'add-note') {
-      setNoteCardCreatorMode('note');
-      setShowNoteCardCreator(true);
-    } else if (action === 'add-card') {
-      setNoteCardCreatorMode('card');
-      setShowNoteCardCreator(true);
-    }
-    setToolbar((prev) => ({ ...prev, show: false }));
-  };
-  
-  const handleClick = useCallback((event: React.MouseEvent) => {
-    // If a selection is active, or if a drag initiated (even if no text was selected), do nothing
-    const selection = window.getSelection();
-    if(selection && selection.toString().length > 0) return; // Selection already handled by handleMouseUp
-    if(timerRef.current) { // If mousedown timer was active, it means a potential drag/long press was intended, so ignore click
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-        return;
-    }
-    
-    cancel(); // Cancel any ongoing speech before attempting to speak a new word
+  const debouncedShowMenu = useCallback(debounce(showSelectionMenu, 300), [showSelectionMenu]);
 
-    const target = event.target as HTMLElement;
-    
-    // Ensure we are clicking on text within our container
-    if (containerRef.current && containerRef.current.contains(target)) {
-      const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-      if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-        // Get the text content and find the word boundaries
-        const textContent = range.startContainer.textContent || '';
-        const offset = range.startOffset;
-        
-        // Find word boundaries
-        let start = offset;
-        let end = offset;
-        
-        // Move start backwards until we hit a word boundary
-        while (start > 0 && !/\s/.test(textContent[start - 1])) {
-          start--;
-        }
-        
-        // Move end forwards until we hit a word boundary
-        while (end < textContent.length && !/\s/.test(textContent[end])) {
-          end++;
-        }
-        
-        let clickedWord = textContent.substring(start, end).trim();
-        clickedWord = clickedWord.replace(/^[.,;:!?"'‘’“”«»-]+|[.,;:!?"'‘’“”«»-]+$/g, '');
-
-        if (clickedWord.length > 0) {
-            console.log("Clicked word for TTS:", clickedWord);
-            speak(clickedWord);
-        } else {
-            console.log("No specific word found at click point.");
-        }
-      } else {
-        console.log("Clicked outside a text node or caretRangeFromPoint returned null.");
-      }
-    }
-  }, [speak, cancel]);
-
-  // Hide toolbar and modals when clicking outside
+  // Use selectionchange for more reliable text selection tracking
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      // Also clear timer if clicked outside
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+    document.addEventListener('selectionchange', debouncedShowMenu);
+    return () => document.removeEventListener('selectionchange', debouncedShowMenu);
+  }, [debouncedShowMenu]);
 
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(target) &&
-        !target.closest('.FloatingToolbar') &&
-        !target.closest('.AiExplanationModal') &&
-        !target.closest('.NoteCardCreator')
-      ) {
-        if (toolbar.show) {
-          setToolbar(prev => ({ ...prev, show: false }));
-          cancel();
-        }
-        if (showAiExplanationModal) {
-          setShowAiExplanationModal(false);
-        }
-        if (showNoteCardCreator) {
-          setShowNoteCardCreator(false);
-        }
+  // Close menu on click elsewhere
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (selectionMenu && !(e.target as Element).closest('.selection-menu')) {
+        setSelectionMenu(null);
+        // No need to remove ranges here, let user manage their selection
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [toolbar.show, showAiExplanationModal, showNoteCardCreator, cancel]);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectionMenu]);
+
+  // Helper: Handle word click
+  const handleWordClick = (word: string) => {
+    if (/[а-яА-ЯёЁ]/.test(word)) {
+      speak(word, 'ru-RU');
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!selectionMenu) return;
+    await createNote({
+      content: selectionMenu.text,
+      sourceText: selectionMenu.text.split(' ').length > 1 ? '句段' : '单词'
+    });
+    setSelectionMenu(null);
+    window.getSelection()?.removeAllRanges();
+    router.refresh();
+  };
 
   return (
-    <div
-      ref={containerRef}
-      onMouseDown={handleMouseDown} // Add mousedown listener
-      onMouseUp={handleMouseUp}   // Existing mouseup listener
-      onClick={handleClick}
-      style={{ cursor: 'text', position: 'relative' }}
-      className="FloatingToolbarContainer"
+    <span 
+      ref={containerRef} 
+      className="relative"
     >
-      <FloatingToolbar
-        show={toolbar.show}
-        top={toolbar.top}
-        left={toolbar.left}
-        onAction={handleToolbarAction}
-      />
-      {children}
-      <AiExplanationModal
-        show={showAiExplanationModal}
-        onClose={() => setShowAiExplanationModal(false)}
-        selectedText={toolbar.selectedText}
-      />
-      <NoteCardCreator
-        show={showNoteCardCreator}
-        onClose={() => setShowNoteCardCreator(false)}
-        selectedText={toolbar.selectedText}
-        mode={noteCardCreatorMode}
-      />
-    </div>
+      {children.split(/([а-яА-ЯёЁ]+)/g).map((part, i) => (
+        /[а-яА-ЯёЁ]/.test(part) ? (
+          <span
+            key={i}
+            className="cursor-pointer hover:bg-blue-200/20 hover:text-blue-300 transition-colors rounded px-0.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleWordClick(part);
+            }}
+            title="点击朗读"
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      ))}
+
+      {selectionMenu && (
+        <span 
+          className="selection-menu fixed z-50 flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-1.5 -translate-x-1/2 -translate-y-full"
+          style={{ left: selectionMenu.x, top: selectionMenu.y }}
+        >
+          <button 
+            onClick={() => speak(selectionMenu.text)}
+            className="p-1.5 hover:bg-gray-700 rounded text-blue-400"
+            title="朗读"
+          >
+            <Volume2 size={16} />
+          </button>
+          <div className="w-px h-4 bg-gray-700 mx-1"></div>
+          <button 
+            onClick={handleSaveNote}
+            className="p-1.5 hover:bg-gray-700 rounded text-green-400"
+            title="存入笔记"
+          >
+            <BookPlus size={16} />
+          </button>
+        </span>
+      )}
+    </span>
   );
 }
-
-
-
-

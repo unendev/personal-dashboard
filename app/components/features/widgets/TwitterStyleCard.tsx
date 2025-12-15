@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button } from '@/app/components/ui/button'
+import Image from 'next/image'
 import { LazyNextImage } from '@/app/components/shared/LazyNextImage'
 import { 
   Heart, 
   MessageCircle, 
-  Share2, 
-  MoreHorizontal,
   Tag,
   Trash2,
   Edit,
@@ -104,7 +103,6 @@ function TwitterStyleCardComponent({
   hideComments = false, 
   hideCategoryAvatar = false
 }: TwitterStyleCardProps) {
-  const [showActions, setShowActions] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
@@ -114,27 +112,9 @@ function TwitterStyleCardComponent({
   const [newAnswer, setNewAnswer] = useState('')
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false)
   const [showInput, setShowInput] = useState(false) // 输入框默认隐藏
-  const actionsRef = useRef<HTMLDivElement>(null)
   
   // 检测移动端
   const isMobile = useIsMobile()
-
-  // 点击外部关闭更多菜单
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
-        setShowActions(false)
-      }
-    }
-
-    if (showActions) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showActions])
 
   // 获取回答列表
   const fetchAnswers = useCallback(async () => {
@@ -697,7 +677,6 @@ function TwitterStyleCardComponent({
     <>
       <article className={cn(
         "relative border border-white/10 rounded-2xl bg-[#161b22] hover:bg-[#1c2128] transition-all duration-300 p-6 group shadow-lg hover:shadow-xl",
-        showActions && "z-10",
         className
       )}>
         {/* PC端：左右布局；移动端：上下布局 */}
@@ -859,14 +838,19 @@ function TwitterStyleCardComponent({
                   <span className="text-sm">{answersCount}</span>
                 </Button>
                 
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={(e) => e.stopPropagation()}
-                  className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEdit(treasure.id)
+                    }}
+                    className="gap-2 text-white/60 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all duration-200"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                )}
 
                 {onDelete && (
                   <Button
@@ -881,39 +865,6 @@ function TwitterStyleCardComponent({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
-
-                {/* 更多操作 */}
-                <div className="relative" ref={actionsRef}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowActions(!showActions)
-                    }}
-                    className="text-white/60 hover:text-white/80 transition-all duration-200"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                  
-                  {showActions && (
-                    <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-xl py-1 z-50 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
-                      {onEdit && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowActions(false)
-                            onEdit(treasure.id)
-                          }}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
-                        >
-                          <Edit className="h-4 w-4" />
-                          编辑
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -1177,15 +1128,6 @@ function TwitterStyleCardComponent({
                     <MessageCircle className="h-4 w-4" />
                     <span className="text-sm">{answersCount}</span>
                   </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={(e) => e.stopPropagation()}
-                    className="gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
 
                   {onDelete && (
                     <Button
@@ -1201,38 +1143,19 @@ function TwitterStyleCardComponent({
                     </Button>
                   )}
 
-                  {/* 更多操作 */}
-                  <div className="relative" ref={actionsRef}>
+                  {onEdit && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        setShowActions(!showActions)
+                        onEdit(treasure.id)
                       }}
-                      className="text-white/60 hover:text-white/80 transition-all duration-200"
+                      className="gap-2 text-white/60 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all duration-200"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <Edit className="h-4 w-4" />
                     </Button>
-                    
-                    {showActions && (
-                      <div className="absolute right-0 top-8 bg-[#161b22] border border-white/10 rounded-lg shadow-xl py-1 z-50 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
-                        {onEdit && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setShowActions(false)
-                              onEdit(treasure.id)
-                            }}
-                            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/10 text-white transition-colors"
-                          >
-                            <Edit className="h-4 w-4" />
-                            编辑
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1287,20 +1210,37 @@ function TwitterStyleCardComponent({
           </button>
         )}
 
-        {/* 图片显示 */}
-        <div 
-          className="relative max-w-[90vw] max-h-[90vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <LazyNextImage
-            src={treasure.images[selectedImageIndex].url}
-            alt={treasure.images[selectedImageIndex].alt || treasure.title}
-            className="max-w-full max-h-[90vh] w-auto h-auto object-contain"
-            rootMargin="0px"
-            showLoader={false}
-          />
-        </div>
-      </div>
+                        {/* 图片显示 */}
+
+                        <div
+
+                          className="relative w-[90vw] h-[90vh]"
+
+                          onClick={(e) => e.stopPropagation()}
+
+                        >
+
+                          {selectedImageIndex !== null && (
+
+                            <Image
+
+                              src={treasure.images[selectedImageIndex].url}
+
+                              alt={treasure.images[selectedImageIndex].alt || treasure.title}
+
+                              fill
+
+                              className="object-contain"
+
+                              sizes="(max-width: 768px) 90vw, 90vw"
+
+                              priority={true}
+
+                            />
+
+                          )}
+
+                        </div>      </div>
     )}
     </>
   )
