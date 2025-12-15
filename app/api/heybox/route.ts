@@ -74,7 +74,7 @@ export async function GET(request: Request) {
     }
 
     // 转换为组件需要的格式
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = posts.map((post: typeof posts[number]) => ({
       id: post.id,
       title: post.title,
       title_cn: post.title_cn,
