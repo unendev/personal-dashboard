@@ -33,7 +33,7 @@ interface DatabaseCategory {
 
 // Helper function to convert database structure to frontend structure
 function convertToFrontendStructure(categories: DatabaseCategory[]): CategoryNode[] {
-  return categories.map(cat => ({
+  return categories.map((cat: DatabaseCategory) => ({
     id: cat.id,
     name: cat.name,
     children: cat.children ? convertToFrontendStructure(cat.children) : undefined

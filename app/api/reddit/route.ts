@@ -131,18 +131,18 @@ export async function GET(request: NextRequest) {
         report_date: reportDate,
         title: `Reddit技术+游戏开发每日报告 (${reportDate})`,
         source: "Reddit",
-        subreddits: subredditStats.map(s => s.subreddit)
+        subreddits: subredditStats.map((s: typeof subredditStats[number]) => s.subreddit)
       },
       summary: {
         overview: `今日从 ${subredditStats.length} 个技术板块采集到 ${total} 条帖子，其中高价值内容 ${highValuePosts.length} 条。`,
         highlights: {
-          tech_savvy: posts.slice(0, 3).map(p => p.title_cn || p.title),
-          resources_deals: highValuePosts.slice(0, 3).map(p => p.title_cn || p.title),
-          hot_topics: posts.slice(0, 5).map(p => p.title_cn || p.title)
+          tech_savvy: posts.slice(0, 3).map((p: typeof posts[number]) => p.title_cn || p.title),
+          resources_deals: highValuePosts.slice(0, 3).map((p: typeof highValuePosts[number]) => p.title_cn || p.title),
+          hot_topics: posts.slice(0, 5).map((p: typeof posts[number]) => p.title_cn || p.title)
         },
         conclusion: "技术社区持续活跃，涵盖游戏开发、前沿技术等多个领域。"
       },
-      posts: posts.map(p => ({
+      posts: posts.map((p: typeof posts[number]) => ({
         id: p.id,
         title: p.title_cn || p.title,
         url: p.url,

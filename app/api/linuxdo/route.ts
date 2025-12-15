@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     }
 
     // 转换为组件需要的格式
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = posts.map((post: typeof posts[number]) => ({
       id: post.id,
       title: post.title,
       url: post.url,
@@ -136,9 +136,9 @@ function generateSummary(posts: Array<{ value_assessment?: string | null; post_t
   const overview = `今日社区共收集到 ${posts.length} 条帖子，其中高价值内容 ${highValuePosts.length} 条。主要围绕技术讨论、资源分享和生活交流展开。`;
   
   const highlights = {
-    tech_savvy: techPosts.slice(0, 3).map(post => post.title),
-    resources_deals: highValuePosts.slice(0, 3).map(post => post.title),
-    hot_topics: posts.slice(0, 3).map(post => post.title)
+    tech_savvy: techPosts.slice(0, 3).map((post: typeof techPosts[number]) => post.title),
+    resources_deals: highValuePosts.slice(0, 3).map((post: typeof highValuePosts[number]) => post.title),
+    hot_topics: posts.slice(0, 3).map((post: typeof posts[number]) => post.title)
   };
   
   const conclusion = `在技术探索与生活分享的交织中，社区展现了丰富的讨论内容和活跃的交流氛围。`;

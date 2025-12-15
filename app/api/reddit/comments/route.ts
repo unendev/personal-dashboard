@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         postId,
-        comments: comments.map(c => ({
+        comments: comments.map((c: typeof comments[number]) => ({
           id: c.id,
           author: c.author,
           body: c.body,

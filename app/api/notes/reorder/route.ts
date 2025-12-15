@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: '无效的请求体' }, { status: 400 })
     }
 
-    const updates = notes.map(note => 
+    const updates = notes.map((note: { id: string; order: number }) => 
       prisma.note.update({
         where: {
           id: note.id,
