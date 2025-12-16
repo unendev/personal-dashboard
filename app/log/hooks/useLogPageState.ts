@@ -158,6 +158,25 @@ export function useLogPageState(userId: string) {
   }, [fetchTimerTasks]);
   
   /**
+   * 页面重新可见时刷新任务数据
+   * 防止用户离开页面后回来时，前端 version 过期导致冲突
+   */
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('📱 [页面可见] 刷新任务数据以同步 version...');
+        fetchTimerTasks();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchTimerTasks]);
+  
+  /**
    * 时间范围变化时加载统计任务
    */
   useEffect(() => {
