@@ -2,11 +2,13 @@
  * @file NestedTimerZone.tsx
  * @description 计时器任务区域组件（重构版）
  * @refactored 2025-11-02
+ * @updated 2025-12-16 - 使用统一的 taskService
  * 
  * 从 983 行重构为 ~250 行
  * 主要改进：
  * - 使用组件化架构（TimerTaskList, TimerTask等）
  * - 分离拖拽逻辑（useTimerDragDrop）
+ * - 使用统一的 taskService 处理父子任务
  * - 保持向后兼容
  */
 
@@ -16,9 +18,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
-import { fetchWithRetry } from '@/lib/fetch-utils';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
 import { TimerTaskList } from '@/app/features/timer/components/TimerTaskList/TimerTaskList';
+import { taskService } from '@/app/features/timer/services/taskService';
 
 // ============ 类型定义 ============
 
@@ -185,62 +187,21 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     }
   }, [tasks, triggerUpdate]);
 
-  // ========== 删除任务 ==========
+  // ========== 删除任务（使用统一的 taskService） ==========
   const deleteTimer = async (taskId: string) => {
-    onBeforeOperation?.();
-    
-    const findTask = (taskList: TimerTask[]): TimerTask | null => {
-      for (const task of taskList) {
-        if (task.id === taskId) return task;
-        if (task.children) {
-          const found = findTask(task.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const task = findTask(tasks);
-    if (!task) return;
-
-    const isConfirmed = confirm(`确定要删除任务"${task.name}"吗？\n\n这将永久删除该任务及其所有子任务和计时数据。`);
-    if (!isConfirmed) return;
-
-    const removeTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-      return taskList.filter(t => {
-        if (t.id === taskId) return false;
-        if (t.children) {
-          t.children = removeTaskRecursive(t.children);
-        }
-        return true;
-      });
-    };
-
-    const updatedTasks = removeTaskRecursive(tasks);
-    const previousTasks = tasks;
-    
-    onTasksChange(updatedTasks);
-    
-    if (onOperationRecord) {
-      onOperationRecord('删除任务', task.name);
-    }
-
     try {
-      const response = await fetchWithRetry(`/api/timer-tasks?id=${taskId}`, {
-        method: 'DELETE',
+      await taskService.delete(tasks, taskId, {
+        onTasksChange,
+        onOperationRecord,
+        onBeforeOperation,
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete task: ${response.status}`);
-      }
     } catch (error) {
       console.error('Failed to delete timer:', error);
-      onTasksChange(previousTasks);
       alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}\n已恢复任务。`);
     }
   };
 
-  // ========== 添加子任务 ==========
+  // ========== 添加子任务（使用统一的 taskService） ==========
   const addChildTask = async (parentId: string) => {
     if (!newChildName.trim()) {
       alert('请输入任务名称');
@@ -250,133 +211,29 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
     // 修正时长计算：输入是分钟，需要转换为秒
     const initialTimeInSeconds = newChildInitialTime ? parseInt(newChildInitialTime, 10) * 60 : 0;
 
-    // 找到父任务
-    const findParentTask = (taskList: TimerTask[]): TimerTask | null => {
-      for (const task of taskList) {
-        if (task.id === parentId) return task;
-        if (task.children) {
-          const found = findParentTask(task.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const parentTask = findParentTask(tasks);
-    if (!parentTask) {
-      alert('未找到父任务');
-      return;
-    }
-
-    // 创建临时子任务（子任务默认继承父任务的分类路径）
-    const tempChildId = `temp-child-${Date.now()}`;
-    const tempTask: TimerTask = {
-      id: tempChildId,
-      name: newChildName,
-      categoryPath: parentTask.categoryPath, // 子任务继承父任务的分类路径
-      initialTime: initialTimeInSeconds,
-      elapsedTime: 0,
-      isRunning: false,
-      startTime: null,
-      isPaused: false,
-      pausedTime: 0,
-      parentId: parentId,
-      order: (parentTask.children || []).length,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 添加到UI
-    const addChildRecursive = (taskList: TimerTask[]): TimerTask[] => {
-      return taskList.map(task => {
-        if (task.id === parentId) {
-          return {
-            ...task,
-            children: [...(task.children || []), tempTask]
-          };
-        }
-        if (task.children) {
-          return { ...task, children: addChildRecursive(task.children) };
-        }
-        return task;
-      });
-    };
-
-    const updatedTasks = addChildRecursive(tasks);
-    onTasksChange(updatedTasks);
+    // 关闭弹框
     setShowAddChildDialog(null);
     setNewChildName('');
     setNewChildInitialTime('');
 
-    // 异步创建任务
     try {
-      const response = await fetchWithRetry('/api/timer-tasks', {
-          method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-          name: newChildName,
-          categoryPath: parentTask.categoryPath, // 子任务继承父任务的分类路径
-          initialTime: initialTimeInSeconds,
-          elapsedTime: initialTimeInSeconds,
-            parentId: parentId,
-          order: (parentTask.children || []).length,
-          date: new Date().toISOString().split('T')[0], // 添加 date 字段
-          userId: 'user-1', // 添加 userId 字段
-          }),
-      }, 3);
-
-      if (!response.ok) {
-        throw new Error('创建失败');
-      }
-
-      const newTask = await response.json();
-
-      // 替换临时任务
-      const replaceTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === parentId) {
-            return {
-              ...task,
-              children: task.children?.map(child => 
-                child.id === tempTask.id ? newTask : child
-              ) || []
-            };
-          }
-          if (task.children) {
-            return { ...task, children: replaceTempTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      const finalTasks = replaceTempTaskRecursive(updatedTasks);
-      onTasksChange(finalTasks);
-      
-      // 自动开始子任务计时
-      if (onRequestAutoStart && newTask.id) {
-        console.log('📝 [子任务] 请求自动启动:', newTask.id);
-        onRequestAutoStart(newTask.id);
-      }
+      // 使用统一的 taskService 创建子任务
+      await taskService.create(tasks, {
+        name: newChildName,
+        categoryPath: '', // 子任务会自动继承父任务的分类路径
+        initialTime: initialTimeInSeconds,
+        parentId,
+        userId: 'user-1',
+        date: new Date().toISOString().split('T')[0],
+        autoStart: true, // 子任务创建后自动开始
+      }, {
+        onTasksChange,
+        onRequestAutoStart,
+        onOperationRecord,
+        onBeforeOperation,
+      });
     } catch (error) {
       console.error('创建子任务失败:', error);
-      // 移除临时任务
-      const removeTempTaskRecursive = (taskList: TimerTask[]): TimerTask[] => {
-        return taskList.map(task => {
-          if (task.id === parentId) {
-            return {
-              ...task,
-              children: task.children?.filter(child => child.id !== tempTask.id) || []
-            };
-          }
-          if (task.children) {
-            return { ...task, children: removeTempTaskRecursive(task.children) };
-          }
-          return task;
-        });
-      };
-
-      const rolledBackTasks = removeTempTaskRecursive(updatedTasks);
-      onTasksChange(rolledBackTasks);
       alert('创建子任务失败');
     }
   };
