@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, Clock, Users } from "lucide-react";
+import { ChevronRight, Clock, Users, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RoomMetadata {
@@ -15,6 +15,7 @@ export default function AdminRoomsPage() {
   const [rooms, setRooms] = useState<RoomMetadata[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     // MVP: 从 localStorage 读取房间列表
@@ -56,6 +57,52 @@ export default function AdminRoomsPage() {
     return 'just now';
   };
 
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!confirm(`Are you sure you want to delete room "${roomId}"?`)) {
+      return;
+    }
+
+    setDeleting(roomId);
+    try {
+      const response = await fetch("/api/admin/rooms/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(`Failed to delete room: ${error.error}`);
+        return;
+      }
+
+      // 从本地列表中移除房间
+      setRooms((prev) => prev.filter((r) => r.id !== roomId));
+      if (selectedRoomId === roomId) {
+        setSelectedRoomId(null);
+      }
+
+      // 从 localStorage 中移除房间元数据
+      const storedRooms = localStorage.getItem('goc_rooms_metadata');
+      if (storedRooms) {
+        try {
+          const parsed = JSON.parse(storedRooms) as RoomMetadata[];
+          const updated = parsed.filter((r) => r.id !== roomId);
+          localStorage.setItem('goc_rooms_metadata', JSON.stringify(updated));
+        } catch (error) {
+          console.error('Failed to update localStorage:', error);
+        }
+      }
+
+      alert(`Room "${roomId}" deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      alert('An error occurred while deleting the room');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="h-screen w-full bg-[#0a0a0a] flex flex-col">
       {/* Header */}
@@ -84,7 +131,7 @@ export default function AdminRoomsPage() {
                   key={room.id}
                   onClick={() => setSelectedRoomId(room.id)}
                   className={cn(
-                    "p-4 cursor-pointer transition-colors hover:bg-zinc-900/50",
+                    "p-4 cursor-pointer transition-colors hover:bg-zinc-900/50 group",
                     selectedRoomId === room.id && 'bg-zinc-800 border-l-2 border-cyan-500'
                   )}
                 >
@@ -103,7 +150,20 @@ export default function AdminRoomsPage() {
                         Last activity: {formatDuration(room.lastActivity)}
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 mt-1" />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRoom(room.id);
+                        }}
+                        disabled={deleting === room.id}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-900/30 rounded text-red-400 hover:text-red-300 disabled:opacity-50"
+                        title="Delete room"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-zinc-600" />
+                    </div>
                   </div>
                 </div>
               ))}
