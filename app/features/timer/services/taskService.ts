@@ -229,6 +229,7 @@ export const taskService = {
         name,
         categoryPath: finalCategoryPath,
         initialTime,
+        elapsedTime: initialTime,  // 初始已用时间等于初始时间
         instanceTag: instanceTagNames.length > 0 ? instanceTagNames.join(',') : null,
         parentId: parentId || undefined,
         userId,

@@ -14,6 +14,7 @@ export interface CreateTaskRequest {
   categoryPath: string;
   instanceTag?: string | null;
   initialTime: number;
+  elapsedTime?: number;  // 初始已用时间，通常等于 initialTime
   userId: string;
   date: string;
   parentId?: string | null;
