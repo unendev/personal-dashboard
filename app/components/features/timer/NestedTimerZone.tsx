@@ -351,6 +351,12 @@ const NestedTimerZone: React.FC<NestedTimerZoneProps> = ({
 
       const finalTasks = replaceTempTaskRecursive(updatedTasks);
       onTasksChange(finalTasks);
+      
+      // 自动开始子任务计时
+      if (onRequestAutoStart && newTask.id) {
+        console.log('📝 [子任务] 请求自动启动:', newTask.id);
+        onRequestAutoStart(newTask.id);
+      }
     } catch (error) {
       console.error('创建子任务失败:', error);
       // 移除临时任务
