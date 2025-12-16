@@ -70,7 +70,7 @@ export const WikiLink = Mark.create({
       new Plugin({
         key: new PluginKey('wikiLinkClick'),
         props: {
-          handleClick(view, pos, event) {
+          handleClick(_view, _pos, event) {
             const target = event.target as HTMLElement
             if (target.hasAttribute('data-wiki-link')) {
               const linkTarget = target.getAttribute('data-target')

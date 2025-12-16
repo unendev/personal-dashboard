@@ -22,6 +22,7 @@ import { Details } from '@/lib/tiptap-extensions/details'
 import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
 import { DetailsContent } from '@/lib/tiptap-extensions/details-content'
 import { AutoOrderListExtension } from '@/lib/tiptap-extensions/auto-order-list'
+import { WikiLink, createWikiLinkInputRule } from '@/lib/tiptap-extensions/wiki-link'
 
 // Note: The CustomImage implementation and other Tiptap extensions remain unchanged.
 // ... (CustomImage, slugify, etc. would be here)
@@ -343,6 +344,32 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
       Details,
       DetailsSummary,
       DetailsContent,
+      WikiLink.configure({
+        onLinkClick: (target: string) => {
+          // 查找匹配标题的笔记并跳转
+          const matchedNote = notesList.find(n => n.title === target)
+          if (matchedNote) {
+            handleSelectNote(matchedNote.id)
+          } else {
+            // 创建新笔记
+            if (confirm(`笔记 "${target}" 不存在，是否创建？`)) {
+              handleCreateNote(true).then(() => {
+                // 创建后更新标题
+                const newNote = notesList[notesList.length - 1]
+                if (newNote) {
+                  handleUpdateTitle(newNote.id, target)
+                }
+              })
+            }
+          }
+        },
+      }),
+      Extension.create({
+        name: 'wikiLinkInputRule',
+        addInputRules() {
+          return [createWikiLinkInputRule()]
+        },
+      }),
     ],
     editorProps: {
         attributes: {
