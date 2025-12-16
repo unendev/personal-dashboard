@@ -270,12 +270,12 @@ export const timerAPI = {
    */
   async deleteTask(taskId: string): Promise<void> {
     try {
+      // 注意：API 期望 ID 在 URL 参数中，不是请求体
       const response = await fetchWithRetry(
-        API_CONFIG.baseURL,
+        `${API_CONFIG.baseURL}?id=${taskId}`,
         {
           method: 'DELETE',
           headers: API_CONFIG.headers,
-          body: JSON.stringify({ id: taskId }),
         },
         API_CONFIG.retryCount,
         (attempt, error) => {
