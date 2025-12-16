@@ -1122,7 +1122,14 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
         onUpdateNoteTitle={handleUpdateTitle}
         onReorderNotes={handleReorderNotes}
         userId={userId}
-        onSelectParent={setSelectedParentId}
+        onSelectParent={(parentId) => {
+          setSelectedParentId(parentId)
+          // 父笔记只是分类，自动选中第一个子笔记
+          const children = grouping.getChildren(parentId)
+          if (children.length > 0) {
+            handleSelectNote(children[0])
+          }
+        }}
         groupingData={grouping.grouping}
         onToggleExpand={(parentId: string, isExpanded: boolean) => {
           // 如果展开，显示子栏；如果收缩，隐藏子栏
@@ -1155,6 +1162,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
             }
           }}
           onReorderChildNotes={handleReorderChildNotes}
+          onUpdateParentTitle={handleUpdateTitle}
         />
       )}
       <div className="flex items-center justify-end gap-2 text-sm text-gray-400 my-2 flex-shrink-0 px-2">

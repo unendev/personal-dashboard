@@ -21,7 +21,8 @@ interface NotesExpandedListProps {
   isCreating: boolean
   expandedChildId?: string | null
   onToggleExpand?: (id: string) => void
-  onReorderChildNotes: (parentId: string, reorderedChildNotes: Note[]) => void;
+  onReorderChildNotes: (parentId: string, reorderedChildNotes: Note[]) => void
+  onUpdateParentTitle?: (id: string, newTitle: string) => void  // 父笔记标题编辑
 }
 
 export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
@@ -36,10 +37,14 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   expandedChildId,
   onToggleExpand,
   onReorderChildNotes,
+  onUpdateParentTitle,
 }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const [editingParentTitle, setEditingParentTitle] = useState(false)
+  const [parentTitleValue, setParentTitleValue] = useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const parentInputRef = React.useRef<HTMLInputElement>(null)
 
   // Drag and Drop state
   const draggedItemRef = useRef<number | null>(null)
@@ -51,6 +56,13 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
       inputRef.current.select()
     }
   }, [editingNoteId])
+
+  useEffect(() => {
+    if (editingParentTitle && parentInputRef.current) {
+      parentInputRef.current.focus()
+      parentInputRef.current.select()
+    }
+  }, [editingParentTitle])
 
   const sortedChildNotes = [...childNotes].sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -140,45 +152,66 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
     dragOverItemRef.current = null;
   };
 
+  // 父笔记标题保存
+  const handleSaveParentTitle = () => {
+    if (parentNote && parentTitleValue.trim() !== '' && onUpdateParentTitle) {
+      onUpdateParentTitle(parentNote.id, parentTitleValue.trim())
+    }
+    setEditingParentTitle(false)
+  }
+
+  const handleParentTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveParentTitle()
+    } else if (e.key === 'Escape') {
+      setEditingParentTitle(false)
+    }
+  }
+
+  const handleParentDoubleClick = () => {
+    if (parentNote && onUpdateParentTitle) {
+      setEditingParentTitle(true)
+      setParentTitleValue(parentNote.title)
+    }
+  }
+
   if (!parentNote) return null
 
   return (
     <div className="bg-gray-900/40 backdrop-blur-sm border-b border-gray-700/50 px-2 relative z-30">
-      <div className="py-1.5 px-2 text-xs text-gray-600 border-b border-gray-700/20 mb-1">
-        📁 {parentNote.title}
+      {/* 父笔记作为分类标题，双击可编辑名称 */}
+      <div 
+        className="py-1.5 px-2 text-xs text-gray-500 border-b border-gray-700/20 mb-1 flex items-center gap-2 group"
+        onDoubleClick={handleParentDoubleClick}
+      >
+        <span>📁</span>
+        {editingParentTitle ? (
+          <input
+            ref={parentInputRef}
+            type="text"
+            value={parentTitleValue}
+            onChange={(e) => setParentTitleValue(e.target.value)}
+            onBlur={handleSaveParentTitle}
+            onKeyDown={handleParentTitleKeyDown}
+            className="bg-gray-700 text-white text-xs p-0.5 rounded border border-blue-500 focus:outline-none flex-1"
+          />
+        ) : (
+          <span className="cursor-default group-hover:text-gray-400 transition-colors">
+            {parentNote.title}
+          </span>
+        )}
+        {onDeleteNote && !editingParentTitle && (
+          <button
+            onClick={(e) => handleDeleteNote(e, parentNote.id)}
+            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-500/20 rounded transition-all ml-auto"
+            title="删除分类"
+          >
+            <Trash2 size={10} className="text-red-400 hover:text-red-300" />
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
-        {parentNote && (
-           <div
-            key={parentNote.id}
-            onClick={() => onSelectNote(parentNote.id)}
-            className={`relative group flex items-center justify-between px-3 py-2 rounded-t-md cursor-pointer border-b-2 transition-colors duration-200 flex-shrink-0 max-w-[200px] font-semibold ${
-              activeNoteId === parentNote.id
-                ? 'bg-gray-800 border-blue-500'
-                : 'bg-transparent border-transparent hover:bg-gray-800/50'
-            }`}
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <FileText
-                size={14}
-                className={activeNoteId === parentNote.id ? 'text-blue-300' : 'text-gray-400'}
-              />
-              <span className={`text-sm truncate flex-1 ${activeNoteId === parentNote.id ? 'text-white' : 'text-gray-300'}`}>
-                {parentNote.title || 'Untitled'}
-              </span>
-            </div>
-            {onDeleteNote && (
-              <button
-                onClick={(e) => handleDeleteNote(e, parentNote.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all flex-shrink-0 ml-1"
-                title="删除笔记"
-              >
-                <Trash2 size={12} className="text-red-400 hover:text-red-300" />
-              </button>
-            )}
-          </div>
-        )}
+      <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">{/* 父笔记不再作为可编辑标签显示 */}
         
         {sortedChildNotes.map((note, index) => {
           const isActive = activeNoteId === note.id
