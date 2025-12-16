@@ -440,7 +440,7 @@ const ScrollableLayout = () => {
   }
 
   return (
-    <main className="w-full min-h-screen flex">
+    <main className="w-full min-h-screen flex home-page-layout">
       {/* 左侧：大纲导航 */}
       <aside className="hidden lg:block w-56 flex-shrink-0 border-r border-white/10 bg-gray-900/50 backdrop-blur-sm 
                       fixed left-0 top-0 bottom-0 overflow-y-auto custom-scrollbar z-20">
