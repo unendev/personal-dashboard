@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useStorage, useMutation, useSelf, useOthers } from "@liveblocks/react/suspense";
 import { LiveList, LiveMap } from "@liveblocks/client";
-import { Trash2, CheckSquare, Square, ChevronRight, ChevronDown, Plus, User, Users, FolderOpen } from "lucide-react";
+import { Trash2, CheckSquare, Square, ChevronRight, ChevronDown, ChevronLeft, Plus, User, Users, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownView } from "@/app/components/shared/MarkdownView";
+import { MarkdownOutline } from "@/app/components/shared/MarkdownOutline";
 
 // Todo 类型定义
 interface Todo {
@@ -26,13 +27,23 @@ export default function TacticalBoard() {
   const others = useOthers();
 
   const [showCompleted, setShowCompleted] = useState(false);
+  // 【修复】默认进入最左侧的笔记（'shared'），支持拖拽排序
   const [activeTab, setActiveTab] = useState<'shared' | 'my' | string>('shared');
   const [todoFilter, setTodoFilter] = useState<'all' | 'shared' | 'my'>('shared');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['default']));
   const [newTodoGroup, setNewTodoGroup] = useState<string>('');
   // State to manage which note is currently being edited (null, 'shared', 'my', or userId)
   const [editingNoteId, setEditingNoteId] = useState<null | 'shared' | 'my' | string>(null);
+  const [outlineOpen, setOutlineOpen] = useState(true);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // 【修复】进入编辑模式时自动切换到"灵感"标签
+  useEffect(() => {
+    if (editingNoteId !== null && activeTab !== 'my') {
+      // 进入编辑模式时，自动切换到"灵感"（my 标签）
+      setActiveTab('my');
+    }
+  }, [editingNoteId]);
 
   // Safety Loading Check
   if (!todos || !notes || !playerNotes) {
@@ -410,31 +421,56 @@ export default function TacticalBoard() {
           </div>
         </div>
 
-        {/* Notes Editor / Preview */}
-        <div 
-          className="flex-1 relative group overflow-hidden"
-          onClick={() => handleEditClick(activeTab)}
-        >
-           {isCurrentlyEditing ? (
-             <textarea
-              ref={textAreaRef}
-              className="w-full h-full bg-zinc-950 p-4 text-sm text-zinc-300 resize-none focus:outline-none focus:bg-zinc-900/50 transition-colors custom-scrollbar leading-relaxed"
-              value={getTabContent()}
-              onChange={(e) => handleNoteChange(e.target.value)}
-              onBlur={handleBlur} // Auto-save on blur
-              readOnly={!isEditableTab}
-              placeholder={isEditableTab ? "Type details here... (Markdown supported)" : "Empty"}
-            />
-           ) : (
-             <div className="w-full h-full bg-zinc-950 p-4 overflow-y-auto custom-scrollbar">
+        {/* Notes Editor / Preview with Outline */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* 大纲面板 */}
+          {outlineOpen && (
+            <div className="w-48 border-r border-zinc-800 bg-zinc-900/30 overflow-y-auto custom-scrollbar">
+              <MarkdownOutline 
+                content={getTabContent()} 
+                className="text-xs"
+              />
+            </div>
+          )}
+
+          {/* MD 编辑/预览区 */}
+          <div 
+            className="flex-1 relative group overflow-hidden"
+            onClick={() => handleEditClick(activeTab)}
+          >
+            {/* 大纲切换按钮 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOutlineOpen(!outlineOpen);
+              }}
+              className="absolute top-2 right-2 z-20 p-1.5 bg-zinc-800/50 hover:bg-zinc-700 rounded transition-colors"
+              title="切换大纲"
+            >
+              {outlineOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+
+            {isCurrentlyEditing ? (
+              <textarea
+                ref={textAreaRef}
+                className="w-full h-full bg-zinc-950 p-4 text-sm text-zinc-300 resize-none focus:outline-none focus:bg-zinc-900/50 transition-colors custom-scrollbar leading-relaxed"
+                value={getTabContent()}
+                onChange={(e) => handleNoteChange(e.target.value)}
+                onBlur={handleBlur} // Auto-save on blur
+                readOnly={!isEditableTab}
+                placeholder={isEditableTab ? "Type details here... (Markdown supported)" : "Empty"}
+              />
+            ) : (
+              <div className="w-full h-full bg-zinc-950 p-4 overflow-y-auto custom-scrollbar">
                 <MarkdownView content={getTabContent()} variant="goc" />
                 {!isEditableTab && (
                   <div className="absolute top-2 right-2 px-2 py-1 bg-zinc-800/80 text-zinc-400 text-[10px] rounded pointer-events-none z-10">
                     READ ONLY
                   </div>
                 )}
-             </div>
-           )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

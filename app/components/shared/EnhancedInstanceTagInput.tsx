@@ -61,7 +61,16 @@ export function EnhancedInstanceTagInput({
         // 加载最近使用的标签
         const recent = localStorage.getItem('recentInstanceTags')
         if (recent) {
-          setRecentTags(JSON.parse(recent).slice(0, 5))
+          try {
+            const parsed = JSON.parse(recent)
+            setRecentTags(Array.isArray(parsed) ? parsed.slice(0, 5) : [])
+          } catch (e) {
+            console.error('Failed to parse recentInstanceTags:', e)
+            setRecentTags([])
+          }
+        } else {
+          // 初始化一些默认的最近使用标签
+          setRecentTags(['学习', '工作', '项目'])
         }
 
         // 首先尝试从缓存加载
@@ -447,31 +456,7 @@ export function EnhancedInstanceTagInput({
             ) : (
               // 默认建议模式
               <>
-                {/* 最近使用 */}
-                {recentTags.length > 0 && (
-                  <div className="border-b border-gray-200 dark:border-gray-700">
-                    <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
-                      <Clock className="h-3 w-3" />
-                      最近使用
-                    </div>
-                    {recentTags.map((tag) => {
-                      const displayName = tag.replace(/^#/, '')
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => addTag(tag)}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                        >
-                          <span className="text-xs">🔖</span>
-                          {displayName}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* 搜索建议 */}
+                {/* 搜索建议 - 放在最前面 */}
                 {filteredSuggestions.length > 0 && (
                   <div>
                     <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
@@ -493,6 +478,30 @@ export function EnhancedInstanceTagInput({
                         >
                           {index === selectedIndex && <span className="text-xs">→</span>}
                           <span className="text-xs">🏷️</span>
+                          {displayName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* 最近使用 - 放在建议之后 */}
+                {recentTags.length > 0 && (
+                  <div className="border-t border-gray-200 dark:border-gray-700">
+                    <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
+                      <Clock className="h-3 w-3" />
+                      最近使用
+                    </div>
+                    {recentTags.map((tag) => {
+                      const displayName = tag.replace(/^#/, '')
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => addTag(tag)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-xs">🔖</span>
                           {displayName}
                         </button>
                       )

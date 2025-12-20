@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Epub, { Book, Rendition } from 'epubjs';
 import { useReaderStore } from './useReaderStore';
-import * as ebookCache from '@/lib/ebook-cache';
+import * as webdavCache from '@/lib/webdav-cache';
 
 interface EpubReaderProps {
   url: string; // 这里可能是 blob url 或 oss url
@@ -18,10 +18,12 @@ export default function EpubReader({ url, bookId, title, initialLocation, onLoca
   const renditionRef = useRef<Rendition | null>(null);
   const bookRef = useRef<Book | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-        const { setBook, fontSize, theme, setSelection, bubbles } = useReaderStore();
-  
-    const applyStyles = useCallback((rendition: Rendition) => {
+  const { setBook, fontSize, theme, setSelection, bubbles } = useReaderStore();
+
+  const applyStyles = useCallback((rendition: Rendition) => {
+    try {
       const bg = theme === 'dark' ? '#1a1a1a' : theme === 'sepia' ? '#FDFBF7' : '#ffffff';
       const text = theme === 'dark' ? '#d1d5db' : '#374151';
       
@@ -32,7 +34,7 @@ export default function EpubReader({ url, bookId, title, initialLocation, onLoca
           'line-height': '1.8',
           'color': text,
           'background-color': bg,
-          'padding': '0 20px', // 移动端边距
+          'padding': '0 20px',
         },
         'p': {
           'margin-bottom': '1.5em',
@@ -40,110 +42,142 @@ export default function EpubReader({ url, bookId, title, initialLocation, onLoca
         }
       });
       rendition.themes.select('default');
-    }, [fontSize, theme]);
+      console.log('[EpubReader] Styles applied successfully', { theme, fontSize });
+    } catch (e) {
+      console.error('[EpubReader] Failed to apply styles:', e);
+    }
+  }, [fontSize, theme]);
   
-    useEffect(() => {
-      let mounted = true;
-  
-      const loadBook = async () => {
-        if (!viewerRef.current) return;
-  
-        // 1. 尝试加载数据 (缓存 -> 网络)
+  // 当主题或字体大小改变时，重新应用样式
+  useEffect(() => {
+    if (renditionRef.current && isReady) {
+      console.log('[EpubReader] Theme or font size changed, reapplying styles');
+      applyStyles(renditionRef.current);
+    }
+  }, [fontSize, theme, isReady, applyStyles]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadBook = async () => {
+      try {
+        if (!viewerRef.current) {
+          throw new Error('Viewer container not found');
+        }
+
+        console.log('[EpubReader] Starting book load for bookId:', bookId);
+        setError(null);
+
+        // 1. 加载数据 (缓存 -> 网络)
         let bookData: ArrayBuffer | string = url;
         
         try {
-            if (ebookCache.isIndexedDBSupported()) {
-                const cachedBlob = await ebookCache.getBook(bookId);
-                if (cachedBlob) {
-                    console.log('Loading book from IndexedDB cache');
-                    bookData = await cachedBlob.arrayBuffer();
-                } else {
-                    console.log('Fetching book from network...');
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
-                    const blob = await response.blob();
-                    
-                    // 异步写入缓存
-                    ebookCache.setBook(bookId, url, blob, title || 'Unknown Book').catch(console.warn);
-                    
-                    bookData = await blob.arrayBuffer();
-                }
+          if (webdavCache.isWebDAVSupported()) {
+            console.log('[EpubReader] Checking WebDAV cache...');
+            const cachedBlob = await webdavCache.getBook(bookId);
+            if (cachedBlob) {
+              console.log('[EpubReader] ✓ Book found in WebDAV cache');
+              bookData = await cachedBlob.arrayBuffer();
+            } else {
+              console.log('[EpubReader] Cache miss, fetching from network...');
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error(`Network fetch failed: ${response.statusText}`);
+              }
+              const blob = await response.blob();
+              console.log('[EpubReader] ✓ Book fetched from network, size:', blob.size);
+              
+              // 异步写入 WebDAV 缓存
+              webdavCache.setBook(bookId, url, blob, title || 'Unknown Book').catch(e => {
+                console.warn('[EpubReader] Failed to cache book to WebDAV:', e);
+              });
+              
+              bookData = await blob.arrayBuffer();
             }
-        } catch (e) {
-            console.error('Error loading book data, falling back to URL streaming:', e);
-            // 如果 fetch 失败（例如跨域），回退到 URL
-            // 注意：如果 URL 不以 .epub 结尾且是相对路径，这可能导致 404
-            bookData = url;
+          } else {
+            console.log('[EpubReader] WebDAV not supported, using URL streaming');
+          }
+        } catch (cacheError) {
+          console.warn('[EpubReader] Cache operation failed, falling back to URL:', cacheError);
+          bookData = url;
         }
-  
+
         // 2. 初始化 Book
+        console.log('[EpubReader] Initializing EpubJS Book...');
         const book = Epub(bookData);
         bookRef.current = book;
         setBook(book);
-  
-        // 3. 渲染
+        console.log('[EpubReader] ✓ Book initialized');
+
+        // 3. 创建 Rendition
+        console.log('[EpubReader] Creating rendition...');
         const rendition = book.renderTo(viewerRef.current, {
           width: '100%',
           height: '100%',
-          flow: 'scrolled', // 滚动模式，更适合沉浸式阅读
+          flow: 'scrolled',
           manager: 'continuous',
         });
         renditionRef.current = rendition;
-  
-        // 4. 显示
+        console.log('[EpubReader] ✓ Rendition created');
+
+        // 4. 显示内容
+        console.log('[EpubReader] Displaying content at location:', initialLocation || 'start');
         await rendition.display(initialLocation);
-        setIsReady(true);
-  
+        console.log('[EpubReader] ✓ Content displayed');
+
         // 5. 应用样式
+        console.log('[EpubReader] Applying styles...');
         applyStyles(rendition);
-  
-        // 6. 事件监听
+
+        // 6. 设置事件监听
+        console.log('[EpubReader] Setting up event listeners...');
+        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rendition.on('relocated', (location: any) => {
           if (!mounted) return;
           if (onLocationChange) {
-              onLocationChange(location.start.cfi, location.start.percentage);
+            onLocationChange(location.start.cfi, location.start.percentage);
           }
         });
-  
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rendition.on('selected', (cfiRange: string, contents: any) => {
           const range = rendition.getRange(cfiRange);
           const text = range.toString();
-          // 设置选中状态，触发 UI 显示工具栏
           setSelection({ text, cfiRange });
-          // 不清除选中，交给 UI 处理
         });
         
-        // 点击空白处取消选中
         rendition.on('click', () => {
-           setSelection(null);
+          setSelection(null);
         });
-  
-              // 7. 渲染灵感气泡
-              const renderBubbles = () => {
-                if (!renditionRef.current) return;
-                // 清除旧的气泡（如果有）
-                (renditionRef.current as any).highlights.clear();
+
+        // 7. 渲染灵感气泡
+        const renderBubbles = () => {
+          if (!renditionRef.current) return;
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (renditionRef.current as any).highlights?.clear?.();
+      
+            bubbles.forEach(bubble => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (renditionRef.current as any)?.highlight?.(bubble.cfi, {}, (e: any) => {
+                const event = new CustomEvent('ept-bubble-click', { detail: bubble.id });
+                window.dispatchEvent(event);
+              });
+            });
+          } catch (e) {
+            console.warn('[EpubReader] Failed to render bubbles:', e);
+          }
+        };
         
-                bubbles.forEach(bubble => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (renditionRef.current as any)?.highlight(bubble.cfi, {}, (e: any) => {
-                    // e is a synthetic event from epubjs, might differ from native MouseEvent
-                    // We need to prevent default behavior if possible
-                    
-                    // Dispatch custom event to be caught by AIReaderAssistant
-                    const event = new CustomEvent('ept-bubble-click', { detail: bubble.id });
-                    window.dispatchEvent(event);
-                    
-                    console.log('Bubble clicked:', bubble.id);
-                  });
-                });
-              };  
-        // 首次渲染和 bubbles 变化时渲染
         renderBubbles();
-        book.on('rendition:rendered', renderBubbles); // 页面重新渲染时也更新
-  
+        book.on('rendition:rendered', renderBubbles);
+
+        if (mounted) {
+          setIsReady(true);
+          console.log('[EpubReader] ✓ Book ready for reading');
+        }
+
         return () => {
           mounted = false;
           if (bookRef.current) {
@@ -151,21 +185,45 @@ export default function EpubReader({ url, bookId, title, initialLocation, onLoca
           }
           book.off('rendition:rendered', renderBubbles);
         };
-      };
-  
-      loadBook();
-  
-      return () => {
-        mounted = false;
-        if (bookRef.current) {
-          bookRef.current.destroy();
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error('[EpubReader] Fatal error during book load:', errorMsg, err);
+        if (mounted) {
+          setError(errorMsg);
         }
-      };
-    }, [url, bookId, title, initialLocation, onLocationChange, setBook, setSelection, applyStyles, bubbles]);
+      }
+    };
+
+    loadBook();
+
+    return () => {
+      mounted = false;
+      if (bookRef.current) {
+        bookRef.current.destroy();
+      }
+    };
+  }, [url, bookId, title, initialLocation, onLocationChange, setBook, setSelection, applyStyles, bubbles]);
   
     // CSS to highlight the bubbles (add to globals.css or component css)
     // .epub-bubble-highlight { background-color: rgba(255, 255, 0, 0.3); border-bottom: 1px dashed yellow; cursor: pointer; }
   
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-red-50">
+        <div className="text-center max-w-md">
+          <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
+          <p className="text-sm text-red-700 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full relative group">
       <div 
@@ -173,7 +231,14 @@ export default function EpubReader({ url, bookId, title, initialLocation, onLoca
         className={`w-full h-full overflow-hidden ${!isReady ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}
       />
       
-      {/* 翻页/滚动提示：由于是 scrolled 模式，原生滚动即可。但在移动端可能需要隐藏的翻页区 */}
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">正在加载书籍...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

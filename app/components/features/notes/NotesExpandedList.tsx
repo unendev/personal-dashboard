@@ -107,8 +107,8 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   // Drag and Drop Handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     draggedItemRef.current = index;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', sortedChildNotes[index].id);
+    e.dataTransfer!.effectAllowed = 'move';
+    e.dataTransfer!.setData('text/plain', sortedChildNotes[index].id);
   };
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -117,16 +117,20 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
   };
   
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    // dragOverItemRef.current = null;
+    // 只在完全离开元素时清除
+    if (e.currentTarget === e.target) {
+      dragOverItemRef.current = null;
+    }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer!.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     const draggedIndex = draggedItemRef.current;
     const dropIndex = dragOverItemRef.current;
 
@@ -147,7 +151,8 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
     dragOverItemRef.current = null;
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     draggedItemRef.current = null;
     dragOverItemRef.current = null;
   };

@@ -163,11 +163,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/timer-tasks - 更新任务（带乐观锁）
+// 【设备感知冲突检测】内存缓存：记录每个任务最后修改的设备
+const taskDeviceMap = new Map<string, { deviceId: string; version: number; timestamp: number }>();
+
+// PUT /api/timer-tasks - 更新任务（带乐观锁 + 设备感知）
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, version, ...updates } = body;
+    const { id, version, deviceId, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
@@ -176,8 +179,58 @@ export async function PUT(request: NextRequest) {
     // 【乐观锁】如果提供了version，进行版本检查
     if (version !== undefined) {
       try {
-        const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
-        return NextResponse.json(updatedTask);
+        // 获取该任务的设备修改记录
+        const deviceRecord = taskDeviceMap.get(id);
+        const lastModifiedDeviceId = deviceRecord?.deviceId;
+        const isFromSameDevice = deviceId && lastModifiedDeviceId === deviceId;
+        
+        // 【设备感知冲突检测】
+        if (isFromSameDevice) {
+          // 同一设备：宽松检查，允许版本号有一定偏差（因为后台计时器可能在更新）
+          console.log(`✅ [同一设备] 任务 ${id}，允许更新 (version: ${version})`);
+          const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
+          
+          // 更新设备记录
+          taskDeviceMap.set(id, {
+            deviceId: deviceId || 'unknown',
+            version: updatedTask.version,
+            timestamp: Date.now()
+          });
+          
+          return NextResponse.json(updatedTask);
+        } else {
+          // 不同设备：严格检查版本号
+          const currentTask = await TimerDB.getTaskById(id);
+          if (!currentTask) {
+            return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+          }
+          
+          if (currentTask.version !== version) {
+            console.warn(`⚠️ [不同设备冲突] 任务 ${id}，当前版本 ${currentTask.version}，请求版本 ${version}`);
+            return NextResponse.json(
+              { 
+                error: 'CONFLICT', 
+                message: '数据已在其他设备修改，请刷新页面获取最新数据',
+                isFromSameDevice: false,
+                currentVersion: currentTask.version,
+                requestVersion: version
+              }, 
+              { status: 409 }
+            );
+          }
+          
+          // 版本匹配，允许更新
+          const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
+          
+          // 更新设备记录
+          taskDeviceMap.set(id, {
+            deviceId: deviceId || 'unknown',
+            version: updatedTask.version,
+            timestamp: Date.now()
+          });
+          
+          return NextResponse.json(updatedTask);
+        }
       } catch (error: unknown) {
         if (error instanceof Error && error.message === 'VERSION_CONFLICT') {
           return NextResponse.json(

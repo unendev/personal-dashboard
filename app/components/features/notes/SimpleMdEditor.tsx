@@ -4,217 +4,30 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
-import Image from '@tiptap/extension-image'
 import { Extension } from '@tiptap/core'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { createPortal } from 'react-dom'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { mergeAttributes } from '@tiptap/core'
 import { Button } from '@/app/components/ui/button'
 import { Save, Maximize2, Minimize2, ChevronDown } from 'lucide-react'
 import { NotesFileBar } from './NotesFileBar'
 import { NotesExpandedList } from './NotesExpandedList'
 import { useNoteGrouping } from './hooks/useNoteGrouping'
 import { useNoteCache } from './hooks/useNoteCache'
+import { useOssUpload } from '@/app/hooks/useOssUpload'
 import { SwapLineExtension } from '@/lib/swap-line-extension'
+import { DeleteLineExtension } from '@/lib/tiptap-extensions/delete-line'
+import { CustomImage } from '@/lib/tiptap-extensions/custom-image'
 import { Details } from '@/lib/tiptap-extensions/details'
 import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
 import { DetailsContent } from '@/lib/tiptap-extensions/details-content'
 import { AutoOrderListExtension } from '@/lib/tiptap-extensions/auto-order-list'
 import { WikiLink, createWikiLinkInputRule } from '@/lib/tiptap-extensions/wiki-link'
 
-// Note: The CustomImage implementation and other Tiptap extensions remain unchanged.
-// ... (CustomImage, slugify, etc. would be here)
 
-const CustomImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      width: {
-        default: null,
-        parseHTML: element => element.getAttribute('width'),
-        renderHTML: attributes => {
-          if (!attributes.width) {
-            return {}
-          }
-          return { width: attributes.width }
-        },
-      },
-      height: {
-        default: null,
-        parseHTML: element => element.getAttribute('height'),
-        renderHTML: attributes => {
-          if (!attributes.height) {
-            return {}
-          }
-          return { height: attributes.height }
-        },
-      },
-    }
-  },
 
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const container = document.createElement('div')
-      container.className = 'image-resizer'
-      container.contentEditable = 'false'
-      
-      const img = document.createElement('img')
-      img.src = node.attrs.src
-      img.alt = node.attrs.alt || ''
-      img.className = 'tiptap-image'
-      
-      if (node.attrs.width) {
-        img.style.width = node.attrs.width + 'px'
-      }
-      
-      img.addEventListener('dblclick', () => {
-        img.style.width = ''
-        if (typeof getPos === 'function') {
-          editor.commands.updateAttributes('image', { width: null, height: null })
-        }
-      })
-      
-      // 检测是否为移动设备
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-        || window.innerWidth < 768
-      
-      // 仅在桌面端添加拖拽调整手柄
-      if (!isMobile) {
-        const resizeHandle = document.createElement('div')
-        resizeHandle.className = 'image-resize-handle'
-        
-        let isResizing = false
-        let startX = 0
-        let startWidth = 0
-        
-        resizeHandle.addEventListener('mousedown', (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          isResizing = true
-          startX = e.clientX
-          startWidth = img.offsetWidth
-          
-          document.addEventListener('mousemove', handleMouseMove)
-          document.addEventListener('mouseup', handleMouseUp)
-          
-          container.classList.add('resizing')
-        })
-        
-        const handleMouseMove = (e: MouseEvent) => {
-          if (!isResizing) return
-          
-          const diff = e.clientX - startX
-          const newWidth = Math.max(100, startWidth + diff)
-          img.style.width = newWidth + 'px'
-        }
-        
-        const handleMouseUp = () => {
-          if (!isResizing) return
-          isResizing = false
-          
-          document.removeEventListener('mousemove', handleMouseMove)
-          document.removeEventListener('mouseup', handleMouseUp)
-          
-          container.classList.remove('resizing')
-          
-          if (typeof getPos === 'function') {
-            const width = img.offsetWidth
-            const height = img.offsetHeight
-            editor.commands.updateAttributes('image', { width, height })
-          }
-        }
-        
-        container.appendChild(img)
-        container.appendChild(resizeHandle)
-      } else {
-        // 移动端：只添加图片，不添加调整手柄
-        container.appendChild(img)
-      }
-      
-      return {
-        dom: container,
-        contentDOM: null,
-        ignoreMutation: () => true,
-      }
-    }
-  },
 
-  renderHTML({ HTMLAttributes }) {
-    return [
-      'img',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        draggable: 'false',
-        contenteditable: 'false',
-      }),
-    ]
-  },
-})
-
-// 自定义Ctrl+D删除行扩展（带调试）
-const DeleteLineExtension = Extension.create({
-  name: 'deleteLine',
-  
-  addKeyboardShortcuts() {
-    return {
-      'Mod-d': () => {
-        try {
-          const { state } = this.editor
-          const { $from } = state.selection
-          
-          // 从当前位置向上查找块级节点
-          // 优先查找listItem，然后是paragraph和heading
-          let targetNode = null
-          let targetDepth = 0
-          
-          for (let d = $from.depth; d > 0; d--) {
-            const node = $from.node(d)
-            
-            // 优先级：listItem > heading > paragraph
-            if (node.type.name === 'listItem') {
-              targetNode = node
-              targetDepth = d
-              break // 找到listItem就停止，这是最优先的
-            } else if (node.type.name === 'heading') {
-              targetNode = node
-              targetDepth = d
-              break // 找到heading也停止
-            } else if (node.type.name === 'paragraph' && !targetNode) {
-              // 只有还没找到其他目标时才记录paragraph
-              targetNode = node
-              targetDepth = d
-              // 不break，继续向上查找listItem
-            }
-          }
-          
-          // 执行删除
-          if (targetNode && targetDepth > 0) {
-            const pos = $from.before(targetDepth)
-            const nodeSize = targetNode.nodeSize
-            
-            return this.editor.commands.deleteRange({ 
-              from: pos, 
-              to: pos + nodeSize 
-            })
-          }
-          
-          // 兜底：删除当前块内容
-          const start = $from.start()
-          const end = $from.end()
-          if (start !== undefined && end !== undefined) {
-            return this.editor.commands.deleteRange({ from: start, to: end })
-          }
-          
-          return false
-        } catch (error) {
-          console.error('DeleteLineExtension error:', error)
-          return false
-        }
-      }
-    }
-  }
-})
 
 interface Note {
   id: string;
@@ -241,7 +54,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
   const isLoadingContent = useRef(false)
   const isSystemUpdate = useRef(false)
   const [isFullscreenModalOpen, setIsFullscreenModalOpen] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const { upload: uploadToOss, isUploading: isUploadingImage } = useOssUpload()
   const [showOutline, setShowOutline] = useState(false) // 默认不显示
   const outlineTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -385,7 +198,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
                 event.preventDefault()
                 const file = item.getAsFile()
                 if (file) {
-                  uploadImageToOSS(file).then((url) => {
+                  uploadToOss(file).then((url) => {
                     const { state, dispatch } = view
                     const node = state.schema.nodes.image.create({ src: url })
                     const transaction = state.tr.replaceSelectionWith(node)
@@ -732,87 +545,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
     }
   };
 
-  const uploadImageToOSS = async (file: File): Promise<string> => {
-    setIsUploadingImage(true)
-    try {
-      // 1. 获取上传签名
-      const signatureUrl = new URL('/api/upload/oss/signature', window.location.origin)
-      signatureUrl.searchParams.set('filename', file.name)
-      signatureUrl.searchParams.set('contentType', file.type)
-      
-      const signatureRes = await fetch(signatureUrl.toString())
-      if (!signatureRes.ok) {
-        const errorData = await signatureRes.json()
-        throw new Error(`获取上传签名失败: ${errorData.error || signatureRes.statusText}`)
-      }
-      
-      const signatureData = await signatureRes.json()
-      
-      // 检查是否配置了 OSS
-      if (signatureData.error) {
-        console.warn('OSS 未配置，使用本地预览')
-        // 返回 base64 作为降级方案
-        return new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(file)
-        })
-      }
 
-      // 2. 构建表单数据
-      const formData = new FormData()
-      formData.append('key', signatureData.key)
-      formData.append('policy', signatureData.policy)
-      formData.append('OSSAccessKeyId', signatureData.accessKeyId)
-      formData.append('signature', signatureData.signature)
-      formData.append('success_action_status', '200')
-      formData.append('file', file)
-
-      // 3. 上传到 OSS
-      const uploadRes = await fetch(signatureData.endpoint, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!uploadRes.ok) {
-        throw new Error('OSS上传失败')
-      }
-
-      // 4. 构建图片 URL
-      const baseUrl = (signatureData.cdnUrl || signatureData.endpoint).trim().replace(/\/+$/, '')
-      const normalizedKey = signatureData.key.replace(/^\/+/, '')
-      const imageUrl = `${baseUrl}/${normalizedKey}`
-      
-      // 5. 生成签名 URL（用于私有 Bucket）
-      try {
-        const signUrlRes = await fetch('/api/upload/oss/sign-url', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: imageUrl }),
-        })
-        
-        if (signUrlRes.ok) {
-          const { signedUrl } = await signUrlRes.json()
-          console.log('✅ 生成签名 URL 成功')
-          return signedUrl
-        } else {
-          console.warn('⚠️ 生成签名 URL 失败，使用原始 URL')
-          return imageUrl
-        }
-      } catch (signError) {
-        console.warn('⚠️ 签名 URL 请求失败，使用原始 URL:', signError)
-        return imageUrl
-      }
-    } catch (error) {
-      console.error('图片上传失败:', error)
-      alert('图片上传失败：' + (error instanceof Error ? error.message : '未知错误'))
-      throw error
-    } finally {
-      setIsUploadingImage(false)
-    }
-  }
 
   const manualSave = () => {
     if (editor) saveContent(editor.getHTML());

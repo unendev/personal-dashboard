@@ -72,7 +72,7 @@ const envSchema = z.object({
   // AI 服务 (可选)
   // ==========================================
   DEEPSEEK_API_KEY: z.string().optional(),
-  GOOGLE_API_KEY: z.string().optional(),
+  GOOGLE_AI_STUDIO_API_KEY: z.string().optional(),
   
   // ==========================================
   // 代理配置 (可选，用于本地开发)

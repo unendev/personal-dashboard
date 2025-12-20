@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Upload, Book as BookIcon, Trash2, Clock, MoreVertical, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as ebookCache from '@/lib/ebook-cache';
+import * as webdavCache from '@/lib/webdav-cache';
 
 interface Book {
   id: string;
@@ -37,9 +37,9 @@ export default function WebReadShelf() {
         setBooks(data.books);
         
         // 预热缓存检查
-        if (ebookCache.isIndexedDBSupported()) {
+        if (webdavCache.isWebDAVSupported()) {
              data.books.forEach(async (book: Book) => {
-                 const isCached = await ebookCache.isBookCached(book.id);
+                 const isCached = await webdavCache.isBookCached(book.id);
                  if (!isCached) {
                      // 可以在这里静默下载，或者在 UI 上显示“云端”图标
                      console.log(`Book ${book.title} is not cached locally.`);
@@ -101,9 +101,9 @@ export default function WebReadShelf() {
       
       const newBook = await bookRes.json();
       
-      // 4. 自动存入本地缓存
-      if (ebookCache.isIndexedDBSupported()) {
-          await ebookCache.setBook(newBook.id, newBook.fileUrl, file, newBook.title);
+      // 4. 自动存入 WebDAV 缓存
+      if (webdavCache.isWebDAVSupported()) {
+          await webdavCache.setBook(newBook.id, newBook.fileUrl, file, newBook.title);
       }
 
       await fetchBooks();
@@ -122,9 +122,9 @@ export default function WebReadShelf() {
 
     try {
       await fetch(`/api/webread/books/${id}`, { method: 'DELETE' });
-      // 清除本地缓存
-      if (ebookCache.isIndexedDBSupported()) {
-          await ebookCache.deleteBook(id);
+      // 清除 WebDAV 缓存
+      if (webdavCache.isWebDAVSupported()) {
+          await webdavCache.deleteBook(id);
       }
       setBooks(books.filter(b => b.id !== id));
     } catch (err) {

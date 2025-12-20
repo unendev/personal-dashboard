@@ -223,6 +223,26 @@ export const TimerDB = {
     }
   },
 
+  // 获取单个任务（用于版本检查）
+  getTaskById: async (taskId: string): Promise<TimerTask | null> => {
+    try {
+      const task = await prisma.timerTask.findUnique({
+        where: { id: taskId },
+        include: {
+          children: {
+            include: {
+              children: true
+            }
+          }
+        }
+      });
+      return task;
+    } catch (error) {
+      console.error('Failed to get timer task by id:', error);
+      return null;
+    }
+  },
+
   // 更新任务
   updateTask: async (taskId: string, updates: Partial<Omit<TimerTask, 'id' | 'createdAt' | 'updatedAt' | 'children'>>): Promise<TimerTask> => {
     try {

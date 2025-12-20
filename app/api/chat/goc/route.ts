@@ -62,7 +62,7 @@ if (!isProduction) {
 }
 
 const google = createGoogleGenerativeAI({
-  apiKey: env.GOOGLE_API_KEY || process.env.GOOGLE_API_KEY,
+  apiKey: env.GOOGLE_AI_STUDIO_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY,
   ...proxyConfig,
 });
 

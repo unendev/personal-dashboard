@@ -71,26 +71,31 @@ export default function ReaderPage() {
       });
   }, [id, addBubble]);
 
-  // 定期保存进度
-  const saveProgressRef = useRef(false);
+  // 定期保存进度（带防抖）
   useEffect(() => {
-    if (!currentCfi || saveProgressRef.current) return;
+    if (!currentCfi || !progress) return;
     
     const timer = setTimeout(async () => {
-       try {
-         await fetch(`/api/webread/books/${id}/progress`, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({
-             progress,
-             cfi: currentCfi,
-             currentChapter: 'Unknown', // EpubJS difficult to get exact chapter title without parsing TOC against SPI
-           }),
-         });
-         console.log('Progress saved:', Math.round(progress * 100) + '%');
-       } catch (e) {
-         console.error('Failed to save progress', e);
-       }
+      try {
+        console.log('[ReaderPage] Saving progress:', { progress: Math.round(progress * 100) + '%', cfi: currentCfi });
+        const response = await fetch(`/api/webread/books/${id}/progress`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            progress,
+            cfi: currentCfi,
+            currentChapter: 'Unknown',
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Save failed: ${response.statusText}`);
+        }
+        
+        console.log('[ReaderPage] ✓ Progress saved:', Math.round(progress * 100) + '%');
+      } catch (e) {
+        console.error('[ReaderPage] Failed to save progress:', e);
+      }
     }, 2000); // 2秒防抖
 
     return () => clearTimeout(timer);
@@ -134,8 +139,11 @@ export default function ReaderPage() {
               url={bookMetadata.fileUrl} 
               bookId={id} 
               title={bookMetadata.title}
-              initialLocation={bookMetadata.readingProgress?.[0]?.currentChapter} // TODO: Rename to cfi in DB or transform here
-              onLocationChange={(cfi, p) => useReaderStore.getState().setCurrentLocation(cfi, p)}
+              initialLocation={bookMetadata.readingProgress?.[0]?.currentChapter}
+              onLocationChange={(cfi, p) => {
+                useReaderStore.getState().setCurrentLocation(cfi, p);
+                console.log('[ReaderPage] Location changed:', { cfi, progress: p });
+              }}
             />
             
             {/* 浮动 AI 助手层 (Heptapod) */}

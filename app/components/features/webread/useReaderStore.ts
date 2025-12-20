@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Book } from 'epubjs';
 
 export interface ReaderBubble {
@@ -38,26 +39,44 @@ interface WebReadState {
   addBubble: (bubble: ReaderBubble) => void;
 }
 
-export const useReaderStore = create<WebReadState>((set) => ({
-  book: null,
-  setBook: (book) => set({ book }),
-  
-  currentCfi: '',
-  progress: 0,
-  setCurrentLocation: (cfi, progress) => set({ currentCfi: cfi, progress }),
-  
-  sidebarOpen: false, // 默认关闭，减少干扰
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  
-  fontSize: 18,
-  setFontSize: (size) => set({ fontSize: size }),
-  
-  theme: 'light',
-  setTheme: (theme) => set({ theme }),
-  
-  selection: null,
-  setSelection: (selection) => set({ selection }),
-  
-  bubbles: [],
-  addBubble: (bubble) => set((state) => ({ bubbles: [...state.bubbles, bubble] })),
-}));
+export const useReaderStore = create<WebReadState>()(
+  persist(
+    (set) => ({
+      book: null,
+      setBook: (book) => set({ book }),
+      
+      currentCfi: '',
+      progress: 0,
+      setCurrentLocation: (cfi, progress) => set({ currentCfi: cfi, progress }),
+      
+      sidebarOpen: false,
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      
+      fontSize: 18,
+      setFontSize: (size) => {
+        console.log('[useReaderStore] Font size changed to:', size);
+        set({ fontSize: size });
+      },
+      
+      theme: 'light',
+      setTheme: (theme) => {
+        console.log('[useReaderStore] Theme changed to:', theme);
+        set({ theme });
+      },
+      
+      selection: null,
+      setSelection: (selection) => set({ selection }),
+      
+      bubbles: [],
+      addBubble: (bubble) => set((state) => ({ bubbles: [...state.bubbles, bubble] })),
+    }),
+    {
+      name: 'webread-store',
+      partialize: (state) => ({
+        fontSize: state.fontSize,
+        theme: state.theme,
+        sidebarOpen: state.sidebarOpen,
+      }),
+    }
+  )
+);

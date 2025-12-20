@@ -352,7 +352,8 @@ export function useTimerOperations(
               break;
             } else if (result.reason === 'version_conflict') {
               console.error('❌ [自动启动] 版本冲突:', result.conflictTaskName);
-              alert(`⚠️ 数据冲突\n\n任务"${result.conflictTaskName}"的数据已在其他地方被修改。\n\n页面将自动刷新以获取最新数据。`);
+              // 版本冲突时自动刷新（不弹出提示，直接刷新）
+              console.log('🔄 [自动启动] 检测到版本冲突，自动刷新数据...');
               await fetchTimerTasksRef.current();
               pendingStartTaskIdRef.current = null;
               setPendingStartTaskId(null);

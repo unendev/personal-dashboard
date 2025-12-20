@@ -40,7 +40,7 @@ export function PrivacyLayer() {
     <>
       {/* 隐形触发区 - 左下角 (模糊) - 1/4 圆扇形 */}
       <div 
-        className="fixed bottom-0 left-0 w-40 h-40 z-[9000] cursor-pointer group"
+        className="fixed bottom-0 left-0 w-24 h-24 md:w-40 md:h-40 z-[9000] cursor-pointer group"
         onClick={() => setIsBlurred(prev => !prev)}
         title="切换文字模糊模式 (Esc)"
       >

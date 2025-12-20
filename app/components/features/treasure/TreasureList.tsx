@@ -247,7 +247,7 @@ export function TreasureList({ className }: TreasureListProps) {
     let lastScrollTop = 0
     
     const handleScroll = () => {
-      // 节流：200ms 内只触发一次
+      // 节流：300ms 内只触发一次（移动端优化）
       if (throttleTimer) return
       
       throttleTimer = setTimeout(() => {
@@ -264,23 +264,23 @@ export function TreasureList({ className }: TreasureListProps) {
         lastScrollTop = scrollTop
         
         // 检查是否需要加载更多
-        // 1. 距离底部小于 300px
+        // 1. 距离底部小于 500px（移动端优化，提前加载）
         // 2. 没有正在加载
         // 3. 还有更多数据
         // 4. 正在向下滚动（防止上滑时触发）
-        // 5. 必须从上次加载位置向下滚动了至少 200px（防止加载完立即再次触发）
+        // 5. 必须从上次加载位置向下滚动了至少 300px（防止加载完立即再次触发）
         const shouldLoad = 
-          distanceToBottom < 300 && 
+          distanceToBottom < 500 && 
           !isLoadingMore && 
           hasMore &&
           isScrollingDown &&
-          (scrollTop - lastLoadScrollTop.current >= 200 || lastLoadScrollTop.current === 0)
+          (scrollTop - lastLoadScrollTop.current >= 300 || lastLoadScrollTop.current === 0)
         
         if (shouldLoad) {
           lastLoadScrollTop.current = scrollTop
           loadMore()
         }
-      }, 200)
+      }, 300)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -325,8 +325,8 @@ export function TreasureList({ className }: TreasureListProps) {
       },
       {
         root: null, // 使用窗口作为根
-        rootMargin: '-20% 0px -20% 0px',
-        threshold: [0, 0.25, 0.5, 0.75, 1]
+        rootMargin: '-30% 0px -30% 0px', // 增加 rootMargin，减少观察频率
+        threshold: [0.5] // 简化 threshold，只在 50% 可见时触发
       }
     )
 
@@ -337,7 +337,7 @@ export function TreasureList({ className }: TreasureListProps) {
           observer.observe(element)
         }
       })
-    }, 200)
+    }, 300)
 
     return () => {
       clearTimeout(timeoutId)
@@ -498,8 +498,8 @@ export function TreasureList({ className }: TreasureListProps) {
   }
 
   return (
-    <div className={`grid grid-cols-1 xl:grid-cols-[288px_1fr_320px] gap-6 w-full mx-auto px-4 pb-8 pt-4 ${className}`}>
-      {/* 左侧大纲面板 */}
+    <div className={`grid grid-cols-1 xl:grid-cols-[288px_1fr_320px] gap-4 xl:gap-6 w-full mx-auto px-2 xl:px-4 pb-8 pt-4 ${className}`}>
+      {/* 左侧大纲面板 - 仅桌面端显示 */}
       <aside className="hidden xl:block self-start">
         <div className="bg-[#1e293b] rounded-xl border border-white/10">
           <TreasureOutline
@@ -513,7 +513,7 @@ export function TreasureList({ className }: TreasureListProps) {
       {/* 中间内容区域 */}
       <div className="flex flex-col min-w-0 max-w-2xl mx-auto w-full pb-20">
         {/* 搜索栏 */}
-        <div className="sticky top-4 z-10 pb-4 pt-2 px-4 mb-4">
+        <div className="sticky top-4 z-10 pb-4 pt-2 px-2 xl:px-4 mb-4">
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -584,7 +584,7 @@ export function TreasureList({ className }: TreasureListProps) {
             </p>
           </div>
         ) : (
-          <div className="px-4 space-y-4">
+          <div className="px-2 xl:px-4 space-y-4">
             {treasures.map((treasure) => (
               <div
                 key={treasure.id}
@@ -598,7 +598,7 @@ export function TreasureList({ className }: TreasureListProps) {
                 <div className="max-w-2xl mx-auto">
                   {/* 外置分类头像与信息区域（社媒风格） */}
                   <div className="flex items-center gap-3 mb-2 px-1">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
+                    <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-white/5 border border-white/10">
                       {(() => {
                         // 获取所有主要分类
                         let primaryCategories: string[] = []
@@ -631,7 +631,7 @@ export function TreasureList({ className }: TreasureListProps) {
                         return <span className="text-white font-semibold text-sm">{treasure.title.charAt(0).toUpperCase()}</span>
                       })()}
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0">
                       {(() => {
                         // 获取所有主要分类
                         let primaryCategories: string[] = []
@@ -659,7 +659,7 @@ export function TreasureList({ className }: TreasureListProps) {
                           const labels = primaryCategories
                             .map(cat => categoryLabel[cat] || cat)
                             .join(' / ')
-                          return <span className="text-sm font-medium text-white/90">{labels}</span>
+                          return <span className="text-sm font-medium text-white/90 truncate">{labels}</span>
                         }
                         return <span className="text-sm font-medium text-white/90">未分类</span>
                       })()}
@@ -698,7 +698,7 @@ export function TreasureList({ className }: TreasureListProps) {
         )}
       </div>
 
-      {/* 右侧统计面板 */}
+      {/* 右侧统计面板 - 仅桌面端显示 */}
       <aside className="hidden xl:block self-start">
         <div>
           <TreasureStatsPanel 
