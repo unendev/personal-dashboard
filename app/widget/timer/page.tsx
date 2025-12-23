@@ -127,7 +127,7 @@ export default function TimerWidgetPage() {
       {activeTask ? (
         <div 
           className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
-          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=400,height=520')}
+          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=500,height=700')}
           title="双击新建任务"
         >
           {/* 暂停/播放按钮 */}
@@ -161,7 +161,7 @@ export default function TimerWidgetPage() {
       ) : (
         <div 
           className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
-          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=400,height=520')}
+          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=500,height=700')}
           title="双击新建任务"
         >
           <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
