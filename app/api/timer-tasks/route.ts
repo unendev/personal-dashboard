@@ -186,9 +186,9 @@ export async function PUT(request: NextRequest) {
         
         // 【设备感知冲突检测】
         if (isFromSameDevice) {
-          // 同一设备：宽松检查，允许版本号有一定偏差（因为后台计时器可能在更新）
-          console.log(`✅ [同一设备] 任务 ${id}，允许更新 (version: ${version})`);
-          const updatedTask = await TimerDB.updateTaskWithVersion(id, version, updates);
+          // 同一设备：跳过版本检查，直接更新（避免同设备多标签页冲突弹窗）
+          console.log(`✅ [同一设备] 任务 ${id}，跳过版本检查直接更新`);
+          const updatedTask = await TimerDB.updateTask(id, updates);
           
           // 更新设备记录
           taskDeviceMap.set(id, {
@@ -233,10 +233,15 @@ export async function PUT(request: NextRequest) {
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.message === 'VERSION_CONFLICT') {
+          // 获取当前任务信息用于返回
+          const currentTask = await TimerDB.getTaskById(id);
           return NextResponse.json(
             { 
               error: 'CONFLICT', 
-              message: '数据已在其他设备修改，请刷新页面获取最新数据' 
+              message: '数据已在其他设备修改，请刷新页面获取最新数据',
+              isFromSameDevice: false,  // 走到这里说明是不同设备的冲突
+              currentVersion: currentTask?.version,
+              requestVersion: version
             }, 
             { status: 409 }
           );
