@@ -128,43 +128,11 @@ export default function TimerWidgetPage() {
     return () => clearInterval(interval);
   }, [activeTask]);
 
-  const [showCreateInput, setShowCreateInput] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-
   const formatSeconds = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const handleCreateTask = async () => {
-    if (!newTaskName.trim() || !userId) return;
-    
-    setIsCreating(true);
-    try {
-      const response = await fetch('/api/timer-tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: newTaskName,
-          userId,
-          categoryPath: 'Quick Task',
-        }),
-      });
-      
-      if (response.ok) {
-        setNewTaskName('');
-        setShowCreateInput(false);
-        mutateTasks();
-      }
-    } catch (error) {
-      console.error('Failed to create task:', error);
-    } finally {
-      setIsCreating(false);
-    }
   };
 
   // === 条件渲染放在 hooks 之后 ===
@@ -197,35 +165,13 @@ export default function TimerWidgetPage() {
       <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/50 border-b border-zinc-800/50 shrink-0 gap-2">
         <span className="text-xs text-zinc-500 flex-1">Timer</span>
         <button
-          onClick={() => setShowCreateInput(!showCreateInput)}
+          onClick={() => window.open('/widget/create', '_blank', 'width=320,height=280')}
           className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 rounded transition-colors no-drag text-sm font-bold"
           title="Create task"
         >
           +
         </button>
       </div>
-
-      {/* 创建任务输入框 */}
-      {showCreateInput && (
-        <div className="px-2 py-1.5 bg-zinc-900/80 border-b border-zinc-800/50 flex gap-1 no-drag">
-          <input
-            type="text"
-            value={newTaskName}
-            onChange={(e) => setNewTaskName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
-            placeholder="Task name..."
-            className="flex-1 bg-zinc-800 text-xs px-2 py-1 rounded text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            autoFocus
-          />
-          <button
-            onClick={handleCreateTask}
-            disabled={isCreating}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-xs rounded text-white transition-colors"
-          >
-            {isCreating ? '...' : '✓'}
-          </button>
-        </div>
-      )}
 
       {/* 任务列表容器 */}
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1 no-drag">
