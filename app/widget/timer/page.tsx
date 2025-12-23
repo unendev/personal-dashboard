@@ -123,12 +123,19 @@ export default function TimerWidgetPage() {
 
   return (
     <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white select-none p-3 gap-3">
-      {/* 当前运行的任务 - 大卡片 */}
+      {/* 当前运行的任务 - 大卡片，双击打开 /log */}
       {activeTask ? (
-        <div className={`relative rounded-xl p-4 border ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}>
+        <div 
+          className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
+          onDoubleClick={() => window.open('/log', '_blank')}
+          title="双击打开完整页面"
+        >
           {/* 暂停/播放按钮 */}
           <button
-            onClick={() => activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id);
+            }}
             className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
               activeTask.isPaused 
                 ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
@@ -152,9 +159,13 @@ export default function TimerWidgetPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center">
+        <div 
+          className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
+          onDoubleClick={() => window.open('/log', '_blank')}
+          title="双击打开完整页面"
+        >
           <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
-          <div className="text-xs text-zinc-600 mt-1">无运行中的任务</div>
+          <div className="text-xs text-zinc-600 mt-1">双击打开完整页面</div>
         </div>
       )}
 
@@ -182,13 +193,6 @@ export default function TimerWidgetPage() {
         )}
       </div>
 
-      {/* 底部添加按钮 */}
-      <button
-        onClick={() => window.open('/log', '_blank', 'width=1200,height=800')}
-        className="w-full py-2 rounded-xl bg-zinc-900/60 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-600/30 transition-colors text-sm"
-      >
-        + 新建任务
-      </button>
     </div>
   );
 }
