@@ -35,12 +35,18 @@ export async function GET(request: NextRequest) {
     // 使用 Basic Auth 获取封面
     const auth = Buffer.from(`${username}:${password}`).toString('base64');
     
+    // 使用 AbortController 实现超时
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     const response = await fetch(coverUrl, {
       headers: {
         'Authorization': `Basic ${auth}`,
       },
-      timeout: 5000, // 5 秒超时
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.warn('[Cover API] Failed to fetch cover:', response.status, response.statusText);
