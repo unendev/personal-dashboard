@@ -64,7 +64,11 @@ export default function TimerWidgetPage() {
   const { data: tasks = [], mutate: mutateTasks } = useSWR<TimerTask[]>(
     apiUrl,
     fetcher,
-    { refreshInterval: 2000 }
+    { 
+      refreshInterval: 5000, // 降低刷新频率
+      revalidateOnFocus: false,
+      dedupingInterval: 2000 
+    }
   );
 
   useEffect(() => {
@@ -162,14 +166,14 @@ export default function TimerWidgetPage() {
   }
 
   return (
-    <div className="relative flex flex-col w-full h-full overflow-hidden bg-zinc-950/95 text-white select-none border border-zinc-800/50 rounded-lg drag-region">
+    <div className="relative flex flex-col w-full h-full bg-zinc-950/95 text-white select-none border border-zinc-800/50 rounded-lg drag-region">
       {/* 顶部拖拽条 */}
       <div className="h-5 flex items-center justify-center bg-zinc-900/50 hover:bg-zinc-800/80 transition-colors shrink-0">
         <div className="w-8 h-1 bg-zinc-700/50 rounded-full" />
       </div>
 
-      {/* 任务列表容器 */}
-      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1 custom-scrollbar">
+      {/* 任务列表容器 - 隐藏滚动条 */}
+      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1 no-drag" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {/* 当前运行的任务（包括暂停状态） */}
         {activeTask && (
           <div className={`flex items-center p-2 bg-zinc-900/80 rounded border shadow-sm mb-2 gap-2 ${activeTask.isPaused ? 'border-yellow-500/20' : 'border-green-500/20'}`}>
