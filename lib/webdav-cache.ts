@@ -31,6 +31,7 @@ export interface BookProgress {
   progress: number;
   currentChapter: string;
   lastReadAt: number;
+  manualStatus?: 'recent' | 'want' | 'backlog'; // 手动设置的状态
 }
 
 export interface BookNote {
@@ -810,6 +811,35 @@ export async function getProgress(bookId: string): Promise<BookProgress | null> 
     return result;
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * 设置书籍的手动状态
+ */
+export async function setBookStatus(bookId: string, status: 'recent' | 'want' | 'backlog'): Promise<void> {
+  try {
+    const decodedBookId = decodeBookId(bookId);
+    
+    // 获取现有进度
+    const existing = await getProgress(decodedBookId);
+    
+    const progress: BookProgress = existing || {
+      bookId: decodedBookId,
+      currentCfi: '',
+      progress: 0,
+      currentChapter: '',
+      lastReadAt: 0,
+    };
+    
+    // 更新手动状态
+    progress.manualStatus = status;
+    
+    // 保存
+    await saveProgress(progress);
+  } catch (error) {
+    console.error('[WebDAV] Failed to set book status:', error);
+    throw error;
   }
 }
 

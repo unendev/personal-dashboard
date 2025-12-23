@@ -1,17 +1,6 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGoogleGenerativeAI, GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { streamText } from 'ai';
-
-interface ChatRequest {
-  messages: Array<{
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-  }>;
-  provider?: 'deepseek' | 'gemini' | 'custom';
-  apiKey?: string;
-  model?: string;
-  baseUrl?: string;
-}
+import { streamText, convertToModelMessages } from 'ai';
 
 // 生产环境检测
 const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
@@ -26,23 +15,22 @@ if (!isProduction) {
 
 // 判断是否是思考模型
 function isThinkingModel(provider: string, model: string): boolean {
-  if (provider === 'deepseek' && model === 'deepseek-reasoner') {
-    return true;
-  }
-  if (provider === 'gemini' && (model.includes('gemini-2.5-pro') || model.includes('gemini-3'))) {
-    return true;
-  }
+  if (provider === 'deepseek' && model === 'deepseek-reasoner') return true;
+  if (provider === 'gemini' && (model.includes('gemini-2.5-pro') || model.includes('gemini-3'))) return true;
   return false;
 }
 
 export async function POST(req: Request) {
   try {
-    const { messages, provider = 'deepseek', apiKey, model, baseUrl } = await req.json() as ChatRequest;
+    const body = await req.json();
+    
+    // useChat 发送的格式: { messages: UIMessage[], ...customBody }
+    const { messages, provider = 'deepseek', apiKey, model, baseUrl } = body;
 
     const effectiveModel = model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'deepseek-chat');
     const enableThinking = isThinkingModel(provider, effectiveModel);
     
-    console.log('[Chat API] Request:', { provider, model: effectiveModel, thinking: enableThinking });
+    console.log('[Chat API] Request:', { provider, model: effectiveModel, thinking: enableThinking, msgCount: messages?.length });
 
     // 根据 provider 选择默认的环境变量 API Key
     let envApiKey = '';
@@ -71,17 +59,14 @@ export async function POST(req: Request) {
       });
       aiModel = google(effectiveModel);
       
-      // Gemini 思考模式配置 - 参考 /room 实现
+      // Gemini 思考模式配置
       if (enableThinking) {
         const thinkingConfig: any = { includeThoughts: true };
-        
         if (effectiveModel.includes('gemini-3')) {
           thinkingConfig.thinkingLevel = 'high';
         } else if (effectiveModel === 'gemini-2.5-flash') {
           thinkingConfig.thinkingBudget = 8192;
         }
-        // gemini-2.5-pro 只需 includeThoughts: true
-        
         providerOptions = {
           google: { thinkingConfig } satisfies GoogleGenerativeAIProviderOptions,
         };
@@ -90,7 +75,6 @@ export async function POST(req: Request) {
       const deepseek = createDeepSeek({
         apiKey: effectiveApiKey,
       });
-      // DeepSeek R1 (deepseek-reasoner) 原生支持 reasoning
       aiModel = deepseek(effectiveModel);
     } else {
       const { createOpenAI } = await import('@ai-sdk/openai');
@@ -101,20 +85,29 @@ export async function POST(req: Request) {
       aiModel = client(effectiveModel);
     }
 
-    // 提取 system 消息和聊天消息
-    const systemMessage = messages.find(m => m.role === 'system');
-    const chatMessages = messages
-      .filter(m => m.role !== 'system')
-      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    // 处理消息 - 支持 UIMessage 格式（useChat）和简单格式
+    let systemPrompt: string | undefined;
+    let modelMessages: any[];
+
+    if (messages?.[0]?.parts) {
+      // UIMessage 格式 (from useChat)
+      modelMessages = convertToModelMessages(messages);
+    } else {
+      // 简单格式 { role, content }
+      const systemMsg = messages?.find((m: any) => m.role === 'system');
+      systemPrompt = systemMsg?.content;
+      modelMessages = messages
+        ?.filter((m: any) => m.role !== 'system')
+        .map((m: any) => ({ role: m.role, content: m.content })) || [];
+    }
 
     const result = streamText({
       model: aiModel,
-      system: systemMessage?.content,
-      messages: chatMessages,
+      system: systemPrompt,
+      messages: modelMessages,
       providerOptions,
     });
 
-    // 思考模型发送 reasoning，普通模型不发送
     return result.toUIMessageStreamResponse({
       sendReasoning: enableThinking,
       headers: {
