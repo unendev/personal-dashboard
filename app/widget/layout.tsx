@@ -23,16 +23,13 @@ export default function WidgetLayout({
           .no-drag {
             -webkit-app-region: no-drag;
           }
-          /* 自定义滚动条 */
+          /* 隐藏滚动条但保留滚动功能 */
+          .custom-scrollbar {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+          }
           .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+            display: none; /* Chrome/Safari */
           }
         `}</style>
         {children}
