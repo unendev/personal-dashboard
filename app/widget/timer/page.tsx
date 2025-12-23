@@ -5,10 +5,8 @@ import useSWR, { mutate } from 'swr';
 import { Play, Pause } from 'lucide-react';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
 
-// 禁用所有缓存
-export const revalidate = 0;
+// 禁用静态生成
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 
 // 简单的 fetcher
 const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then((res) => res.json());
