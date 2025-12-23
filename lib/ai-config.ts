@@ -65,7 +65,7 @@ function getCurrentProvider(): 'deepseek' | 'gemini' | 'custom' {
 }
 
 /**
- * 获取 AI 配置
+ * 获取 AI 配置（当前选中的 provider）
  */
 export function getAIConfig(): AIConfig {
   if (typeof window === 'undefined') {
@@ -85,6 +85,28 @@ export function getAIConfig(): AIConfig {
   }
   
   const provider = getCurrentProvider();
+  return DEFAULT_CONFIGS[provider];
+}
+
+/**
+ * 获取指定 provider 的配置（用于切换 provider 时加载已保存的配置）
+ */
+export function getProviderConfig(provider: AIConfig['provider']): AIConfig {
+  if (typeof window === 'undefined') {
+    return DEFAULT_CONFIGS[provider];
+  }
+  
+  try {
+    const storageKey = getStorageKey(provider);
+    const stored = localStorage.getItem(storageKey);
+    
+    if (stored) {
+      return { ...DEFAULT_CONFIGS[provider], ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.error('[AIConfig] Failed to load provider config:', e);
+  }
+  
   return DEFAULT_CONFIGS[provider];
 }
 

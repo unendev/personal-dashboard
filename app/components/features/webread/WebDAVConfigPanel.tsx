@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { setWebDAVConfig, getWebDAVConfig, testWebDAVConnection } from '@/lib/webdav-config';
-import { getAIConfig, setAIConfig, getProviderModels, getProviderBaseUrl, AIConfig } from '@/lib/ai-config';
+import { getAIConfig, setAIConfig, getProviderModels, getProviderBaseUrl, getProviderConfig, AIConfig } from '@/lib/ai-config';
 import * as webdavCache from '@/lib/webdav-cache';
 import { Settings, Check, X, Loader2, RefreshCw, Sparkles, Server } from 'lucide-react';
 
@@ -62,14 +62,9 @@ export default function WebDAVConfigPanel() {
   };
 
   const handleProviderChange = (provider: AIConfig['provider']) => {
-    const models = getProviderModels(provider);
-    const baseUrl = getProviderBaseUrl(provider);
-    setAiFormData({
-      ...aiFormData,
-      provider,
-      model: models[0]?.id || '',
-      baseUrl,
-    });
+    // 加载该 provider 已保存的配置（包括 API Key）
+    const savedConfig = getProviderConfig(provider);
+    setAiFormData(savedConfig);
   };
 
   return (
