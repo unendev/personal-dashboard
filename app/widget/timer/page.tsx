@@ -114,7 +114,7 @@ export default function TimerWidgetPage() {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full bg-[#1a1a1a] text-zinc-400 gap-3 p-4">
         <span className="text-sm">请先登录</span>
-        <a href="/auth/signin" className="text-sm text-emerald-400 hover:text-emerald-300 underline">
+        <a href="/widget/login" className="text-sm text-emerald-400 hover:text-emerald-300 underline">
           点击登录
         </a>
       </div>
