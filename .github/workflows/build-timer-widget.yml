@@ -1,11 +1,6 @@
 name: Build Timer Widget
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'app/widget/**'
   workflow_dispatch:
 
 jobs:
@@ -14,6 +9,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,14 +23,12 @@ jobs:
           version: 8
       
       - name: Install dependencies
-        run: |
-          cd ../timer
-          pnpm install
+        run: pnpm install
+        working-directory: ../timer
       
       - name: Build Timer Widget
-        run: |
-          cd ../timer
-          pnpm build
+        run: pnpm build
+        working-directory: ../timer
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
