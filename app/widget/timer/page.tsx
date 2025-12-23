@@ -123,12 +123,12 @@ export default function TimerWidgetPage() {
 
   return (
     <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white select-none p-3 gap-3">
-      {/* 当前运行的任务 - 大卡片，双击打开 /log */}
+      {/* 当前运行的任务 - 大卡片，双击打开创建框 */}
       {activeTask ? (
         <div 
           className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
-          onDoubleClick={() => window.open('/log', '_blank')}
-          title="双击打开完整页面"
+          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=400,height=520')}
+          title="双击新建任务"
         >
           {/* 暂停/播放按钮 */}
           <button
@@ -161,11 +161,11 @@ export default function TimerWidgetPage() {
       ) : (
         <div 
           className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
-          onDoubleClick={() => window.open('/log', '_blank')}
-          title="双击打开完整页面"
+          onDoubleClick={() => window.open('/widget/create', '_blank', 'width=400,height=520')}
+          title="双击新建任务"
         >
           <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
-          <div className="text-xs text-zinc-600 mt-1">双击打开完整页面</div>
+          <div className="text-xs text-zinc-600 mt-1">双击新建任务</div>
         </div>
       )}
 
