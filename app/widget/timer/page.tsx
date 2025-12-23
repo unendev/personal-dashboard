@@ -122,8 +122,10 @@ export default function TimerWidgetPage() {
   // === 条件渲染放在 hooks 之后 ===
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center w-full h-full bg-zinc-950 text-zinc-400">
+      <div className="flex flex-col items-center justify-center w-full h-full bg-zinc-950 text-zinc-400 gap-2">
         <span className="text-xs">加载中...</span>
+        <span className="text-[10px] text-zinc-600">status: {status}</span>
+        <span className="text-[10px] text-zinc-600">userId: {userId || 'null'}</span>
       </div>
     );
   }
