@@ -198,7 +198,7 @@ export default function TimerWidgetPage() {
         <span className="text-xs text-zinc-500 flex-1">Timer</span>
         <button
           onClick={() => setShowCreateInput(!showCreateInput)}
-          className="p-1 text-zinc-600 hover:text-blue-400 transition-colors no-drag text-xs"
+          className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 rounded transition-colors no-drag text-sm font-bold"
           title="Create task"
         >
           +
