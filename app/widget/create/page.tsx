@@ -41,18 +41,20 @@ export default function WidgetCreatePage() {
         body: JSON.stringify({
           name: taskName,
           userId,
-          categoryPath,
+          categoryPath: categoryPath || '未分类',
+          date: date || today,
           initialTime: initialTime || 0,
+          elapsedTime: initialTime || 0,
           instanceTagNames: instanceTagNames ? instanceTagNames.split(',') : [],
           autoStart: true,
         }),
       });
 
       if (response.ok) {
-        // 创建成功，关闭窗口
         window.close();
       } else {
-        throw new Error('创建失败');
+        const error = await response.json();
+        throw new Error(error.message || '创建失败');
       }
     } catch (error) {
       console.error('Failed to create task:', error);
@@ -62,26 +64,41 @@ export default function WidgetCreatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <span className="text-sm text-muted-foreground">加载中...</span>
+      <div className="flex items-center justify-center h-screen bg-zinc-950">
+        <span className="text-sm text-zinc-400">加载中...</span>
       </div>
     );
   }
 
   if (!userId) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background text-muted-foreground">
+      <div className="flex items-center justify-center h-screen bg-zinc-950 text-zinc-400">
         <span className="text-sm">请先登录</span>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-background overflow-y-auto p-4">
-      <CreateLogFormWithCards
-        onAddToTimer={handleAddToTimer}
-        selectedDate={today}
-      />
+    <div className="h-screen bg-zinc-950 text-white overflow-y-auto p-4">
+      <style>{`
+        .dark { color-scheme: dark; }
+        input, select, button { color: white; }
+        input::placeholder { color: #71717a; }
+        label { color: #a1a1aa; }
+        h2, p { color: #e4e4e7; }
+        .text-gray-900 { color: #e4e4e7 !important; }
+        .text-gray-700, .text-gray-600 { color: #a1a1aa !important; }
+        .text-gray-500, .text-gray-400 { color: #71717a !important; }
+        .bg-gray-50, .bg-gray-100 { background-color: #27272a !important; }
+        .bg-white { background-color: #18181b !important; }
+        .border-gray-200, .border-gray-300 { border-color: #3f3f46 !important; }
+      `}</style>
+      <div className="dark">
+        <CreateLogFormWithCards
+          onAddToTimer={handleAddToTimer}
+          selectedDate={today}
+        />
+      </div>
     </div>
   );
 }
