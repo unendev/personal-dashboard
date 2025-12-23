@@ -184,7 +184,7 @@ export default function TimerWidgetPage() {
 
       {/* 底部添加按钮 */}
       <button
-        onClick={() => window.open('/widget/create', '_blank', 'width=320,height=280')}
+        onClick={() => window.open('/log?action=create', '_blank', 'width=500,height=600')}
         className="w-full py-2 rounded-xl bg-zinc-900/60 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-600/30 transition-colors text-sm"
       >
         + 新建任务

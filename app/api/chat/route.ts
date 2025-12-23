@@ -1,9 +1,12 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, CoreMessage } from 'ai';
+import { createGoogleGenerativeAI, GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import { streamText } from 'ai';
 
 interface ChatRequest {
-  messages: CoreMessage[];
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
   provider?: 'deepseek' | 'gemini' | 'custom';
   apiKey?: string;
   model?: string;
@@ -13,11 +16,33 @@ interface ChatRequest {
 // 生产环境检测
 const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 
+// 代理配置 - 本地开发时使用
+const proxyConfig: any = {};
+if (!isProduction) {
+  const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY || 'http://127.0.0.1:10809';
+  proxyConfig.httpAgent = proxyUrl;
+  proxyConfig.httpsAgent = proxyUrl;
+}
+
+// 判断是否是思考模型
+function isThinkingModel(provider: string, model: string): boolean {
+  if (provider === 'deepseek' && model === 'deepseek-reasoner') {
+    return true;
+  }
+  if (provider === 'gemini' && (model.includes('gemini-2.5-pro') || model.includes('gemini-3'))) {
+    return true;
+  }
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
     const { messages, provider = 'deepseek', apiKey, model, baseUrl } = await req.json() as ChatRequest;
 
-    console.log('[Chat API] Request received:', { provider, model, messageCount: messages.length });
+    const effectiveModel = model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'deepseek-chat');
+    const enableThinking = isThinkingModel(provider, effectiveModel);
+    
+    console.log('[Chat API] Request:', { provider, model: effectiveModel, thinking: enableThinking });
 
     // 根据 provider 选择默认的环境变量 API Key
     let envApiKey = '';
@@ -27,11 +52,9 @@ export async function POST(req: Request) {
       envApiKey = process.env.DEEPSEEK_API_KEY || '';
     }
 
-    // 使用客户端提供的 apiKey，或回退到环境变量
     const effectiveApiKey = apiKey || envApiKey;
     
     if (!effectiveApiKey) {
-      console.error('[Chat API] No API key available for provider:', provider);
       return new Response(JSON.stringify({ error: '未配置 API Key，请在设置中配置' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -39,60 +62,72 @@ export async function POST(req: Request) {
     }
 
     let aiModel;
+    let providerOptions: any = {};
 
     if (provider === 'gemini') {
-      console.log('[Chat API] Using Gemini provider with API key:', effectiveApiKey.substring(0, 10) + '...');
-      const proxyConfig: any = {};
-      if (!isProduction) {
-        const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
-        if (proxyUrl) {
-          proxyConfig.httpAgent = proxyUrl;
-          proxyConfig.httpsAgent = proxyUrl;
-          console.log('[Chat API] Using proxy:', proxyUrl);
-        }
-      }
-      
       const google = createGoogleGenerativeAI({
         apiKey: effectiveApiKey,
         ...proxyConfig,
       });
-      const effectiveModel = model || 'gemini-2.5-flash';
-      console.log('[Chat API] Gemini model:', effectiveModel);
       aiModel = google(effectiveModel);
+      
+      // Gemini 思考模式配置 - 参考 /room 实现
+      if (enableThinking) {
+        const thinkingConfig: any = { includeThoughts: true };
+        
+        if (effectiveModel.includes('gemini-3')) {
+          thinkingConfig.thinkingLevel = 'high';
+        } else if (effectiveModel === 'gemini-2.5-flash') {
+          thinkingConfig.thinkingBudget = 8192;
+        }
+        // gemini-2.5-pro 只需 includeThoughts: true
+        
+        providerOptions = {
+          google: { thinkingConfig } satisfies GoogleGenerativeAIProviderOptions,
+        };
+      }
     } else if (provider === 'deepseek') {
-      console.log('[Chat API] Using DeepSeek provider with official SDK');
       const deepseek = createDeepSeek({
         apiKey: effectiveApiKey,
       });
-      const effectiveModel = model || 'deepseek-chat';
-      console.log('[Chat API] DeepSeek model:', effectiveModel);
+      // DeepSeek R1 (deepseek-reasoner) 原生支持 reasoning
       aiModel = deepseek(effectiveModel);
     } else {
-      // Custom provider
-      console.log('[Chat API] Using Custom provider');
       const { createOpenAI } = await import('@ai-sdk/openai');
       const client = createOpenAI({
         apiKey: effectiveApiKey,
         baseURL: baseUrl || '',
       });
-      aiModel = client(model || 'custom');
+      aiModel = client(effectiveModel);
     }
 
-    console.log('[Chat API] Starting streamText with model:', model);
+    // 提取 system 消息和聊天消息
+    const systemMessage = messages.find(m => m.role === 'system');
+    const chatMessages = messages
+      .filter(m => m.role !== 'system')
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
     const result = streamText({
       model: aiModel,
-      messages,
+      system: systemMessage?.content,
+      messages: chatMessages,
+      providerOptions,
     });
 
-    console.log('[Chat API] Returning text stream response');
-    return result.toTextStreamResponse();
+    // 思考模型发送 reasoning，普通模型不发送
+    return result.toUIMessageStreamResponse({
+      sendReasoning: enableThinking,
+      headers: {
+        'Transfer-Encoding': 'chunked',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache',
+      },
+    });
   } catch (error) {
     console.error('[Chat API] Error:', error);
-    console.error('[Chat API] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return new Response(JSON.stringify({ error: 'AI 请求失败' }), {
+    return new Response(JSON.stringify({ 
+      error: 'AI 请求失败: ' + (error instanceof Error ? error.message : String(error)) 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

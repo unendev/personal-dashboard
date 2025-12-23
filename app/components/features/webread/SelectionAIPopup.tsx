@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2, Sparkles, Copy, Check, AlertCircle } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, Copy, Check, AlertCircle, Brain } from 'lucide-react';
 import { MarkdownView } from '@/app/components/shared/MarkdownView';
 import { getAIConfig, getProviderBaseUrl } from '@/lib/ai-config';
 
@@ -12,15 +12,23 @@ interface SelectionAIPopupProps {
   bookTitle?: string;
 }
 
+// 判断是否是思考模型
+function isThinkingModel(provider: string, model: string): boolean {
+  if (provider === 'deepseek' && model === 'deepseek-reasoner') return true;
+  if (provider === 'gemini' && (model.includes('gemini-2.5-pro') || model.includes('gemini-3'))) return true;
+  return false;
+}
+
 export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }: SelectionAIPopupProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
+  const [reasoning, setReasoning] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // 移除自动发送 - 改为手动点击发送按钮
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
@@ -31,10 +39,9 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  // 当展开且有新的 selectedText 时自动发送（不依赖 isExpanded 避免配置保存时误触）
+  // 当展开且有新的 selectedText 时自动发送
   useEffect(() => {
     if (isExpanded && selectedText && !aiResponse && !isLoading && !error) {
-      console.log('[SelectionAI] Auto-sending for new selected text');
       askAI();
     }
   }, [selectedText, isExpanded]);
@@ -42,32 +49,30 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
   const askAI = async () => {
     setIsLoading(true);
     setAiResponse('');
+    setReasoning('');
+    setIsThinking(false);
     setError(null);
     
-    console.log('[SelectionAI] Starting AI request...');
-    
-    // 获取 AI 配置
     const config = getAIConfig();
-    console.log('[SelectionAI] Config:', { provider: config.provider, model: config.model, enabled: config.enabled });
     
     if (!config.enabled) {
-      const msg = 'AI 功能已禁用，请在设置中启用';
-      console.warn('[SelectionAI]', msg);
-      setError(msg);
+      setError('AI 功能已禁用，请在设置中启用');
       setIsLoading(false);
       return;
     }
     
     if (!config.apiKey) {
-      const msg = '未配置 API Key，请在书架设置中配置';
-      console.warn('[SelectionAI]', msg);
-      setError(msg);
+      setError('未配置 API Key，请在书架设置中配置');
       setIsLoading(false);
       return;
     }
+
+    const useThinking = isThinkingModel(config.provider, config.model);
+    if (useThinking) {
+      setIsThinking(true);
+    }
     
     try {
-      // Gemini 不需要 baseUrl，使用默认的 Google API
       const requestBody: any = {
         provider: config.provider,
         apiKey: config.apiKey,
@@ -84,26 +89,9 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
         ]
       };
       
-      // 只有非 Gemini 提供商才需要 baseUrl
-      if (config.provider !== 'gemini' && config.baseUrl) {
-        requestBody.baseUrl = config.baseUrl;
-      } else if (config.provider === 'custom') {
+      if (config.provider === 'custom' && config.baseUrl) {
         requestBody.baseUrl = config.baseUrl || getProviderBaseUrl(config.provider);
       }
-      
-      console.log('[SelectionAI] Final request body:', { 
-        provider: requestBody.provider, 
-        model: requestBody.model,
-        hasApiKey: !!requestBody.apiKey,
-        apiKeyLength: requestBody.apiKey?.length,
-        messageCount: requestBody.messages.length 
-      });
-      
-      console.log('[SelectionAI] Sending request to /api/chat with body:', { 
-        provider: requestBody.provider, 
-        model: requestBody.model,
-        messageCount: requestBody.messages.length 
-      });
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -111,58 +99,67 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
         body: JSON.stringify(requestBody),
       });
 
-      console.log('[SelectionAI] Response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || `HTTP ${response.status}: AI 请求失败`;
-        console.error('[SelectionAI] Error response:', errorMsg);
-        throw new Error(errorMsg);
+        throw new Error(errorData.error || `HTTP ${response.status}: AI 请求失败`);
       }
       
       if (!response.body) {
-        const msg = '无响应内容';
-        console.error('[SelectionAI]', msg);
-        throw new Error(msg);
+        throw new Error('无响应内容');
       }
 
-      console.log('[SelectionAI] Starting to read stream...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
-      let chunkCount = 0;
-      let totalBytes = 0;
+      let fullReasoning = '';
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          console.log('[SelectionAI] Stream complete. Total chunks:', chunkCount, 'Total bytes:', totalBytes, 'Total length:', fullContent.length);
-          break;
-        }
+        if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        chunkCount++;
-        totalBytes += value.length;
-        console.log(`[SelectionAI] Chunk ${chunkCount}: raw ${value.length} bytes, decoded ${chunk.length} chars, preview:`, chunk.substring(0, 50));
-        fullContent += chunk;
-        setAiResponse(fullContent);
+        buffer += chunk;
+        
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          const match = line.match(/^([a-z]):(.*)$/);
+          if (match) {
+            const [, type, content] = match;
+            try {
+              const parsed = JSON.parse(content);
+              if (type === '0' && typeof parsed === 'string') {
+                // 文本内容
+                fullContent += parsed;
+                setAiResponse(fullContent);
+                // 收到正式回复后，标记思考结束
+                if (useThinking && fullReasoning) {
+                  setIsThinking(false);
+                }
+              } else if (type === 'g' && typeof parsed === 'string') {
+                // reasoning 内容
+                fullReasoning += parsed;
+                setReasoning(fullReasoning);
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
       }
       
-      // 最后一次 decode 以确保所有数据都被处理
-      const finalChunk = decoder.decode();
-      if (finalChunk) {
-        console.log('[SelectionAI] Final decode chunk:', finalChunk.length, 'chars');
-        fullContent += finalChunk;
-        setAiResponse(fullContent);
-      }
-      
-      console.log('[SelectionAI] Final response length:', fullContent.length, 'preview:', fullContent.substring(0, 100) + '...');
+      // 流结束后清除思考状态
+      setIsThinking(false);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '抱歉，AI 暂时无法回答。请稍后再试。';
-      console.error('[SelectionAI] Exception:', errorMsg, err);
       setError(errorMsg);
     } finally {
       setIsLoading(false);
+      setIsThinking(false);
     }
   };
 
@@ -172,7 +169,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 计算弹出位置
   const popupStyle: React.CSSProperties = {
     position: 'fixed',
     left: Math.min(position.x, window.innerWidth - (isExpanded ? 360 : 160)),
@@ -181,7 +177,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
   };
 
   if (!isExpanded) {
-    // 小按钮模式
     return (
       <div 
         ref={popupRef}
@@ -205,7 +200,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
     );
   }
 
-  // 展开的对话框模式
   return (
     <div 
       ref={popupRef}
@@ -239,16 +233,35 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span className="text-sm">{error}</span>
           </div>
-        ) : isLoading && !aiResponse ? (
-          <div className="flex items-center gap-2 text-amber-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">加载中...</span>
-          </div>
-        ) : aiResponse ? (
-          <div className="text-sm text-slate-200 leading-relaxed">
-            <MarkdownView content={aiResponse} variant="default" />
-          </div>
-        ) : null}
+        ) : (
+          <>
+            {/* 思考中显示 - 只在思考阶段显示 */}
+            {isThinking && reasoning && (
+              <div className="mb-3 p-2 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <Brain className="w-3 h-3 animate-pulse" />
+                  <span>思考中...</span>
+                </div>
+                <p className="text-xs text-slate-500 line-clamp-3">{reasoning}</p>
+              </div>
+            )}
+            
+            {/* 加载状态 */}
+            {isLoading && !aiResponse && !reasoning && (
+              <div className="flex items-center gap-2 text-amber-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">加载中...</span>
+              </div>
+            )}
+            
+            {/* 正式回复 */}
+            {aiResponse && (
+              <div className="text-sm text-slate-200 leading-relaxed">
+                <MarkdownView content={aiResponse} variant="default" />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Footer */}
