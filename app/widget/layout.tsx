@@ -10,11 +10,10 @@ export default function WidgetLayout({
 }) {
   return (
     <SessionProvider>
-      <div className="min-h-screen w-full overflow-hidden bg-transparent">
+      <div className="min-h-screen w-full bg-transparent">
         <style>{`
           html, body {
             background: transparent !important;
-            overflow: hidden !important;
           }
           /* 定义可拖拽区域 */
           .drag-region {
@@ -23,6 +22,17 @@ export default function WidgetLayout({
           /* 定义不可拖拽区域（交互元素） */
           .no-drag {
             -webkit-app-region: no-drag;
+          }
+          /* 自定义滚动条 */
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
           }
         `}</style>
         {children}
