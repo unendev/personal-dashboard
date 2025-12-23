@@ -4,10 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import { Play, Pause } from 'lucide-react';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
-import { useSession } from 'next-auth/react';
 
 // 简单的 fetcher
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then((res) => res.json());
 
 // 任务类型定义
 interface TimerTask {
@@ -30,17 +29,33 @@ interface TimerTask {
   updatedAt: string;
 }
 
+interface SessionUser {
+  id: string;
+  email?: string;
+  name?: string;
+}
+
 export default function TimerWidgetPage() {
-  // 所有 hooks 必须在顶层无条件调用
-  const { data: session, status } = useSession();
-  const userId = session?.user?.id;
+  // 直接用 SWR 获取 session，绕过 useSession 的问题
+  const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
+    '/api/auth/session',
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+  
+  const userId = sessionData?.user?.id;
   const today = new Date().toISOString().split('T')[0];
   const apiUrl = userId ? `/api/timer-tasks?userId=${userId}&date=${today}` : null;
 
   // 调试日志
   useEffect(() => {
-    console.log('🔐 Widget 认证状态:', { status, userId, email: session?.user?.email });
-  }, [status, userId, session]);
+    console.log('🔐 Widget 认证状态:', { 
+      sessionLoading, 
+      userId, 
+      email: sessionData?.user?.email,
+      sessionData 
+    });
+  }, [sessionLoading, userId, sessionData]);
 
   // 获取任务数据
   const { data: tasks = [], mutate: mutateTasks } = useSWR<TimerTask[]>(
@@ -120,21 +135,23 @@ export default function TimerWidgetPage() {
   };
 
   // === 条件渲染放在 hooks 之后 ===
-  if (status === 'loading') {
+  if (sessionLoading) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full bg-zinc-950 text-zinc-400 gap-2">
         <span className="text-xs">加载中...</span>
-        <span className="text-[10px] text-zinc-600">status: {status}</span>
-        <span className="text-[10px] text-zinc-600">userId: {userId || 'null'}</span>
       </div>
     );
   }
 
-  if (status === 'unauthenticated' || !userId) {
+  // 未登录，显示登录提示
+  if (!userId) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full bg-zinc-950 text-zinc-400 gap-2 p-4">
         <span className="text-xs">请先登录</span>
-        <a href="/auth/signin" className="text-xs text-blue-400 hover:text-blue-300 underline">
+        <a
+          href="/auth/signin"
+          className="text-xs text-blue-400 hover:text-blue-300 underline"
+        >
           点击登录
         </a>
       </div>
