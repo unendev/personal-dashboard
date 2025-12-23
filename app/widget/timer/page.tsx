@@ -132,6 +132,13 @@ export default function TimerWidgetPage() {
   const [newTaskName, setNewTaskName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  const formatSeconds = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const handleCreateTask = async () => {
     if (!newTaskName.trim() || !userId) return;
     
