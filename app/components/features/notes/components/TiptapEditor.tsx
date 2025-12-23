@@ -16,11 +16,14 @@ import { WikiLink, createWikiLinkInputRule } from '@/lib/tiptap-extensions/wiki-
 import { useEffect, useRef } from 'react'
 import { useOssUpload } from '@/app/hooks/useOssUpload'
 
+import type { Editor } from '@tiptap/core'
+
 interface TiptapEditorProps {
   content: string
   onChange: (content: string) => void
   onLinkClick?: (target: string) => void
-  onOutlineUpdate?: (editor: any) => void
+  onOutlineUpdate?: (editor: Editor) => void
+  onEditorReady?: (editor: Editor) => void
   className?: string
   placeholder?: string
 }
@@ -30,6 +33,7 @@ export function TiptapEditor({
   onChange,
   onLinkClick,
   onOutlineUpdate,
+  onEditorReady,
   className = '',
   placeholder = '开始写笔记...'
 }: TiptapEditorProps) {
@@ -105,6 +109,7 @@ export function TiptapEditor({
     },
     onCreate: ({ editor }) => {
       onOutlineUpdate?.(editor)
+      onEditorReady?.(editor)
     },
   })
 

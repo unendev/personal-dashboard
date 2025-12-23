@@ -13,7 +13,7 @@ import json
 import logging
 from datetime import datetime
 from playwright.async_api import async_playwright
-from playwright_stealth import Stealth
+from playwright_stealth import stealth_async
 import requests
 from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
@@ -125,6 +125,51 @@ def check_environment():
         return False
     
     return True
+
+# =============================================================================
+# Cloudflare 挑战处理
+# =============================================================================
+
+async def wait_for_cloudflare_challenge(page, timeout=30):
+    """
+    等待 Cloudflare 挑战完成
+    
+    Args:
+        page: Playwright 页面对象
+        timeout: 最大等待时间（秒）
+    """
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        # 检查是否存在 Cloudflare 挑战页面的特征
+        try:
+            # 检查页面标题是否包含 Cloudflare 相关内容
+            title = await page.title()
+            
+            # Cloudflare 挑战页面的常见标题
+            cf_indicators = [
+                "Just a moment",
+                "Checking your browser",
+                "Please wait",
+                "Attention Required",
+                "DDoS protection"
+            ]
+            
+            is_cf_challenge = any(indicator.lower() in title.lower() for indicator in cf_indicators)
+            
+            if not is_cf_challenge:
+                # 没有检测到 Cloudflare 挑战，可以继续
+                return True
+            
+            logger.info(f"⏳ 检测到 Cloudflare 挑战，等待中... ({int(time.time() - start_time)}s)")
+            await asyncio.sleep(2)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ 检查 Cloudflare 状态时出错: {e}")
+            await asyncio.sleep(1)
+    
+    logger.warning(f"⚠️ Cloudflare 挑战等待超时 ({timeout}s)，继续执行...")
+    return False
 
 # =============================================================================
 # 重试装饰器
@@ -591,8 +636,7 @@ async def fetch_linuxdo_posts():
             """)
             
             # 应用反爬虫策略
-            stealth = Stealth()
-            await stealth.apply_stealth_async(context)
+            await stealth_async(context)
             page = await context.new_page()
 
             # 预热：访问首页建立会话（增强 Cloudflare 处理）
@@ -776,7 +820,7 @@ async def create_posts_table():
     """创建数据库表"""
     conn = None
     try:
-        conn = await asyncpg.connect(NEON_DB_URL)
+        conn = await asyncpg.connect(NEON_DB_URL, timeout=60)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS posts (
                 id TEXT PRIMARY KEY,
@@ -801,76 +845,83 @@ async def create_posts_table():
 
 async def insert_posts_into_db(posts_data):
     """插入帖子数据到数据库"""
-    conn = None
-    try:
-        conn = await asyncpg.connect(NEON_DB_URL)
-        logger.info("⏳ 开始插入数据到数据库...")
-        
-        success_count = 0
-        for post in posts_data:
-            try:
-                post_id = post.get('id')
-                title = post.get('title')
-                url = post.get('link')
-                analysis = post.get('analysis', {})
-                core_issue = analysis.get('core_issue')
-                key_info = json.dumps(analysis.get('key_info', []))
-                post_type = analysis.get('post_type')
-                value_assessment = analysis.get('value_assessment')
-                detailed_analysis = analysis.get('detailed_analysis')
-
-                # 新字段（若存在）：replies_count / participants_count
-                replies_count = int(post.get('replies_count') or 0)
-                participants_count = int(post.get('participants_count') or 0)
-
-                # 优先尝试插入包含新列的语句；如果失败则回退到旧语句（兼容未迁移的表结构）
+    max_db_retries = 3
+    for attempt in range(max_db_retries):
+        conn = None
+        try:
+            conn = await asyncpg.connect(NEON_DB_URL, timeout=60)
+            logger.info(f"⏳ 开始插入数据到数据库 (尝试 {attempt+1}/{max_db_retries})...")
+            
+            success_count = 0
+            # ... (rest of the insertion logic remains the same, but indented) ...
+            for post in posts_data:
                 try:
-                    await conn.execute("""
-                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                        ON CONFLICT (id) DO UPDATE SET
-                            title = EXCLUDED.title,
-                            url = EXCLUDED.url,
-                            core_issue = EXCLUDED.core_issue,
-                            key_info = EXCLUDED.key_info,
-                            post_type = EXCLUDED.post_type,
-                            value_assessment = EXCLUDED.value_assessment,
-                            detailed_analysis = EXCLUDED.detailed_analysis,
-                            replies_count = EXCLUDED.replies_count,
-                            participants_count = EXCLUDED.participants_count,
-                            timestamp = CURRENT_TIMESTAMP;
-                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
-                except Exception as insert_err:
-                    logger.warning(f"posts 表缺少新列，回退旧插入语句: {insert_err}")
-                    await conn.execute("""
-                        INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                        ON CONFLICT (id) DO UPDATE SET
-                            title = EXCLUDED.title,
-                            url = EXCLUDED.url,
-                            core_issue = EXCLUDED.core_issue,
-                            key_info = EXCLUDED.key_info,
-                            post_type = EXCLUDED.post_type,
-                            value_assessment = EXCLUDED.value_assessment,
-                            detailed_analysis = EXCLUDED.detailed_analysis,
-                            timestamp = CURRENT_TIMESTAMP;
-                    """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
-                
-                success_count += 1
-                
-            except Exception as e:
-                logger.error(f"❌ 插入帖子失败 [{post.get('id', 'N/A')}]: {e}")
-                continue
-        
-        logger.info(f"✓ 成功插入 {success_count}/{len(posts_data)} 条数据")
-        return success_count > 0
-        
-    except Exception as e:
-        logger.error(f"❌ 数据库操作失败: {e}")
-        return False
-    finally:
-        if conn:
-            await conn.close()
+                    post_id = post.get('id')
+                    title = post.get('title')
+                    url = post.get('link')
+                    analysis = post.get('analysis', {})
+                    core_issue = analysis.get('core_issue')
+                    key_info = json.dumps(analysis.get('key_info', []))
+                    post_type = analysis.get('post_type')
+                    value_assessment = analysis.get('value_assessment')
+                    detailed_analysis = analysis.get('detailed_analysis')
+
+                    # 新字段（若存在）：replies_count / participants_count
+                    replies_count = int(post.get('replies_count') or 0)
+                    participants_count = int(post.get('participants_count') or 0)
+
+                    # 优先尝试插入包含新列的语句；如果失败则回退到旧语句（兼容未迁移的表结构）
+                    try:
+                        await conn.execute("""
+                            INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                            ON CONFLICT (id) DO UPDATE SET
+                                title = EXCLUDED.title,
+                                url = EXCLUDED.url,
+                                core_issue = EXCLUDED.core_issue,
+                                key_info = EXCLUDED.key_info,
+                                post_type = EXCLUDED.post_type,
+                                value_assessment = EXCLUDED.value_assessment,
+                                detailed_analysis = EXCLUDED.detailed_analysis,
+                                replies_count = EXCLUDED.replies_count,
+                                participants_count = EXCLUDED.participants_count,
+                                timestamp = CURRENT_TIMESTAMP;
+                        """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis, replies_count, participants_count)
+                    except Exception as insert_err:
+                        # logger.warning(f"posts 表缺少新列，回退旧插入语句: {insert_err}")
+                        await conn.execute("""
+                            INSERT INTO posts (id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                            ON CONFLICT (id) DO UPDATE SET
+                                title = EXCLUDED.title,
+                                url = EXCLUDED.url,
+                                core_issue = EXCLUDED.core_issue,
+                                key_info = EXCLUDED.key_info,
+                                post_type = EXCLUDED.post_type,
+                                value_assessment = EXCLUDED.value_assessment,
+                                detailed_analysis = EXCLUDED.detailed_analysis,
+                                timestamp = CURRENT_TIMESTAMP;
+                        """, post_id, title, url, core_issue, key_info, post_type, value_assessment, detailed_analysis)
+                    
+                    success_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"❌ 插入帖子失败 [{post.get('id', 'N/A')}]: {e}")
+                    continue
+            
+            logger.info(f"✓ 成功插入 {success_count}/{len(posts_data)} 条数据")
+            return success_count > 0
+
+        except Exception as e:
+            logger.warning(f"⚠️ 数据库操作失败 (尝试 {attempt+1}): {e}")
+            if attempt < max_db_retries - 1:
+                await asyncio.sleep(5)
+            else:
+                logger.error(f"❌ 最终数据库操作失败: {e}")
+                return False
+        finally:
+            if conn:
+                await conn.close()
 
 # =============================================================================
 # AI报告生成
@@ -973,8 +1024,10 @@ async def main():
     
     try:
         # 1. 创建数据库表
+        db_available = True
         if not await create_posts_table():
-            return False
+            logger.warning("⚠️ 数据库连接失败，将仅生成JSON报告")
+            db_available = False
         
         # 2. 爬取帖子
         posts_data = await fetch_linuxdo_posts()
@@ -989,7 +1042,7 @@ async def main():
         report_data = generate_ai_analysis(posts_data)
         
         # 4. 插入数据库
-        if report_data.get('processed_posts'):
+        if report_data.get('processed_posts') and db_available:
             await insert_posts_into_db(report_data['processed_posts'])
         
         # 5. 生成报告

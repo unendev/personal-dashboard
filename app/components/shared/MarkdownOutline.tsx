@@ -1,15 +1,18 @@
 "use client";
 
+/**
+ * Markdown 大纲组件
+ * 
+ * 使用统一的大纲提取器
+ */
+
 import React, { useMemo } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface HeadingItem {
-  id: string;
-  level: number;
-  text: string;
-  offset: number;
-}
+import { 
+  extractHeadingsFromMarkdown, 
+  getTokens,
+} from '@/lib/markdown';
 
 interface MarkdownOutlineProps {
   content: string;
@@ -23,29 +26,11 @@ export const MarkdownOutline: React.FC<MarkdownOutlineProps> = ({
   className
 }) => {
   const [expandedLevels, setExpandedLevels] = React.useState<Set<number>>(new Set([1, 2]));
+  const tokens = getTokens('goc');
 
-  // 解析 Markdown 中的标题
+  // 使用统一的大纲提取器
   const headings = useMemo(() => {
-    const lines = content.split('\n');
-    const items: HeadingItem[] = [];
-    let offset = 0;
-
-    lines.forEach((line) => {
-      const match = line.match(/^(#{1,6})\s+(.+)$/);
-      if (match) {
-        const level = match[1].length;
-        const text = match[2].trim();
-        items.push({
-          id: `heading-${items.length}`,
-          level,
-          text,
-          offset
-        });
-      }
-      offset += line.length + 1; // +1 for newline
-    });
-
-    return items;
+    return extractHeadingsFromMarkdown(content);
   }, [content]);
 
   const toggleLevel = (level: number) => {
@@ -60,7 +45,7 @@ export const MarkdownOutline: React.FC<MarkdownOutlineProps> = ({
 
   if (headings.length === 0) {
     return (
-      <div className={cn("text-xs text-zinc-500 p-3", className)}>
+      <div className={cn("text-xs p-3", className)} style={{ color: tokens.text.muted }}>
         无标题
       </div>
     );
@@ -68,7 +53,7 @@ export const MarkdownOutline: React.FC<MarkdownOutlineProps> = ({
 
   return (
     <div className={cn("text-xs space-y-1 p-3 overflow-y-auto", className)}>
-      <div className="text-zinc-400 font-semibold mb-2">大纲</div>
+      <div className="font-semibold mb-2" style={{ color: tokens.text.secondary }}>大纲</div>
       {headings.map((heading) => {
         const isVisible = expandedLevels.has(heading.level);
         const indent = (heading.level - 1) * 12;
@@ -85,20 +70,23 @@ export const MarkdownOutline: React.FC<MarkdownOutlineProps> = ({
                 className="p-0 hover:bg-white/10 rounded transition-colors"
               >
                 {isVisible ? (
-                  <ChevronDown className="w-3 h-3 text-cyan-400" />
+                  <ChevronDown className="w-3 h-3" style={{ color: tokens.heading.h1 }} />
                 ) : (
-                  <ChevronRight className="w-3 h-3 text-cyan-400" />
+                  <ChevronRight className="w-3 h-3" style={{ color: tokens.heading.h1 }} />
                 )}
               </button>
             )}
             <button
-              onClick={() => onHeadingClick?.(heading.offset)}
-              className={cn(
-                "flex-1 text-left truncate transition-colors hover:text-cyan-300",
-                heading.level === 1 ? "text-cyan-400 font-semibold" :
-                heading.level === 2 ? "text-cyan-300" :
-                "text-zinc-400"
-              )}
+              onClick={() => onHeadingClick?.(heading.pos)}
+              className="flex-1 text-left truncate transition-colors hover:opacity-80"
+              style={{
+                color: heading.level === 1 
+                  ? tokens.heading.h1 
+                  : heading.level === 2 
+                  ? tokens.heading.h2 
+                  : tokens.text.secondary,
+                fontWeight: heading.level === 1 ? 600 : 400,
+              }}
               title={heading.text}
             >
               {heading.text}

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,60 +24,109 @@ export async function GET(request: Request) {
       actualDate = targetDate;
     }
     
-    // 查询指定日期的帖子数据
-    const startOfDay = new Date(actualDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(actualDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    let posts = await prisma.posts.findMany({
-      where: {
-        timestamp: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
-      },
-      orderBy: {
-        timestamp: 'desc'
-      }
-    });
+    const reportDateStr = actualDate.toISOString().split('T')[0];
+    let posts: any[] = []; // Use any[] temporarily to accommodate prisma and json types
 
-    // 如果没有指定日期且当天没有数据，则查找最近有数据的日期
-    if (!date && posts.length === 0) {
-      const latestPost = await prisma.posts.findFirst({
-        orderBy: {
-          timestamp: 'desc'
-        },
-        select: {
-          timestamp: true
-        }
-      });
-      
-      if (latestPost && latestPost.timestamp) {
-        actualDate = new Date(latestPost.timestamp);
-        const newStartOfDay = new Date(actualDate);
-        newStartOfDay.setHours(0, 0, 0, 0);
+    try {
+        // 查询指定日期的帖子数据
+        const startOfDay = new Date(actualDate);
+        startOfDay.setHours(0, 0, 0, 0);
         
-        const newEndOfDay = new Date(actualDate);
-        newEndOfDay.setHours(23, 59, 59, 999);
+        const endOfDay = new Date(actualDate);
+        endOfDay.setHours(23, 59, 59, 999);
         
         posts = await prisma.posts.findMany({
           where: {
             timestamp: {
-              gte: newStartOfDay,
-              lte: newEndOfDay
+              gte: startOfDay,
+              lte: endOfDay
             }
           },
           orderBy: {
             timestamp: 'desc'
           }
         });
+    } catch (dbError) {
+        console.warn('Database query failed, attempting local JSON fallback:', dbError);
+    }
+
+    // Fallback: 如果数据库没有数据，尝试读取本地JSON文件
+    if (posts.length === 0) {
+        try {
+            // 尝试读取今天的（或指定日期的）JSON
+            const jsonFileName = `linux.do_report_${reportDateStr}.json`;
+            const jsonPath = path.join(process.cwd(), 'data', jsonFileName);
+            
+            if (fs.existsSync(jsonPath)) {
+                console.log(`Loading data from local JSON: ${jsonPath}`);
+                const fileContent = fs.readFileSync(jsonPath, 'utf-8');
+                const jsonData = JSON.parse(fileContent);
+                
+                if (jsonData.posts && Array.isArray(jsonData.posts)) {
+                    // 映射 JSON 数据到 API 格式
+                    posts = jsonData.posts.map((p: any) => ({
+                        id: p.id,
+                        title: p.title,
+                        url: p.url,
+                        replies_count: p.replies_count || 0,
+                        participants_count: p.participants_count || 0,
+                        core_issue: p.analysis?.core_issue,
+                        key_info: p.analysis?.key_info,
+                        post_type: p.analysis?.post_type,
+                        value_assessment: p.analysis?.value_assessment,
+                        detailed_analysis: p.analysis?.detailed_analysis,
+                        // Add dummy timestamp if needed
+                        timestamp: new Date()
+                    }));
+                }
+            } else {
+                 // 如果指定日期没找到，尝试找最近的 JSON (简单逻辑：只找昨天的)
+                 // 或者这里保持空，前端会显示无数据
+            }
+        } catch (fileError) {
+            console.error('Failed to read local JSON fallback:', fileError);
+        }
+    }
+
+    // 如果没有指定日期且当天没有数据(数据库和本地都没)，则查找数据库最近有数据的日期 (保留原有逻辑)
+    if (!date && posts.length === 0) {
+      try {
+          const latestPost = await prisma.posts.findFirst({
+            orderBy: {
+              timestamp: 'desc'
+            },
+            select: {
+              timestamp: true
+            }
+          });
+          
+          if (latestPost && latestPost.timestamp) {
+            actualDate = new Date(latestPost.timestamp);
+            const newStartOfDay = new Date(actualDate);
+            newStartOfDay.setHours(0, 0, 0, 0);
+            
+            const newEndOfDay = new Date(actualDate);
+            newEndOfDay.setHours(23, 59, 59, 999);
+            
+            posts = await prisma.posts.findMany({
+              where: {
+                timestamp: {
+                  gte: newStartOfDay,
+                  lte: newEndOfDay
+                }
+              },
+              orderBy: {
+                timestamp: 'desc'
+              }
+            });
+          }
+      } catch (e) {
+          // ignore db error
       }
     }
 
     // 转换为组件需要的格式
-    const formattedPosts = posts.map((post: typeof posts[number]) => ({
+    const formattedPosts = posts.map((post: any) => ({
       id: post.id,
       title: post.title,
       url: post.url,

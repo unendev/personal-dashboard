@@ -1,12 +1,11 @@
 'use client';
 
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { LinuxDoPost } from '@/types/linuxdo';
 import { RedditPost } from '@/types/reddit';
 import Modal from '../../shared/Modal';
+import { MarkdownRenderer } from '@/lib/markdown';
 
 interface PostDetailModalProps {
   post: LinuxDoPost | RedditPost | null;
@@ -116,12 +115,11 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           {hasDetailedAnalysis ? (
             /* 深度分析内容 */
             <div className="markdown-content prose prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+              <MarkdownRenderer
+                content={post.analysis.detailed_analysis || ''}
+                variant="dark"
                 rehypePlugins={[rehypeHighlight]}
-              >
-                {post.analysis.detailed_analysis}
-              </ReactMarkdown>
+              />
             </div>
           ) : (
             /* 降级显示：关键信息列表 */

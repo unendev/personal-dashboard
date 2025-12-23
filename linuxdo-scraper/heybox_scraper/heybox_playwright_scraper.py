@@ -775,9 +775,12 @@ async def main():
         
         if posts_no_auth:
             logger.info(f"✓ 通用首页提取到 {len(posts_no_auth)} 个帖子")
-            # 记录通用首页的帖子ID
+            # 记录通用首页的帖子ID和标题
             general_post_ids = {post['id'] for post in posts_no_auth}
-            logger.info(f"  通用首页帖子ID: {sorted(general_post_ids)[:5]}...")
+            logger.info(f"  通用首页帖子ID: {sorted(general_post_ids)}")
+            logger.info(f"  通用首页帖子详情:")
+            for i, post in enumerate(posts_no_auth, 1):
+                logger.info(f"    {i}. [{post['id']}] {post['title'][:60]}")
         else:
             logger.warning("⚠ 未能获取通用首页内容")
             general_post_ids = set()

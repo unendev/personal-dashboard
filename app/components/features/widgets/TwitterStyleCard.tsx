@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { MarkdownRenderer } from '@/lib/markdown'
 import { Button } from '@/app/components/ui/button'
 import Image from 'next/image'
 import { LazyNextImage } from '@/app/components/shared/LazyNextImage'
@@ -184,116 +183,117 @@ function TwitterStyleCardComponent({
   const renderContent = () => {
     if (!treasure.content) return null
     
+    // 自定义组件样式
+    const customComponents = {
+      h1: ({ children }: { children?: React.ReactNode }) => (
+        <h1 className="text-2xl font-bold text-white mt-4 mb-3">
+          {children}
+        </h1>
+      ),
+      h2: ({ children }: { children?: React.ReactNode }) => (
+        <h2 className="text-xl font-bold text-white mt-4 mb-2">
+          {children}
+        </h2>
+      ),
+      h3: ({ children }: { children?: React.ReactNode }) => (
+        <h3 className="text-lg font-semibold text-white mt-3 mb-2">
+          {children}
+        </h3>
+      ),
+      p: ({ children }: { children?: React.ReactNode }) => (
+        <p className="mb-2 text-white/90">
+          {children}
+        </p>
+      ),
+      strong: ({ children }: { children?: React.ReactNode }) => (
+        <strong className="font-semibold text-white">
+          {children}
+        </strong>
+      ),
+      em: ({ children }: { children?: React.ReactNode }) => (
+        <em className="italic text-white/80">
+          {children}
+        </em>
+      ),
+      blockquote: ({ children }: { children?: React.ReactNode }) => (
+        <blockquote className="border-l-2 border-white/30 pl-3 italic text-white/70 my-2">
+          {children}
+        </blockquote>
+      ),
+      code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
+        const isInline = !className
+        if (isInline) {
+          return (
+            <code className="bg-white/10 px-1 py-0.5 rounded text-sm text-white/90">
+              {children}
+            </code>
+          )
+        }
+        return (
+          <code className={cn("text-white/90", className)}>
+            {children}
+          </code>
+        )
+      },
+      pre: ({ children }: { children?: React.ReactNode }) => (
+        <pre className="bg-[#0d1117] border border-white/10 rounded-lg p-3 my-2 text-sm overflow-x-auto">
+          {children}
+        </pre>
+      ),
+      ul: ({ children }: { children?: React.ReactNode }) => (
+        <ul className="ml-4 mb-2 space-y-1 list-disc">
+          {children}
+        </ul>
+      ),
+      ol: ({ children }: { children?: React.ReactNode }) => (
+        <ol className="ml-4 mb-2 space-y-1 list-decimal">
+          {children}
+        </ol>
+      ),
+      li: ({ children }: { children?: React.ReactNode }) => (
+        <li className="text-white/90">
+          {children}
+        </li>
+      ),
+      a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline"
+        >
+          {children}
+        </a>
+      ),
+      hr: () => (
+        <hr className="border-white/20 my-4" />
+      ),
+      table: ({ children }: { children?: React.ReactNode }) => (
+        <div className="overflow-x-auto my-4">
+          <table className="min-w-full border border-white/20 rounded-lg">
+            {children}
+          </table>
+        </div>
+      ),
+      th: ({ children }: { children?: React.ReactNode }) => (
+        <th className="border border-white/20 px-3 py-2 bg-white/5 text-white font-semibold text-left">
+          {children}
+        </th>
+      ),
+      td: ({ children }: { children?: React.ReactNode }) => (
+        <td className="border border-white/10 px-3 py-2 text-white/90">
+          {children}
+        </td>
+      )
+    }
+    
     return (
       <div className="prose prose-sm prose-invert max-w-none">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-          // 自定义组件样式
-          h1: ({ children }) => (
-            <h1 className="text-2xl font-bold text-white mt-4 mb-3">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-xl font-bold text-white mt-4 mb-2">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-lg font-semibold text-white mt-3 mb-2">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="mb-2 text-white/90">
-              {children}
-            </p>
-          ),
-          strong: ({ children }) => (
-            <strong className="font-semibold text-white">
-              {children}
-            </strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic text-white/80">
-              {children}
-            </em>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-white/30 pl-3 italic text-white/70 my-2">
-              {children}
-            </blockquote>
-          ),
-          code: ({ children, className }) => {
-            const isInline = !className
-            if (isInline) {
-              return (
-                <code className="bg-white/10 px-1 py-0.5 rounded text-sm text-white/90">
-                  {children}
-                </code>
-              )
-            }
-            return (
-              <code className={cn("text-white/90", className)}>
-                {children}
-              </code>
-            )
-          },
-          pre: ({ children }) => (
-            <pre className="bg-[#0d1117] border border-white/10 rounded-lg p-3 my-2 text-sm overflow-x-auto">
-              {children}
-            </pre>
-          ),
-          ul: ({ children }) => (
-            <ul className="ml-4 mb-2 space-y-1 list-disc">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="ml-4 mb-2 space-y-1 list-decimal">
-              {children}
-            </ol>
-          ),
-          li: ({ children }) => (
-            <li className="text-white/90">
-              {children}
-            </li>
-          ),
-          a: ({ children, href }) => (
-            <a 
-              href={href} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              {children}
-            </a>
-          ),
-          hr: () => (
-            <hr className="border-white/20 my-4" />
-          ),
-          table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="min-w-full border border-white/20 rounded-lg">
-                {children}
-              </table>
-            </div>
-          ),
-          th: ({ children }) => (
-            <th className="border border-white/20 px-3 py-2 bg-white/5 text-white font-semibold text-left">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="border border-white/10 px-3 py-2 text-white/90">
-              {children}
-            </td>
-          )
-          }}
-        >
-          {treasure.content}
-        </ReactMarkdown>
+        <MarkdownRenderer
+          content={treasure.content}
+          variant="dark"
+          components={customComponents}
+        />
       </div>
     )
   }

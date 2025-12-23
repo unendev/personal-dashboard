@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/app/components/ui/button'
-import { Plus, FileText, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
+import { Plus, FileText, ChevronRight, ChevronDown, Trash2, ChevronUp, FolderOpen } from 'lucide-react'
 import { useNoteGrouping } from './hooks/useNoteGrouping'
 
 // 使用与 SimpleMdEditor.tsx 统一的 Note 接口
@@ -41,6 +41,7 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
 }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false) // 移动端笔记列表展开状态，默认收起
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const localGrouping = useNoteGrouping(userId)
@@ -156,9 +157,122 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
   }
 
 
+  // 获取当前选中笔记的标题
+  const currentNote = notes.find(n => n.id === currentNoteId)
+  const currentNoteTitle = currentNote?.title || '选择笔记'
+
+  // 移动端选择笔记后自动收起
+  const handleMobileSelectNote = (noteId: string) => {
+    onSelectNote(noteId)
+    onSelectParent?.(noteId)
+    setIsMobileExpanded(false) // 选择后收起
+  }
+
   return (
-    <div className="flex items-center bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50 pr-2">
-      <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
+    <div className="bg-gray-900/70 backdrop-blur-sm border-b border-gray-700/50">
+      {/* 移动端：收缩状态显示当前笔记标题和展开按钮 */}
+      <div className="md:hidden">
+        <div 
+          className="flex items-center justify-between px-3 py-2 cursor-pointer"
+          onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <FolderOpen size={16} className="text-blue-400 flex-shrink-0" />
+            <span className="text-sm text-white truncate">{currentNoteTitle}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation()
+                onCreateNote()
+              }}
+              className="h-7 w-7 p-0 rounded-full hover:bg-gray-700"
+              title="创建新笔记"
+            >
+              <Plus size={14} />
+            </Button>
+            <button className="p-1 hover:bg-gray-700 rounded transition-colors">
+              {isMobileExpanded ? (
+                <ChevronUp size={18} className="text-gray-400" />
+              ) : (
+                <ChevronDown size={18} className="text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
+        
+        {/* 移动端展开的笔记列表 */}
+        {isMobileExpanded && (
+          <div className="border-t border-gray-700/50 max-h-[50vh] overflow-y-auto">
+            {topLevelNotes.map((note, index) => {
+              const isActive = currentNoteId === note.id
+              const isEditing = editingNoteId === note.id
+              const isExpanded = localGrouping.isExpanded(note.id)
+
+              return (
+                <div
+                  key={note.id}
+                  onClick={() => {
+                    if (!isEditing) {
+                      handleMobileSelectNote(note.id)
+                    }
+                  }}
+                  onDoubleClick={() => handleDoubleClick(note)}
+                  className={`flex items-center justify-between px-3 py-2.5 cursor-pointer border-b border-gray-700/30 ${
+                    isActive ? 'bg-gray-800 border-l-2 border-l-blue-500' : 'hover:bg-gray-800/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <button
+                      onClick={(e) => handleToggleExpand(e, note.id)}
+                      className="p-0.5 hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+                      title={isExpanded ? '收缩' : '展开'}
+                    >
+                      {isExpanded ? (
+                        <ChevronDown size={14} className="text-gray-400" />
+                      ) : (
+                        <ChevronRight size={14} className="text-gray-400" />
+                      )}
+                    </button>
+                    <FileText size={14} className={isActive ? 'text-blue-300' : 'text-gray-400'} />
+                    {isEditing ? (
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onBlur={handleSaveTitle}
+                        onKeyDown={handleKeyDown}
+                        className="bg-gray-700 text-white text-sm p-0.5 rounded border border-blue-500 focus:outline-none flex-1"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span className={`text-sm truncate flex-1 ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                        {note.title || 'Untitled'}
+                      </span>
+                    )}
+                  </div>
+                  {!isEditing && (
+                    <button
+                      onClick={(e) => handleDeleteNote(e, note.id)}
+                      className="p-1.5 hover:bg-red-500/20 rounded transition-all flex-shrink-0"
+                      title="删除笔记"
+                    >
+                      <Trash2 size={14} className="text-red-400 hover:text-red-300" />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 桌面端：原有的水平标签栏 */}
+      <div className="hidden md:flex items-center pr-2">
+        <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">
         {topLevelNotes.map((note, index) => {
           const isActive = currentNoteId === note.id
           const isEditing = editingNoteId === note.id
@@ -240,16 +354,17 @@ export const NotesFileBar: React.FC<NotesFileBarProps> = ({
             </div>
           )
         })}
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onCreateNote}
+          className="flex-shrink-0 ml-2 h-8 w-8 p-0 rounded-full hover:bg-gray-700"
+          title="创建新笔记"
+        >
+          <Plus size={16} />
+        </Button>
       </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onCreateNote}
-        className="flex-shrink-0 ml-2 h-8 w-8 p-0 rounded-full hover:bg-gray-700"
-        title="创建新笔记"
-      >
-        <Plus size={16} />
-      </Button>
     </div>
   )
 }

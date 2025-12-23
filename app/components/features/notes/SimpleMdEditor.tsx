@@ -24,6 +24,11 @@ import { DetailsSummary } from '@/lib/tiptap-extensions/details-summary'
 import { DetailsContent } from '@/lib/tiptap-extensions/details-content'
 import { AutoOrderListExtension } from '@/lib/tiptap-extensions/auto-order-list'
 import { WikiLink, createWikiLinkInputRule } from '@/lib/tiptap-extensions/wiki-link'
+import { 
+  extractHeadingsFromEditor, 
+  getEditorStyles,
+  type HeadingItem,
+} from '@/lib/markdown'
 
 
 
@@ -67,47 +72,21 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
   const grouping = useNoteGrouping(userId)
   const noteCache = useNoteCache(userId)
 
-  type OutlineItem = {
-    id: string
-    text: string
-    level: number
-    pos: number
-  }
-  const [outline, setOutline] = useState<OutlineItem[]>([])
+  const [outline, setOutline] = useState<HeadingItem[]>([])
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
 
-  const slugify = (text: string) =>
-    text
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .slice(0, 80)
-
-  const buildOutline = useCallback((ed: TiptapEditor): OutlineItem[] => {
-    const items: OutlineItem[] = []
-    ed.state.doc.descendants((node, pos) => {
-      if (node.type.name === 'heading') {
-        const level = (node.attrs as { level?: number })?.level ?? 1
-        const text = node.textContent || ''
-        const id = `${slugify(text) || 'heading'}-${pos}`
-        items.push({ id, text, level, pos })
-      }
-    })
-    return items
-  }, [])
-
+  // 使用统一的大纲提取器
   const updateOutline = useCallback((e: TiptapEditor) => {
-    const items = buildOutline(e)
+    const items = extractHeadingsFromEditor(e)
     setOutline(items)
     const from = e.state.selection.from
     const current = items
       .filter((i) => i.pos <= from)
       .sort((a, b) => b.pos - a.pos)[0]
     setActiveHeadingId(current ? current.id : (items[0]?.id ?? null))
-  }, [buildOutline])
+  }, [])
 
-  const handleGotoHeading = (item: OutlineItem) => {
+  const handleGotoHeading = (item: HeadingItem) => {
     if (!editor) return
     editor.chain().focus().setTextSelection(item.pos).run()
     editor.commands.scrollIntoView()
@@ -186,7 +165,7 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
     ],
     editorProps: {
         attributes: {
-          class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] px-4 py-3',
+          class: 'prose prose-invert max-w-none focus:outline-none min-h-[200px] md:min-h-[400px] px-4 py-3',
         },
         handlePaste: (view, event) => {
             const items = event.clipboardData?.items
@@ -571,278 +550,12 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
     )
   }
 
+  // 预计算编辑器样式
+  const editorStyles = getEditorStyles('dark')
+
   const renderEditorContent = (isModal = false) => (
     <div className={isModal || fullHeight ? 'h-full flex flex-col' : className}>
-      <style jsx global>{`
-        /* TipTap编辑器Markdown样式 */
-        .ProseMirror {
-          outline: none;
-          padding: 1rem;
-          color: #e5e7eb;
-        }
-
-        /* 有序列表样式 */
-        .ProseMirror ol {
-          list-style-type: decimal;
-          padding-left: 1.5rem;
-          margin: 0.75rem 0;
-        }
-
-        /* 无序列表样式 */
-        .ProseMirror ul {
-          list-style-type: disc;
-          padding-left: 1.5rem;
-          margin: 0.75rem 0;
-        }
-
-        /* 列表项样式 */
-        .ProseMirror li {
-          margin: 0.25rem 0;
-          padding-left: 0.25rem;
-          color: #d1d5db;
-        }
-
-        /* 嵌套列表 */
-        .ProseMirror li > ol,
-        .ProseMirror li > ul {
-          margin: 0.25rem 0;
-        }
-
-        /* 二级无序列表使用空心圆 */
-        .ProseMirror ul ul {
-          list-style-type: circle;
-        }
-
-        /* 三级无序列表使用方块 */
-        .ProseMirror ul ul ul {
-          list-style-type: square;
-        }
-
-        /* 粗体样式 */
-        .ProseMirror strong {
-          font-weight: 700;
-          color: #f3f4f6;
-        }
-
-        /* 斜体样式 */
-        .ProseMirror em {
-          font-style: italic;
-          color: #e5e7eb;
-        }
-
-        /* 标题样式 */
-        .ProseMirror h1 {
-          font-size: 2rem;
-          font-weight: 700;
-          margin: 1.5rem 0 1rem;
-          color: #f9fafb;
-          line-height: 1.2;
-        }
-
-        .ProseMirror h2 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 1.25rem 0 0.75rem;
-          color: #f3f4f6;
-          line-height: 1.3;
-        }
-
-        .ProseMirror h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin: 1rem 0 0.5rem;
-          color: #e5e7eb;
-          line-height: 1.4;
-        }
-
-        /* 段落样式 */
-        .ProseMirror p {
-          margin: 0.75rem 0;
-          line-height: 1.6;
-          color: #d1d5db;
-        }
-
-        /* 代码块样式 */
-        .ProseMirror code {
-          background-color: #374151;
-          padding: 0.125rem 0.375rem;
-          border-radius: 0.25rem;
-          font-family: 'Courier New', monospace;
-          font-size: 0.875rem;
-          color: #fbbf24;
-        }
-
-        .ProseMirror pre {
-          background-color: #1f2937;
-          padding: 1rem;
-          border-radius: 0.5rem;
-          overflow-x: auto;
-          margin: 1rem 0;
-        }
-
-        .ProseMirror pre code {
-          background-color: transparent;
-          padding: 0;
-          color: #e5e7eb;
-        }
-
-        /* 引用样式 */
-        .ProseMirror blockquote {
-          border-left: 4px solid #3b82f6;
-          padding-left: 1rem;
-          margin: 1rem 0;
-          color: #9ca3af;
-          font-style: italic;
-        }
-
-        /* 水平分割线 */
-        .ProseMirror hr {
-          border: none;
-          border-top: 2px solid #6b7280;
-          margin: 1.5rem 0;
-        }
-
-        /* 链接样式 */
-        .ProseMirror a {
-          color: #60a5fa;
-          text-decoration: underline;
-          cursor: pointer;
-        }
-
-        .ProseMirror a:hover {
-          color: #93c5fd;
-        }
-
-        /* 折叠块样式 */
-        .ProseMirror details {
-          border: 1px solid #4b5563;
-          border-radius: 0.5rem;
-          padding: 0;
-          margin: 1rem 0;
-          background-color: #1f2937;
-          overflow: hidden;
-          transition: all 0.2s ease;
-        }
-
-        .ProseMirror details:hover {
-          border-color: #6b7280;
-          background-color: #252d3a;
-        }
-
-        .ProseMirror details[open] {
-          border-color: #3b82f6;
-        }
-
-        .ProseMirror details summary {
-          padding: 0.75rem 1rem;
-          cursor: pointer;
-          font-weight: 500;
-          color: #e5e7eb;
-          background-color: #374151;
-          user-select: none;
-          display: flex;
-          align-items: center;
-          transition: all 0.15s ease;
-          position: relative;
-        }
-
-        .ProseMirror details summary:hover {
-          background-color: #4b5563;
-          color: #f9fafb;
-        }
-
-        .ProseMirror details[open] summary {
-          background-color: #3b82f6;
-          color: #ffffff;
-          border-bottom: 1px solid #2563eb;
-        }
-
-        .ProseMirror details summary::marker,
-        .ProseMirror details summary::-webkit-details-marker {
-          content: '';
-          display: none;
-        }
-
-        .ProseMirror details summary::before {
-          content: '▶';
-          display: inline-block;
-          margin-right: 0.5rem;
-          transition: transform 0.2s ease;
-          font-size: 0.75rem;
-          color: #9ca3af;
-        }
-
-        .ProseMirror details[open] summary::before {
-          transform: rotate(90deg);
-          color: #ffffff;
-        }
-
-        .ProseMirror .details-content {
-          padding: 1rem;
-          color: #d1d5db;
-          animation: slideDown 0.2s ease-out;
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        /* 折叠块内的段落不需要额外上边距 */
-        .ProseMirror .details-content > p:first-child {
-          margin-top: 0;
-        }
-
-        .ProseMirror .details-content > p:last-child {
-          margin-bottom: 0;
-        }
-
-        /* 嵌套折叠块样式 */
-        .ProseMirror .details-content details {
-          margin: 0.75rem 0;
-        }
-
-        /* 图片调整手柄样式 */
-        .image-resizer {
-          position: relative;
-          display: inline-block;
-          max-width: 100%;
-        }
-
-        .image-resize-handle {
-          position: absolute;
-          right: 0;
-          bottom: 0;
-          width: 20px;
-          height: 20px;
-          background-color: #3b82f6;
-          cursor: nwse-resize;
-          border-radius: 0 0 4px 0;
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-
-        .image-resizer:hover .image-resize-handle {
-          opacity: 0.8;
-        }
-
-        .image-resizer.resizing .image-resize-handle {
-          opacity: 1;
-        }
-
-        .tiptap-image {
-          max-width: 100%;
-          height: auto;
-          display: block;
-          border-radius: 4px;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: editorStyles }} />
       <NotesFileBar
         notes={notesList}
         currentNoteId={currentNoteId}
@@ -929,11 +642,11 @@ export default function SimpleMdEditor({ className = '', fullHeight = false }: S
             </Button>
           </div>
       </div>
-      <div className={isModal || fullHeight ? 'flex flex-1 min-h-0 relative' : 'flex relative'}>
-        <div className="flex-1 min-w-0 relative">
+      <div className={isModal || fullHeight ? 'flex flex-1 min-h-0 relative' : 'flex relative flex-col flex-1'}>
+        <div className="flex-1 min-w-0 relative flex flex-col">
           <div 
-            className="overflow-y-auto"
-            style={{ height: isModal || fullHeight ? '100%' : '400px' }}
+            className="overflow-y-auto flex-1"
+            style={{ height: isModal || fullHeight ? '100%' : 'auto' }}
           >
             <EditorContent editor={editor} />
           </div>

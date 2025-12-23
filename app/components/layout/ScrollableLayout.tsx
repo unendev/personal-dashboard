@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LinuxDoPost, LinuxDoReport } from '@/types/linuxdo';
 import { RedditPost, RedditReport } from '@/types/reddit';
 import { HeyboxPost, HeyboxReport } from '@/types/heybox';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/lib/markdown';
 import rehypeHighlight from 'rehype-highlight';
 import PostTagSelector from '@/app/components/features/widgets/PostTagSelector';
 
@@ -1028,13 +1027,12 @@ const ScrollableLayout = () => {
                 {mobileTab === 'content' ? (
                   <div className="p-4">
                     {hoveredPost.analysis.detailed_analysis ? (
-                      <div className="markdown-content prose prose-invert max-w-none prose-sm">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
+                      <div className="markdown-content max-w-none">
+                        <MarkdownRenderer
+                          content={hoveredPost.analysis.detailed_analysis}
+                          variant="dark"
                           rehypePlugins={[rehypeHighlight]}
-                        >
-                          {hoveredPost.analysis.detailed_analysis}
-                        </ReactMarkdown>
+                        />
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1075,13 +1073,12 @@ const ScrollableLayout = () => {
               {/* 桌面端：只显示内容 */}
               <div className="hidden lg:block p-6">
                 {hoveredPost.analysis.detailed_analysis ? (
-                  <div className="markdown-content prose prose-invert max-w-none">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
+                  <div className="markdown-content max-w-none">
+                    <MarkdownRenderer
+                      content={hoveredPost.analysis.detailed_analysis}
+                      variant="dark"
                       rehypePlugins={[rehypeHighlight]}
-                    >
-                      {hoveredPost.analysis.detailed_analysis}
-                    </ReactMarkdown>
+                    />
                   </div>
                 ) : (
                   <div className="space-y-4">

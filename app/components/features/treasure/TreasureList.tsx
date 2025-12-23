@@ -245,13 +245,18 @@ export function TreasureList({ className }: TreasureListProps) {
   useEffect(() => {
     let throttleTimer: NodeJS.Timeout | null = null
     let lastScrollTop = 0
+    let scrollEventCount = 0
+    let throttledEventCount = 0
     
     const handleScroll = () => {
+      scrollEventCount++
+      
       // 节流：300ms 内只触发一次（移动端优化）
       if (throttleTimer) return
       
       throttleTimer = setTimeout(() => {
         throttleTimer = null
+        throttledEventCount++
         
         // 计算距离页面底部的距离
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop
@@ -290,11 +295,15 @@ export function TreasureList({ className }: TreasureListProps) {
         clearTimeout(throttleTimer)
       }
     }
-  }, [loadMore, isLoadingMore, hasMore])
+  }, [loadMore, isLoadingMore, hasMore, treasures.length])
 
-  // 视口追踪 - 使用 Intersection Observer 追踪当前可见的宝藏（基于窗口滚动）
+  // 视口追踪 - 使用 Intersection Observer 追踪当前可见的宝藏（仅桌面端）
   useEffect(() => {
     if (treasures.length === 0) return
+    
+    // 移动端跳过视口追踪（大纲面板本来就是 hidden xl:block）
+    const isDesktop = window.matchMedia('(min-width: 1280px)').matches
+    if (!isDesktop) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -324,9 +333,9 @@ export function TreasureList({ className }: TreasureListProps) {
         }
       },
       {
-        root: null, // 使用窗口作为根
-        rootMargin: '-30% 0px -30% 0px', // 增加 rootMargin，减少观察频率
-        threshold: [0.5] // 简化 threshold，只在 50% 可见时触发
+        root: null,
+        rootMargin: '-30% 0px -30% 0px',
+        threshold: [0.5]
       }
     )
 

@@ -216,7 +216,78 @@ export const NotesExpandedList: React.FC<NotesExpandedListProps> = ({
         )}
       </div>
 
-      <div className="flex items-center gap-1 overflow-x-auto py-2 pl-2">{/* 父笔记不再作为可编辑标签显示 */}
+      {/* 移动端：垂直列表 */}
+      <div className="md:hidden max-h-[40vh] overflow-y-auto">
+        {sortedChildNotes.map((note, index) => {
+          const isActive = activeNoteId === note.id
+          const isEditing = editingNoteId === note.id
+
+          return (
+            <div
+              key={note.id}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (!isEditing) onSelectNote(note.id)
+              }}
+              onDoubleClick={() => handleDoubleClick(note)}
+              className={`flex items-center justify-between px-3 py-2 cursor-pointer border-b border-gray-700/30 ${
+                isActive ? 'bg-gray-800 border-l-2 border-l-blue-500' : 'hover:bg-gray-800/50'
+              }`}
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <FileText size={14} className={isActive ? 'text-blue-300' : 'text-gray-400'} />
+                {isEditing ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={handleSaveTitle}
+                    onKeyDown={handleKeyDown}
+                    className="bg-gray-700 text-white text-sm p-0.5 rounded border border-blue-500 focus:outline-none flex-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className={`text-sm truncate flex-1 ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                    {note.title || 'Untitled'}
+                  </span>
+                )}
+              </div>
+              {!isEditing && onDeleteNote && (
+                <button
+                  onClick={(e) => handleDeleteNote(e, note.id)}
+                  className="p-1.5 hover:bg-red-500/20 rounded transition-all flex-shrink-0"
+                  title="删除笔记"
+                >
+                  <Trash2 size={14} className="text-red-400 hover:text-red-300" />
+                </button>
+              )}
+            </div>
+          )
+        })}
+        <div className="p-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onCreateNote}
+            disabled={isCreating}
+            className="w-full h-8 hover:bg-gray-700"
+            title="在此分组中创建新文件"
+          >
+            {isCreating ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+            ) : (
+              <>
+                <Plus size={16} className="mr-1" />
+                <span className="text-xs">新建子笔记</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* 桌面端：水平标签栏 */}
+      <div className="hidden md:flex items-center gap-1 py-2 pl-2 overflow-x-auto">
         
         {sortedChildNotes.map((note, index) => {
           const isActive = activeNoteId === note.id

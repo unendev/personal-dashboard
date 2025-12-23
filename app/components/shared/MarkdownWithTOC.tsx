@@ -1,9 +1,18 @@
 'use client';
 
+/**
+ * 带悬浮大纲的Markdown渲染组件
+ * 
+ * 使用统一的 Markdown 系统进行渲染和大纲提取
+ */
+
 import React, { useState, useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { FloatingTOC } from './FloatingTOC';
+import { 
+  MarkdownRenderer, 
+  extractHeadingsFromMarkdown,
+  slugify,
+} from '@/lib/markdown';
 
 interface MarkdownWithTOCProps {
   content: string;
@@ -22,32 +31,22 @@ export const MarkdownWithTOC: React.FC<MarkdownWithTOCProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState('');
 
-  // 从markdown内容中提取章节
+  // 使用统一的大纲提取器
   const tocSections = useMemo(() => {
-    const headingRegex = /^##\s+(.+?)(?:\s+(.+?))?\s*$/gm;
-    const sections: Array<{ id: string; title: string; icon?: string }> = [];
-    let match;
-
-    while ((match = headingRegex.exec(content)) !== null) {
-      const fullTitle = match[1].trim();
-      // 提取emoji图标（如果有）
-      const emojiMatch = fullTitle.match(/^([\u{1F300}-\u{1F9FF}])\s+(.+)$/u);
-      
-      const title = emojiMatch ? emojiMatch[2] : fullTitle;
-      const icon = emojiMatch ? emojiMatch[1] : undefined;
-      
-      // 生成ID：将标题转换为kebab-case
-      const id = title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      
-      sections.push({ id, title, icon });
-    }
-
-    return sections;
+    const headings = extractHeadingsFromMarkdown(content);
+    
+    // 转换为 FloatingTOC 需要的格式，只取 h2 级别
+    return headings
+      .filter(h => h.level === 2)
+      .map(h => {
+        // 提取emoji图标（如果有）
+        const emojiMatch = h.text.match(/^([\u{1F300}-\u{1F9FF}])\s+(.+)$/u);
+        const title = emojiMatch ? emojiMatch[2] : h.text;
+        const icon = emojiMatch ? emojiMatch[1] : undefined;
+        const id = slugify(title);
+        
+        return { id, title, icon };
+      });
   }, [content]);
 
   // 处理章节点击
@@ -59,18 +58,12 @@ export const MarkdownWithTOC: React.FC<MarkdownWithTOCProps> = ({
     }
   };
 
-  // 自定义heading渲染，添加ID
-  const components = {
+  // 自定义 h2 组件添加 ID（用于锚点跳转）
+  const customComponents = {
     h2: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
       const text = String(children);
-      // 去除emoji
       const cleanText = text.replace(/^[\u{1F300}-\u{1F9FF}]\s+/u, '');
-      const id = cleanText
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+      const id = slugify(cleanText);
       
       return (
         <h2 id={id} className="text-2xl font-bold text-white mt-6 mb-4 scroll-mt-20" {...props}>
@@ -78,51 +71,6 @@ export const MarkdownWithTOC: React.FC<MarkdownWithTOCProps> = ({
         </h2>
       );
     },
-    h3: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-      <h3 className="text-xl font-semibold text-white/90 mt-4 mb-3" {...props}>
-        {children}
-      </h3>
-    ),
-    p: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
-      <p className="text-white/80 leading-relaxed mb-4" {...props}>
-        {children}
-      </p>
-    ),
-    ul: ({ children, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
-      <ul className="list-disc list-inside space-y-2 mb-4 text-white/80" {...props}>
-        {children}
-      </ul>
-    ),
-    ol: ({ children, ...props }: React.HTMLAttributes<HTMLOListElement>) => (
-      <ol className="list-decimal list-inside space-y-2 mb-4 text-white/80" {...props}>
-        {children}
-      </ol>
-    ),
-    li: ({ children, ...props }: React.HTMLAttributes<HTMLLIElement>) => (
-      <li className="leading-relaxed" {...props}>
-        {children}
-      </li>
-    ),
-    strong: ({ children, ...props }: React.HTMLAttributes<HTMLElement>) => (
-      <strong className="font-semibold text-white" {...props}>
-        {children}
-      </strong>
-    ),
-    code: ({ children, ...props }: React.HTMLAttributes<HTMLElement>) => (
-      <code className="bg-gray-800/50 px-1.5 py-0.5 rounded text-sm font-mono text-blue-400" {...props}>
-        {children}
-      </code>
-    ),
-    pre: ({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) => (
-      <pre className="bg-gray-800/50 p-4 rounded-lg overflow-x-auto mb-4" {...props}>
-        {children}
-      </pre>
-    ),
-    blockquote: ({ children, ...props }: React.HTMLAttributes<HTMLQuoteElement>) => (
-      <blockquote className="border-l-4 border-blue-500/50 pl-4 py-2 mb-4 text-white/70 italic" {...props}>
-        {children}
-      </blockquote>
-    ),
   };
 
   return (
@@ -138,12 +86,11 @@ export const MarkdownWithTOC: React.FC<MarkdownWithTOCProps> = ({
 
       {/* Markdown内容 */}
       <div className={`prose prose-invert max-w-none ${className}`}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={components}
-        >
-          {content}
-        </ReactMarkdown>
+        <MarkdownRenderer
+          content={content}
+          variant="dark"
+          components={customComponents}
+        />
       </div>
     </div>
   );

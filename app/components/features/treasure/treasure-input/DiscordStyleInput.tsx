@@ -70,6 +70,8 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
   // 追踪初始化状态，防止编辑时重复初始化
   const isInitializedRef = useRef(false)
   const lastTreasureIdRef = useRef<string | undefined>(undefined)
+  // 追踪创建模式是否已初始化
+  const isCreateModeInitializedRef = useRef(false)
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -187,7 +189,13 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         setActiveCommand('music')
       }
     } else if (!initialData) {
-      // 创建模式：重置所有状态，lastTags 仅作为参考
+      // 创建模式：只在首次挂载时初始化，防止 lastTags 变化导致用户输入被清空
+      if (isCreateModeInitializedRef.current) {
+        return
+      }
+      isCreateModeInitializedRef.current = true
+      
+      // 重置所有状态，lastTags 仅作为参考
       setContent('')
       setImages([])
       setActiveCommand(null)
