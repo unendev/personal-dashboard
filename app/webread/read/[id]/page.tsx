@@ -22,6 +22,7 @@ export default function ReaderPage() {
   const [showControls, setShowControls] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [savedLocation, setSavedLocation] = useState<string | undefined>(undefined);
+  const [progressLoaded, setProgressLoaded] = useState(false);
   const [toc, setToc] = useState<any[]>([]);
   const [rendition, setRendition] = useState<any>(null);
   const [currentChapter, setCurrentChapter] = useState<string>('');
@@ -48,10 +49,13 @@ export default function ReaderPage() {
     webdavCache.syncProgressFromCloud(id).then(savedProgress => {
       // 只在 CFI 有效时恢复位置
       if (savedProgress?.currentCfi && typeof savedProgress.currentCfi === 'string' && savedProgress.currentCfi.startsWith('epubcfi')) {
+        console.log('[ReaderPage] Restoring progress:', savedProgress.currentCfi);
         setSavedLocation(savedProgress.currentCfi);
       }
+      setProgressLoaded(true);
     }).catch(err => {
       console.warn('[ReaderPage] Failed to sync progress:', err);
+      setProgressLoaded(true);
     });
 
     // 获取笔记
@@ -134,7 +138,7 @@ export default function ReaderPage() {
     }
   }, [book]);
 
-  if (loading || !bookMetadata) {
+  if (loading || !bookMetadata || !progressLoaded) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#2b2416]">
         <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
@@ -425,6 +429,14 @@ export default function ReaderPage() {
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 try {
+                                  // 先移除高亮
+                                  if (rendition && note.cfi) {
+                                    try {
+                                      rendition.annotations.remove(note.cfi, 'highlight');
+                                    } catch (err) {
+                                      console.warn('Failed to remove highlight:', err);
+                                    }
+                                  }
                                   await webdavCache.deleteNote(id, note.id);
                                   setNotes(prev => prev.filter(n => n.id !== note.id));
                                 } catch (err) {

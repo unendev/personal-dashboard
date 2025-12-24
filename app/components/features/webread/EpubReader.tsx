@@ -21,10 +21,6 @@ interface SelectionPopup {
   cfiRange?: string;
 }
 
-// 高亮颜色类名（用于 CSS 样式注入）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const HIGHLIGHT_COLORS = ['yellow', 'green', 'blue'] as const;
-
 export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady, onNoteAdded }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
@@ -163,10 +159,8 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
   // 当主题或字体大小改变时，重新应用样式并重新渲染当前页面
   useEffect(() => {
     if (renditionRef.current && isReady) {
-      console.log('[EpubReader] Applying styles - fontSize:', fontSize, 'theme:', theme);
       applyStyles(renditionRef.current);
       
-      // 重新渲染当前页面以应用新样式
       try {
         const currentLocation = renditionRef.current.currentLocation() as any;
         if (currentLocation?.start?.cfi) {
@@ -281,18 +275,11 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             body {
               -webkit-tap-highlight-color: rgba(0,0,0,0);
             }
-            /* epub.js highlight 样式 - 按颜色分类 */
-            .hl-yellow {
-              fill: rgba(250, 204, 21, 0.35) !important;
+            /* epub.js highlight SVG 样式 */
+            .epubjs-hl {
+              fill: rgba(250, 204, 21, 0.4) !important;
               fill-opacity: 1 !important;
-            }
-            .hl-green {
-              fill: rgba(52, 211, 153, 0.35) !important;
-              fill-opacity: 1 !important;
-            }
-            .hl-blue {
-              fill: rgba(96, 165, 250, 0.35) !important;
-              fill-opacity: 1 !important;
+              mix-blend-mode: multiply;
             }
           `;
           doc.head.appendChild(style);
@@ -359,9 +346,8 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         // 加载导航（目录）
         try {
           await book.loaded.navigation;
-          console.log('[EpubReader] Navigation loaded:', book.navigation?.toc?.length || 0, 'items');
         } catch (e) {
-          console.warn('[EpubReader] Failed to load navigation:', e);
+          // 静默处理
         }
 
         // 先标记为 ready，让用户可以开始阅读
@@ -371,41 +357,65 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             onRenditionReady(rendition);
           }
           
+          // 存储笔记用于翻页后重新应用
+          let loadedNotes: webdavCache.BookNote[] = [];
+          
           // 加载并应用高亮
           webdavCache.getNotes(bookId).then(notes => {
-            console.log('[EpubReader] Loading highlights for', notes.length, 'notes');
+            console.log('[HL-DEBUG] 加载笔记数量:', notes.length);
+            loadedNotes = notes;
             if (mounted && renditionRef.current) {
               notes.forEach(note => {
-                if (!note.cfi) {
-                  console.warn('[EpubReader] Note has no CFI:', note.id);
-                  return;
-                }
-                const colorClass = `hl-${note.color || 'yellow'}`;
-                console.log('[EpubReader] Applying highlight:', {
-                  noteId: note.id,
-                  cfi: note.cfi,
-                  colorClass,
-                  text: note.text.substring(0, 30) + '...',
-                });
+                if (!note.cfi) return;
+                
+                // 根据颜色设置不同的填充色
+                const colorMap: Record<string, string> = {
+                  yellow: 'rgba(250, 204, 21, 0.4)',
+                  green: 'rgba(52, 211, 153, 0.4)',
+                  blue: 'rgba(96, 165, 250, 0.4)',
+                };
+                const fillColor = colorMap[note.color || 'yellow'] || colorMap.yellow;
+                
+                console.log('[HL-DEBUG] 应用高亮:', { cfi: note.cfi, color: note.color, fillColor });
+                
                 try {
-                  // 使用 highlight 方法 + className 应用颜色
+                  // 使用 highlight + styles 参数直接设置颜色
                   renditionRef.current!.annotations.highlight(
                     note.cfi,
                     { id: note.id },
                     () => {
-                      console.log('[EpubReader] Highlight clicked:', note.id);
                       renditionRef.current?.display(note.cfi);
                     },
-                    colorClass
+                    '',
+                    { fill: fillColor, 'fill-opacity': '1', 'mix-blend-mode': 'multiply' }
                   );
-                  console.log('[EpubReader] Highlight applied successfully:', note.id);
+                  
+                  // 检查 SVG 元素位置
+                  setTimeout(() => {
+                    const contents = renditionRef.current?.getContents() as any;
+                    if (contents && contents.length > 0) {
+                      const doc = contents[0]?.document;
+                      const svgElements = doc?.querySelectorAll('.epubjs-hl');
+                      console.log('[HL-DEBUG] SVG高亮元素数量:', svgElements?.length || 0);
+                      if (svgElements && svgElements.length > 0) {
+                        const svg = svgElements[svgElements.length - 1];
+                        const rect = svg.getBoundingClientRect();
+                        console.log('[HL-DEBUG] SVG位置:', { top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+                      }
+                    }
+                  }, 500);
                 } catch (e) {
-                  console.error('[EpubReader] Failed to apply highlight:', note.id, e);
+                  console.error('[HL-DEBUG] 高亮失败:', e);
                 }
               });
             }
           }).catch((e) => {
-            console.error('[EpubReader] Failed to load notes:', e);
+            console.error('[HL-DEBUG] 加载笔记失败:', e);
+          });
+          
+          // 监听页面渲染完成
+          rendition.on('rendered', () => {
+            if (!mounted || !renditionRef.current || loadedNotes.length === 0) return;
           });
         }
 
@@ -433,18 +443,13 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           });
         }
 
-        // 设置事件监听 - 追踪位置变化并保存进度
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rendition.on('relocated', (location: any) => {
           if (!mounted) return;
           
           try {
             const cfi = location?.start?.cfi;
-            
-            // 验证 CFI 有效
-            if (!cfi || typeof cfi !== 'string') {
-              return;
-            }
+            if (!cfi || typeof cfi !== 'string') return;
             
             // 使用 locations 计算准确的进度
             let progressValue = 0;
@@ -452,41 +457,30 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
               if (book.locations && book.locations.length() > 0) {
                 progressValue = book.locations.percentageFromCfi(cfi);
               } else {
-                // 如果 locations 未生成，使用 displayed 的百分比
                 progressValue = location?.start?.percentage ?? 0;
               }
             } catch {
               progressValue = location?.start?.percentage ?? 0;
             }
             
-            // 确保进度值在 0-1 之间
-            if (progressValue > 1) {
-              progressValue = progressValue / 100;
-            }
+            if (progressValue > 1) progressValue = progressValue / 100;
             progressValue = Math.max(0, Math.min(1, progressValue));
             
-            console.log('[EpubReader] Progress update:', { cfi, progressValue: (progressValue * 100).toFixed(1) + '%' });
-            
-            // 更新 store 中的进度
             onLocationChangeRef.current?.(cfi, progressValue);
             
-            // 防抖保存进度（避免频繁保存）
-            if (saveProgressTimeout) {
-              clearTimeout(saveProgressTimeout);
-            }
+            if (saveProgressTimeout) clearTimeout(saveProgressTimeout);
             
             saveProgressTimeout = setTimeout(async () => {
               try {
-                const now = Date.now();
                 await webdavCache.saveProgress({
                   bookId,
                   currentCfi: cfi,
                   progress: progressValue,
                   currentChapter: 'Unknown',
-                  lastReadAt: now,
+                  lastReadAt: Date.now(),
                 });
               } catch (e) {
-                console.error('[Reader] Failed to save progress:', e);
+                // 静默处理
               }
             }, 500);
           } catch (e) {
@@ -499,26 +493,18 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           const range = rendition.getRange(cfiRange);
           const text = range.toString().trim();
           
-          // 调试日志
-          console.log('[EpubReader] Text selected:', {
+          // 调试：检查选区和文本位置
+          const rect = range.getBoundingClientRect();
+          console.log('[HL-DEBUG] 选中文本:', { 
+            text: text.substring(0, 30),
             cfiRange,
-            text: text.substring(0, 50) + '...',
-            rangeInfo: {
-              startContainer: range.startContainer?.nodeName,
-              endContainer: range.endContainer?.nodeName,
-              startOffset: range.startOffset,
-              endOffset: range.endOffset,
-            }
+            textRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
           });
           
           setSelection({ text, cfiRange });
           
-          // 显示 AI 弹窗（如果选中了文本）
           if (text && text.length > 0) {
-            // 获取选区位置
             try {
-              const rect = range.getBoundingClientRect();
-              // 计算相对于视口的位置
               const viewerRect = viewerRef.current?.getBoundingClientRect();
               if (viewerRect) {
                 setSelectionPopup({
@@ -694,38 +680,60 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           bookId={bookId}
           cfiRange={selectionPopup.cfiRange}
           onNoteAdded={(note) => {
-            // 立即应用高亮
-            console.log('[EpubReader] onNoteAdded called:', {
-              noteId: note.id,
-              cfi: note.cfi,
-              color: note.color,
-              text: note.text.substring(0, 30) + '...',
-            });
+            console.log('[HL-DEBUG] onNoteAdded:', { cfi: note.cfi, color: note.color });
+            
             if (renditionRef.current && note.cfi) {
-              const colorClass = `hl-${note.color || 'yellow'}`;
-              console.log('[EpubReader] Applying immediate highlight with class:', colorClass);
+              const colorMap: Record<string, string> = {
+                yellow: 'rgba(250, 204, 21, 0.4)',
+                green: 'rgba(52, 211, 153, 0.4)',
+                blue: 'rgba(96, 165, 250, 0.4)',
+              };
+              const fillColor = colorMap[note.color || 'yellow'] || colorMap.yellow;
+              
               try {
-                // 使用 highlight 方法，通过 className 应用样式
                 renditionRef.current.annotations.highlight(
                   note.cfi,
                   { id: note.id },
                   () => {
-                    console.log('[EpubReader] New highlight clicked:', note.id);
                     renditionRef.current?.display(note.cfi);
                   },
-                  colorClass
+                  '',
+                  { fill: fillColor, 'fill-opacity': '1', 'mix-blend-mode': 'multiply' }
                 );
-                console.log('[EpubReader] Immediate highlight applied successfully');
+                
+                // 检查生成的 SVG 元素
+                setTimeout(() => {
+                  const contents = renditionRef.current?.getContents();
+                  if (contents && contents.length > 0) {
+                    const doc = (contents[0] as any).document;
+                    const svgElements = doc?.querySelectorAll('.epubjs-hl');
+                    console.log('[HL-DEBUG] 新增后SVG数量:', svgElements?.length || 0);
+                    
+                    // 检查 SVG 容器位置
+                    const annotationLayer = doc?.querySelector('.annotationLayer, svg.epubjs-hl-container');
+                    if (annotationLayer) {
+                      const layerRect = annotationLayer.getBoundingClientRect();
+                      console.log('[HL-DEBUG] 标注层位置:', { top: layerRect.top, left: layerRect.left });
+                    }
+                    
+                    // 检查最新的高亮元素
+                    if (svgElements && svgElements.length > 0) {
+                      const lastSvg = svgElements[svgElements.length - 1];
+                      const svgRect = lastSvg.getBoundingClientRect();
+                      console.log('[HL-DEBUG] 最新SVG位置:', { 
+                        top: svgRect.top, 
+                        left: svgRect.left,
+                        width: svgRect.width,
+                        height: svgRect.height,
+                        element: lastSvg.outerHTML.substring(0, 200)
+                      });
+                    }
+                  }
+                }, 300);
               } catch (e) {
-                console.error('[EpubReader] Failed to apply immediate highlight:', e);
+                console.error('[HL-DEBUG] 应用高亮失败:', e);
               }
-            } else {
-              console.warn('[EpubReader] Cannot apply highlight - rendition or cfi missing:', {
-                hasRendition: !!renditionRef.current,
-                hasCfi: !!note.cfi,
-              });
             }
-            // 通知父组件更新笔记列表
             onNoteAdded?.(note);
           }}
         />
