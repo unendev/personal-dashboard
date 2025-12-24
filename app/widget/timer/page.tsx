@@ -65,6 +65,7 @@ interface SessionUser {
 
 export default function TimerWidgetPage() {
   const doubleTapCreate = useDoubleTap(openCreateWindow);
+  const [isBlurred, setIsBlurred] = useState(false);
   
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
@@ -262,8 +263,9 @@ export default function TimerWidgetPage() {
           {activeTask ? (
             <div 
               className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
+              onClick={() => setIsBlurred(!isBlurred)}
               {...doubleTapCreate}
-              title="双击新建任务"
+              title="单击模糊/双击新建"
             >
               <button
                 onClick={(e) => {
@@ -279,7 +281,7 @@ export default function TimerWidgetPage() {
                 {activeTask.isPaused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
               </button>
               
-              <div className="text-center pl-12">
+              <div className={`text-center pl-12 transition-all ${isBlurred ? 'blur-md' : ''}`}>
                 <div className={`font-mono text-3xl font-bold tracking-wider ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
                   {formatTime(displayTime)}
                 </div>
