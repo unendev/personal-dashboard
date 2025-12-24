@@ -17,7 +17,15 @@ interface EpubReaderProps {
 interface SelectionPopup {
   text: string;
   position: { x: number; y: number };
+  cfiRange?: string;
 }
+
+// 高亮颜色映射 - 背景色
+const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
+  yellow: 'rgba(250, 204, 21, 0.35)',
+  green: 'rgba(52, 211, 153, 0.35)',
+  blue: 'rgba(96, 165, 250, 0.35)',
+};
 
 export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +63,48 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goNext, goPrev]);
+
+  // 移动端滑动翻页
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !isReady) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].clientX;
+      touchEndY = e.changedTouches[0].clientY;
+      
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // 确保是水平滑动（水平距离大于垂直距离）
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          goPrev(); // 右滑 = 上一页
+        } else {
+          goNext(); // 左滑 = 下一页
+        }
+      }
+    };
+
+    viewer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    viewer.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      viewer.removeEventListener('touchstart', handleTouchStart);
+      viewer.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isReady, goNext, goPrev]);
 
   const applyStyles = useCallback((rendition: Rendition) => {
     try {
@@ -209,6 +259,58 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         });
         renditionRef.current = rendition;
 
+        // 启用移动端文本选择
+        rendition.hooks.content.register((contents: any) => {
+          const doc = contents.document;
+          const win = contents.window;
+          
+          // 确保文本可选择 + 高亮样式
+          const style = doc.createElement('style');
+          style.textContent = `
+            * {
+              -webkit-user-select: text !important;
+              -moz-user-select: text !important;
+              -ms-user-select: text !important;
+              user-select: text !important;
+              -webkit-touch-callout: default !important;
+            }
+            body {
+              -webkit-tap-highlight-color: rgba(0,0,0,0);
+            }
+            /* epub.js mark 样式 - 直接应用到文本 */
+            [data-epubjs-mark] {
+              background-color: rgba(250, 204, 21, 0.4) !important;
+              border-radius: 2px;
+              padding: 0 1px;
+            }
+          `;
+          doc.head.appendChild(style);
+          
+          // 移动端：监听 selectionchange 事件
+          let selectionTimeout: NodeJS.Timeout | null = null;
+          doc.addEventListener('selectionchange', () => {
+            if (selectionTimeout) clearTimeout(selectionTimeout);
+            selectionTimeout = setTimeout(() => {
+              const selection = win.getSelection();
+              if (selection && !selection.isCollapsed) {
+                const text = selection.toString().trim();
+                if (text.length > 0) {
+                  try {
+                    const range = selection.getRangeAt(0);
+                    // 触发 epub.js 的 selected 事件
+                    const cfiRange = contents.cfiFromRange(range);
+                    if (cfiRange) {
+                      rendition.emit('selected', cfiRange, contents);
+                    }
+                  } catch (e) {
+                    // 静默处理
+                  }
+                }
+              }
+            }, 300);
+          });
+        });
+
         readyTimeout = setTimeout(() => {
           if (mounted) {
             setIsReady(true);
@@ -251,17 +353,75 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           console.warn('[EpubReader] Failed to load navigation:', e);
         }
 
-        // 生成 locations 用于计算进度
-        try {
-          await book.locations.generate(1600); // 每1600字符一个位置点
-          console.log('[EpubReader] Locations generated:', book.locations.length());
-        } catch (e) {
-          console.warn('[EpubReader] Failed to generate locations:', e);
+        // 先标记为 ready，让用户可以开始阅读
+        if (mounted) {
+          setIsReady(true);
+          if (onRenditionReady) {
+            onRenditionReady(rendition);
+          }
+          
+          // 加载并应用高亮
+          webdavCache.getNotes(bookId).then(notes => {
+            console.log('[EpubReader] Loading highlights for', notes.length, 'notes');
+            if (mounted && renditionRef.current) {
+              notes.forEach(note => {
+                if (!note.cfi) {
+                  console.warn('[EpubReader] Note has no CFI:', note.id);
+                  return;
+                }
+                const colorClass = `epub-hl-${note.color || 'yellow'}`;
+                console.log('[EpubReader] Applying highlight:', {
+                  noteId: note.id,
+                  cfi: note.cfi,
+                  colorClass,
+                  text: note.text.substring(0, 30) + '...',
+                });
+                try {
+                  // 使用 mark 类型 - 直接在 DOM 中包裹文本，不使用 SVG 覆盖层
+                  renditionRef.current!.annotations.mark(
+                    note.cfi,
+                    {},
+                    () => {
+                      console.log('[EpubReader] Highlight clicked:', note.id);
+                      renditionRef.current?.display(note.cfi);
+                    }
+                  );
+                  console.log('[EpubReader] Highlight applied successfully:', note.id);
+                } catch (e) {
+                  console.error('[EpubReader] Failed to apply highlight:', note.id, e);
+                }
+              });
+            }
+          }).catch((e) => {
+            console.error('[EpubReader] Failed to load notes:', e);
+          });
+        }
+
+        // 尝试从缓存加载 locations，否则后台生成
+        const cachedLocations = await webdavCache.getLocations(bookId);
+        if (cachedLocations) {
+          try {
+            book.locations.load(cachedLocations);
+            console.log('[EpubReader] Locations loaded from cache:', book.locations.length());
+          } catch (e) {
+            console.warn('[EpubReader] Failed to load cached locations, regenerating:', e);
+            book.locations.generate(1600).then(() => {
+              console.log('[EpubReader] Locations regenerated:', book.locations.length());
+              webdavCache.saveLocations(bookId, book.locations.save());
+            }).catch(() => {});
+          }
+        } else {
+          // 后台生成 locations（不阻塞 UI）
+          book.locations.generate(1600).then(() => {
+            console.log('[EpubReader] Locations generated:', book.locations.length());
+            // 保存到缓存
+            webdavCache.saveLocations(bookId, book.locations.save());
+          }).catch((e) => {
+            console.warn('[EpubReader] Failed to generate locations:', e);
+          });
         }
 
         // 设置事件监听 - 追踪位置变化并保存进度
-        let lastSavedCfi = '';
-        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rendition.on('relocated', (location: any) => {
           if (!mounted) return;
@@ -313,7 +473,6 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                   currentChapter: 'Unknown',
                   lastReadAt: now,
                 });
-                lastSavedCfi = cfi;
               } catch (e) {
                 console.error('[Reader] Failed to save progress:', e);
               }
@@ -324,9 +483,22 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rendition.on('selected', (cfiRange: string, contents: any) => {
+        rendition.on('selected', (cfiRange: string, _contents: any) => {
           const range = rendition.getRange(cfiRange);
           const text = range.toString().trim();
+          
+          // 调试日志
+          console.log('[EpubReader] Text selected:', {
+            cfiRange,
+            text: text.substring(0, 50) + '...',
+            rangeInfo: {
+              startContainer: range.startContainer?.nodeName,
+              endContainer: range.endContainer?.nodeName,
+              startOffset: range.startOffset,
+              endOffset: range.endOffset,
+            }
+          });
+          
           setSelection({ text, cfiRange });
           
           // 显示 AI 弹窗（如果选中了文本）
@@ -339,6 +511,7 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
               if (viewerRect) {
                 setSelectionPopup({
                   text,
+                  cfiRange,
                   position: {
                     x: rect.left + rect.width / 2,
                     y: rect.top,
@@ -396,10 +569,6 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         renderBubblesHandler();
         book.on('rendition:rendered', renderBubblesHandler);
 
-        if (mounted) {
-          setIsReady(true);
-          onRenditionReady?.(rendition);
-        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         if (mounted) {
@@ -437,7 +606,7 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
   }
 
   return (
-    <div className="w-full h-full relative group bg-slate-900">
+    <div className="w-full h-full relative group bg-[#2b2416]">
       <div 
         ref={viewerRef} 
         className={`w-full h-full overflow-hidden ${!isReady ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}
@@ -458,7 +627,7 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
       )}
       
       {!isReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#2b2416]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400 mx-auto mb-2" />
             <p className="text-sm text-amber-200">正在加载书籍...</p>
@@ -473,6 +642,39 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           position={selectionPopup.position}
           onClose={() => setSelectionPopup(null)}
           bookTitle={title}
+          bookId={bookId}
+          cfiRange={selectionPopup.cfiRange}
+          onNoteAdded={(note) => {
+            // 立即应用高亮
+            console.log('[EpubReader] onNoteAdded called:', {
+              noteId: note.id,
+              cfi: note.cfi,
+              color: note.color,
+              text: note.text.substring(0, 30) + '...',
+            });
+            if (renditionRef.current && note.cfi) {
+              console.log('[EpubReader] Applying immediate highlight with mark');
+              try {
+                // 使用 mark 类型 - 直接在 DOM 中包裹文本
+                renditionRef.current.annotations.mark(
+                  note.cfi,
+                  {},
+                  () => {
+                    console.log('[EpubReader] New highlight clicked:', note.id);
+                    renditionRef.current?.display(note.cfi);
+                  }
+                );
+                console.log('[EpubReader] Immediate highlight applied successfully');
+              } catch (e) {
+                console.error('[EpubReader] Failed to apply immediate highlight:', e);
+              }
+            } else {
+              console.warn('[EpubReader] Cannot apply highlight - rendition or cfi missing:', {
+                hasRendition: !!renditionRef.current,
+                hasCfi: !!note.cfi,
+              });
+            }
+          }}
         />
       )}
     </div>

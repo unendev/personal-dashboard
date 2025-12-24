@@ -177,9 +177,9 @@ function StatusMenu({
   const currentStatus = getBookStatus(book);
   
   const options: { status: BookStatus; label: string; icon: React.ReactNode; color: string }[] = [
-    { status: 'recent', label: '最近读', icon: <Clock className="w-4 h-4" />, color: 'text-amber-400' },
-    { status: 'want', label: '想读', icon: <BookOpen className="w-4 h-4" />, color: 'text-slate-400' },
-    { status: 'backlog', label: '待读', icon: <Archive className="w-4 h-4" />, color: 'text-cyan-400' },
+    { status: 'recent', label: '最近读', icon: <Clock className="w-4 h-4" />, color: 'text-amber-300' },
+    { status: 'want', label: '想读', icon: <BookOpen className="w-4 h-4" />, color: 'text-emerald-300' },
+    { status: 'backlog', label: '待读', icon: <Archive className="w-4 h-4" />, color: 'text-cyan-300' },
   ];
 
   return (
@@ -327,44 +327,66 @@ function BookCard({
 // 书架分区
 function BookSection({ 
   title, 
+  icon,
   books, 
   defaultExpanded = true,
-  gradient,
+  accentColor,
   onDelete,
   onStatusChange,
   getGradient,
+  leftAction,
+  rightAction,
 }: { 
   title: string;
+  icon: React.ReactNode;
   books: Book[];
   defaultExpanded?: boolean;
-  gradient: string;
+  accentColor: string;
   onDelete: (e: React.MouseEvent, id: string) => void;
   onStatusChange: (bookId: string, status: BookStatus) => void;
   getGradient: (title: string) => string;
+  leftAction?: React.ReactNode;
+  rightAction?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   
   if (books.length === 0) return null;
   
   return (
-    <section className="mb-12">
-      <button 
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 mb-6 group"
-      >
-        {expanded ? (
-          <ChevronDown className="w-4 h-4 text-slate-500" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-slate-500" />
+    <section className="mb-10">
+      {/* 分组头部 - 居中简洁 */}
+      <div className="flex items-center justify-center gap-3 py-4 mb-4">
+        {/* 左侧操作按钮或装饰线 */}
+        {leftAction || (
+          <div className="h-px flex-1 max-w-[60px] bg-gradient-to-r from-transparent to-slate-700" />
         )}
-        <h2 className={cn("text-lg font-serif", gradient)}>
-          {title}
-        </h2>
-        <span className="text-sm text-slate-600">({books.length})</span>
-      </button>
+        
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-1.5 rounded-full border transition-colors",
+            accentColor
+          )}
+        >
+          {icon}
+          <span className="text-sm font-medium">{title}</span>
+          <span className="text-xs opacity-60">{books.length}</span>
+          {expanded ? (
+            <ChevronDown className="w-3 h-3 opacity-50" />
+          ) : (
+            <ChevronRight className="w-3 h-3 opacity-50" />
+          )}
+        </button>
+        
+        {/* 右侧操作按钮或装饰线 */}
+        {rightAction || (
+          <div className="h-px flex-1 max-w-[60px] bg-gradient-to-l from-transparent to-slate-700" />
+        )}
+      </div>
       
+      {/* 书籍网格 */}
       {expanded && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-10">
           {books.map((book) => (
             <BookCard 
               key={book.id} 
@@ -405,27 +427,12 @@ export default function WebReadShelf() {
       
       booksWithProgress.sort((a, b) => b.lastReadAt - a.lastReadAt);
       setBooks(booksWithProgress);
+      setLoading(false);
       
-      await webdavCache.refreshAllCoversClientSide();
-      
-      const updatedBooks = await webdavCache.getAllLocalBooks();
-      const updatedBooksWithProgress = await Promise.all(
-        updatedBooks.map(async (book) => {
-          const progress = await webdavCache.getProgress(book.id);
-          return {
-            ...book,
-            lastReadAt: progress?.lastReadAt || 0,
-            progress: progress?.progress || 0,
-            manualStatus: progress?.manualStatus,
-          };
-        })
-      );
-      
-      updatedBooksWithProgress.sort((a, b) => b.lastReadAt - a.lastReadAt);
-      setBooks(updatedBooksWithProgress);
+      // 后台刷新封面，不阻塞 UI
+      webdavCache.refreshAllCoversClientSide().catch(() => {});
     } catch (err) {
       console.error('Failed to load books', err);
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -549,30 +556,8 @@ export default function WebReadShelf() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-900 text-gray-100">
       <WebDAVConfigPanel />
 
-      {/* Header */}
-      <header className="px-6 py-8 md:px-12 flex justify-between items-end border-b border-white/5">
-        <div>
-          <h1 className="text-3xl font-serif font-medium tracking-tight text-amber-100">Heptapod Library</h1>
-          <p className="text-slate-500 text-sm mt-2">非线性阅读体验</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => syncCloudBooks()}
-            disabled={syncing}
-            className="p-2 rounded-full border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 text-slate-400 ${syncing ? 'animate-spin' : ''}`} />
-          </button>
-          <label className={`cursor-pointer px-4 py-2 rounded-full border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-colors flex items-center gap-2 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> : <Upload className="w-4 h-4 text-slate-400" />}
-            <span className="text-sm font-medium text-slate-300">导入 EPUB</span>
-            <input type="file" accept=".epub" className="hidden" onChange={handleUpload} disabled={uploading} />
-          </label>
-        </div>
-      </header>
-
       {/* Main */}
-      <main className="px-6 py-12 md:px-12 max-w-7xl mx-auto">
+      <main className="px-6 py-8 md:px-12 max-w-7xl mx-auto">
         {loading ? (
           <div className="flex justify-center pt-20">
             <Loader2 className="w-8 h-8 animate-spin text-amber-500/50" />
@@ -582,26 +567,49 @@ export default function WebReadShelf() {
             <BookIcon className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p className="text-slate-400">书架是空的</p>
             <p className="text-sm mt-2 text-slate-600">导入《你一生的故事》开始体验</p>
+            <label className="cursor-pointer inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors">
+              <Upload className="w-4 h-4" />
+              <span className="text-sm font-medium">导入书籍</span>
+              <input type="file" accept=".epub" className="hidden" onChange={handleUpload} />
+            </label>
           </div>
         ) : (
           <>
-            {/* 最近读 */}
+            {/* 最近读 - 带操作按钮 */}
             <BookSection 
               title="最近读" 
+              icon={<Clock className="w-4 h-4 text-amber-300" />}
               books={recentBooks}
               defaultExpanded={true}
-              gradient="text-amber-400"
+              accentColor="border-amber-500/40 bg-amber-500/10 text-amber-300"
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
               getGradient={getBookGradient}
+              leftAction={
+                <button 
+                  onClick={() => syncCloudBooks()}
+                  disabled={syncing}
+                  className="p-2 rounded-full border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-colors"
+                  title="同步"
+                >
+                  <RefreshCw className={`w-4 h-4 text-slate-400 ${syncing ? 'animate-spin' : ''}`} />
+                </button>
+              }
+              rightAction={
+                <label className={`cursor-pointer p-2 rounded-full border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`} title="导入">
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> : <Upload className="w-4 h-4 text-slate-400" />}
+                  <input type="file" accept=".epub" className="hidden" onChange={handleUpload} disabled={uploading} />
+                </label>
+              }
             />
             
             {/* 想读 */}
             <BookSection 
               title="想读" 
+              icon={<BookOpen className="w-4 h-4 text-emerald-300" />}
               books={wantBooks}
               defaultExpanded={wantBooks.length <= 10}
-              gradient="text-slate-400"
+              accentColor="border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
               getGradient={getBookGradient}
@@ -610,9 +618,10 @@ export default function WebReadShelf() {
             {/* 待读 */}
             <BookSection 
               title="待读" 
+              icon={<Archive className="w-4 h-4 text-cyan-300" />}
               books={backlogBooks}
               defaultExpanded={false}
-              gradient="text-cyan-400"
+              accentColor="border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
               getGradient={getBookGradient}

@@ -51,9 +51,8 @@ const toolDisplayInfo: Record<string, { icon: React.ReactNode; label: string; co
 
 // 推理过程显示组件 - 流式时展开，完成后可折叠
 const ReasoningBlock = ({ content, isStreaming = false }: { content: string; isStreaming?: boolean }) => {
-  const [expanded, setExpanded] = useState(true); // 默认展开
+  const [expanded, setExpanded] = useState(true);
   
-  // 自动滚动到底部（流式时）
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (isStreaming && contentRef.current) {
@@ -61,24 +60,30 @@ const ReasoningBlock = ({ content, isStreaming = false }: { content: string; isS
     }
   }, [content, isStreaming]);
   
+  // 完成后自动折叠
+  useEffect(() => {
+    if (!isStreaming && content.length > 0) {
+      setExpanded(false);
+    }
+  }, [isStreaming, content.length]);
+  
   return (
-    <div className="my-2 border border-purple-500/30 rounded-lg overflow-hidden bg-purple-950/20">
+    <div className="my-2 border border-zinc-600 rounded-lg overflow-hidden bg-zinc-800/50">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-3 py-2 flex items-center gap-2 text-xs text-purple-400 hover:bg-purple-950/30 transition-colors"
+        className="w-full px-3 py-2 flex items-center gap-2 text-xs text-zinc-400 hover:bg-zinc-700/50 transition-colors"
       >
-        <Brain className={cn("w-3 h-3", isStreaming && "animate-pulse")} />
-        <span className="font-medium">{isStreaming ? '思考中...' : '思考过程'}</span>
-        <span className="text-purple-500/50 text-[10px]">{content.length} 字</span>
-        {expanded ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
+        <span>{isStreaming ? '💭 思考中...' : '💭 思考过程'}</span>
+        <span className="text-zinc-500 text-[10px]">({content.length}字)</span>
+        <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${expanded ? '' : '-rotate-90'}`} />
       </button>
       {expanded && (
         <div 
           ref={contentRef}
-          className="px-3 py-2 text-xs text-purple-300/70 border-t border-purple-500/20 max-h-48 overflow-y-auto custom-scrollbar"
+          className="px-3 py-2 text-xs text-zinc-400 border-t border-zinc-700 max-h-48 overflow-y-auto custom-scrollbar"
         >
           <pre className="whitespace-pre-wrap font-mono">{content}</pre>
-          {isStreaming && <span className="inline-block w-2 h-3 bg-purple-400 animate-pulse ml-0.5" />}
+          {isStreaming && <span className="inline-block w-2 h-3 bg-zinc-400 animate-pulse ml-0.5" />}
         </div>
       )}
     </div>

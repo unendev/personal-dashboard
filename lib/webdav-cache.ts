@@ -1,9 +1,10 @@
 /**
  * WebDAV 电子书完整管理系统
  * 本地优先 + 云端同步，完全不依赖数据库
- * 
+ *
  * 存储结构：
  * /ebooks/
+ *   ├── sync.lock                  # 全局同步锁文件
  *   ├── {bookId}.epub              # 书籍文件
  *   ├── {bookId}.meta.json         # 元数据（标题、作者、封面等）
  *   ├── {bookId}/
@@ -39,6 +40,7 @@ export interface BookNote {
   cfi: string;
   text: string;
   note: string;
+  color?: string; // 高亮颜色：yellow, green, blue, pink, purple
   createdAt: number;
   updatedAt: number;
 }
@@ -50,10 +52,26 @@ export interface BookBookmark {
   createdAt: number;
 }
 
+// 同步锁结构
+interface SyncLock {
+  deviceId: string;
+}
+
+// 设备 ID（每个浏览器唯一）
+function getDeviceId(): string {
+  if (typeof window === 'undefined') return 'server';
+  let deviceId = localStorage.getItem('webread-device-id');
+  if (!deviceId) {
+    deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem('webread-device-id', deviceId);
+  }
+  return deviceId;
+}
+
 // WebDAV 客户端单例
 let webdavClient: WebDAVClient | null = null;
 let lastConfig: string = '';
-let dbVersion = 3; // 增加版本号以支持新的 stores
+let dbVersion = 4; // 增加版本号以支持 locations store
 let dbUpgradeAttempts = 0; // 防止无限循环
 
 // 本地存储键
@@ -64,6 +82,7 @@ const LOCAL_STORE_METADATA = 'metadata';
 const LOCAL_STORE_PROGRESS = 'progress';
 const LOCAL_STORE_NOTES = 'notes';
 const LOCAL_STORE_ORDER = 'bookOrder';
+const LOCAL_STORE_LOCATIONS = 'locations'; // 缓存 epub locations 数据
 
 /**
  * 初始化 WebDAV 客户端
@@ -145,6 +164,9 @@ function getDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(LOCAL_STORE_ORDER)) {
         db.createObjectStore(LOCAL_STORE_ORDER, { keyPath: 'id' });
         
+      }
+      if (!db.objectStoreNames.contains(LOCAL_STORE_LOCATIONS)) {
+        db.createObjectStore(LOCAL_STORE_LOCATIONS, { keyPath: 'bookId' });
       }
       
       
@@ -815,6 +837,63 @@ export async function getProgress(bookId: string): Promise<BookProgress | null> 
 }
 
 /**
+ * 从云端同步进度（锁不是自己的设备 → 拉取云端）
+ * 在打开书籍时调用
+ */
+export async function syncProgressFromCloud(
+  bookId: string
+): Promise<BookProgress | null> {
+  try {
+    const decodedBookId = decodeBookId(bookId);
+
+    // 检查锁：如果是自己的设备，直接用本地
+    const needSync = await checkNeedSync();
+    if (!needSync) {
+      return await getProgress(bookId);
+    }
+
+    console.log('[WebDAV] Other device modified, pulling from cloud...');
+
+    // 从云端读取
+    const filePath = `${decodedBookId}/progress.json`;
+    const response = await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'read', path: filePath }),
+    });
+
+    const result = await response.json();
+    if (!result.success || !result.data) {
+      return await getProgress(bookId);
+    }
+
+    const cloudProgress: BookProgress = JSON.parse(result.data as string);
+
+    // 保存到本地
+    await safeTransaction(
+      [LOCAL_STORE_PROGRESS],
+      'readwrite',
+      (transaction) =>
+        new Promise<void>((resolve, reject) => {
+          const store = transaction.objectStore(LOCAL_STORE_PROGRESS);
+          const request = store.put({
+            ...cloudProgress,
+            bookId: decodedBookId,
+          });
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve();
+        })
+    );
+
+    console.log('[WebDAV] Progress synced from cloud:', decodedBookId);
+    return cloudProgress;
+  } catch (error) {
+    console.warn('[WebDAV] Failed to sync from cloud:', error);
+    return await getProgress(bookId);
+  }
+}
+
+/**
  * 设置书籍的手动状态
  */
 export async function setBookStatus(bookId: string, status: 'recent' | 'want' | 'backlog'): Promise<void> {
@@ -844,28 +923,144 @@ export async function setBookStatus(bookId: string, status: 'recent' | 'want' | 
 }
 
 /**
- * 上传进度到 WebDAV
+ * 保存书籍的 locations 数据（用于计算阅读进度）
  */
-async function uploadProgressToCloud(bookId: string, progress: BookProgress): Promise<void> {
+export async function saveLocations(bookId: string, locationsJson: string): Promise<void> {
   try {
-    const config = getWebDAVConfig();
-    const client = initWebDAVClient();
-    const dirPath = `${config.ebookPath}/${bookId}`;
-    const filePath = `${dirPath}/progress.json`;
+    const decodedBookId = decodeBookId(bookId);
+    await safeTransaction(
+      [LOCAL_STORE_LOCATIONS],
+      'readwrite',
+      (transaction) => new Promise<void>((resolve, reject) => {
+        const store = transaction.objectStore(LOCAL_STORE_LOCATIONS);
+        const request = store.put({
+          bookId: decodedBookId,
+          locations: locationsJson,
+          savedAt: Date.now(),
+        });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      })
+    );
+  } catch (error) {
+    console.error('[WebDAV] Failed to save locations:', error);
+  }
+}
+
+/**
+ * 获取书籍的 locations 数据
+ */
+export async function getLocations(bookId: string): Promise<string | null> {
+  try {
+    const decodedBookId = decodeBookId(bookId);
+    const result = await safeTransaction(
+      [LOCAL_STORE_LOCATIONS],
+      'readonly',
+      (transaction) => new Promise<string | null>((resolve, reject) => {
+        const store = transaction.objectStore(LOCAL_STORE_LOCATIONS);
+        const request = store.get(decodedBookId);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const data = request.result;
+          resolve(data?.locations || null);
+        };
+      })
+    );
+    return result;
+  } catch (error) {
+    console.error('[WebDAV] Failed to get locations:', error);
+    return null;
+  }
+}
+
+/**
+ * 更新云端同步锁（标记当前设备为最后修改者）
+ */
+async function updateSyncLock(): Promise<void> {
+  try {
+    const lock: SyncLock = { deviceId: getDeviceId() };
+    await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'write',
+        path: 'sync.lock',
+        content: JSON.stringify(lock),
+      }),
+    });
+  } catch {
+    // 静默处理
+  }
+}
+
+/**
+ * 读取云端同步锁
+ */
+async function getSyncLock(): Promise<SyncLock | null> {
+  try {
+    const response = await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'read', path: 'sync.lock' }),
+    });
+    const result = await response.json();
+    if (result.success && result.data) {
+      return JSON.parse(result.data as string);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 检查是否需要从云端同步（锁的设备不是自己 = 其他设备改过）
+ */
+export async function checkNeedSync(): Promise<boolean> {
+  try {
+    const lock = await getSyncLock();
+    if (!lock) return false;
+    // 简单逻辑：锁不是自己的设备 → 需要同步
+    return lock.deviceId !== getDeviceId();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 上传进度到 WebDAV（通过 API 代理避免 CORS）
+ */
+async function uploadProgressToCloud(
+  bookId: string,
+  progress: BookProgress
+): Promise<void> {
+  try {
+    // 使用 API 代理避免 CORS 问题
+    const dirPath = bookId;
+    const filePath = `${bookId}/progress.json`;
 
     // 确保目录存在
-    try {
-      await client.stat(dirPath);
-    } catch {
-      await client.createDirectory(dirPath);
-    }
+    await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mkdir', path: dirPath }),
+    });
 
-    const content = JSON.stringify(progress, null, 2);
-    await client.putFileContents(filePath, content);
-    
-  } catch (error) {
+    // 写入进度文件
+    await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'write',
+        path: filePath,
+        content: JSON.stringify(progress, null, 2),
+      }),
+    });
+
+    // 更新同步锁
+    await updateSyncLock();
+  } catch {
     // 静默处理 - 进度已保存到本地，云端同步失败不影响用户体验
-    // 常见错误：405 Method Not Allowed（浏览器 CORS 限制）
   }
 }
 
@@ -890,9 +1085,9 @@ export async function saveNote(bookId: string, note: BookNote): Promise<void> {
       })
     );
 
-    // 2. 上传到 WebDAV（异步）
-    uploadNotesToCloud(bookId).catch(e => {
-      console.warn('[WebDAV] Failed to upload notes:', e);
+    // 2. 上传到 WebDAV（异步，静默处理错误）
+    uploadNotesToCloud(bookId).catch(() => {
+      // 静默处理 - 本地已保存
     });
   } catch (error) {
     console.error('[WebDAV] Failed to save note:', error);
@@ -926,29 +1121,35 @@ export async function getNotes(bookId: string): Promise<BookNote[]> {
 }
 
 /**
- * 上传笔记到 WebDAV
+ * 上传笔记到 WebDAV（通过 API 代理避免 CORS）
  */
 async function uploadNotesToCloud(bookId: string): Promise<void> {
   try {
-    const config = getWebDAVConfig();
-    const client = initWebDAVClient();
-    const dirPath = `${config.ebookPath}/${bookId}`;
-    const filePath = `${dirPath}/notes.json`;
-
     // 获取所有笔记
     const notes = await getNotes(bookId);
 
-    // 确保目录存在
-    try {
-      await client.stat(dirPath);
-    } catch {
-      await client.createDirectory(dirPath);
-    }
+    // 使用 API 代理避免 CORS 问题
+    const dirPath = bookId;
+    const filePath = `${bookId}/notes.json`;
 
-    const content = JSON.stringify(notes, null, 2);
-    await client.putFileContents(filePath, content);
-    
-  } catch (error) {
+    // 确保目录存在
+    await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mkdir', path: dirPath }),
+    });
+
+    // 写入笔记文件
+    await fetch('/api/webread/webdav-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'write',
+        path: filePath,
+        content: JSON.stringify(notes, null, 2),
+      }),
+    });
+  } catch {
     // 静默处理 - 笔记已保存到本地，云端同步失败不影响用户体验
   }
 }

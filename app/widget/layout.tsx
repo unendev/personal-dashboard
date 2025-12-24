@@ -10,7 +10,7 @@ export default function WidgetLayout({
 }) {
   return (
     <SessionProvider>
-      <div className="min-h-screen w-full bg-transparent">
+      <div className="h-screen w-full bg-transparent overflow-hidden">
         <style>{`
           html, body {
             background: transparent !important;

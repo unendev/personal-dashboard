@@ -12,6 +12,37 @@ export interface AIConfig {
   enabled: boolean;
 }
 
+/**
+ * AI 角色定义
+ */
+export interface AIRole {
+  id: string;
+  name: string;
+  systemPrompt: string;
+}
+
+const ROLES_STORAGE_KEY = 'webread-ai-roles';
+const BOOK_ROLE_PREFIX = 'webread-book-role-';
+
+// 默认角色
+const DEFAULT_ROLES: AIRole[] = [
+  {
+    id: 'default',
+    name: '默认助手',
+    systemPrompt: '你是一位博学的阅读助手。请简洁地解释选中文字的含义、背景知识或相关概念。如果是外语，请翻译并解释。回答要简洁有深度，不超过200字。',
+  },
+  {
+    id: 'translator',
+    name: '翻译官',
+    systemPrompt: '你是一位专业翻译。请将选中的文字翻译成中文（如果是中文则翻译成英文），并简要解释关键词汇或表达方式。',
+  },
+  {
+    id: 'teacher',
+    name: '老师',
+    systemPrompt: '你是一位耐心的老师。请用通俗易懂的方式解释选中的内容，可以举例说明，帮助读者深入理解。',
+  },
+];
+
 const DEFAULT_CONFIGS: Record<string, AIConfig> = {
   deepseek: {
     provider: 'deepseek',
@@ -173,5 +204,64 @@ export function getProviderBaseUrl(provider: AIConfig['provider']): string {
       return '';
     default:
       return '';
+  }
+}
+
+
+/**
+ * 获取所有角色
+ */
+export function getAIRoles(): AIRole[] {
+  if (typeof window === 'undefined') return DEFAULT_ROLES;
+  
+  try {
+    const stored = localStorage.getItem(ROLES_STORAGE_KEY);
+    if (stored) {
+      const roles = JSON.parse(stored);
+      return roles.length > 0 ? roles : DEFAULT_ROLES;
+    }
+  } catch (e) {
+    console.error('[AIConfig] Failed to load roles:', e);
+  }
+  
+  return DEFAULT_ROLES;
+}
+
+/**
+ * 保存角色列表
+ */
+export function setAIRoles(roles: AIRole[]): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(roles));
+  } catch (e) {
+    console.error('[AIConfig] Failed to save roles:', e);
+  }
+}
+
+/**
+ * 获取书籍的选中角色
+ */
+export function getBookRole(bookId: string): string {
+  if (typeof window === 'undefined') return 'default';
+  
+  try {
+    return localStorage.getItem(`${BOOK_ROLE_PREFIX}${bookId}`) || 'default';
+  } catch (e) {
+    return 'default';
+  }
+}
+
+/**
+ * 设置书籍的选中角色
+ */
+export function setBookRole(bookId: string, roleId: string): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(`${BOOK_ROLE_PREFIX}${bookId}`, roleId);
+  } catch (e) {
+    console.error('[AIConfig] Failed to save book role:', e);
   }
 }

@@ -1,27 +1,31 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Send, Loader2, Sparkles, Copy, Check, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, Copy, Check, AlertCircle, ChevronDown, ChevronRight, User } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { MarkdownView } from '@/app/components/shared/MarkdownView';
-import { getAIConfig, getProviderBaseUrl } from '@/lib/ai-config';
+import { getAIConfig, getProviderBaseUrl, getAIRoles, getBookRole, setBookRole } from '@/lib/ai-config';
+import * as webdavCache from '@/lib/webdav-cache';
+
+// 高亮颜色配置（3种）
+const HIGHLIGHT_COLORS = [
+  { id: 'yellow', bg: 'bg-yellow-400', border: 'border-yellow-500', label: '黄色' },
+  { id: 'green', bg: 'bg-emerald-400', border: 'border-emerald-500', label: '绿色' },
+  { id: 'blue', bg: 'bg-blue-400', border: 'border-blue-500', label: '蓝色' },
+];
 
 interface SelectionAIPopupProps {
   selectedText: string;
   position: { x: number; y: number };
   onClose: () => void;
   bookTitle?: string;
+  bookId?: string;
+  cfiRange?: string;
+  onNoteAdded?: (note: webdavCache.BookNote) => void;
 }
 
-// 判断是否是思考模型
-function isThinkingModel(provider: string, model: string): boolean {
-  if (provider === 'deepseek' && model === 'deepseek-reasoner') return true;
-  if (provider === 'gemini' && (model.includes('gemini-2.5-pro') || model.includes('gemini-3'))) return true;
-  return false;
-}
-
-// 推理过程显示组件 - 简约版
+// 推理过程显示组件
 const ReasoningBlock = ({ 
   content, 
   isStreaming = false, 
@@ -34,14 +38,12 @@ const ReasoningBlock = ({
   const [expanded, setExpanded] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // 自动滚动到底部（流式时）
   useEffect(() => {
     if (isStreaming && expanded && contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
   }, [content, isStreaming, expanded]);
   
-  // 完成后自动折叠
   useEffect(() => {
     if (autoCollapse && !isStreaming) {
       setExpanded(false);
@@ -70,34 +72,38 @@ const ReasoningBlock = ({
   );
 };
 
-export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }: SelectionAIPopupProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function SelectionAIPopup({ selectedText, position, onClose, bookTitle, bookId, cfiRange, onNoteAdded }: SelectionAIPopupProps) {
   const [copied, setCopied] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const [mode, setMode] = useState<'idle' | 'ai' | 'note'>('idle');
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [savedColor, setSavedColor] = useState<string>('');
   const popupRef = useRef<HTMLDivElement>(null);
   const hasSentRef = useRef(false);
 
   const config = getAIConfig();
+  const roles = getAIRoles();
+  const [selectedRoleId, setSelectedRoleId] = useState(() => 
+    bookId ? getBookRole(bookId) : 'default'
+  );
+  const selectedRole = roles.find(r => r.id === selectedRoleId) || roles[0];
 
-  // 使用 useMemo 避免每次渲染都创建新的 transport 实例
   const chatTransport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
   }), []);
 
-  // 使用 useChat hook - 复用 /room 的模式
   const { messages, sendMessage, status, error } = useChat({
     id: `webread-${selectedText.substring(0, 20)}`,
     transport: chatTransport,
   });
 
-  // 获取最后一条 assistant 消息
   const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop();
   const aiResponse = lastAssistantMessage?.parts
     ?.filter(p => p.type === 'text')
     .map(p => (p as any).text)
     .join('') || '';
   
-  // 获取 reasoning 内容 - SDK v5: reasoning part 有 text 字段
   const reasoningParts = lastAssistantMessage?.parts?.filter(p => p.type === 'reasoning') || [];
   const reasoning = reasoningParts.map(p => (p as any).text || '').join('');
   const isReasoningStreaming = reasoningParts.some(p => (p as any).state === 'streaming');
@@ -114,14 +120,16 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  // 当展开且有新的 selectedText 时自动发送
-  useEffect(() => {
-    if (isExpanded && selectedText && !hasSentRef.current && status === 'ready') {
-      askAI();
+  const handleRoleChange = (roleId: string) => {
+    setSelectedRoleId(roleId);
+    if (bookId) {
+      setBookRole(bookId, roleId);
     }
-  }, [selectedText, isExpanded, status]);
+    setShowRoleSelector(false);
+  };
 
   const askAI = async () => {
+    setMode('ai');
     setConfigError(null);
     hasSentRef.current = true;
     
@@ -135,9 +143,8 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
       return;
     }
 
-    const systemPrompt = `你是一位博学的阅读助手。用户正在阅读${bookTitle ? `《${bookTitle}》` : '一本书'}，选中了一段文字想要了解更多。请简洁地解释这段文字的含义、背景知识或相关概念。如果是外语，请翻译并解释。回答要简洁有深度，不超过200字。`;
+    const systemPrompt = selectedRole.systemPrompt + (bookTitle ? `\n\n用户正在阅读《${bookTitle}》。` : '');
 
-    // 构建请求体 - 传递给 API
     const body: any = {
       provider: config.provider,
       apiKey: config.apiKey,
@@ -161,6 +168,49 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
     );
   };
 
+  const handleSaveNote = async (color: string) => {
+    if (!bookId) return;
+    
+    setMode('note');
+    setSavedColor(color);
+    
+    // 调试日志
+    console.log('[SelectionAIPopup] Saving note:', {
+      bookId,
+      selectedText: selectedText.substring(0, 50) + '...',
+      cfiRange,
+      color,
+    });
+    
+    try {
+      const note: webdavCache.BookNote = {
+        id: `note-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        cfi: cfiRange || '',
+        text: selectedText,
+        note: '',
+        color,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      
+      console.log('[SelectionAIPopup] Note object:', note);
+      
+      await webdavCache.saveNote(bookId, note);
+      setNoteSaved(true);
+      
+      // 通知父组件笔记已添加
+      console.log('[SelectionAIPopup] Calling onNoteAdded with note');
+      onNoteAdded?.(note);
+      
+      // 1秒后关闭
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (e) {
+      console.error('Failed to save note:', e);
+    }
+  };
+
   const handleRetry = () => {
     hasSentRef.current = false;
     askAI();
@@ -174,48 +224,116 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
 
   const popupStyle: React.CSSProperties = {
     position: 'fixed',
-    left: Math.min(position.x, window.innerWidth - (isExpanded ? 360 : 160)),
+    left: Math.min(position.x, window.innerWidth - 300),
     top: Math.max(position.y - 50, 10),
     zIndex: 100,
   };
 
-  if (!isExpanded) {
+  const displayError = configError || (error ? error.message : null);
+
+  // 初始状态：显示问AI按钮和颜色选择球
+  if (mode === 'idle') {
     return (
       <div 
         ref={popupRef}
         style={popupStyle}
-        className="flex items-center gap-1 bg-slate-800/95 backdrop-blur border border-amber-500/30 rounded-full shadow-xl p-1 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-800/95 backdrop-blur border border-amber-500/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       >
-        <button
-          onClick={() => setIsExpanded(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-amber-300 hover:text-amber-100 hover:bg-slate-700 rounded-full transition-colors text-sm font-medium"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>问 AI</span>
-        </button>
-        <button
-          onClick={onClose}
-          className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-full transition-colors"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2 p-2">
+          <button
+            onClick={askAI}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-amber-300 hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>问 AI</span>
+          </button>
+          <div className="w-px h-5 bg-slate-600" />
+          {/* 颜色选择球 */}
+          <div className="flex items-center gap-1.5">
+            {HIGHLIGHT_COLORS.map(color => (
+              <button
+                key={color.id}
+                onClick={() => handleSaveNote(color.id)}
+                className={`w-6 h-6 rounded-full ${color.bg} hover:scale-110 transition-transform border-2 border-white/30 hover:border-white/60`}
+                title={`${color.label}高亮`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors ml-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
 
-  const displayError = configError || (error ? error.message : null);
+  // 笔记保存状态
+  if (mode === 'note') {
+    const colorConfig = HIGHLIGHT_COLORS.find(c => c.id === savedColor) || HIGHLIGHT_COLORS[0];
+    return (
+      <div 
+        ref={popupRef}
+        style={popupStyle}
+        className={`bg-slate-800/95 backdrop-blur border ${colorConfig.border} rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
+      >
+        <div className="flex items-center gap-2 px-4 py-3">
+          {noteSaved ? (
+            <>
+              <div className={`w-4 h-4 rounded-full ${colorConfig.bg}`} />
+              <span className="text-sm text-slate-200">已添加高亮</span>
+            </>
+          ) : (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+              <span className="text-sm text-slate-300">保存中...</span>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
+  // AI 模式
   return (
     <div 
       ref={popupRef}
       style={popupStyle}
       className="w-[340px] max-h-[400px] bg-slate-800/95 backdrop-blur border border-amber-500/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
     >
-      {/* Header */}
+      {/* Header with Role Selector */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/50 bg-slate-900/50">
-        <div className="flex items-center gap-2 text-amber-300">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-sm font-medium">AI 解读</span>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleSelector(!showRoleSelector)}
+              className="flex items-center gap-1 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
+            >
+              <User className="w-3 h-3" />
+              <span>{selectedRole.name}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${showRoleSelector ? 'rotate-180' : ''}`} />
+            </button>
+            {showRoleSelector && (
+              <div className="absolute top-full left-0 mt-1 w-32 bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden z-10">
+                {roles.map(role => (
+                  <button
+                    key={role.id}
+                    onClick={() => handleRoleChange(role.id)}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      role.id === selectedRoleId 
+                        ? 'bg-amber-500/20 text-amber-300' 
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {role.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -240,7 +358,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
           </div>
         ) : (
           <>
-            {/* 思考中显示 - 有 reasoning 内容时显示，可折叠 */}
             {reasoning && (
               <ReasoningBlock 
                 content={reasoning} 
@@ -249,7 +366,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
               />
             )}
             
-            {/* 加载状态 - 只在没有任何内容时显示 */}
             {isLoading && !aiResponse && !reasoning && (
               <div className="flex items-center gap-2 text-amber-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -257,7 +373,6 @@ export function SelectionAIPopup({ selectedText, position, onClose, bookTitle }:
               </div>
             )}
             
-            {/* 正式回复 */}
             {aiResponse && (
               <div className="text-sm text-slate-200 leading-relaxed">
                 <MarkdownView content={aiResponse} variant="default" />

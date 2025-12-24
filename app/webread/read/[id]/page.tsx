@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useReaderStore } from '@/app/components/features/webread/useReaderStore';
 import EpubReader from '@/app/components/features/webread/EpubReader';
 import * as webdavCache from '@/lib/webdav-cache';
-import { Loader2, ArrowLeft, ChevronRight, BookOpen, Minus, Plus, Sun, Moon, Coffee } from 'lucide-react';
+import { Loader2, ArrowLeft, BookOpen, Minus, Plus, Sun, Moon, Coffee, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface BookMetadata {
@@ -20,12 +20,14 @@ export default function ReaderPage() {
   const [notes, setNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [savedLocation, setSavedLocation] = useState<string | undefined>(undefined);
   const [toc, setToc] = useState<any[]>([]);
   const [rendition, setRendition] = useState<any>(null);
   const [currentChapter, setCurrentChapter] = useState<string>('');
+  const [noteColorFilter, setNoteColorFilter] = useState<string | null>(null);
   
-  const { toggleSidebar, sidebarOpen, currentCfi, progress, fontSize, setFontSize, theme, setTheme, book } = useReaderStore();
+  const { currentCfi, progress, fontSize, setFontSize, theme, setTheme, book } = useReaderStore();
 
   useEffect(() => {
     // 获取书籍元数据
@@ -42,14 +44,14 @@ export default function ReaderPage() {
       setLoading(false);
     });
 
-    // 获取保存的阅读进度
-    webdavCache.getProgress(id).then(savedProgress => {
+    // 从云端同步进度（如果云端更新则使用云端版本）
+    webdavCache.syncProgressFromCloud(id).then(savedProgress => {
       // 只在 CFI 有效时恢复位置
       if (savedProgress?.currentCfi && typeof savedProgress.currentCfi === 'string' && savedProgress.currentCfi.startsWith('epubcfi')) {
         setSavedLocation(savedProgress.currentCfi);
       }
     }).catch(err => {
-      console.warn('[ReaderPage] Failed to load saved progress:', err);
+      console.warn('[ReaderPage] Failed to sync progress:', err);
     });
 
     // 获取笔记
@@ -134,7 +136,7 @@ export default function ReaderPage() {
 
   if (loading || !bookMetadata) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#3D3225]">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#2b2416]">
         <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
       </div>
     );
@@ -197,179 +199,232 @@ export default function ReaderPage() {
           />
         </div>
 
-        {/* 右侧边栏 - 笔记 */}
-        <aside 
-          className={`
-            fixed inset-y-0 right-0 w-80 bg-slate-800/95 backdrop-blur shadow-xl transform transition-transform duration-300 z-50 border-l border-white/10 flex flex-col
-            ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
-          `}
-        >
-          <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/40">
-            <h3 className="font-medium font-serif text-amber-100">阅读笔记</h3>
-            <button onClick={toggleSidebar} className="text-amber-300 hover:text-amber-100">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {loadingNotes ? (
-              <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-amber-500" /></div>
-            ) : notes.length === 0 ? (
-              <div className="text-center py-8 text-amber-600 text-sm">
-                <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p>暂无笔记</p>
-              </div>
-            ) : (
-              notes.map(note => (
-                <div key={note.id} className="group relative pl-4 border-l-2 border-amber-700/50 hover:border-amber-500 transition-colors">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="text-xs text-amber-600">{new Date(note.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-sm text-amber-300 line-clamp-2 italic mb-1">&quot;{note.text}&quot;</p>
-                  <p className="text-sm text-amber-100">{note.note}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </aside>
+
       </main>
 
-      {/* 控件面板 - 分散式布局 */}
+      {/* 控件面板 - 上下填满布局 */}
       {showControls && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowControls(false)}>
-          {/* 左上角：返回书架按钮 */}
-          <Link 
-            href="/webread"
-            className="fixed top-4 left-4 p-3 bg-slate-800/95 backdrop-blur rounded-full border border-white/10 hover:bg-slate-700 transition-colors z-50 flex items-center justify-center"
-            title="保存并返回书架"
-          >
-            <ArrowLeft className="w-6 h-6 text-amber-300" />
-          </Link>
-
-          {/* 上部：主题与字体大小 */}
+        <div className="fixed inset-0 z-40" onClick={() => { setShowControls(false); setShowSettings(false); }}>
+          {/* 上部区域：进度与目录 - 填满顶部 */}
           <div 
-            className="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-800/95 backdrop-blur rounded-lg shadow-lg border border-white/10 p-4 w-96 z-50"
+            className="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-b border-white/10 p-4 z-50"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="space-y-4">
-              {/* 字体大小 */}
-              <div>
-                <label className="text-xs text-amber-300 mb-2 block font-medium uppercase tracking-wider">字体大小</label>
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                    className="p-2 hover:bg-slate-700 rounded transition-colors"
-                  >
-                    <Minus className="w-4 h-4 text-amber-300" />
-                  </button>
-                  <input 
-                    type="range" 
-                    min="12" 
-                    max="28" 
-                    value={fontSize}
-                    onChange={(e) => setFontSize(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                  <span className="text-sm font-medium w-10 text-center text-amber-100">{fontSize}px</span>
-                  <button 
-                    onClick={() => setFontSize(Math.min(28, fontSize + 2))}
-                    className="p-2 hover:bg-slate-700 rounded transition-colors"
-                  >
-                    <Plus className="w-4 h-4 text-amber-300" />
-                  </button>
-                </div>
-              </div>
-              
-              {/* 主题切换 */}
-              <div>
-                <label className="text-xs text-amber-300 mb-2 block font-medium uppercase tracking-wider">阅读主题</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button 
-                    onClick={() => setTheme('light')}
-                    className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs font-medium transition-all ${theme === 'light' ? 'bg-amber-600 text-white border border-amber-500' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
-                  >
-                    <Sun className="w-4 h-4" />
-                    <span>亮色</span>
-                  </button>
-                  <button 
-                    onClick={() => setTheme('sepia')}
-                    className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs font-medium transition-all ${theme === 'sepia' ? 'bg-amber-700 text-white border border-amber-600' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
-                  >
-                    <Coffee className="w-3 h-3" />
-                    <span>护眼</span>
-                  </button>
-                  <button 
-                    onClick={() => setTheme('dark')}
-                    className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs font-medium transition-all ${theme === 'dark' ? 'bg-slate-700 text-white border border-slate-600' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
-                  >
-                    <Moon className="w-4 h-4" />
-                    <span>暗色</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 右侧：笔记按钮 */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleSidebar();
-            }}
-            className="fixed top-4 right-4 p-3 bg-slate-800/95 backdrop-blur rounded-full border border-white/10 hover:bg-slate-700 transition-colors z-50 flex items-center justify-center"
-            title={sidebarOpen ? '隐藏笔记' : '显示笔记'}
-          >
-            <BookOpen className="w-6 h-6 text-amber-300" />
-          </button>
-
-          {/* 底部：阅读进度与目录 */}
-          <div 
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-800/95 backdrop-blur rounded-lg shadow-lg border border-white/10 p-4 w-96 z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="space-y-4">
-              {/* 阅读进度 */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-amber-300 font-medium uppercase tracking-wider">阅读进度</label>
-                  <span className="text-lg font-bold text-amber-100">{Math.round(progress * 100)}%</span>
-                </div>
-                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-300"
-                    style={{ width: `${progress * 100}%` }}
-                  />
+            <div className="max-w-lg mx-auto space-y-3">
+              {/* 返回按钮 + 进度 */}
+              <div className="flex items-center gap-4">
+                <Link 
+                  href="/webread"
+                  className="p-2 bg-slate-800 rounded-full border border-white/10 hover:bg-slate-700 transition-colors flex items-center justify-center"
+                  title="返回书架"
+                >
+                  <ArrowLeft className="w-5 h-5 text-amber-300" />
+                </Link>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-amber-300 font-medium">阅读进度</span>
+                    <span className="text-sm font-bold text-amber-100">{Math.round(progress * 100)}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-300"
+                      style={{ width: `${progress * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* 目录选择 */}
-              <div className="relative">
-                <label className="text-xs text-amber-300 mb-2 block font-medium uppercase tracking-wider">目录</label>
-                {toc.length > 0 ? (
-                  <select 
-                    className="w-full px-3 py-2 bg-slate-700 border border-white/10 rounded text-amber-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 relative z-50"
-                    value={currentChapter}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      if (e.target.value && rendition) {
-                        try {
-                          rendition.display(e.target.value);
-                          setCurrentChapter(e.target.value);
-                          setShowControls(false);
-                        } catch (err) {
-                          console.error('[ReaderPage] Failed to navigate to chapter:', err);
-                        }
+              {toc.length > 0 && (
+                <select 
+                  className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded text-amber-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  value={currentChapter}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    if (e.target.value && rendition) {
+                      try {
+                        rendition.display(e.target.value);
+                        setCurrentChapter(e.target.value);
+                        setShowControls(false);
+                      } catch (err) {
+                        console.error('[ReaderPage] Failed to navigate to chapter:', err);
                       }
-                    }}
+                    }
+                  }}
+                >
+                  {toc.map((item, idx) => (
+                    <option key={idx} value={item.href}>
+                      {'　'.repeat(item.depth)}{item.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* 中右：更多设置按钮 */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
+            className="fixed top-1/2 right-4 -translate-y-1/2 p-3 bg-slate-800/95 backdrop-blur rounded-full border border-white/10 hover:bg-slate-700 transition-colors z-50 flex items-center justify-center"
+            title="更多设置"
+          >
+            <Settings className="w-6 h-6 text-amber-300" />
+          </button>
+
+          {/* 更多设置面板（字体、主题） */}
+          {showSettings && (
+            <div 
+              className="fixed top-1/2 right-16 -translate-y-1/2 bg-slate-800/95 backdrop-blur rounded-lg shadow-lg border border-white/10 p-4 w-64 z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-4">
+                {/* 字体大小 */}
+                <div>
+                  <label className="text-xs text-amber-300 mb-2 block font-medium">字体大小</label>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setFontSize(Math.max(12, fontSize - 2))}
+                      className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <Minus className="w-4 h-4 text-amber-300" />
+                    </button>
+                    <input 
+                      type="range" 
+                      min="12" 
+                      max="28" 
+                      value={fontSize}
+                      onChange={(e) => setFontSize(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                    <span className="text-sm font-medium w-8 text-center text-amber-100">{fontSize}</span>
+                    <button 
+                      onClick={() => setFontSize(Math.min(28, fontSize + 2))}
+                      className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <Plus className="w-4 h-4 text-amber-300" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 主题切换 */}
+                <div>
+                  <label className="text-xs text-amber-300 mb-2 block font-medium">阅读主题</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button 
+                      onClick={() => setTheme('light')}
+                      className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs transition-all ${theme === 'light' ? 'bg-amber-600 text-white' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
+                    >
+                      <Sun className="w-4 h-4" />
+                      <span>亮色</span>
+                    </button>
+                    <button 
+                      onClick={() => setTheme('sepia')}
+                      className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs transition-all ${theme === 'sepia' ? 'bg-amber-700 text-white' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
+                    >
+                      <Coffee className="w-4 h-4" />
+                      <span>护眼</span>
+                    </button>
+                    <button 
+                      onClick={() => setTheme('dark')}
+                      className={`p-2 rounded flex flex-col items-center justify-center gap-1 text-xs transition-all ${theme === 'dark' ? 'bg-slate-600 text-white' : 'hover:bg-slate-700 text-amber-300 border border-white/10'}`}
+                    >
+                      <Moon className="w-4 h-4" />
+                      <span>暗色</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 下部区域：笔记列表 - 填满底部 */}
+          <div 
+            className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-white/10 z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="max-w-lg mx-auto">
+              <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-amber-300" />
+                  <span className="text-xs text-amber-300 font-medium">阅读笔记</span>
+                </div>
+                {/* 颜色筛选 */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setNoteColorFilter(null)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs ${noteColorFilter === null ? 'border-amber-400 bg-slate-700' : 'border-slate-600 hover:border-slate-500'}`}
+                    title="全部"
                   >
-                    {toc.map((item, idx) => (
-                      <option key={idx} value={item.href}>
-                        {'　'.repeat(item.depth)}{item.label}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="text-amber-300">{notes.length}</span>
+                  </button>
+                  {['yellow', 'green', 'blue'].map(color => {
+                    const count = notes.filter(n => (n.color || 'yellow') === color).length;
+                    const bgClass = { yellow: 'bg-yellow-500', green: 'bg-emerald-500', blue: 'bg-blue-500' }[color];
+                    return (
+                      <button
+                        key={color}
+                        onClick={() => setNoteColorFilter(noteColorFilter === color ? null : color)}
+                        className={`w-5 h-5 rounded-full ${bgClass} border-2 ${noteColorFilter === color ? 'border-white scale-110' : 'border-transparent hover:scale-105'} transition-transform relative`}
+                        title={`${color === 'yellow' ? '黄色' : color === 'green' ? '绿色' : '蓝色'} (${count})`}
+                      >
+                        {count > 0 && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-slate-800 rounded-full text-[8px] text-white flex items-center justify-center">{count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="p-3 max-h-40 overflow-y-auto custom-scrollbar">
+                {loadingNotes ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-amber-500" /></div>
+                ) : notes.length === 0 ? (
+                  <div className="text-center py-3 text-amber-600 text-sm">
+                    <p>暂无笔记，划取文字可添加</p>
+                  </div>
                 ) : (
-                  <div className="text-amber-500/60 text-sm py-2">此书籍无目录信息</div>
+                  <div className="space-y-2">
+                    {notes
+                      .filter(note => noteColorFilter === null || (note.color || 'yellow') === noteColorFilter)
+                      .slice(0, 10)
+                      .map(note => {
+                        // 根据笔记颜色设置边框颜色
+                        const colorMap: Record<string, string> = {
+                          yellow: 'border-yellow-500',
+                          green: 'border-emerald-500',
+                          blue: 'border-blue-500',
+                        };
+                        const borderColorClass = colorMap[note.color || 'yellow'] || 'border-amber-700/50';
+                        
+                        return (
+                          <div 
+                            key={note.id} 
+                            className={`pl-3 border-l-2 ${borderColorClass} hover:opacity-80 transition-opacity cursor-pointer py-1`}
+                            onClick={() => {
+                              if (note.cfi && rendition) {
+                                try {
+                                  rendition.display(note.cfi);
+                                  setShowControls(false);
+                                } catch (e) {
+                                  // 静默处理
+                                }
+                              }
+                            }}
+                          >
+                            <p className="text-xs text-amber-300 line-clamp-1 italic">"{note.text}"</p>
+                            <span className="text-xs text-amber-600">{new Date(note.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        );
+                      })}
+                    {(() => {
+                      const filteredCount = notes.filter(note => noteColorFilter === null || (note.color || 'yellow') === noteColorFilter).length;
+                      return filteredCount > 10 && (
+                        <div className="text-center text-xs text-amber-500 pt-1">
+                          还有 {filteredCount - 10} 条笔记...
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             </div>

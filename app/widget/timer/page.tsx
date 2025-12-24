@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
-import { Play, Pause, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Play, Pause, FileText, CheckSquare, Bot } from 'lucide-react';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
 
 export const dynamic = 'force-dynamic';
 
 const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then((res) => res.json());
 
-// 打开创建窗口
-const openCreateWindow = () => {
-  window.open('/widget/create', '_blank', 'width=500,height=700');
-};
+const openCreateWindow = () => window.open('/widget/create', '_blank');
+const openMemoWindow = () => window.open('/widget/memo', '_blank');
+const openTodoWindow = () => window.open('/widget/todo', '_blank');
+const openAiWindow = () => window.open('/widget/ai', '_blank');
 
 interface TimerTask {
   id: string;
@@ -40,21 +40,7 @@ interface SessionUser {
   name?: string;
 }
 
-interface MemoItem {
-  id: string;
-  type: 'note' | 'todo' | 'ai';
-  content: string;
-  done?: boolean;
-  createdAt: number;
-}
-
 export default function TimerWidgetPage() {
-  const [expanded, setExpanded] = useState(false);
-  const [memoItems, setMemoItems] = useState<MemoItem[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
     fetcher,
@@ -76,26 +62,6 @@ export default function TimerWidgetPage() {
     onTasksChange: (newTasks) => { if (apiUrl) mutate(apiUrl, newTasks, false); },
     onVersionConflict: () => mutateTasks(),
   });
-
-  // 通知 Electron 调整窗口大小
-  useEffect(() => {
-    window.postMessage({ type: 'widget-resize', expanded }, '*');
-  }, [expanded]);
-
-  // 从 localStorage 加载备忘录
-  useEffect(() => {
-    const saved = localStorage.getItem('widget-memo');
-    if (saved) {
-      try {
-        setMemoItems(JSON.parse(saved));
-      } catch {}
-    }
-  }, []);
-
-  // 保存备忘录到 localStorage
-  useEffect(() => {
-    localStorage.setItem('widget-memo', JSON.stringify(memoItems));
-  }, [memoItems]);
 
   const activeTask = useMemo(() => {
     const findActive = (list: TimerTask[]): TimerTask | null => {
@@ -141,93 +107,6 @@ export default function TimerWidgetPage() {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // 处理输入提交
-  const handleSubmit = async () => {
-    const text = inputValue.trim();
-    if (!text) return;
-
-    if (text.startsWith('/ai ')) {
-      // AI 对话
-      const query = text.slice(4);
-      setIsAiLoading(true);
-      setInputValue('');
-      
-      // 添加用户消息
-      const userItem: MemoItem = {
-        id: `user-${Date.now()}`,
-        type: 'ai',
-        content: `> ${query}`,
-        createdAt: Date.now(),
-      };
-      setMemoItems(prev => [...prev, userItem]);
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: query }],
-          }),
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          const aiItem: MemoItem = {
-            id: `ai-${Date.now()}`,
-            type: 'ai',
-            content: data.content || data.message || '...',
-            createdAt: Date.now(),
-          };
-          setMemoItems(prev => [...prev, aiItem]);
-        }
-      } catch (err) {
-        console.error('AI error:', err);
-      } finally {
-        setIsAiLoading(false);
-      }
-    } else if (text.startsWith('/todo ')) {
-      // 添加待办
-      const todo = text.slice(6);
-      const item: MemoItem = {
-        id: `todo-${Date.now()}`,
-        type: 'todo',
-        content: todo,
-        done: false,
-        createdAt: Date.now(),
-      };
-      setMemoItems(prev => [...prev, item]);
-      setInputValue('');
-    } else if (text.startsWith('/timer ')) {
-      // 创建计时任务
-      const taskName = text.slice(7);
-      openCreateWindow();
-      setInputValue('');
-    } else {
-      // 普通笔记
-      const item: MemoItem = {
-        id: `note-${Date.now()}`,
-        type: 'note',
-        content: text,
-        createdAt: Date.now(),
-      };
-      setMemoItems(prev => [...prev, item]);
-      setInputValue('');
-    }
-  };
-
-  // 切换待办完成状态
-  const toggleTodo = (id: string) => {
-    setMemoItems(prev => prev.map(item => 
-      item.id === id ? { ...item, done: !item.done } : item
-    ));
-  };
-
-  // 删除备忘项
-  const deleteItem = (id: string) => {
-    setMemoItems(prev => prev.filter(item => item.id !== id));
-  };
-
   if (sessionLoading) {
     return (
       <div className="flex items-center justify-center w-full h-full bg-[#1a1a1a]">
@@ -248,95 +127,45 @@ export default function TimerWidgetPage() {
   }
 
   return (
-    <div className="flex w-full h-full bg-[#1a1a1a] text-white select-none relative">
-      {/* 侧边展开按钮 */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-l-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors z-10 border border-r-0 border-zinc-700"
-        title={expanded ? '收起' : '展开备忘录'}
+    <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden">
+      {/* 左侧工具栏 - 固定定位，不随内容滚动 */}
+      <div 
+        className="fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10"
+        data-drag="true"
       >
-        {expanded ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+        <button
+          onClick={openMemoWindow}
+          className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+          data-drag="false"
+          title="备忘录"
+        >
+          <FileText size={18} />
+        </button>
+        <button
+          onClick={openTodoWindow}
+          className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+          data-drag="false"
+          title="待办事项"
+        >
+          <CheckSquare size={18} />
+        </button>
+        <button
+          onClick={openAiWindow}
+          className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          data-drag="false"
+          title="AI 助手"
+        >
+          <Bot size={18} />
+        </button>
+      </div>
 
-      {/* 备忘录面板 */}
-      {expanded && (
-        <div className="w-[280px] h-full border-r border-zinc-800 flex flex-col bg-[#141414]">
-          <div className="p-2 border-b border-zinc-800">
-            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">备忘录</h3>
-          </div>
-          
-          {/* 备忘内容 */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {memoItems.map(item => (
-              <div 
-                key={item.id} 
-                className={`p-2 rounded-lg text-sm group relative ${
-                  item.type === 'todo' 
-                    ? 'bg-emerald-950/30 border border-emerald-800/30' 
-                    : item.type === 'ai'
-                    ? 'bg-cyan-950/30 border border-cyan-800/30'
-                    : 'bg-zinc-800/50 border border-zinc-700/30'
-                }`}
-              >
-                {item.type === 'todo' ? (
-                  <label className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={item.done}
-                      onChange={() => toggleTodo(item.id)}
-                      className="mt-0.5 accent-emerald-500"
-                    />
-                    <span className={item.done ? 'line-through text-zinc-500' : 'text-zinc-200'}>
-                      {item.content}
-                    </span>
-                  </label>
-                ) : (
-                  <p className="text-zinc-300 whitespace-pre-wrap text-xs">{item.content}</p>
-                )}
-                <button
-                  onClick={() => deleteItem(item.id)}
-                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 text-xs transition-opacity"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            {memoItems.length === 0 && (
-              <div className="text-center text-zinc-600 text-xs py-4">
-                <p>/ai 问问题</p>
-                <p>/todo 添加待办</p>
-                <p>直接输入添加笔记</p>
-              </div>
-            )}
-          </div>
-
-          {/* 输入框 */}
-          <div className="p-2 border-t border-zinc-800">
-            <div className="flex gap-1">
-              <input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder="/ai, /todo, 或笔记..."
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-                disabled={isAiLoading}
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={isAiLoading}
-                className="px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
-              >
-                <Send size={12} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 计时器主面板 */}
-      <div className="flex-1 flex flex-col p-3 gap-3">
-        {/* 当前运行的任务 */}
+      {/* 计时器主面板 - 左边留出工具栏空间 */}
+      <div className="ml-10 h-full flex flex-col overflow-hidden">
+        {/* 拖拽区域 */}
+        <div className="h-3 shrink-0 cursor-move" data-drag="true" />
+        
+        <div className="flex-1 flex flex-col p-3 pt-0 gap-3 overflow-hidden">
+          {/* 当前运行的任务 */}
         {activeTask ? (
           <div 
             className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
@@ -402,6 +231,7 @@ export default function TimerWidgetPage() {
               暂无任务
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

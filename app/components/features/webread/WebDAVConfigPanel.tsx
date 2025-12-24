@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { setWebDAVConfig, getWebDAVConfig, testWebDAVConnection } from '@/lib/webdav-config';
-import { getAIConfig, setAIConfig, getProviderModels, getProviderBaseUrl, getProviderConfig, AIConfig } from '@/lib/ai-config';
+import { getAIConfig, setAIConfig, getProviderModels, getProviderBaseUrl, getProviderConfig, AIConfig, getAIRoles, setAIRoles, AIRole } from '@/lib/ai-config';
 import * as webdavCache from '@/lib/webdav-cache';
-import { Settings, Check, X, Loader2, RefreshCw, Sparkles, Server } from 'lucide-react';
+import { Settings, Check, X, Loader2, RefreshCw, Sparkles, Server, Plus, Trash2, User } from 'lucide-react';
 
-type ConfigTab = 'webdav' | 'ai';
+type ConfigTab = 'webdav' | 'ai' | 'roles';
 
 export default function WebDAVConfigPanel() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +24,11 @@ export default function WebDAVConfigPanel() {
   const aiConfig = getAIConfig();
   const [aiFormData, setAiFormData] = useState<AIConfig>(aiConfig);
   const [aiSaved, setAiSaved] = useState(false);
+
+  // 角色配置
+  const [roles, setRoles] = useState<AIRole[]>(() => getAIRoles());
+  const [editingRole, setEditingRole] = useState<AIRole | null>(null);
+  const [rolesSaved, setRolesSaved] = useState(false);
 
   const handleSave = () => {
     setWebDAVConfig(formData);
@@ -67,6 +72,43 @@ export default function WebDAVConfigPanel() {
     setAiFormData(savedConfig);
   };
 
+  // 角色管理
+  const handleAddRole = () => {
+    const newRole: AIRole = {
+      id: `role-${Date.now()}`,
+      name: '新角色',
+      systemPrompt: '请简洁地解释选中的内容。',
+    };
+    setEditingRole(newRole);
+  };
+
+  const handleSaveRole = () => {
+    if (!editingRole) return;
+    
+    const existingIndex = roles.findIndex(r => r.id === editingRole.id);
+    let newRoles: AIRole[];
+    
+    if (existingIndex >= 0) {
+      newRoles = [...roles];
+      newRoles[existingIndex] = editingRole;
+    } else {
+      newRoles = [...roles, editingRole];
+    }
+    
+    setRoles(newRoles);
+    setAIRoles(newRoles);
+    setEditingRole(null);
+    setRolesSaved(true);
+    setTimeout(() => setRolesSaved(false), 2000);
+  };
+
+  const handleDeleteRole = (roleId: string) => {
+    if (roleId === 'default') return; // 不能删除默认角色
+    const newRoles = roles.filter(r => r.id !== roleId);
+    setRoles(newRoles);
+    setAIRoles(newRoles);
+  };
+
   return (
     <>
       <button
@@ -93,7 +135,7 @@ export default function WebDAVConfigPanel() {
                 }`}
               >
                 <Server className="w-4 h-4" />
-                WebDAV 同步
+                WebDAV
               </button>
               <button
                 onClick={() => setActiveTab('ai')}
@@ -104,7 +146,18 @@ export default function WebDAVConfigPanel() {
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                AI 助手
+                AI
+              </button>
+              <button
+                onClick={() => setActiveTab('roles')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-t text-sm font-medium transition-colors ${
+                  activeTab === 'roles'
+                    ? 'bg-slate-700 text-amber-300'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                角色
               </button>
             </div>
 
@@ -279,11 +332,112 @@ export default function WebDAVConfigPanel() {
                 <div className="bg-slate-700/50 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-100">
                   <p className="font-semibold mb-1">💡 使用说明：</p>
                   <ul className="space-y-1 list-disc list-inside text-slate-300">
-                    <li>阅读时选中文字，点击"问 AI"即可获取解释</li>
+                    <li>阅读时选中文字即可自动获取 AI 解释</li>
                     <li>支持翻译、解释、背景知识等</li>
                     <li>API Key 仅保存在本地浏览器中</li>
                   </ul>
                 </div>
+              </div>
+            )}
+
+            {/* 角色配置 */}
+            {activeTab === 'roles' && (
+              <div className="space-y-4">
+                {editingRole ? (
+                  // 编辑角色
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">角色名称</label>
+                      <input
+                        type="text"
+                        value={editingRole.name}
+                        onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-700/50 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">系统提示词</label>
+                      <textarea
+                        value={editingRole.systemPrompt}
+                        onChange={(e) => setEditingRole({ ...editingRole, systemPrompt: e.target.value })}
+                        rows={4}
+                        className="w-full px-3 py-2 bg-slate-700/50 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                        placeholder="描述这个角色如何回答问题..."
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditingRole(null)}
+                        className="flex-1 px-3 py-2 bg-slate-700 border border-white/10 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors text-sm"
+                      >
+                        取消
+                      </button>
+                      <button
+                        onClick={handleSaveRole}
+                        className="flex-1 px-3 py-2 bg-amber-600/80 border border-amber-500/30 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm"
+                      >
+                        保存
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // 角色列表
+                  <>
+                    <div className="space-y-2">
+                      {roles.map(role => (
+                        <div
+                          key={role.id}
+                          className="flex items-center justify-between p-3 bg-slate-700/50 border border-white/10 rounded-lg"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-200">{role.name}</p>
+                            <p className="text-xs text-slate-400 truncate">{role.systemPrompt}</p>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={() => setEditingRole(role)}
+                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-600 rounded transition-colors"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            {role.id !== 'default' && (
+                              <button
+                                onClick={() => handleDeleteRole(role.id)}
+                                className="p-1.5 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={handleAddRole}
+                      className="w-full px-3 py-2 bg-slate-700 border border-dashed border-white/20 text-slate-300 rounded-lg hover:bg-slate-600 hover:border-white/30 transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      添加角色
+                    </button>
+
+                    {rolesSaved && (
+                      <div className="p-3 rounded-lg bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 flex items-center gap-2">
+                        <Check className="w-4 h-4" />
+                        <span className="text-sm">角色已保存</span>
+                      </div>
+                    )}
+
+                    <div className="bg-slate-700/50 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-100">
+                      <p className="font-semibold mb-1">💡 角色说明：</p>
+                      <ul className="space-y-1 list-disc list-inside text-slate-300">
+                        <li>每本书可以选择不同的 AI 角色</li>
+                        <li>角色决定 AI 如何回答你的问题</li>
+                        <li>在阅读时点击角色名可切换</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
