@@ -174,8 +174,7 @@ export default function TimerWidgetPage() {
     const topLevelTasks = tasks.filter((t) => !t.parentId);
     return topLevelTasks
       .filter((t) => t.id !== activeTask?.id)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [tasks, activeTask]);
 
   const [displayTime, setDisplayTime] = useState(0);
