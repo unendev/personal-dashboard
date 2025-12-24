@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Send, Bot, User, Loader2, FileText, CheckSquare, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, FileText, CheckSquare, ChevronDown, Plus, Trash2, History } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { MarkdownView } from '@/app/components/shared/MarkdownView';
@@ -72,20 +72,44 @@ function executeToolAction(result: string): void {
   } catch { /* ignore */ }
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: any[];
+  updatedAt: number;
+}
+
+// 从 localStorage 加载历史
+function loadSessions(): ChatSession[] {
+  try {
+    const saved = localStorage.getItem('widget-ai-sessions');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+}
+
+// 保存到 localStorage
+function saveSessions(sessions: ChatSession[]) {
+  localStorage.setItem('widget-ai-sessions', JSON.stringify(sessions.slice(0, 20)));
+}
+
 export default function AiWidgetPage() {
   const [inputValue, setInputValue] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('deepseek-chat');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState(() => `chat-${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const processedToolCalls = useRef<Set<string>>(new Set());
 
-  // 加载模型选择
+  // 加载模型选择和历史
   useEffect(() => {
     const model = localStorage.getItem('widget-ai-model');
     if (model && MODELS.find(m => m.id === model)) {
       setSelectedModelId(model);
     }
+    setSessions(loadSessions());
   }, []);
 
   const selectedModel = MODELS.find(m => m.id === selectedModelId) || MODELS[0];
@@ -142,8 +166,59 @@ export default function AiWidgetPage() {
 
   // 新建对话
   const handleNewChat = () => {
+    // 保存当前对话
+    if (messages.length > 0) {
+      const firstUserMsg = messages.find(m => m.role === 'user');
+      const title = firstUserMsg 
+        ? ((firstUserMsg as any).content || (firstUserMsg as any).parts?.find((p: any) => p.type === 'text')?.text || '新对话').slice(0, 20)
+        : '新对话';
+      const newSession: ChatSession = {
+        id: currentSessionId,
+        title,
+        messages: messages,
+        updatedAt: Date.now(),
+      };
+      const updated = [newSession, ...sessions.filter(s => s.id !== currentSessionId)];
+      setSessions(updated);
+      saveSessions(updated);
+    }
+    // 创建新对话
+    setCurrentSessionId(`chat-${Date.now()}`);
     setMessages([]);
     processedToolCalls.current.clear();
+  };
+
+  // 加载历史对话
+  const handleLoadSession = (session: ChatSession) => {
+    // 先保存当前对话
+    if (messages.length > 0) {
+      const firstUserMsg = messages.find(m => m.role === 'user');
+      const title = firstUserMsg 
+        ? ((firstUserMsg as any).content || (firstUserMsg as any).parts?.find((p: any) => p.type === 'text')?.text || '新对话').slice(0, 20)
+        : '新对话';
+      const newSession: ChatSession = {
+        id: currentSessionId,
+        title,
+        messages: messages,
+        updatedAt: Date.now(),
+      };
+      const updated = [newSession, ...sessions.filter(s => s.id !== currentSessionId && s.id !== session.id)];
+      setSessions(updated);
+      saveSessions(updated);
+    }
+    // 加载选中的对话
+    setCurrentSessionId(session.id);
+    setMessages(session.messages);
+    processedToolCalls.current.clear();
+    setShowHistory(false);
+  };
+
+  // 删除历史对话
+  const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    const updated = sessions.filter(s => s.id !== sessionId);
+    setSessions(updated);
+    saveSessions(updated);
   };
 
   const handleSubmit = () => {
@@ -213,9 +288,9 @@ export default function AiWidgetPage() {
           <button onClick={handleNewChat} className="w-5 h-5 rounded flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors" title="新对话">
             <Plus size={12} />
           </button>
-          {/* 清空对话 */}
-          <button onClick={handleNewChat} className="w-5 h-5 rounded flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition-colors" title="清空对话">
-            <Trash2 size={12} />
+          {/* 历史记录 */}
+          <button onClick={() => setShowHistory(!showHistory)} className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${showHistory ? 'text-emerald-400 bg-zinc-700' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700'}`} title="历史记录">
+            <History size={12} />
           </button>
           {/* 模型选择器 */}
           <div className="relative" ref={dropdownRef}>
@@ -239,6 +314,36 @@ export default function AiWidgetPage() {
         </div>
       </div>
       
+      {/* 历史记录面板 */}
+      {showHistory && (
+        <div className="border-b border-zinc-700 bg-zinc-800/80 max-h-40 overflow-y-auto">
+          {sessions.length === 0 ? (
+            <div className="text-center text-zinc-500 text-xs py-3">暂无历史记录</div>
+          ) : (
+            <div className="py-1">
+              {sessions.map(session => (
+                <div
+                  key={session.id}
+                  onClick={() => handleLoadSession(session)}
+                  className={`flex items-center justify-between px-3 py-1.5 hover:bg-zinc-700/50 cursor-pointer group ${session.id === currentSessionId ? 'bg-zinc-700/30' : ''}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-zinc-300 truncate">{session.title}</div>
+                    <div className="text-[10px] text-zinc-500">{new Date(session.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteSession(e, session.id)}
+                    className="w-5 h-5 rounded flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-zinc-600 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 消息区域 */}
       <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
         {messages.length === 0 && (

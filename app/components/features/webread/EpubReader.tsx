@@ -21,12 +21,9 @@ interface SelectionPopup {
   cfiRange?: string;
 }
 
-// 高亮颜色映射 - 背景色
-const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
-  yellow: 'rgba(250, 204, 21, 0.35)',
-  green: 'rgba(52, 211, 153, 0.35)',
-  blue: 'rgba(96, 165, 250, 0.35)',
-};
+// 高亮颜色类名（用于 CSS 样式注入）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const HIGHLIGHT_COLORS = ['yellow', 'green', 'blue'] as const;
 
 export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady, onNoteAdded }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -284,11 +281,18 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             body {
               -webkit-tap-highlight-color: rgba(0,0,0,0);
             }
-            /* epub.js mark 样式 - 直接应用到文本 */
-            [data-epubjs-mark] {
-              background-color: rgba(250, 204, 21, 0.4) !important;
-              border-radius: 2px;
-              padding: 0 1px;
+            /* epub.js highlight 样式 - 按颜色分类 */
+            .hl-yellow {
+              fill: rgba(250, 204, 21, 0.35) !important;
+              fill-opacity: 1 !important;
+            }
+            .hl-green {
+              fill: rgba(52, 211, 153, 0.35) !important;
+              fill-opacity: 1 !important;
+            }
+            .hl-blue {
+              fill: rgba(96, 165, 250, 0.35) !important;
+              fill-opacity: 1 !important;
             }
           `;
           doc.head.appendChild(style);
@@ -376,7 +380,7 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                   console.warn('[EpubReader] Note has no CFI:', note.id);
                   return;
                 }
-                const colorClass = `epub-hl-${note.color || 'yellow'}`;
+                const colorClass = `hl-${note.color || 'yellow'}`;
                 console.log('[EpubReader] Applying highlight:', {
                   noteId: note.id,
                   cfi: note.cfi,
@@ -384,14 +388,15 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                   text: note.text.substring(0, 30) + '...',
                 });
                 try {
-                  // 使用 mark 类型 - 直接在 DOM 中包裹文本，不使用 SVG 覆盖层
-                  renditionRef.current!.annotations.mark(
+                  // 使用 highlight 方法 + className 应用颜色
+                  renditionRef.current!.annotations.highlight(
                     note.cfi,
-                    {},
+                    { id: note.id },
                     () => {
                       console.log('[EpubReader] Highlight clicked:', note.id);
                       renditionRef.current?.display(note.cfi);
-                    }
+                    },
+                    colorClass
                   );
                   console.log('[EpubReader] Highlight applied successfully:', note.id);
                 } catch (e) {
