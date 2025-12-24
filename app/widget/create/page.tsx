@@ -23,7 +23,7 @@ export default function WidgetCreatePage() {
   const userId = sessionData?.user?.id;
   const today = new Date().toISOString().split('T')[0];
 
-  // 添加到计时器的回调 - 立即关闭，后台执行
+  // 添加到计时器 - 通过 localStorage 传递数据给 timer 窗口执行
   const handleAddToTimer = async (
     taskName: string,
     categoryPath: string,
@@ -31,88 +31,23 @@ export default function WidgetCreatePage() {
     initialTime?: number,
     instanceTagNames?: string
   ) => {
-    if (!userId) {
-      console.error('[Widget Create] No userId');
-      return;
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-    const finalInitialTime = initialTime || 0;
-    const taskDate = date || today;
+    if (!userId) return;
     
-    console.log('[Widget Create] handleAddToTimer called:', {
-      taskName,
-      categoryPath,
-      taskDate,
-      finalInitialTime,
-      instanceTagNames,
-    });
+    // 将任务数据存入 localStorage，让 timer 窗口执行创建
+    const taskData = {
+      name: taskName,
+      userId,
+      categoryPath: categoryPath || '未分类',
+      date: date || today,
+      initialTime: initialTime || 0,
+      instanceTagNames: instanceTagNames || '',
+      timestamp: Date.now(),
+    };
+    
+    localStorage.setItem('widget-pending-task', JSON.stringify(taskData));
     
     // 立即关闭窗口
     window.close();
-    
-    // 后台执行 API 调用
-    (async () => {
-      try {
-        // 1. 暂停正在运行的任务
-        console.log('[Widget Create] Fetching existing tasks...');
-        const tasksResponse = await fetch(`/api/timer-tasks?userId=${userId}&date=${taskDate}`, {
-          credentials: 'include',
-        });
-        
-        if (tasksResponse.ok) {
-          const tasks = await tasksResponse.json();
-          console.log('[Widget Create] Existing tasks:', tasks);
-          const runningTasks = tasks.filter((t: { isRunning: boolean }) => t.isRunning);
-          
-          if (runningTasks.length > 0) {
-            console.log('[Widget Create] Pausing running tasks:', runningTasks.length);
-            // 并行暂停所有运行中的任务
-            await Promise.all(runningTasks.map((task: { id: string; elapsedTime: number; startTime: number | null }) =>
-              fetch('/api/timer-tasks', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                  id: task.id,
-                  isRunning: false,
-                  startTime: null,
-                  elapsedTime: task.elapsedTime + (task.startTime ? now - task.startTime : 0),
-                }),
-              })
-            ));
-          }
-        }
-        
-        // 2. 创建新任务并自动开始计时
-        console.log('[Widget Create] Creating new task...');
-        const createResponse = await fetch('/api/timer-tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: taskName,
-            userId,
-            categoryPath: categoryPath || '未分类',
-            date: taskDate,
-            initialTime: finalInitialTime,
-            elapsedTime: finalInitialTime,
-            instanceTagNames: instanceTagNames ? instanceTagNames.split(',').map(t => t.trim()).filter(t => t) : [],
-            isRunning: true,
-            startTime: now,
-          }),
-        });
-        
-        if (createResponse.ok) {
-          const newTask = await createResponse.json();
-          console.log('[Widget Create] Task created successfully:', newTask);
-        } else {
-          console.error('[Widget Create] Failed to create task:', createResponse.status, await createResponse.text());
-        }
-      } catch (error) {
-        console.error('[Widget Create] Error:', error);
-      }
-    })();
   };
 
   if (isLoading) {
@@ -136,7 +71,7 @@ export default function WidgetCreatePage() {
       {/* 关闭按钮 */}
       <button
         onClick={() => window.close()}
-        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-zinc-800/80 hover:bg-red-500/80 flex items-center justify-center text-zinc-400 hover:text-white transition-colors z-50"
+        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-zinc-800/80 hover:bg-red-500/80 flex items-center justify-center text-zinc-400 hover:text-white transition-colors z-40"
         title="关闭"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

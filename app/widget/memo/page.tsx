@@ -14,6 +14,17 @@ export default function MemoWidgetPage() {
   useEffect(() => {
     const saved = localStorage.getItem('widget-memo-content');
     if (saved) setContent(saved);
+    
+    // 监听其他窗口的 localStorage 变化（AI 窗口更新 memo 时）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'widget-memo-content' && e.newValue !== null) {
+        console.log('[Widget Memo] Storage changed from other window');
+        setContent(e.newValue);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {

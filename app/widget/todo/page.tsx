@@ -30,6 +30,22 @@ export default function TodoWidgetPage() {
     } catch (e) {
       console.error('[Widget Todo] Failed to parse:', e);
     }
+    
+    // 监听其他窗口的 localStorage 变化（AI 窗口添加 todo 时）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'widget-todo-items' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          console.log('[Widget Todo] Storage changed from other window:', parsed);
+          setItems(parsed);
+        } catch (err) {
+          console.error('[Widget Todo] Failed to parse storage change:', err);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {

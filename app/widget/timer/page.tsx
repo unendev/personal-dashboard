@@ -81,6 +81,74 @@ export default function TimerWidgetPage() {
     fetcher,
     { refreshInterval: 5000, revalidateOnFocus: false, dedupingInterval: 2000 }
   );
+  
+  // 监听 create 窗口的待创建任务
+  useEffect(() => {
+    const handleStorageChange = async (e: StorageEvent) => {
+      if (e.key === 'widget-pending-task' && e.newValue) {
+        console.log('[Timer] === START TASK CREATION ===');
+        
+        try {
+          const taskData = JSON.parse(e.newValue);
+          const now = Math.floor(Date.now() / 1000);
+          
+          // 1. 暂停运行中的任务（不等待，让它后台执行）
+          const runningTasks = tasks.filter(t => t.isRunning);
+          if (runningTasks.length > 0) {
+            Promise.all(runningTasks.map(task =>
+              fetch('/api/timer-tasks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  id: task.id,
+                  isRunning: false,
+                  startTime: null,
+                  elapsedTime: task.elapsedTime + (task.startTime ? now - task.startTime : 0),
+                }),
+              })
+            ));
+          }
+          
+          // 2. 创建新任务
+          const createBody = {
+            name: taskData.name,
+            userId: taskData.userId,
+            categoryPath: taskData.categoryPath,
+            date: taskData.date,
+            initialTime: taskData.initialTime,
+            elapsedTime: taskData.initialTime,
+            instanceTagNames: taskData.instanceTagNames ? taskData.instanceTagNames.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [],
+            isRunning: true,
+            startTime: now,
+          };
+          
+          const createResponse = await fetch('/api/timer-tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(createBody),
+          });
+          
+          // 清除待处理任务
+          localStorage.removeItem('widget-pending-task');
+          
+          if (createResponse.ok) {
+            // 延迟刷新，避免立即触发页面更新
+            setTimeout(() => mutateTasks(), 100);
+          } else {
+            console.error('[Timer] Create failed:', createResponse.status);
+          }
+        } catch (err) {
+          console.error('[Timer] Error:', err);
+          localStorage.removeItem('widget-pending-task');
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [tasks, mutateTasks]);
 
   const { startTimer, pauseTimer } = useTimerControl({
     tasks,
@@ -189,53 +257,53 @@ export default function TimerWidgetPage() {
         {/* 拖拽区域 */}
         <div className="h-3 shrink-0 cursor-move" data-drag="true" />
         
-        <div className="flex-1 flex flex-col p-3 pt-0 gap-3 overflow-hidden">
+        {/* 任务列表 - 全部可滚动 */}
+        <div className="flex-1 overflow-y-auto p-3 pt-0 space-y-2">
           {/* 当前运行的任务 */}
-        {activeTask ? (
-          <div 
-            className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
-            {...doubleTapCreate}
-            title="双击新建任务"
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id);
-              }}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                activeTask.isPaused 
-                  ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
-                  : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-              }`}
+          {activeTask ? (
+            <div 
+              className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
+              {...doubleTapCreate}
+              title="双击新建任务"
             >
-              {activeTask.isPaused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
-            </button>
-            
-            <div className="text-center pl-12">
-              <div className={`font-mono text-3xl font-bold tracking-wider ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                {formatTime(displayTime)}
-              </div>
-              <div className={`text-sm font-medium mt-1 ${activeTask.isPaused ? 'text-yellow-300' : 'text-emerald-300'}`}>
-                {activeTask.name.startsWith('#') ? activeTask.name : `#${activeTask.name}`}
-              </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                {activeTask.categoryPath || '未分类'}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id);
+                }}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  activeTask.isPaused 
+                    ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
+                    : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                }`}
+              >
+                {activeTask.isPaused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
+              </button>
+              
+              <div className="text-center pl-12">
+                <div className={`font-mono text-3xl font-bold tracking-wider ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                  {formatTime(displayTime)}
+                </div>
+                <div className={`text-sm font-medium mt-1 ${activeTask.isPaused ? 'text-yellow-300' : 'text-emerald-300'}`}>
+                  {activeTask.name.startsWith('#') ? activeTask.name : `#${activeTask.name}`}
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  {activeTask.categoryPath || '未分类'}
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div 
-            className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
-            {...doubleTapCreate}
-            title="双击新建任务"
-          >
-            <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
-            <div className="text-xs text-zinc-600 mt-1">双击新建任务</div>
-          </div>
-        )}
+          ) : (
+            <div 
+              className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
+              {...doubleTapCreate}
+              title="双击新建任务"
+            >
+              <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
+              <div className="text-xs text-zinc-600 mt-1">双击新建任务</div>
+            </div>
+          )}
 
-        {/* 任务列表 */}
-        <div className="flex-1 overflow-y-auto space-y-2">
+          {/* 其他任务 */}
           {recentTasks.map((task) => (
             <div
               key={task.id}
@@ -256,7 +324,6 @@ export default function TimerWidgetPage() {
               暂无任务
             </div>
           )}
-        </div>
         </div>
       </div>
     </div>
