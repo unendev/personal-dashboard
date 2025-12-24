@@ -83,11 +83,23 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
       
       // 确保是水平滑动（水平距离大于垂直距离）
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+        // 标记正在翻页，禁用 selectionchange
+        if (renditionRef.current) {
+          (renditionRef.current as any)._isSwipingRef = true;
+        }
+        
         if (deltaX > 0) {
           goPrev(); // 右滑 = 上一页
         } else {
           goNext(); // 左滑 = 下一页
         }
+        
+        // 翻页后延迟重置标志
+        setTimeout(() => {
+          if (renditionRef.current) {
+            (renditionRef.current as any)._isSwipingRef = false;
+          }
+        }, 300);
       }
     };
 
@@ -275,27 +287,42 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             body {
               -webkit-tap-highlight-color: rgba(0,0,0,0);
             }
-            /* epub.js highlight SVG 样式 */
-            .epubjs-hl {
-              fill: rgba(250, 204, 21, 0.4) !important;
-              fill-opacity: 1 !important;
-              mix-blend-mode: multiply;
+            /* 自定义高亮样式 - 直接应用到文本 */
+            .epub-highlight {
+              background-color: rgba(250, 204, 21, 0.4) !important;
+              border-radius: 2px;
+            }
+            .epub-highlight-yellow {
+              background-color: rgba(250, 204, 21, 0.4) !important;
+            }
+            .epub-highlight-green {
+              background-color: rgba(52, 211, 153, 0.4) !important;
+            }
+            .epub-highlight-blue {
+              background-color: rgba(96, 165, 250, 0.4) !important;
             }
           `;
           doc.head.appendChild(style);
           
           // 移动端：监听 selectionchange 事件
           let selectionTimeout: NodeJS.Timeout | null = null;
+          let lastSelectionText = '';
           doc.addEventListener('selectionchange', () => {
+            // 如果正在翻页，忽略 selectionchange
+            if ((rendition as any)._isSwipingRef) {
+              return;
+            }
+            
             if (selectionTimeout) clearTimeout(selectionTimeout);
             selectionTimeout = setTimeout(() => {
               const selection = win.getSelection();
               if (selection && !selection.isCollapsed) {
                 const text = selection.toString().trim();
-                if (text.length > 0) {
+                // 避免重复触发
+                if (text.length > 0 && text !== lastSelectionText) {
+                  lastSelectionText = text;
                   try {
                     const range = selection.getRangeAt(0);
-                    // 触发 epub.js 的 selected 事件
                     const cfiRange = contents.cfiFromRange(range);
                     if (cfiRange) {
                       rendition.emit('selected', cfiRange, contents);
@@ -304,8 +331,10 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                     // 静默处理
                   }
                 }
+              } else {
+                lastSelectionText = '';
               }
-            }, 300);
+            }, 500); // 增加延迟，避免频繁触发
           });
         });
 
@@ -360,62 +389,77 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           // 存储笔记用于翻页后重新应用
           let loadedNotes: webdavCache.BookNote[] = [];
           
+          // 自定义高亮函数 - 直接操作 DOM
+          const applyHighlightToRange = (cfi: string, color: string) => {
+            try {
+              const range = rendition.getRange(cfi);
+              if (!range) {
+                console.log('[HL-DEBUG] 无法获取 range:', cfi);
+                return false;
+              }
+              
+              // 获取 range 所在的 document（可能是 iframe 内的 document）
+              const rangeDoc = range.startContainer.ownerDocument;
+              if (!rangeDoc) {
+                console.log('[HL-DEBUG] 无法获取 ownerDocument');
+                return false;
+              }
+              
+              // 在正确的 document 中创建高亮 span
+              const highlight = rangeDoc.createElement('span');
+              highlight.className = `epub-highlight epub-highlight-${color}`;
+              highlight.dataset.cfi = cfi;
+              
+              // 包裹选中的文本
+              try {
+                range.surroundContents(highlight);
+                console.log('[HL-DEBUG] 高亮应用成功:', { cfi, color });
+                return true;
+              } catch (e) {
+                // 如果 surroundContents 失败（跨节点），使用替代方法
+                console.log('[HL-DEBUG] surroundContents 失败，尝试替代方法');
+                const contents = range.extractContents();
+                highlight.appendChild(contents);
+                range.insertNode(highlight);
+                console.log('[HL-DEBUG] 高亮应用成功（替代方法）');
+                return true;
+              }
+            } catch (e) {
+              console.error('[HL-DEBUG] 高亮应用失败:', e);
+              return false;
+            }
+          };
+          
           // 加载并应用高亮
           webdavCache.getNotes(bookId).then(notes => {
             console.log('[HL-DEBUG] 加载笔记数量:', notes.length);
             loadedNotes = notes;
-            if (mounted && renditionRef.current) {
-              notes.forEach(note => {
-                if (!note.cfi) return;
-                
-                // 根据颜色设置不同的填充色
-                const colorMap: Record<string, string> = {
-                  yellow: 'rgba(250, 204, 21, 0.4)',
-                  green: 'rgba(52, 211, 153, 0.4)',
-                  blue: 'rgba(96, 165, 250, 0.4)',
-                };
-                const fillColor = colorMap[note.color || 'yellow'] || colorMap.yellow;
-                
-                console.log('[HL-DEBUG] 应用高亮:', { cfi: note.cfi, color: note.color, fillColor });
-                
-                try {
-                  // 使用 highlight + styles 参数直接设置颜色
-                  renditionRef.current!.annotations.highlight(
-                    note.cfi,
-                    { id: note.id },
-                    () => {
-                      renditionRef.current?.display(note.cfi);
-                    },
-                    '',
-                    { fill: fillColor, 'fill-opacity': '1', 'mix-blend-mode': 'multiply' }
-                  );
-                  
-                  // 检查 SVG 元素位置
-                  setTimeout(() => {
-                    const contents = renditionRef.current?.getContents() as any;
-                    if (contents && contents.length > 0) {
-                      const doc = contents[0]?.document;
-                      const svgElements = doc?.querySelectorAll('.epubjs-hl');
-                      console.log('[HL-DEBUG] SVG高亮元素数量:', svgElements?.length || 0);
-                      if (svgElements && svgElements.length > 0) {
-                        const svg = svgElements[svgElements.length - 1];
-                        const rect = svg.getBoundingClientRect();
-                        console.log('[HL-DEBUG] SVG位置:', { top: rect.top, left: rect.left, width: rect.width, height: rect.height });
-                      }
-                    }
-                  }, 500);
-                } catch (e) {
-                  console.error('[HL-DEBUG] 高亮失败:', e);
-                }
-              });
-            }
+            
+            // 延迟应用，确保内容已渲染
+            setTimeout(() => {
+              if (mounted && renditionRef.current) {
+                notes.forEach(note => {
+                  if (!note.cfi) return;
+                  console.log('[HL-DEBUG] 尝试应用高亮:', { cfi: note.cfi, color: note.color });
+                  applyHighlightToRange(note.cfi, note.color || 'yellow');
+                });
+              }
+            }, 500);
           }).catch((e) => {
             console.error('[HL-DEBUG] 加载笔记失败:', e);
           });
           
-          // 监听页面渲染完成
-          rendition.on('rendered', () => {
+          // 监听页面渲染完成，重新应用当前章节的高亮
+          rendition.on('rendered', (_section: any) => {
             if (!mounted || !renditionRef.current || loadedNotes.length === 0) return;
+            
+            // 延迟重新应用高亮
+            setTimeout(() => {
+              loadedNotes.forEach(note => {
+                if (!note.cfi) return;
+                applyHighlightToRange(note.cfi, note.color || 'yellow');
+              });
+            }, 200);
           });
         }
 
@@ -683,55 +727,35 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             console.log('[HL-DEBUG] onNoteAdded:', { cfi: note.cfi, color: note.color });
             
             if (renditionRef.current && note.cfi) {
-              const colorMap: Record<string, string> = {
-                yellow: 'rgba(250, 204, 21, 0.4)',
-                green: 'rgba(52, 211, 153, 0.4)',
-                blue: 'rgba(96, 165, 250, 0.4)',
-              };
-              const fillColor = colorMap[note.color || 'yellow'] || colorMap.yellow;
-              
               try {
-                renditionRef.current.annotations.highlight(
-                  note.cfi,
-                  { id: note.id },
-                  () => {
-                    renditionRef.current?.display(note.cfi);
-                  },
-                  '',
-                  { fill: fillColor, 'fill-opacity': '1', 'mix-blend-mode': 'multiply' }
-                );
-                
-                // 检查生成的 SVG 元素
-                setTimeout(() => {
-                  const contents = renditionRef.current?.getContents();
-                  if (contents && contents.length > 0) {
-                    const doc = (contents[0] as any).document;
-                    const svgElements = doc?.querySelectorAll('.epubjs-hl');
-                    console.log('[HL-DEBUG] 新增后SVG数量:', svgElements?.length || 0);
+                const range = renditionRef.current.getRange(note.cfi);
+                if (range) {
+                  // 获取 range 所在的 document
+                  const rangeDoc = range.startContainer.ownerDocument;
+                  if (!rangeDoc) {
+                    console.log('[HL-DEBUG] 无法获取 ownerDocument');
+                  } else {
+                    // 在正确的 document 中创建高亮 span
+                    const highlight = rangeDoc.createElement('span');
+                    highlight.className = `epub-highlight epub-highlight-${note.color || 'yellow'}`;
+                    highlight.dataset.cfi = note.cfi;
                     
-                    // 检查 SVG 容器位置
-                    const annotationLayer = doc?.querySelector('.annotationLayer, svg.epubjs-hl-container');
-                    if (annotationLayer) {
-                      const layerRect = annotationLayer.getBoundingClientRect();
-                      console.log('[HL-DEBUG] 标注层位置:', { top: layerRect.top, left: layerRect.left });
-                    }
-                    
-                    // 检查最新的高亮元素
-                    if (svgElements && svgElements.length > 0) {
-                      const lastSvg = svgElements[svgElements.length - 1];
-                      const svgRect = lastSvg.getBoundingClientRect();
-                      console.log('[HL-DEBUG] 最新SVG位置:', { 
-                        top: svgRect.top, 
-                        left: svgRect.left,
-                        width: svgRect.width,
-                        height: svgRect.height,
-                        element: lastSvg.outerHTML.substring(0, 200)
-                      });
+                    try {
+                      range.surroundContents(highlight);
+                      console.log('[HL-DEBUG] 新增高亮成功');
+                    } catch (e) {
+                      // 跨节点时使用替代方法
+                      const contents = range.extractContents();
+                      highlight.appendChild(contents);
+                      range.insertNode(highlight);
+                      console.log('[HL-DEBUG] 新增高亮成功（替代方法）');
                     }
                   }
-                }, 300);
+                } else {
+                  console.log('[HL-DEBUG] 无法获取 range');
+                }
               } catch (e) {
-                console.error('[HL-DEBUG] 应用高亮失败:', e);
+                console.error('[HL-DEBUG] 新增高亮失败:', e);
               }
             }
             onNoteAdded?.(note);

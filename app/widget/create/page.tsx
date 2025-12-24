@@ -23,7 +23,7 @@ export default function WidgetCreatePage() {
   const userId = sessionData?.user?.id;
   const today = new Date().toISOString().split('T')[0];
 
-  // 添加到计时器的回调 - 乐观关闭，后台执行
+  // 添加到计时器的回调 - 立即关闭，后台执行
   const handleAddToTimer = async (
     taskName: string,
     categoryPath: string,
@@ -31,45 +31,62 @@ export default function WidgetCreatePage() {
     initialTime?: number,
     instanceTagNames?: string
   ) => {
-    if (!userId) return;
+    if (!userId) {
+      console.error('[Widget Create] No userId');
+      return;
+    }
 
     const now = Math.floor(Date.now() / 1000);
     const finalInitialTime = initialTime || 0;
     const taskDate = date || today;
     
-    // 立即关闭窗口，后台执行 API 调用
+    console.log('[Widget Create] handleAddToTimer called:', {
+      taskName,
+      categoryPath,
+      taskDate,
+      finalInitialTime,
+      instanceTagNames,
+    });
+    
+    // 立即关闭窗口
     window.close();
     
-    // 后台执行（窗口关闭后继续运行）
+    // 后台执行 API 调用
     (async () => {
       try {
         // 1. 暂停正在运行的任务
+        console.log('[Widget Create] Fetching existing tasks...');
         const tasksResponse = await fetch(`/api/timer-tasks?userId=${userId}&date=${taskDate}`, {
           credentials: 'include',
         });
         
         if (tasksResponse.ok) {
           const tasks = await tasksResponse.json();
+          console.log('[Widget Create] Existing tasks:', tasks);
           const runningTasks = tasks.filter((t: { isRunning: boolean }) => t.isRunning);
           
-          // 并行暂停所有运行中的任务
-          await Promise.all(runningTasks.map((task: { id: string; elapsedTime: number; startTime: number | null }) =>
-            fetch('/api/timer-tasks', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({
-                id: task.id,
-                isRunning: false,
-                startTime: null,
-                elapsedTime: task.elapsedTime + (task.startTime ? now - task.startTime : 0),
-              }),
-            })
-          ));
+          if (runningTasks.length > 0) {
+            console.log('[Widget Create] Pausing running tasks:', runningTasks.length);
+            // 并行暂停所有运行中的任务
+            await Promise.all(runningTasks.map((task: { id: string; elapsedTime: number; startTime: number | null }) =>
+              fetch('/api/timer-tasks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  id: task.id,
+                  isRunning: false,
+                  startTime: null,
+                  elapsedTime: task.elapsedTime + (task.startTime ? now - task.startTime : 0),
+                }),
+              })
+            ));
+          }
         }
         
         // 2. 创建新任务并自动开始计时
-        await fetch('/api/timer-tasks', {
+        console.log('[Widget Create] Creating new task...');
+        const createResponse = await fetch('/api/timer-tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -85,8 +102,15 @@ export default function WidgetCreatePage() {
             startTime: now,
           }),
         });
+        
+        if (createResponse.ok) {
+          const newTask = await createResponse.json();
+          console.log('[Widget Create] Task created successfully:', newTask);
+        } else {
+          console.error('[Widget Create] Failed to create task:', createResponse.status, await createResponse.text());
+        }
       } catch (error) {
-        console.error('Failed to create task:', error);
+        console.error('[Widget Create] Error:', error);
       }
     })();
   };

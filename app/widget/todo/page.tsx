@@ -22,10 +22,18 @@ export default function TodoWidgetPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('widget-todo-items');
-    if (saved) try { setItems(JSON.parse(saved)); } catch {}
+    console.log('[Widget Todo] Loading from localStorage:', saved);
+    if (saved) try { 
+      const parsed = JSON.parse(saved);
+      console.log('[Widget Todo] Parsed items:', parsed);
+      setItems(parsed); 
+    } catch (e) {
+      console.error('[Widget Todo] Failed to parse:', e);
+    }
   }, []);
 
   useEffect(() => {
+    console.log('[Widget Todo] Saving to localStorage:', items);
     localStorage.setItem('widget-todo-items', JSON.stringify(items));
   }, [items]);
 
@@ -40,6 +48,7 @@ export default function TodoWidgetPage() {
       group: newGroup.trim() || 'default',
       createdAt: Date.now(),
     };
+    console.log('[Widget Todo] Adding item:', item);
     setItems(prev => [...prev, item]);
     setInputValue('');
     // 展开新添加的分组
