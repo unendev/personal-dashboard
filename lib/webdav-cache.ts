@@ -1121,6 +1121,36 @@ export async function getNotes(bookId: string): Promise<BookNote[]> {
 }
 
 /**
+ * 删除笔记
+ */
+export async function deleteNote(bookId: string, noteId: string): Promise<void> {
+  try {
+    // 1. 从本地删除
+    await safeTransaction(
+      [LOCAL_STORE_NOTES],
+      'readwrite',
+      (transaction) => new Promise<void>((resolve, reject) => {
+        const store = transaction.objectStore(LOCAL_STORE_NOTES);
+        const request = store.delete(noteId);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          resolve();
+        };
+      })
+    );
+
+    // 2. 同步到 WebDAV（异步，静默处理错误）
+    uploadNotesToCloud(bookId).catch(() => {
+      // 静默处理 - 本地已删除
+    });
+  } catch (error) {
+    console.error('[WebDAV] Failed to delete note:', error);
+    throw error;
+  }
+}
+
+/**
  * 上传笔记到 WebDAV（通过 API 代理避免 CORS）
  */
 async function uploadNotesToCloud(bookId: string): Promise<void> {

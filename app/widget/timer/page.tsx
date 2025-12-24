@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import useSWR, { mutate } from 'swr';
 import { Play, Pause, FileText, CheckSquare, Bot } from 'lucide-react';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
@@ -13,6 +13,29 @@ const openCreateWindow = () => window.open('/widget/create', '_blank');
 const openMemoWindow = () => window.open('/widget/memo', '_blank');
 const openTodoWindow = () => window.open('/widget/todo', '_blank');
 const openAiWindow = () => window.open('/widget/ai', '_blank');
+
+// 双击/双触 Hook
+function useDoubleTap(callback: () => void, delay = 300) {
+  const lastTap = useRef(0);
+  
+  const handleTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTap.current < delay) {
+      callback();
+      lastTap.current = 0;
+    } else {
+      lastTap.current = now;
+    }
+  }, [callback, delay]);
+  
+  return {
+    onDoubleClick: callback,
+    onTouchEnd: (e: React.TouchEvent) => {
+      e.preventDefault();
+      handleTap();
+    },
+  };
+}
 
 interface TimerTask {
   id: string;
@@ -41,6 +64,8 @@ interface SessionUser {
 }
 
 export default function TimerWidgetPage() {
+  const doubleTapCreate = useDoubleTap(openCreateWindow);
+  
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
     fetcher,
@@ -169,7 +194,7 @@ export default function TimerWidgetPage() {
         {activeTask ? (
           <div 
             className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
-            onDoubleClick={openCreateWindow}
+            {...doubleTapCreate}
             title="双击新建任务"
           >
             <button
@@ -191,7 +216,7 @@ export default function TimerWidgetPage() {
                 {formatTime(displayTime)}
               </div>
               <div className={`text-sm font-medium mt-1 ${activeTask.isPaused ? 'text-yellow-300' : 'text-emerald-300'}`}>
-                #{activeTask.name}
+                {activeTask.name.startsWith('#') ? activeTask.name : `#${activeTask.name}`}
               </div>
               <div className="text-xs text-zinc-500 mt-0.5">
                 {activeTask.categoryPath || '未分类'}
@@ -201,7 +226,7 @@ export default function TimerWidgetPage() {
         ) : (
           <div 
             className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
-            onDoubleClick={openCreateWindow}
+            {...doubleTapCreate}
             title="双击新建任务"
           >
             <div className="font-mono text-2xl text-zinc-600">00:00:00</div>

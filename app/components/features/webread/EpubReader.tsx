@@ -12,6 +12,7 @@ interface EpubReaderProps {
   initialLocation?: string;
   onLocationChange?: (cfi: string, progress: number) => void;
   onRenditionReady?: (rendition: Rendition) => void;
+  onNoteAdded?: (note: webdavCache.BookNote) => void;
 }
 
 interface SelectionPopup {
@@ -27,7 +28,7 @@ const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
   blue: 'rgba(96, 165, 250, 0.35)',
 };
 
-export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady }: EpubReaderProps) {
+export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady, onNoteAdded }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookRef = useRef<Book | null>(null);
@@ -186,6 +187,12 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
   
   const bubblesRef = useRef(bubbles);
   bubblesRef.current = bubbles;
+
+  // 翻页函数的 ref
+  const goNextRef = useRef(goNext);
+  goNextRef.current = goNext;
+  const goPrevRef = useRef(goPrev);
+  goPrevRef.current = goPrev;
 
   useEffect(() => {
     let mounted = true;
@@ -524,15 +531,44 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           }
         });
         
-        rendition.on('click', () => {
+        rendition.on('click', (e: MouseEvent) => {
           setSelection(null);
-          // 延迟关闭弹窗，避免点击弹窗时被关闭
+          
+          // 检查点击位置，实现左右翻页
+          const viewerRect = viewerRef.current?.getBoundingClientRect();
+          if (viewerRect) {
+            const clickX = e.clientX - viewerRect.left;
+            const width = viewerRect.width;
+            
+            // 左侧 25% 区域 - 上一页
+            if (clickX < width * 0.25) {
+              // 检查是否有选中文本
+              const selection = window.getSelection();
+              const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
+              if ((!selection || selection.isCollapsed) && !iframeSelection) {
+                goPrevRef.current();
+                return;
+              }
+            }
+            // 右侧 25% 区域 - 下一页
+            else if (clickX > width * 0.75) {
+              const selection = window.getSelection();
+              const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
+              if ((!selection || selection.isCollapsed) && !iframeSelection) {
+                goNextRef.current();
+                return;
+              }
+            }
+          }
+          
+          // 只有在没有选中文本时才关闭弹窗
           setTimeout(() => {
             const selection = window.getSelection();
-            if (!selection || selection.isCollapsed) {
+            const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
+            if ((!selection || selection.isCollapsed) && !iframeSelection) {
               setSelectionPopup(null);
             }
-          }, 100);
+          }, 200);
         });
 
         // 处理链接点击 - 支持 Ctrl+点击（桌面）和长按/直接点击（移动端）
@@ -612,17 +648,25 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         className={`w-full h-full overflow-hidden ${!isReady ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}
       />
       
-      {/* 点击区域翻页 */}
+      {/* PC端翻页提示 - 不阻止文本选择 */}
       {isReady && (
         <>
+          {/* 左侧翻页热区 - 使用透明背景，不阻止事件 */}
           <div 
-            className="absolute left-0 top-0 w-1/4 h-full cursor-pointer z-5" 
-            onClick={goPrev}
-          />
+            className="absolute left-0 top-0 w-8 h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
+          >
+            <div className="w-6 h-12 bg-white/10 rounded-r-full flex items-center justify-center">
+              <span className="text-white/50 text-xs">‹</span>
+            </div>
+          </div>
+          {/* 右侧翻页热区 */}
           <div 
-            className="absolute right-0 top-0 w-1/4 h-full cursor-pointer z-5" 
-            onClick={goNext}
-          />
+            className="absolute right-0 top-0 w-8 h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
+          >
+            <div className="w-6 h-12 bg-white/10 rounded-l-full flex items-center justify-center">
+              <span className="text-white/50 text-xs">›</span>
+            </div>
+          </div>
         </>
       )}
       
@@ -653,16 +697,18 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
               text: note.text.substring(0, 30) + '...',
             });
             if (renditionRef.current && note.cfi) {
-              console.log('[EpubReader] Applying immediate highlight with mark');
+              const colorClass = `hl-${note.color || 'yellow'}`;
+              console.log('[EpubReader] Applying immediate highlight with class:', colorClass);
               try {
-                // 使用 mark 类型 - 直接在 DOM 中包裹文本
-                renditionRef.current.annotations.mark(
+                // 使用 highlight 方法，通过 className 应用样式
+                renditionRef.current.annotations.highlight(
                   note.cfi,
-                  {},
+                  { id: note.id },
                   () => {
                     console.log('[EpubReader] New highlight clicked:', note.id);
                     renditionRef.current?.display(note.cfi);
-                  }
+                  },
+                  colorClass
                 );
                 console.log('[EpubReader] Immediate highlight applied successfully');
               } catch (e) {
@@ -674,6 +720,8 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                 hasCfi: !!note.cfi,
               });
             }
+            // 通知父组件更新笔记列表
+            onNoteAdded?.(note);
           }}
         />
       )}

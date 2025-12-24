@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useReaderStore } from '@/app/components/features/webread/useReaderStore';
 import EpubReader from '@/app/components/features/webread/EpubReader';
 import * as webdavCache from '@/lib/webdav-cache';
-import { Loader2, ArrowLeft, BookOpen, Minus, Plus, Sun, Moon, Coffee, Settings } from 'lucide-react';
+import { Loader2, ArrowLeft, BookOpen, Minus, Plus, Sun, Moon, Coffee, Settings, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface BookMetadata {
@@ -189,6 +189,10 @@ export default function ReaderPage() {
             }}
             onRenditionReady={(rend) => {
               setRendition(rend);
+            }}
+            onNoteAdded={(note) => {
+              // 实时更新笔记列表
+              setNotes(prev => [note, ...prev]);
             }}
           />
           
@@ -399,20 +403,39 @@ export default function ReaderPage() {
                         return (
                           <div 
                             key={note.id} 
-                            className={`pl-3 border-l-2 ${borderColorClass} hover:opacity-80 transition-opacity cursor-pointer py-1`}
-                            onClick={() => {
-                              if (note.cfi && rendition) {
-                                try {
-                                  rendition.display(note.cfi);
-                                  setShowControls(false);
-                                } catch (e) {
-                                  // 静默处理
-                                }
-                              }
-                            }}
+                            className={`pl-3 border-l-2 ${borderColorClass} hover:opacity-80 transition-opacity cursor-pointer py-1 flex items-start justify-between gap-2 group/note`}
                           >
-                            <p className="text-xs text-amber-300 line-clamp-1 italic">"{note.text}"</p>
-                            <span className="text-xs text-amber-600">{new Date(note.createdAt).toLocaleDateString()}</span>
+                            <div 
+                              className="flex-1 min-w-0"
+                              onClick={() => {
+                                if (note.cfi && rendition) {
+                                  try {
+                                    rendition.display(note.cfi);
+                                    setShowControls(false);
+                                  } catch (e) {
+                                    // 静默处理
+                                  }
+                                }
+                              }}
+                            >
+                              <p className="text-xs text-amber-300 line-clamp-1">{note.text}</p>
+                              <span className="text-xs text-amber-600">{new Date(note.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await webdavCache.deleteNote(id, note.id);
+                                  setNotes(prev => prev.filter(n => n.id !== note.id));
+                                } catch (err) {
+                                  console.error('Failed to delete note:', err);
+                                }
+                              }}
+                              className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover/note:opacity-100 transition-opacity flex-shrink-0"
+                              title="删除笔记"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
                         );
                       })}
