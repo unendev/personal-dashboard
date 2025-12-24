@@ -316,7 +316,7 @@ export default function TimerWidgetPage() {
               >
                 <Play size={14} fill="currentColor" />
               </button>
-              <span className="text-sm text-zinc-300 truncate flex-1">{task.name}</span>
+              <span className={`text-sm text-zinc-300 truncate flex-1 transition-all ${isBlurred ? 'blur-sm' : ''}`}>{task.name}</span>
             </div>
           ))}
           
