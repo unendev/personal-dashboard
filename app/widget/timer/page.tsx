@@ -23,17 +23,54 @@ function useDoubleTap(callback: () => void, delay = 300) {
     if (now - lastTap.current < delay) {
       callback();
       lastTap.current = 0;
+      return true;
     } else {
       lastTap.current = now;
     }
+    return false;
   }, [callback, delay]);
   
   return {
     onDoubleClick: callback,
     onTouchEnd: (e: React.TouchEvent) => {
-      e.preventDefault();
-      handleTap();
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('button,a,input,textarea,select')) {
+        return;
+      }
+      if (handleTap()) {
+        e.preventDefault();
+      }
     },
+  };
+}
+
+// 长按 Hook
+function useLongPress(callback: () => void, ms = 500) {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPress = useRef(false);
+  
+  const start = useCallback(() => {
+    isLongPress.current = false;
+    timerRef.current = setTimeout(() => {
+      isLongPress.current = true;
+      callback();
+    }, ms);
+  }, [callback, ms]);
+  
+  const stop = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+  
+  return {
+    onMouseDown: start,
+    onMouseUp: stop,
+    onMouseLeave: stop,
+    onTouchStart: start,
+    onTouchEnd: stop,
+    isLongPress,
   };
 }
 
@@ -66,6 +103,14 @@ interface SessionUser {
 export default function TimerWidgetPage() {
   const doubleTapCreate = useDoubleTap(openCreateWindow);
   const [isBlurred, setIsBlurred] = useState(false);
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
+  
+  // 长按启用拖拽
+  const longPressHandlers = useLongPress(() => {
+    setIsDragEnabled(true);
+    // 3秒后自动关闭拖拽模式
+    setTimeout(() => setIsDragEnabled(false), 3000);
+  }, 500);
   
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
@@ -87,13 +132,10 @@ export default function TimerWidgetPage() {
   useEffect(() => {
     const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'widget-pending-task' && e.newValue) {
-        console.log('[Timer] === START TASK CREATION ===');
-        
         try {
           const taskData = JSON.parse(e.newValue);
           const now = Math.floor(Date.now() / 1000);
           
-          // 1. 暂停运行中的任务（不等待，让它后台执行）
           const runningTasks = tasks.filter(t => t.isRunning);
           if (runningTasks.length > 0) {
             Promise.all(runningTasks.map(task =>
@@ -111,7 +153,6 @@ export default function TimerWidgetPage() {
             ));
           }
           
-          // 2. 创建新任务
           const createBody = {
             name: taskData.name,
             userId: taskData.userId,
@@ -131,14 +172,10 @@ export default function TimerWidgetPage() {
             body: JSON.stringify(createBody),
           });
           
-          // 清除待处理任务
           localStorage.removeItem('widget-pending-task');
           
           if (createResponse.ok) {
-            // 延迟刷新，避免立即触发页面更新
             setTimeout(() => mutateTasks(), 100);
-          } else {
-            console.error('[Timer] Create failed:', createResponse.status);
           }
         } catch (err) {
           console.error('[Timer] Error:', err);
@@ -221,15 +258,11 @@ export default function TimerWidgetPage() {
 
   return (
     <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden">
-      {/* 左侧工具栏 - 固定定位，不随内容滚动 */}
-      <div 
-        className="fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10"
-        data-drag="true"
-      >
+      {/* 左侧工具栏 */}
+      <div className="fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10">
         <button
           onClick={openMemoWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
-          data-drag="false"
           title="备忘录"
         >
           <FileText size={18} />
@@ -237,7 +270,6 @@ export default function TimerWidgetPage() {
         <button
           onClick={openTodoWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
-          data-drag="false"
           title="待办事项"
         >
           <CheckSquare size={18} />
@@ -245,80 +277,91 @@ export default function TimerWidgetPage() {
         <button
           onClick={openAiWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          data-drag="false"
           title="AI 助手"
         >
           <Bot size={18} />
         </button>
       </div>
 
-      {/* 计时器主面板 - 左边留出工具栏空间 */}
+      {/* 主面板 */}
       <div className="ml-10 h-full flex flex-col overflow-hidden">
-        {/* 拖拽区域 */}
-        <div className="h-3 shrink-0 cursor-move" data-drag="true" />
-        
-        {/* 任务列表 - 全部可滚动 */}
-        <div className="flex-1 overflow-y-auto p-3 pt-0 space-y-2">
-          {/* 当前运行的任务 */}
+        {/* 主计时器区域 - 长按启用拖拽 */}
+        <div 
+          className={`shrink-0 p-3 pb-2 cursor-pointer ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
+          data-drag={isDragEnabled ? "true" : "false"}
+          onClick={(e) => {
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('button,a,input,textarea,select')) {
+              return;
+            }
+            if (!longPressHandlers.isLongPress.current) {
+              setIsBlurred(!isBlurred);
+            }
+          }}
+          {...longPressHandlers}
+          {...doubleTapCreate}
+          title="单击模糊 / 双击新建 / 长按拖拽"
+        >
           {activeTask ? (
-            <div 
-              className={`relative rounded-xl p-4 border cursor-pointer ${activeTask.isPaused ? 'bg-yellow-950/30 border-yellow-600/30' : 'bg-emerald-950/40 border-emerald-600/30'}`}
-              onClick={() => setIsBlurred(!isBlurred)}
-              {...doubleTapCreate}
-              title="单击模糊/双击新建"
-            >
+            <div className={`flex items-center gap-3 ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id);
                 }}
-                className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${
                   activeTask.isPaused 
-                    ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
-                    : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30' 
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30'
                 }`}
               >
-                {activeTask.isPaused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
+                {activeTask.isPaused ? <Play size={18} fill="currentColor" /> : <Pause size={18} fill="currentColor" />}
               </button>
-              
-              <div className={`text-center pl-12 transition-all ${isBlurred ? 'blur-md' : ''}`}>
-                <div className={`font-mono text-3xl font-bold tracking-wider ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                  {formatTime(displayTime)}
-                </div>
-                <div className={`text-sm font-medium mt-1 ${activeTask.isPaused ? 'text-yellow-300' : 'text-emerald-300'}`}>
-                  {activeTask.name.startsWith('#') ? activeTask.name : `#${activeTask.name}`}
-                </div>
-                <div className="text-xs text-zinc-500 mt-0.5">
-                  {activeTask.categoryPath || '未分类'}
+              <div className={`flex-1 min-w-0 transition-all ${isBlurred ? 'blur-md' : ''}`}>
+                <div className="font-mono text-2xl font-bold">{formatTime(displayTime)}</div>
+                <div className={`text-xs truncate ${activeTask.isPaused ? 'text-yellow-300/70' : 'text-emerald-300/70'}`}>
+                  {activeTask.name}
                 </div>
               </div>
             </div>
           ) : (
-            <div 
-              className="rounded-xl p-4 bg-zinc-900/50 border border-zinc-800/50 text-center cursor-pointer hover:bg-zinc-800/50 transition-colors"
-              {...doubleTapCreate}
-              title="双击新建任务"
-            >
-              <div className="font-mono text-2xl text-zinc-600">00:00:00</div>
-              <div className="text-xs text-zinc-600 mt-1">双击新建任务</div>
+            <div className="flex items-center gap-3 text-zinc-500">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                <Play size={18} />
+              </div>
+              <div className={`transition-all ${isBlurred ? 'blur-md' : ''}`}>
+                <div className="font-mono text-2xl font-bold text-zinc-600">00:00:00</div>
+                <div className="text-xs text-zinc-600">双击新建任务</div>
+              </div>
             </div>
           )}
-
-          {/* 其他任务 */}
-          {recentTasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex items-center gap-3 px-3 py-2.5 bg-zinc-900/60 rounded-xl border border-zinc-800/50 hover:bg-zinc-800/60 transition-colors group"
-            >
+        </div>
+        
+        {/* 任务网格 */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <div className="grid grid-cols-2 gap-2">
+            {recentTasks.map((task) => (
               <button
-                onClick={() => startTimer(task.id)}
-                className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-zinc-700 transition-colors shrink-0"
+                key={task.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startTimer(task.id);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 p-2 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-lg transition-colors text-left"
               >
-                <Play size={14} fill="currentColor" />
+                <Play size={12} className="text-zinc-500 shrink-0" fill="currentColor" />
+                <span className={`text-xs text-zinc-300 truncate transition-all ${isBlurred ? 'blur-sm' : ''}`}>
+                  {task.name}
+                </span>
               </button>
-              <span className={`text-sm text-zinc-300 truncate flex-1 transition-all ${isBlurred ? 'blur-sm' : ''}`}>{task.name}</span>
-            </div>
-          ))}
+            ))}
+          </div>
           
           {recentTasks.length === 0 && !activeTask && (
             <div className="text-center text-zinc-600 text-sm py-4">
