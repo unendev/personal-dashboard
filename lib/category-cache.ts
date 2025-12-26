@@ -120,6 +120,17 @@ export const CategoryCache = {
     return categoriesCache;
   },
 
+  // 读取本地缓存（不触发网络请求）
+  getCached(ttlMs?: number): CategoryNode[] {
+    const cached = loadFromStorage(ttlMs ?? DEFAULT_TTL_MS);
+    if (cached && cached.length > 0) {
+      categoriesCache = cached;
+      isCacheReady = true;
+      return cached;
+    }
+    return categoriesCache;
+  },
+
   // 检查缓存是否准备就绪
   isReady(): boolean {
     return isCacheReady;
@@ -138,4 +149,3 @@ export const CategoryCache = {
     clearStorage();
   }
 };
-

@@ -50,15 +50,24 @@ export function ThreeLayerCategorySelector({
   // 加载分类数据
   useEffect(() => {
     const loadCategories = async () => {
-      setIsLoading(true)
+      const cached = CategoryCache.getCached()
+      const hasCached = cached.length > 0
+      if (hasCached) {
+        setAllCategories(cached)
+        setIsLoading(false)
+      } else {
+        setIsLoading(true)
+      }
       try {
-        const freshData = await CategoryCache.preload({ forceRefresh: true })
+        const freshData = await CategoryCache.preload()
         setAllCategories(freshData)
       } catch (error) {
         console.error('加载分类失败:', error)
         setAllCategories([])
       } finally {
-        setIsLoading(false)
+        if (!hasCached) {
+          setIsLoading(false)
+        }
       }
     }
 
