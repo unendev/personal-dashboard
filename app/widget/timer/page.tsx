@@ -62,6 +62,7 @@ function useLongPress(callback: () => void, ms = 500) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    isLongPress.current = false;
   }, []);
   
   return {
@@ -111,6 +112,15 @@ export default function TimerWidgetPage() {
     // 3秒后自动关闭拖拽模式
     setTimeout(() => setIsDragEnabled(false), 3000);
   }, 500);
+
+  const handleToolClick = (action: () => void) => (e: React.MouseEvent | React.TouchEvent) => {
+    if (isDragEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    action();
+  };
   
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
@@ -259,23 +269,28 @@ export default function TimerWidgetPage() {
   return (
     <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden">
       {/* 左侧工具栏 */}
-      <div className="fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10">
+      <div
+        className={`fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10 ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
+        data-drag={isDragEnabled ? "true" : "false"}
+        {...longPressHandlers}
+        title="长按工具栏拖拽"
+      >
         <button
-          onClick={openMemoWindow}
+          onClick={handleToolClick(openMemoWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="备忘录"
         >
           <FileText size={18} />
         </button>
         <button
-          onClick={openTodoWindow}
+          onClick={handleToolClick(openTodoWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="待办事项"
         >
           <CheckSquare size={18} />
         </button>
         <button
-          onClick={openAiWindow}
+          onClick={handleToolClick(openAiWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           title="AI 助手"
         >
@@ -287,20 +302,18 @@ export default function TimerWidgetPage() {
       <div className="ml-10 h-full flex flex-col overflow-hidden">
         {/* 主计时器区域 - 长按启用拖拽 */}
         <div 
-          className={`shrink-0 p-3 pb-2 cursor-pointer ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
-          data-drag={isDragEnabled ? "true" : "false"}
+          className="shrink-0 p-3 pb-2 cursor-pointer"
           onClick={(e) => {
             const target = e.target as HTMLElement | null;
             if (target?.closest('button,a,input,textarea,select')) {
               return;
             }
-            if (!longPressHandlers.isLongPress.current) {
+            if (!isDragEnabled) {
               setIsBlurred(!isBlurred);
             }
           }}
-          {...longPressHandlers}
           {...doubleTapCreate}
-          title="单击模糊 / 双击新建 / 长按拖拽"
+          title="单击模糊 / 双击新建"
         >
           {activeTask ? (
             <div className={`flex items-center gap-3 ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>

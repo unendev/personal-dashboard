@@ -52,7 +52,7 @@ export function ThreeLayerCategorySelector({
     const loadCategories = async () => {
       setIsLoading(true)
       try {
-        const freshData = await CategoryCache.preload()
+        const freshData = await CategoryCache.preload({ forceRefresh: true })
         setAllCategories(freshData)
       } catch (error) {
         console.error('加载分类失败:', error)
@@ -173,7 +173,7 @@ export function ThreeLayerCategorySelector({
       // 重新加载所有分类数据
       alert('顶层分类创建成功');
       setIsLoading(true);
-      const freshData = await CategoryCache.preload();
+      const freshData = await CategoryCache.preload({ forceRefresh: true });
       setAllCategories(freshData);
       setIsLoading(false);
       
@@ -208,7 +208,7 @@ export function ThreeLayerCategorySelector({
       // 重新加载所有分类数据
       alert('中层分类创建成功');
       setIsLoading(true);
-      const freshData = await CategoryCache.preload();
+      const freshData = await CategoryCache.preload({ forceRefresh: true });
       setAllCategories(freshData);
       setIsLoading(false);
       
@@ -243,7 +243,7 @@ export function ThreeLayerCategorySelector({
       // 重新加载所有分类数据
       alert('底层分类创建成功');
       setIsLoading(true);
-      const freshData = await CategoryCache.preload();
+      const freshData = await CategoryCache.preload({ forceRefresh: true });
       setAllCategories(freshData);
       setIsLoading(false);
       
