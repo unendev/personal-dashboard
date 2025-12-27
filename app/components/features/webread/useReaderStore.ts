@@ -47,7 +47,11 @@ export const useReaderStore = create<WebReadState>()(
       
       currentCfi: '',
       progress: 0,
-      setCurrentLocation: (cfi, progress) => set({ currentCfi: cfi, progress }),
+      setCurrentLocation: (cfi, progress) => {
+        console.log('[useReaderStore] setCurrentLocation 被调用:', { cfi: cfi.substring(0, 50), progress });
+        set({ currentCfi: cfi, progress });
+        console.log('[useReaderStore] state 已更新');
+      },
       
       sidebarOpen: false,
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),

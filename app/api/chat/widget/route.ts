@@ -8,11 +8,10 @@ import { streamText, tool, convertToModelMessages, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { env } from "@/lib/env";
 
-const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 const proxyConfig: any = {};
 
-if (!isProduction) {
-  const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY || 'http://127.0.0.1:10809';
+const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+if (proxyUrl) {
   proxyConfig.httpAgent = proxyUrl;
   proxyConfig.httpsAgent = proxyUrl;
 }

@@ -846,13 +846,19 @@ export async function syncProgressFromCloud(
   try {
     const decodedBookId = decodeBookId(bookId);
 
-    // 检查锁：如果是自己的设备，直接用本地
+    // 1. 获取本地进度用于比较
+    const localProgress = await getProgress(bookId);
+
+    // 检查锁：如果是自己的设备，且本地有进度，通常直接用本地
+    // 但为了更稳健，我们引入时间戳比较，而不仅仅依赖锁
     const needSync = await checkNeedSync();
-    if (!needSync) {
-      return await getProgress(bookId);
+    
+    // 如果锁是自己的，且有本地数据，直接返回本地（性能优化）
+    if (!needSync && localProgress) {
+      return localProgress;
     }
 
-    console.log('[WebDAV] Other device modified, pulling from cloud...');
+    console.log('[WebDAV] Checking cloud progress...');
 
     // 从云端读取
     const filePath = `${decodedBookId}/progress.json`;
@@ -864,29 +870,51 @@ export async function syncProgressFromCloud(
 
     const result = await response.json();
     if (!result.success || !result.data) {
-      return await getProgress(bookId);
+      return localProgress;
     }
 
     const cloudProgress: BookProgress = JSON.parse(result.data as string);
 
-    // 保存到本地
-    await safeTransaction(
-      [LOCAL_STORE_PROGRESS],
-      'readwrite',
-      (transaction) =>
-        new Promise<void>((resolve, reject) => {
-          const store = transaction.objectStore(LOCAL_STORE_PROGRESS);
-          const request = store.put({
-            ...cloudProgress,
-            bookId: decodedBookId,
-          });
-          request.onerror = () => reject(request.error);
-          request.onsuccess = () => resolve();
-        })
-    );
+    // 核心逻辑重写：基于时间戳的冲突解决
+    // 只有当云端进度比本地新，才覆盖本地
+    const localTime = localProgress?.lastReadAt || 0;
+    const cloudTime = cloudProgress.lastReadAt || 0;
 
-    console.log('[WebDAV] Progress synced from cloud:', decodedBookId);
-    return cloudProgress;
+    if (cloudTime > localTime) {
+      console.log('[WebDAV] Cloud progress is newer, overwriting local:', {
+        cloud: new Date(cloudTime).toLocaleString(),
+        local: new Date(localTime).toLocaleString()
+      });
+
+      // 保存到本地
+      await safeTransaction(
+        [LOCAL_STORE_PROGRESS],
+        'readwrite',
+        (transaction) =>
+          new Promise<void>((resolve, reject) => {
+            const store = transaction.objectStore(LOCAL_STORE_PROGRESS);
+            const request = store.put({
+              ...cloudProgress,
+              bookId: decodedBookId,
+            });
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve();
+          })
+      );
+      return cloudProgress;
+    } else {
+      console.log('[WebDAV] Local progress is newer or equal, keeping local:', {
+        cloud: new Date(cloudTime).toLocaleString(),
+        local: new Date(localTime).toLocaleString()
+      });
+      
+      // 如果本地比云端新，应该反向推送到云端（修正云端过时数据）
+      if (localProgress && localTime > cloudTime) {
+        saveProgress(localProgress).catch(e => console.warn('Failed to push newer local progress:', e));
+      }
+      
+      return localProgress;
+    }
   } catch (error) {
     console.warn('[WebDAV] Failed to sync from cloud:', error);
     return await getProgress(bookId);

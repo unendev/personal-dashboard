@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import useSWR, { mutate } from 'swr';
-import { Play, Pause, FileText, CheckSquare, Bot } from 'lucide-react';
+import { Play, Pause, FileText, CheckSquare, Bot, GripVertical } from 'lucide-react';
 import { useTimerControl } from '@/app/hooks/useTimerControl';
 
 export const dynamic = 'force-dynamic';
@@ -44,37 +44,6 @@ function useDoubleTap(callback: () => void, delay = 300) {
   };
 }
 
-// 长按 Hook
-function useLongPress(callback: () => void, ms = 500) {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isLongPress = useRef(false);
-  
-  const start = useCallback(() => {
-    isLongPress.current = false;
-    timerRef.current = setTimeout(() => {
-      isLongPress.current = true;
-      callback();
-    }, ms);
-  }, [callback, ms]);
-  
-  const stop = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    isLongPress.current = false;
-  }, []);
-  
-  return {
-    onMouseDown: start,
-    onMouseUp: stop,
-    onMouseLeave: stop,
-    onTouchStart: start,
-    onTouchEnd: stop,
-    isLongPress,
-  };
-}
-
 interface TimerTask {
   id: string;
   name: string;
@@ -104,23 +73,6 @@ interface SessionUser {
 export default function TimerWidgetPage() {
   const doubleTapCreate = useDoubleTap(openCreateWindow);
   const [isBlurred, setIsBlurred] = useState(false);
-  const [isDragEnabled, setIsDragEnabled] = useState(false);
-  
-  // 长按启用拖拽
-  const longPressHandlers = useLongPress(() => {
-    setIsDragEnabled(true);
-    // 3秒后自动关闭拖拽模式
-    setTimeout(() => setIsDragEnabled(false), 3000);
-  }, 500);
-
-  const handleToolClick = (action: () => void) => (e: React.MouseEvent | React.TouchEvent) => {
-    if (isDragEnabled) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    action();
-  };
   
   const { data: sessionData, isLoading: sessionLoading } = useSWR<{ user?: SessionUser }>(
     '/api/auth/session',
@@ -267,100 +219,102 @@ export default function TimerWidgetPage() {
   }
 
   return (
-    <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden">
+    <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden flex">
       {/* 左侧工具栏 */}
-      <div
-        className={`fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10 relative ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
-        data-drag="false"
-        {...longPressHandlers}
-        title="长按工具栏拖拽"
-      >
-        {isDragEnabled && (
-          <div
-            className="absolute inset-0 z-10 cursor-move"
-            data-drag="true"
-            aria-hidden="true"
-          />
-        )}
+      <div className="w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10 relative shrink-0">
         <button
-          onClick={handleToolClick(openMemoWindow)}
+          onClick={openMemoWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="备忘录"
-          data-drag="false"
         >
           <FileText size={18} />
         </button>
         <button
-          onClick={handleToolClick(openTodoWindow)}
+          onClick={openTodoWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="待办事项"
-          data-drag="false"
         >
           <CheckSquare size={18} />
         </button>
         <button
-          onClick={handleToolClick(openAiWindow)}
+          onClick={openAiWindow}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           title="AI 助手"
-          data-drag="false"
         >
           <Bot size={18} />
         </button>
       </div>
 
       {/* 主面板 */}
-      <div className="ml-10 h-full flex flex-col overflow-hidden">
-        {/* 主计时器区域 - 长按启用拖拽 */}
-        <div 
-          className="shrink-0 p-3 pb-2 cursor-pointer"
-          onClick={(e) => {
-            const target = e.target as HTMLElement | null;
-            if (target?.closest('button,a,input,textarea,select')) {
-              return;
-            }
-            if (!isDragEnabled) {
-              setIsBlurred(!isBlurred);
-            }
-          }}
-          {...doubleTapCreate}
-          title="单击模糊 / 双击新建"
-        >
+      <div className="flex-1 h-full flex flex-col overflow-hidden relative">
+        {/* 主计时器区域 */}
+        <div className="shrink-0 p-3 pb-2 flex items-center gap-3">
           {activeTask ? (
-            <div className={`flex items-center gap-3 ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
+            <>
+              {/* 控制区 (Control Zone) */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   activeTask.isPaused ? startTimer(activeTask.id) : pauseTimer(activeTask.id);
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${
                   activeTask.isPaused 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30' 
-                    : 'bg-emerald-500/20 hover:bg-emerald-500/30'
+                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400' 
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400'
                 }`}
+                title={activeTask.isPaused ? "开始" : "暂停"}
+                data-drag="false"
               >
                 {activeTask.isPaused ? <Play size={18} fill="currentColor" /> : <Pause size={18} fill="currentColor" />}
               </button>
-              <div className={`flex-1 min-w-0 transition-all ${isBlurred ? 'blur-md' : ''}`}>
-                <div className="font-mono text-2xl font-bold">{formatTime(displayTime)}</div>
-                <div className={`text-xs truncate ${activeTask.isPaused ? 'text-yellow-300/70' : 'text-emerald-300/70'}`}>
-                  {activeTask.name}
+
+              {/* 模糊区 (Blur Zone) */}
+              <div 
+                className={`flex-1 min-w-0 cursor-pointer transition-all ${activeTask.isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}
+                onClick={() => setIsBlurred(!isBlurred)}
+                {...doubleTapCreate}
+                title="单击模糊 / 双击新建"
+                data-drag="false"
+              >
+                <div className={`transition-all ${isBlurred ? 'blur-md' : ''}`}>
+                  <div className="font-mono text-2xl font-bold">{formatTime(displayTime)}</div>
+                  <div className={`text-xs truncate ${activeTask.isPaused ? 'text-yellow-300/70' : 'text-emerald-300/70'}`}>
+                    {activeTask.name}
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           ) : (
-            <div className="flex items-center gap-3 text-zinc-500">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+            <>
+              {/* 空白状态控制区 */}
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500 shrink-0" data-drag="false">
                 <Play size={18} />
               </div>
-              <div className={`transition-all ${isBlurred ? 'blur-md' : ''}`}>
-                <div className="font-mono text-2xl font-bold text-zinc-600">00:00:00</div>
-                <div className="text-xs text-zinc-600">双击新建任务</div>
+
+              {/* 空白状态模糊区 */}
+              <div 
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => setIsBlurred(!isBlurred)}
+                {...doubleTapCreate}
+                title="单击模糊 / 双击新建"
+                data-drag="false"
+              >
+                 <div className={`transition-all ${isBlurred ? 'blur-md' : ''}`}>
+                  <div className="font-mono text-2xl font-bold text-zinc-600">00:00:00</div>
+                  <div className="text-xs text-zinc-600">双击新建任务</div>
+                </div>
               </div>
-            </div>
+            </>
           )}
+
+          {/* 拖拽区 (Drag Zone) */}
+          <div 
+            className="shrink-0 w-6 h-10 flex items-center justify-center cursor-move text-zinc-700 hover:text-zinc-500 transition-colors"
+            data-drag="true"
+            title="拖拽"
+          >
+            <GripVertical size={16} />
+          </div>
         </div>
         
         {/* 任务网格 */}
@@ -373,12 +327,10 @@ export default function TimerWidgetPage() {
                   e.stopPropagation();
                   startTimer(task.id);
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 p-2 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-lg transition-colors text-left"
+                className="flex items-center gap-2 p-2 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-lg transition-colors text-left group relative"
+                data-drag="false"
               >
-                <Play size={12} className="text-zinc-500 shrink-0" fill="currentColor" />
+                <Play size={12} className="text-zinc-500 shrink-0 group-hover:text-emerald-400 transition-colors" fill="currentColor" />
                 <span className={`text-xs text-zinc-300 truncate transition-all ${isBlurred ? 'blur-sm' : ''}`}>
                   {task.name}
                 </span>

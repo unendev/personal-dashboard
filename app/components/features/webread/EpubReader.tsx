@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Epub, { Book, Rendition } from 'epubjs';
 import { useReaderStore } from './useReaderStore';
 import * as webdavCache from '@/lib/webdav-cache';
-import { SelectionAIPopup } from './SelectionAIPopup';
 
 interface EpubReaderProps {
   bookId: string;
@@ -12,35 +11,48 @@ interface EpubReaderProps {
   initialLocation?: string;
   onLocationChange?: (cfi: string, progress: number) => void;
   onRenditionReady?: (rendition: Rendition) => void;
-  onNoteAdded?: (note: webdavCache.BookNote) => void;
 }
 
-interface SelectionPopup {
-  text: string;
-  position: { x: number; y: number };
-  cfiRange?: string;
-}
-
-export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady, onNoteAdded }: EpubReaderProps) {
+export default function EpubReader({ bookId, title, initialLocation, onLocationChange, onRenditionReady }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookRef = useRef<Book | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectionPopup, setSelectionPopup] = useState<SelectionPopup | null>(null);
+  
+  // 翻页状态标志 - 用于禁用 relocated 事件处理
+  const isPageTurningRef = useRef(false);
   
   const { setBook, fontSize, theme, setSelection, bubbles } = useReaderStore();
 
   // 翻页函数
-  const goNext = useCallback(() => {
+  const goNext = useCallback(async () => {
     if (renditionRef.current) {
-      renditionRef.current.next();
+      if (isPageTurningRef.current) return;
+      isPageTurningRef.current = true;
+      console.log('[PAGE-TURN] goNext 调用');
+      try {
+        await renditionRef.current.next();
+        console.log('[PAGE-TURN] goNext 完成');
+      } catch (e) {
+        console.error('[PAGE-TURN] goNext 失败:', e);
+        isPageTurningRef.current = false;
+      }
     }
   }, []);
 
-  const goPrev = useCallback(() => {
+  const goPrev = useCallback(async () => {
     if (renditionRef.current) {
-      renditionRef.current.prev();
+      if (isPageTurningRef.current) return;
+      isPageTurningRef.current = true;
+      console.log('[PAGE-TURN] goPrev 调用');
+      try {
+        await renditionRef.current.prev();
+        console.log('[PAGE-TURN] goPrev 完成');
+      } catch (e) {
+        console.error('[PAGE-TURN] goPrev 失败:', e);
+        isPageTurningRef.current = false;
+      }
     }
   }, []);
 
@@ -72,6 +84,7 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
     const handleTouchStart = (e: TouchEvent) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+      console.log('[SWIPE-DEBUG] touchstart:', { x: touchStartX, y: touchStartY });
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
@@ -81,25 +94,17 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
       
+      console.log('[SWIPE-DEBUG] touchend:', { deltaX, deltaY, minSwipeDistance });
+      
       // 确保是水平滑动（水平距离大于垂直距离）
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-        // 标记正在翻页，禁用 selectionchange
-        if (renditionRef.current) {
-          (renditionRef.current as any)._isSwipingRef = true;
-        }
-        
         if (deltaX > 0) {
+          console.log('[SWIPE-DEBUG] 右滑 - 上一页');
           goPrev(); // 右滑 = 上一页
         } else {
+          console.log('[SWIPE-DEBUG] 左滑 - 下一页');
           goNext(); // 左滑 = 下一页
         }
-        
-        // 翻页后延迟重置标志
-        setTimeout(() => {
-          if (renditionRef.current) {
-            (renditionRef.current as any)._isSwipingRef = false;
-          }
-        }, 300);
       }
     };
 
@@ -287,20 +292,6 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             body {
               -webkit-tap-highlight-color: rgba(0,0,0,0);
             }
-            /* 自定义高亮样式 - 直接应用到文本 */
-            .epub-highlight {
-              background-color: rgba(250, 204, 21, 0.4) !important;
-              border-radius: 2px;
-            }
-            .epub-highlight-yellow {
-              background-color: rgba(250, 204, 21, 0.4) !important;
-            }
-            .epub-highlight-green {
-              background-color: rgba(52, 211, 153, 0.4) !important;
-            }
-            .epub-highlight-blue {
-              background-color: rgba(96, 165, 250, 0.4) !important;
-            }
           `;
           doc.head.appendChild(style);
           
@@ -379,88 +370,26 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
           // 静默处理
         }
 
+        // 拦截 display 调用来追踪位置变化
+        const originalDisplay = rendition.display.bind(rendition);
+        rendition.display = function(target: any) {
+          console.log('[SWIPE-DEBUG] rendition.display() 被调用:', { 
+            target: typeof target === 'string' ? target.substring(0, 50) : target,
+            isPageTurning: isPageTurningRef.current,
+            stack: new Error().stack?.split('\n').slice(1, 4).join('\n')
+          });
+          return originalDisplay(target);
+        };
+        
+        // 初始化计数器
+        (window as any).__relocatedCount = 0;
+
         // 先标记为 ready，让用户可以开始阅读
         if (mounted) {
           setIsReady(true);
           if (onRenditionReady) {
             onRenditionReady(rendition);
           }
-          
-          // 存储笔记用于翻页后重新应用
-          let loadedNotes: webdavCache.BookNote[] = [];
-          
-          // 自定义高亮函数 - 直接操作 DOM
-          const applyHighlightToRange = (cfi: string, color: string) => {
-            try {
-              const range = rendition.getRange(cfi);
-              if (!range) {
-                console.log('[HL-DEBUG] 无法获取 range:', cfi);
-                return false;
-              }
-              
-              // 获取 range 所在的 document（可能是 iframe 内的 document）
-              const rangeDoc = range.startContainer.ownerDocument;
-              if (!rangeDoc) {
-                console.log('[HL-DEBUG] 无法获取 ownerDocument');
-                return false;
-              }
-              
-              // 在正确的 document 中创建高亮 span
-              const highlight = rangeDoc.createElement('span');
-              highlight.className = `epub-highlight epub-highlight-${color}`;
-              highlight.dataset.cfi = cfi;
-              
-              // 包裹选中的文本
-              try {
-                range.surroundContents(highlight);
-                console.log('[HL-DEBUG] 高亮应用成功:', { cfi, color });
-                return true;
-              } catch (e) {
-                // 如果 surroundContents 失败（跨节点），使用替代方法
-                console.log('[HL-DEBUG] surroundContents 失败，尝试替代方法');
-                const contents = range.extractContents();
-                highlight.appendChild(contents);
-                range.insertNode(highlight);
-                console.log('[HL-DEBUG] 高亮应用成功（替代方法）');
-                return true;
-              }
-            } catch (e) {
-              console.error('[HL-DEBUG] 高亮应用失败:', e);
-              return false;
-            }
-          };
-          
-          // 加载并应用高亮
-          webdavCache.getNotes(bookId).then(notes => {
-            console.log('[HL-DEBUG] 加载笔记数量:', notes.length);
-            loadedNotes = notes;
-            
-            // 延迟应用，确保内容已渲染
-            setTimeout(() => {
-              if (mounted && renditionRef.current) {
-                notes.forEach(note => {
-                  if (!note.cfi) return;
-                  console.log('[HL-DEBUG] 尝试应用高亮:', { cfi: note.cfi, color: note.color });
-                  applyHighlightToRange(note.cfi, note.color || 'yellow');
-                });
-              }
-            }, 500);
-          }).catch((e) => {
-            console.error('[HL-DEBUG] 加载笔记失败:', e);
-          });
-          
-          // 监听页面渲染完成，重新应用当前章节的高亮
-          rendition.on('rendered', (_section: any) => {
-            if (!mounted || !renditionRef.current || loadedNotes.length === 0) return;
-            
-            // 延迟重新应用高亮
-            setTimeout(() => {
-              loadedNotes.forEach(note => {
-                if (!note.cfi) return;
-                applyHighlightToRange(note.cfi, note.color || 'yellow');
-              });
-            }, 200);
-          });
         }
 
         // 尝试从缓存加载 locations，否则后台生成
@@ -491,9 +420,25 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
         rendition.on('relocated', (location: any) => {
           if (!mounted) return;
           
+          const isPageTurning = isPageTurningRef.current;
+          const relocatedCfi = location?.start?.cfi;
+          
+          console.log('[RELOCATED] #' + (window as any).__relocatedCount++, { 
+            isPageTurning,
+            cfi: relocatedCfi?.substring(0, 30)
+          });
+          
+          // 如果正在翻页，这是翻页后的第一个 relocated 事件，重置标志
+          if (isPageTurning) {
+            isPageTurningRef.current = false;
+            console.log('[PAGE-TURN] relocated 触发，重置翻页标志');
+          }
+          
           try {
             const cfi = location?.start?.cfi;
             if (!cfi || typeof cfi !== 'string') return;
+            
+            console.log('[RELOCATED] #' + (window as any).__relocatedCount + ' 处理');
             
             // 使用 locations 计算准确的进度
             let progressValue = 0;
@@ -510,12 +455,14 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             if (progressValue > 1) progressValue = progressValue / 100;
             progressValue = Math.max(0, Math.min(1, progressValue));
             
+            // 调用 onLocationChange 回调
             onLocationChangeRef.current?.(cfi, progressValue);
             
             if (saveProgressTimeout) clearTimeout(saveProgressTimeout);
             
             saveProgressTimeout = setTimeout(async () => {
               try {
+                console.log('[SWIPE-DEBUG] 保存进度:', { cfi: cfi.substring(0, 50), progress: progressValue });
                 await webdavCache.saveProgress({
                   bookId,
                   currentCfi: cfi,
@@ -523,87 +470,56 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
                   currentChapter: 'Unknown',
                   lastReadAt: Date.now(),
                 });
+                console.log('[SWIPE-DEBUG] 进度保存完成');
               } catch (e) {
-                // 静默处理
+                console.error('[SWIPE-DEBUG] 进度保存失败:', e);
               }
             }, 500);
           } catch (e) {
             // 静默处理
           }
         });
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rendition.on('selected', (cfiRange: string, _contents: any) => {
-          const range = rendition.getRange(cfiRange);
-          const text = range.toString().trim();
-          
-          // 调试：检查选区和文本位置
-          const rect = range.getBoundingClientRect();
-          console.log('[HL-DEBUG] 选中文本:', { 
-            text: text.substring(0, 30),
-            cfiRange,
-            textRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
-          });
-          
-          setSelection({ text, cfiRange });
-          
-          if (text && text.length > 0) {
-            try {
-              const viewerRect = viewerRef.current?.getBoundingClientRect();
-              if (viewerRect) {
-                setSelectionPopup({
-                  text,
-                  cfiRange,
-                  position: {
-                    x: rect.left + rect.width / 2,
-                    y: rect.top,
-                  }
-                });
-              }
-            } catch (e) {
-              // 静默处理
-            }
-          }
-        });
         
         rendition.on('click', (e: MouseEvent) => {
           setSelection(null);
           
-          // 检查点击位置，实现左右翻页
-          const viewerRect = viewerRef.current?.getBoundingClientRect();
-          if (viewerRect) {
-            const clickX = e.clientX - viewerRect.left;
-            const width = viewerRect.width;
-            
-            // 左侧 25% 区域 - 上一页
-            if (clickX < width * 0.25) {
-              // 检查是否有选中文本
-              const selection = window.getSelection();
-              const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
-              if ((!selection || selection.isCollapsed) && !iframeSelection) {
-                goPrevRef.current();
-                return;
-              }
-            }
-            // 右侧 25% 区域 - 下一页
-            else if (clickX > width * 0.75) {
-              const selection = window.getSelection();
-              const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
-              if ((!selection || selection.isCollapsed) && !iframeSelection) {
-                goNextRef.current();
-                return;
-              }
-            }
-          }
+          // 基于视口宽度的自适应点击判断
+          // e.view 是事件源的 window 对象（可能是 iframe 的 window）
+          const eventWindow = e.view;
           
-          // 只有在没有选中文本时才关闭弹窗
-          setTimeout(() => {
-            const selection = window.getSelection();
-            const iframeSelection = renditionRef.current?.getContents()?.map((c: any) => c.window?.getSelection()).find((s: any) => s && !s.isCollapsed);
-            if ((!selection || selection.isCollapsed) && !iframeSelection) {
-              setSelectionPopup(null);
+          if (eventWindow) {
+            const width = eventWindow.innerWidth;
+            const x = e.clientX;
+            const ratio = x / width;
+            
+            console.log('[CLICK] 点击位置:', { 
+              clientX: x, 
+              width, 
+              ratio: ratio.toFixed(2),
+              isIframe: eventWindow !== window
+            });
+            
+            // 左侧 30% 区域 - 上一页
+            if (ratio < 0.3) {
+              console.log('[CLICK] 左侧点击 - 调用 goPrev()');
+              goPrevRef.current();
             }
-          }, 200);
+            // 其余 70% 区域 - 下一页
+            else {
+              console.log('[CLICK] 右侧/中间点击 - 调用 goNext()');
+              goNextRef.current();
+            }
+          } else {
+             // 降级处理：如果获取不到 view，使用之前的 viewerRect 逻辑
+             const viewerRect = viewerRef.current?.getBoundingClientRect();
+             if (viewerRect) {
+               // ... 原有逻辑作为备份 ...
+                const clickX = e.clientX - viewerRect.left;
+                const width = viewerRect.width;
+                if (clickX < width * 0.3) goPrevRef.current();
+                else if (clickX > width * 0.7) goNextRef.current();
+             }
+          }
         });
 
         // 处理链接点击 - 支持 Ctrl+点击（桌面）和长按/直接点击（移动端）
@@ -712,55 +628,6 @@ export default function EpubReader({ bookId, title, initialLocation, onLocationC
             <p className="text-sm text-amber-200">正在加载书籍...</p>
           </div>
         </div>
-      )}
-
-      {/* 文本选择 AI 弹窗 */}
-      {selectionPopup && (
-        <SelectionAIPopup
-          selectedText={selectionPopup.text}
-          position={selectionPopup.position}
-          onClose={() => setSelectionPopup(null)}
-          bookTitle={title}
-          bookId={bookId}
-          cfiRange={selectionPopup.cfiRange}
-          onNoteAdded={(note) => {
-            console.log('[HL-DEBUG] onNoteAdded:', { cfi: note.cfi, color: note.color });
-            
-            if (renditionRef.current && note.cfi) {
-              try {
-                const range = renditionRef.current.getRange(note.cfi);
-                if (range) {
-                  // 获取 range 所在的 document
-                  const rangeDoc = range.startContainer.ownerDocument;
-                  if (!rangeDoc) {
-                    console.log('[HL-DEBUG] 无法获取 ownerDocument');
-                  } else {
-                    // 在正确的 document 中创建高亮 span
-                    const highlight = rangeDoc.createElement('span');
-                    highlight.className = `epub-highlight epub-highlight-${note.color || 'yellow'}`;
-                    highlight.dataset.cfi = note.cfi;
-                    
-                    try {
-                      range.surroundContents(highlight);
-                      console.log('[HL-DEBUG] 新增高亮成功');
-                    } catch (e) {
-                      // 跨节点时使用替代方法
-                      const contents = range.extractContents();
-                      highlight.appendChild(contents);
-                      range.insertNode(highlight);
-                      console.log('[HL-DEBUG] 新增高亮成功（替代方法）');
-                    }
-                  }
-                } else {
-                  console.log('[HL-DEBUG] 无法获取 range');
-                }
-              } catch (e) {
-                console.error('[HL-DEBUG] 新增高亮失败:', e);
-              }
-            }
-            onNoteAdded?.(note);
-          }}
-        />
       )}
     </div>
   );

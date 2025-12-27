@@ -17,8 +17,6 @@ export default function ReaderPage() {
   const { id } = useParams<{ id: string }>();
   const [bookMetadata, setBookMetadata] = useState<BookMetadata | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notes, setNotes] = useState<any[]>([]);
-  const [loadingNotes, setLoadingNotes] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [savedLocation, setSavedLocation] = useState<string | undefined>(undefined);
@@ -26,7 +24,6 @@ export default function ReaderPage() {
   const [toc, setToc] = useState<any[]>([]);
   const [rendition, setRendition] = useState<any>(null);
   const [currentChapter, setCurrentChapter] = useState<string>('');
-  const [noteColorFilter, setNoteColorFilter] = useState<string | null>(null);
   
   const { currentCfi, progress, fontSize, setFontSize, theme, setTheme, book } = useReaderStore();
 
@@ -56,13 +53,6 @@ export default function ReaderPage() {
     }).catch(err => {
       console.warn('[ReaderPage] Failed to sync progress:', err);
       setProgressLoaded(true);
-    });
-
-    // 获取笔记
-    setLoadingNotes(true);
-    webdavCache.getNotes(id).then(notes => {
-      setNotes(notes);
-      setLoadingNotes(false);
     });
   }, [id]);
 
@@ -189,14 +179,12 @@ export default function ReaderPage() {
             title={bookMetadata?.title}
             initialLocation={savedLocation}
             onLocationChange={(cfi, p) => {
+              console.log('[ReaderPage] onLocationChange 被调用:', { cfi: cfi.substring(0, 50), progress: p });
               useReaderStore.getState().setCurrentLocation(cfi, p);
+              console.log('[ReaderPage] setCurrentLocation 调用完成');
             }}
             onRenditionReady={(rend) => {
               setRendition(rend);
-            }}
-            onNoteAdded={(note) => {
-              // 实时更新笔记列表
-              setNotes(prev => [note, ...prev]);
             }}
           />
           
@@ -344,126 +332,6 @@ export default function ReaderPage() {
               </div>
             </div>
           )}
-
-          {/* 下部区域：笔记列表 - 填满底部 */}
-          <div 
-            className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-white/10 z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="max-w-lg mx-auto">
-              <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-amber-300" />
-                  <span className="text-xs text-amber-300 font-medium">阅读笔记</span>
-                </div>
-                {/* 颜色筛选 */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setNoteColorFilter(null)}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs ${noteColorFilter === null ? 'border-amber-400 bg-slate-700' : 'border-slate-600 hover:border-slate-500'}`}
-                    title="全部"
-                  >
-                    <span className="text-amber-300">{notes.length}</span>
-                  </button>
-                  {['yellow', 'green', 'blue'].map(color => {
-                    const count = notes.filter(n => (n.color || 'yellow') === color).length;
-                    const bgClass = { yellow: 'bg-yellow-500', green: 'bg-emerald-500', blue: 'bg-blue-500' }[color];
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => setNoteColorFilter(noteColorFilter === color ? null : color)}
-                        className={`w-5 h-5 rounded-full ${bgClass} border-2 ${noteColorFilter === color ? 'border-white scale-110' : 'border-transparent hover:scale-105'} transition-transform relative`}
-                        title={`${color === 'yellow' ? '黄色' : color === 'green' ? '绿色' : '蓝色'} (${count})`}
-                      >
-                        {count > 0 && (
-                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-slate-800 rounded-full text-[8px] text-white flex items-center justify-center">{count}</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="p-3 max-h-40 overflow-y-auto custom-scrollbar">
-                {loadingNotes ? (
-                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-amber-500" /></div>
-                ) : notes.length === 0 ? (
-                  <div className="text-center py-3 text-amber-600 text-sm">
-                    <p>暂无笔记，划取文字可添加</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {notes
-                      .filter(note => noteColorFilter === null || (note.color || 'yellow') === noteColorFilter)
-                      .slice(0, 10)
-                      .map(note => {
-                        // 根据笔记颜色设置边框颜色
-                        const colorMap: Record<string, string> = {
-                          yellow: 'border-yellow-500',
-                          green: 'border-emerald-500',
-                          blue: 'border-blue-500',
-                        };
-                        const borderColorClass = colorMap[note.color || 'yellow'] || 'border-amber-700/50';
-                        
-                        return (
-                          <div 
-                            key={note.id} 
-                            className={`pl-3 border-l-2 ${borderColorClass} hover:opacity-80 transition-opacity cursor-pointer py-1 flex items-start justify-between gap-2 group/note`}
-                          >
-                            <div 
-                              className="flex-1 min-w-0"
-                              onClick={() => {
-                                if (note.cfi && rendition) {
-                                  try {
-                                    rendition.display(note.cfi);
-                                    setShowControls(false);
-                                  } catch (e) {
-                                    // 静默处理
-                                  }
-                                }
-                              }}
-                            >
-                              <p className="text-xs text-amber-300 line-clamp-1">{note.text}</p>
-                              <span className="text-xs text-amber-600">{new Date(note.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  // 先移除高亮
-                                  if (rendition && note.cfi) {
-                                    try {
-                                      rendition.annotations.remove(note.cfi, 'highlight');
-                                    } catch (err) {
-                                      console.warn('Failed to remove highlight:', err);
-                                    }
-                                  }
-                                  await webdavCache.deleteNote(id, note.id);
-                                  setNotes(prev => prev.filter(n => n.id !== note.id));
-                                } catch (err) {
-                                  console.error('Failed to delete note:', err);
-                                }
-                              }}
-                              className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover/note:opacity-100 transition-opacity flex-shrink-0"
-                              title="删除笔记"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    {(() => {
-                      const filteredCount = notes.filter(note => noteColorFilter === null || (note.color || 'yellow') === noteColorFilter).length;
-                      return filteredCount > 10 && (
-                        <div className="text-center text-xs text-amber-500 pt-1">
-                          还有 {filteredCount - 10} 条笔记...
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       )}
       
