@@ -19,25 +19,43 @@ export default function TodoWidgetPage() {
   const [newGroup, setNewGroup] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['default']));
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // 加载数据和状态
   useEffect(() => {
-    const saved = localStorage.getItem('widget-todo-items');
-    console.log('[Widget Todo] Loading from localStorage:', saved);
-    if (saved) try { 
-      const parsed = JSON.parse(saved);
-      console.log('[Widget Todo] Parsed items:', parsed);
-      setItems(parsed); 
-    } catch (e) {
-      console.error('[Widget Todo] Failed to parse:', e);
+    // 加载待办项
+    const savedItems = localStorage.getItem('widget-todo-items');
+    if (savedItems) {
+      try {
+        setItems(JSON.parse(savedItems));
+      } catch (e) {
+        console.error('[Widget Todo] Failed to parse items:', e);
+      }
     }
-    
-    // 监听其他窗口的 localStorage 变化（AI 窗口添加 todo 时）
+
+    // 加载展开状态
+    const savedExpanded = localStorage.getItem('widget-todo-expanded-groups');
+    if (savedExpanded) {
+      try {
+        setExpandedGroups(new Set(JSON.parse(savedExpanded)));
+      } catch (e) {
+        console.error('[Widget Todo] Failed to parse expanded groups:', e);
+      }
+    }
+
+    // 加载显示已完成状态
+    const savedShowCompleted = localStorage.getItem('widget-todo-show-completed');
+    if (savedShowCompleted !== null) {
+      setShowCompleted(savedShowCompleted === 'true');
+    }
+
+    setIsInitialized(true);
+
+    // 监听其他窗口变化
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'widget-todo-items' && e.newValue) {
         try {
-          const parsed = JSON.parse(e.newValue);
-          console.log('[Widget Todo] Storage changed from other window:', parsed);
-          setItems(parsed);
+          setItems(JSON.parse(e.newValue));
         } catch (err) {
           console.error('[Widget Todo] Failed to parse storage change:', err);
         }
@@ -48,10 +66,26 @@ export default function TodoWidgetPage() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // 持久化待办项
   useEffect(() => {
-    console.log('[Widget Todo] Saving to localStorage:', items);
-    localStorage.setItem('widget-todo-items', JSON.stringify(items));
-  }, [items]);
+    if (isInitialized) {
+      localStorage.setItem('widget-todo-items', JSON.stringify(items));
+    }
+  }, [items, isInitialized]);
+
+  // 持久化展开状态
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('widget-todo-expanded-groups', JSON.stringify(Array.from(expandedGroups)));
+    }
+  }, [expandedGroups, isInitialized]);
+
+  // 持久化显示已完成状态
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('widget-todo-show-completed', String(showCompleted));
+    }
+  }, [showCompleted, isInitialized]);
 
   const handleSubmit = () => {
     const text = inputValue.trim();
@@ -64,10 +98,8 @@ export default function TodoWidgetPage() {
       group: newGroup.trim() || 'default',
       createdAt: Date.now(),
     };
-    console.log('[Widget Todo] Adding item:', item);
     setItems(prev => [...prev, item]);
     setInputValue('');
-    // 展开新添加的分组
     if (item.group !== 'default') {
       setExpandedGroups(prev => new Set([...prev, item.group]));
     }
@@ -92,7 +124,6 @@ export default function TodoWidgetPage() {
     });
   };
 
-  // 按分组组织
   const groups = [...new Set(items.map(t => t.group))];
   const activeTodos = items.filter(t => !t.completed);
   const completedTodos = items.filter(t => t.completed);
