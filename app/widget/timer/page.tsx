@@ -270,15 +270,23 @@ export default function TimerWidgetPage() {
     <div className="w-full h-full bg-[#1a1a1a] text-white select-none overflow-hidden">
       {/* 左侧工具栏 */}
       <div
-        className={`fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10 ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
-        data-drag={isDragEnabled ? "true" : "false"}
+        className={`fixed left-0 top-0 w-10 h-full bg-[#141414] border-r border-zinc-800 flex flex-col z-10 relative ${isDragEnabled ? 'ring-2 ring-emerald-500/50' : ''}`}
+        data-drag="false"
         {...longPressHandlers}
         title="长按工具栏拖拽"
       >
+        {isDragEnabled && (
+          <div
+            className="absolute inset-0 z-10 cursor-move"
+            data-drag="true"
+            aria-hidden="true"
+          />
+        )}
         <button
           onClick={handleToolClick(openMemoWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="备忘录"
+          data-drag="false"
         >
           <FileText size={18} />
         </button>
@@ -286,6 +294,7 @@ export default function TimerWidgetPage() {
           onClick={handleToolClick(openTodoWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors border-b border-zinc-800"
           title="待办事项"
+          data-drag="false"
         >
           <CheckSquare size={18} />
         </button>
@@ -293,6 +302,7 @@ export default function TimerWidgetPage() {
           onClick={handleToolClick(openAiWindow)}
           className="h-1/3 w-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           title="AI 助手"
+          data-drag="false"
         >
           <Bot size={18} />
         </button>
