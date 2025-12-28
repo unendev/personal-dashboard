@@ -35,6 +35,12 @@ declare global {
         isComplete: boolean;
       } | null;
       currentUrl: string | null;
+      latestIntel: {
+        imageUrl: string;
+        uploaderId: string;
+        uploaderName: string;
+        timestamp: number;
+      } | null;
     };
 
     // Custom user info set when authenticating with a secret key

@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const filename = searchParams.get('filename') || 'image'
     const contentType = searchParams.get('contentType') || 'image/jpeg'
+    const dir = searchParams.get('dir') || 'treasure-images'
     
     // 根据contentType确定文件扩展名
     let extension = 'jpg'
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     // 生成唯一文件名（包含扩展名）
     const timestamp = Date.now()
     const randomStr = crypto.randomBytes(8).toString('hex')
-    const fileKey = `treasure-images/${timestamp}-${randomStr}.${extension}`
+    const fileKey = `${dir}/${timestamp}-${randomStr}.${extension}`
 
     // 设置过期时间（1小时后）
     const expireTime = new Date(Date.now() + 3600 * 1000).toISOString()
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
       conditions: [
         ['content-length-range', 0, 10485760], // 最大 10MB
         { bucket: OSS_CONFIG.bucket },
-        ['starts-with', '$key', 'treasure-images/'],
+        ['starts-with', '$key', `${dir}/`],
       ]
     })
 

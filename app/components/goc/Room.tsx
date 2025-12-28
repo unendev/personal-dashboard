@@ -71,6 +71,7 @@ export function Room({ children, roomId, userName }: { children: ReactNode; room
           messages: new LiveList([]),
           streamingResponse: null,
           currentUrl: null,
+          latestIntel: null,
         }}
       >
         <ClientSideSuspense fallback={
