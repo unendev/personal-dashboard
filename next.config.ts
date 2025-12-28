@@ -2,9 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // 注意：standalone 输出在 Windows 上需要管理员权限创建符号链接
-  // Vercel 部署不需要此选项
-  // output: 'standalone',
   
   // 配置图片域名
   images: {

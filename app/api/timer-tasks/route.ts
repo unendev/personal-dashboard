@@ -254,8 +254,14 @@ export async function PUT(request: NextRequest) {
     const updatedTask = await TimerDB.updateTask(id, updates);
     return NextResponse.json(updatedTask);
   } catch (error) {
-    console.error('Error updating timer task:', error);
-    return NextResponse.json({ error: 'Failed to update timer task' }, { status: 500 });
+    console.error('❌ [API /timer-tasks PUT] 更新失败:', error);
+    if (error instanceof Error) {
+        console.error('Stack:', error.stack);
+    }
+    return NextResponse.json({ 
+        error: 'Failed to update timer task',
+        details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
@@ -276,4 +282,3 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete timer task' }, { status: 500 });
   }
 }
-

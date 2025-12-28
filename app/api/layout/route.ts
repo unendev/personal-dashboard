@@ -8,7 +8,12 @@ function getUserId() {
   return 'user-1';
 }
 
+export const dynamic = 'force-static';
+
 export async function GET() {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const userId = getUserId(); // 获取用户ID
     const userLayout = await prisma.userLayout.findUnique({
@@ -22,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const layoutConfig = await request.json();
     const userId = getUserId(); // 获取用户ID

@@ -3,10 +3,15 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-static';
+
 /**
  * GET /api/notes - 获取当前用户的所有笔记列表（仅标题和ID）
  */
 export async function GET() {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json([]);
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -36,6 +41,9 @@ export async function GET() {
  * POST /api/notes - 为当前用户创建一篇新笔记
  */
 export async function POST(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

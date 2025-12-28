@@ -49,6 +49,24 @@ const protectedPaths = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // 处理 CORS
+  const origin = request.headers.get('origin');
+  const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    const response = pathname.includes('/api/') ? NextResponse.next() : undefined;
+    if (response) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      
+      if (request.method === 'OPTIONS') {
+        return new NextResponse(null, { status: 204, headers: response.headers });
+      }
+    }
+  }
+
   // 检查是否是需要保护的路径
   const isProtectedPath = protectedPaths.some(path => pathname.includes(path))
   

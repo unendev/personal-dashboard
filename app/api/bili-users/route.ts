@@ -51,14 +51,22 @@ function writeConfig(users: BiliUser[]): boolean {
   }
 }
 
+export const dynamic = 'force-static';
+
 // GET: 获取所有UP主配置
 export async function GET() {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({ users: [] });
+  }
   const users = readConfig();
   return NextResponse.json({ users });
 }
 
 // POST: 添加新UP主
 export async function POST(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const { uid } = await request.json();
 
@@ -99,6 +107,9 @@ export async function POST(request: Request) {
 
 // PUT: 更新UP主配置
 export async function PUT(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const { uid, enabled } = await request.json();
     const users = readConfig();
@@ -120,6 +131,9 @@ export async function PUT(request: Request) {
 
 // DELETE: 删除UP主
 export async function DELETE(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const { uid } = await request.json();
     const users = readConfig();

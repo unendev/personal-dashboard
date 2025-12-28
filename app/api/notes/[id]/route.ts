@@ -3,10 +3,19 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-static';
+
+export async function generateStaticParams() {
+  return [];
+}
+
 /**
  * GET /api/notes/[id] - 获取单篇笔记的完整内容
  */
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -37,6 +46,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
  * PUT /api/notes/[id] - 更新单篇笔记
  */
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -75,6 +87,9 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
  * DELETE /api/notes/[id] - 删除单篇笔记
  */
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

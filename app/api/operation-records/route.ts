@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserId } from '@/lib/auth-utils';
 
+export const dynamic = 'force-static';
+
 export async function GET(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json([]);
+  }
   try {
     const userId = await getUserId(request);
     
@@ -23,6 +28,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const userId = await getUserId(request);
     const body = await request.json();

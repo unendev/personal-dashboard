@@ -39,7 +39,12 @@ function convertToFrontendStructure(categories: DatabaseCategory[]): CategoryNod
   }));
 }
 
+export const dynamic = 'force-static';
+
 export async function GET() {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json([]);
+  }
   try {
     const categories = await prisma.logCategory.findMany({
       include: {
@@ -66,6 +71,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const { type, parentPath, name } = await request.json() as CreateRequest;
     
@@ -185,6 +193,9 @@ async function getAllDescendantIds(categoryId: string, prismaClient: typeof pris
 }
 
 export async function DELETE(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const body = await request.json();
     console.log('DELETE request body:', body);

@@ -1,0 +1,961 @@
+<html><head><meta name="color-scheme" content="light dark"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;rss version="2.0" xmlns:discourse="http://www.discourse.org/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"&gt;
+  &lt;channel&gt;
+    &lt;title&gt;LINUX DO - 最新话题&lt;/title&gt;
+    &lt;link&gt;https://linux.do/latest&lt;/link&gt;
+    &lt;description&gt;最新话题&lt;/description&gt;
+    &lt;language&gt;zh-CN&lt;/language&gt;
+      &lt;lastBuildDate&gt;Sat, 27 Dec 2025 11:00:19 +0000&lt;/lastBuildDate&gt;
+      &lt;atom:link href="https://linux.do/latest.rss" rel="self" type="application/rss+xml" /&gt;
+        &lt;item&gt;
+          &lt;title&gt;🌟使用n8n给大模型上搜索能力与站点抓取能力&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[bit]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;今天尝试用n8n搭一个agent(当然也可以作为mcp)，&lt;/p&gt;
+&lt;h3&gt;&lt;a name="p-11758722-searxng-json-1" class="anchor" href="https://linux.do#p-11758722-searxng-json-1" aria-label="标题链接"&gt;&lt;/a&gt;搜索能力借助searXNG json实现&lt;/h3&gt;
+&lt;h3&gt;&lt;a name="p-11758722-jscode-2" class="anchor" href="https://linux.do#p-11758722-jscode-2" aria-label="标题链接"&gt;&lt;/a&gt;站点抓取使用jscode过滤标签&lt;/h3&gt;
+&lt;h3&gt;&lt;a name="p-11758722-deepseek32n8nchat-3" class="anchor" href="https://linux.do#p-11758722-deepseek32n8nchat-3" aria-label="标题链接"&gt;&lt;/a&gt;底层模型为deepseek3.2，效果可以在n8n自带的chat网页尝尝鲜，逆向的模型，随时崩~&lt;/h3&gt;
+&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://8.555222.best/webhook/879de6c9-b926-4295-ac7d-9a69362334c1/chat"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://8.555222.best/webhook/879de6c9-b926-4295-ac7d-9a69362334c1/chat" target="_blank" rel="noopener nofollow ugc"&gt;8.555222.best&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    
+
+&lt;h3&gt;&lt;a href="https://8.555222.best/webhook/879de6c9-b926-4295-ac7d-9a69362334c1/chat" target="_blank" rel="noopener nofollow ugc"&gt;Chat&lt;/a&gt;&lt;/h3&gt;
+
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/5/4/5/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3.png" data-download-href="https://linux.do/uploads/default/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/5/4/5/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3_2_231x500.png" alt="image" data-base62-sha1="c1VhPhq58Qb4FimKp2Xe4nxM9wv" width="231" height="500" srcset="https://linux.do/uploads/default/optimized/4X/5/4/5/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3_2_231x500.png, https://linux.do/uploads/default/optimized/4X/5/4/5/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3_2_346x750.png 1.5x, https://linux.do/uploads/default/original/4X/5/4/5/5451c3c1fcf923a25c1882ff42ad890c4ad3c5b3.png 2x" data-dominant-color="E8EDEF"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-11758722-n8nwebhookapiopenai-apimessagenew-apinew-apidify-4" class="anchor" href="https://linux.do#p-11758722-n8nwebhookapiopenai-apimessagenew-apinew-apidify-4" aria-label="标题链接"&gt;&lt;/a&gt;礼貌询问：n8n貌似只提供了webhook的api，格式与openai API的message相去甚远，有大佬知道怎么接入new-api这种站点吗？new-api貌似支持dify&lt;/h2&gt;
+&lt;h2&gt;&lt;a name="p-11758722-search-url-5" class="anchor" href="https://linux.do#p-11758722-search-url-5" aria-label="标题链接"&gt;&lt;/a&gt;模板如下，search url需要自行替换&lt;/h2&gt;
+&lt;pre data-code-wrap="json"&gt;&lt;code class="lang-json"&gt;{
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "antigravity-iFlow-deepseek-v3.2-chat",
+          "mode": "list",
+          "cachedResultName": "antigravity-iFlow-deepseek-v3.2-chat"
+        },
+        "options": {}
+      },
+      "id": "0b79aa43-568f-4529-ad0e-ff576bceb96a",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        48,
+        912
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "Tfe338JbCVmqdASq",
+          "name": "NewAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "你是一个智能问答助手，名字叫chaos AI， 正在由chaos(https://github.com/chaos-zhu/easynode)调试开发，底层支持模型为：deepSeek3.2，能够通过搜索和获取网页内容来回答用户问题。是否调用工具由从用户的提问中判断：\n\n## 可用工具\n\n### 1. search\n- **功能**：搜索网页内容\n- **参数**：`url` - 完整的搜索URL\n- **格式**：`https://xxx.com/search?format=json&amp;amp;q={关键词}`\n- **示例**：查询\"Google\" → `{\"url\": \"https://xxx.com/search?format=json&amp;amp;q=Google\"}`\n\n### 2. getUrlContent\n- **功能**：获取指定URL的网页内容\n- **参数**：`url` - 完整的目标URL\n- **示例**：`{\"url\": \"https://github.com/some-path\"}`\n\n## 使用规则\n\n1. **搜索流程**：先用 `search` 获取搜索结果，再用 `getUrlContent` 获取详细内容\n2. **失败重试**：请求失败时最大可重试1次\n3. **单页应用**：如果响应内容为空则可能被安全策略拦截或单页应用，无需重复请求，直接返回url给用户，让用户自行访问\n4. **引用来源**：回答时必须使用Markdown格式标注引用的URL来源\n\n## 回答格式\n\n- 使用清晰的Markdown语法\n- 在回答末尾列出参考来源链接"
+        }
+      },
+      "id": "c5b1e9b6-c552-4433-83b6-f376237521a3",
+      "name": "Talk to Your Data",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        656,
+        320
+      ],
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "26e27628-ac22-4dea-971d-e63f0b81903f",
+      "name": "Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        528,
+        944
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "toolDescription": "利用自定义搜索引擎来搜索关键词信息，传递查询的格式如下：https://xxx.com/search?format=json&amp;amp;q=keyword",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', `string,eg: https://xxx/search?format=json&amp;amp;q=Google`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        672,
+        960
+      ],
+      "id": "37d1f7e5-8ea9-41e2-b516-c560e8664253",
+      "name": "search",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "KTy3uRH5iyhsoQmG",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/KTy3uRH5iyhsoQmG",
+          "cachedResultName": "响应内容清理"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', `string，eg: https://google.com`, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        960
+      ],
+      "id": "b3388c42-e9b8-424e-9c73-13191c7c7d6e",
+      "name": "getUrlContent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "antigravity-Qwen-qwen3-coder-flash",
+          "mode": "list",
+          "cachedResultName": "antigravity-Qwen-qwen3-coder-flash"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        944
+      ],
+      "id": "cde0d55b-b975-46ba-af90-c260d1515cc0",
+      "name": "OpenAI Chat Model fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "Tfe338JbCVmqdASq",
+          "name": "NewAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is Chaos. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        128,
+        464
+      ],
+      "id": "38d87f6f-3b53-4661-bdba-27521fdb4677",
+      "name": "When chat message received",
+      "webhookId": "879de6c9-b926-4295-ac7d-9a69362334c1"
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getUrlContent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Talk to Your Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d83025a1bd26c3ae5045af29cf582e259564d5a324e7343e98c2d6ea9f686a4"
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+            &lt;p&gt;&lt;small&gt;2 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368176"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368176&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 11:00:19 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368176&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368176.rss"&gt;🌟使用n8n给大模型上搜索能力与站点抓取能力&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;奇怪，文心5.0 1203没有详细的基准测试数据&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[York Zhao]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;国产替代&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;多模态，日常使用是没问题的&lt;br&gt;
+可惜这个模型到目前，没有公布任何的基准测试结果&lt;br&gt;
+也许百度玩嗨了？忘本了？&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368154"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368154&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:53:12 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368154&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368154.rss"&gt;奇怪，文心5.0 1203没有详细的基准测试数据&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;话说你能看出别人眼睛失焦吗？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[stevessr backup]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/a/d/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4.jpeg" data-download-href="https://linux.do/uploads/default/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4" title="IMG_20251226_083449_109"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/d/a/d/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4_2_690x388.jpeg" alt="IMG_20251226_083449_109" data-base62-sha1="ve75ehYkUQMBQR0dTCQpr9JsGl6" width="690" height="388" srcset="https://linux.do/uploads/default/optimized/4X/d/a/d/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4_2_690x388.jpeg, https://linux.do/uploads/default/optimized/4X/d/a/d/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4_2_1035x582.jpeg 1.5x, https://linux.do/uploads/default/original/4X/d/a/d/dadbd5f01e99d8dfc8abf773710b40aa017cb2d4.jpeg 2x" data-dominant-color="979E98"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+感觉难以验证，没人陪我疯狂&lt;br&gt;
+我也无法在失焦的情况下看清我自己的眼睛&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;20 个帖子 - 8 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368153"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368153&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:53:02 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368153&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368153.rss"&gt;话说你能看出别人眼睛失焦吗？&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;鞋子破了（物理意义）&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[xdai555]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;佬们，今天早上打羽毛球的时候，跑得有点多，完事发现两年前斥巨资买的鞋子开线了。&lt;br&gt;
+平时穿的也不太多，就除了上班以外的外出场合或者打球的时候会穿。&lt;/p&gt;
+&lt;div class="spoiler"&gt;&lt;a href="https://linux.do/t/topic/1368142/1"&gt;剧透&lt;/a&gt;&lt;/div&gt;
+&lt;p&gt;本人自觉还是有点动手能力，以前也给手机换过电池啥的，纠结了一会，还是先选择缝缝补补又一年 &lt;img src="https://linux.do/images/emoji/twemoji/pleading_face.png?v=15" title=":pleading_face:" class="emoji" alt=":pleading_face:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;打开哔哩哔哩大学，学了三分钟 &lt;a href="https://www.bilibili.com/video/BV1sUCcBDEYt/" rel="noopener nofollow ugc"&gt;隐形针法&lt;/a&gt;，拿起针线就开搞，在旧衣服上试了两次手法都没问题，还是没在鞋子上搞成功 &lt;img src="https://linux.do/images/emoji/twemoji/sad_but_relieved_face.png?v=15" title=":sad_but_relieved_face:" class="emoji" alt=":sad_but_relieved_face:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;手上也没有对应颜色的线，于是只能按最普通的方法搞一下了。&lt;/p&gt;
+&lt;p&gt;成品如下，感觉还不错，穿上正面基本看不出来。&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/c/b/2/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a.jpeg" data-download-href="https://linux.do/uploads/default/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a" title="作案工具"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/c/b/2/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a_2_375x500.jpeg" alt="作案工具" data-base62-sha1="sZ1dySCq4tTUsD0QnT65nwb2yJc" width="375" height="500" srcset="https://linux.do/uploads/default/optimized/4X/c/b/2/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a_2_375x500.jpeg, https://linux.do/uploads/default/optimized/4X/c/b/2/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a_2_562x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/c/b/2/cb22acf7cb02c9ed9abea602c3a4ca54a83d0b5a_2_750x1000.jpeg 2x" data-dominant-color="6F5C54"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/e/e/7/ee71d5bd2041839b726ba657dab13086e6761cea.jpeg" data-download-href="https://linux.do/uploads/default/ee71d5bd2041839b726ba657dab13086e6761cea" title="鞋子_缝合后"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/e/e/7/ee71d5bd2041839b726ba657dab13086e6761cea_2_375x500.jpeg" alt="鞋子_缝合后" data-base62-sha1="y1nwKdobsVVFrB3VHVsbVWAru2e" width="375" height="500" srcset="https://linux.do/uploads/default/optimized/4X/e/e/7/ee71d5bd2041839b726ba657dab13086e6761cea_2_375x500.jpeg, https://linux.do/uploads/default/optimized/4X/e/e/7/ee71d5bd2041839b726ba657dab13086e6761cea_2_562x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/e/e/7/ee71d5bd2041839b726ba657dab13086e6761cea_2_750x1000.jpeg 2x" data-dominant-color="938A7F"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;div class="spoiler"&gt;&lt;a href="https://linux.do/t/topic/1368142/1"&gt;剧透&lt;/a&gt;&lt;/div&gt;
+&lt;hr&gt;
+&lt;p&gt;成年人的生活，就是这样子修复并保持吗？佬们平时怎么对待这种小小问题。&lt;img src="https://linux.do/images/emoji/twemoji/down_arrow.png?v=15" title=":down_arrow:" class="emoji" alt=":down_arrow:" loading="lazy" width="20" height="20"&gt;&lt;img src="https://linux.do/images/emoji/twemoji/down_arrow.png?v=15" title=":down_arrow:" class="emoji" alt=":down_arrow:" loading="lazy" width="20" height="20"&gt;&lt;img src="https://linux.do/images/emoji/twemoji/down_arrow.png?v=15" title=":down_arrow:" class="emoji" alt=":down_arrow:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://linux.do/t/topic/1368142/1"&gt;点击以查看投票。&lt;/a&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;2 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368142"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368142&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:48:22 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368142&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368142.rss"&gt;鞋子破了（物理意义）&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助，有没有佬能帮忙绑个nitro试用卡验证&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Xin Liu]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;如题，求助佬友。麻烦佬嫩&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;1 个帖子 - 1 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368137"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368137&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:45:51 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368137&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368137.rss"&gt;求助，有没有佬能帮忙绑个nitro试用卡验证&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助：Claude Pro订阅账号无法使用Claude Code&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Jason]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;如图，我不管用Claude Code的客户端还是VC 插件，都是无法使用PRO的账户进行登录&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/8/b/18baa6e84ce80fb2a183b5ea994693a40450f4f6.png" data-download-href="https://linux.do/uploads/default/18baa6e84ce80fb2a183b5ea994693a40450f4f6" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/8/b/18baa6e84ce80fb2a183b5ea994693a40450f4f6_2_396x500.png" alt="image" data-base62-sha1="3wLmhdzOxHOgkRJdMefMH3C4GrA" width="396" height="500" srcset="https://linux.do/uploads/default/optimized/4X/1/8/b/18baa6e84ce80fb2a183b5ea994693a40450f4f6_2_396x500.png, https://linux.do/uploads/default/optimized/4X/1/8/b/18baa6e84ce80fb2a183b5ea994693a40450f4f6_2_594x750.png 1.5x, https://linux.do/uploads/default/original/4X/1/8/b/18baa6e84ce80fb2a183b5ea994693a40450f4f6.png 2x" data-dominant-color="151B26"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/0/6/8/068f87ab13f84bb15d19d250420892669b7ca48d.jpeg" data-download-href="https://linux.do/uploads/default/068f87ab13f84bb15d19d250420892669b7ca48d" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/0/6/8/068f87ab13f84bb15d19d250420892669b7ca48d_2_690x218.jpeg" alt="image" data-base62-sha1="W2nkCi6XjN4ujSQnAqD3xy3KMd" width="690" height="218" srcset="https://linux.do/uploads/default/optimized/4X/0/6/8/068f87ab13f84bb15d19d250420892669b7ca48d_2_690x218.jpeg, https://linux.do/uploads/default/optimized/4X/0/6/8/068f87ab13f84bb15d19d250420892669b7ca48d_2_1035x327.jpeg 1.5x, https://linux.do/uploads/default/original/4X/0/6/8/068f87ab13f84bb15d19d250420892669b7ca48d.jpeg 2x" data-dominant-color="E6E6E0"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+是由于我以前使用过中转的愿意吗？&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;求大佬们指点，谢谢！&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368134"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368134&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:45:14 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368134&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368134.rss"&gt;求助：Claude Pro订阅账号无法使用Claude Code&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;关于【Elysiver 公益站】致衡反作弊的问题&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[kylin]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;h1&gt;&lt;a name="p-11758282-elysiver-httpslinuxdottopic1159242-1" class="anchor" href="https://linux.do#p-11758282-elysiver-httpslinuxdottopic1159242-1" aria-label="标题链接"&gt;&lt;/a&gt;&lt;a href="https://linux.do/t/topic/1159242"&gt;【Elysiver 公益站】致衡赠额度&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;有没有佬友讨论下致衡反作弊？&lt;br&gt;
+找不到规则在哪里，是不是不能大于1个游戏的排名超过 90%?&lt;br&gt;
+单独 100%都可以，超过两个就被反作弊了。。。&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;8 个帖子 - 5 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368128"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368128&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:43:21 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368128&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368128.rss"&gt;关于【Elysiver 公益站】致衡反作弊的问题&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;奇葩禁言理由&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[lanxiaobai]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/b/d/0/bd0966d2b6edacfe527e0e99ae399c049dae0845.png" data-download-href="https://linux.do/uploads/default/bd0966d2b6edacfe527e0e99ae399c049dae0845" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/b/d/0/bd0966d2b6edacfe527e0e99ae399c049dae0845.png" alt="image" data-base62-sha1="qYinRpCOMT8tNpzwt7ZlwZVR7CJ" width="633" height="315"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+我在隔壁网站，参与一次抽奖，后面被那个发布抽奖的人给举报了，禁言我的理由是真奇葩啊&lt;img src="https://linux.do/uploads/default/original/3X/9/c/9c2f3e1ce5982036af66b951a26231b7590e93d4.png?v=15" title=":tieba_024:" class="emoji emoji-custom" alt=":tieba_024:" loading="lazy" width="20" height="20"&gt; 人家的意思就是说，你没给我 鸡腿，我就要举报你&lt;img src="https://linux.do/uploads/default/original/3X/e/1/e1aad11157b14d04bc8056573ecb23b5a219d260.png?v=15" title=":tieba_013:" class="emoji emoji-custom" alt=":tieba_013:" loading="lazy" width="20" height="20"&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;38 个帖子 - 16 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368122"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368122&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:41:11 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368122&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368122.rss"&gt;奇葩禁言理由&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;难受啊，不能摸鱼了 :sob:&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[unsafe]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;下午一直在用 todesk 在家里的电脑跑 codex, 突然断开了，看了一下内网穿透服务（手机termux上的），发现也掉线了，估计是中兴F50pro 随身wifi的油抽搐了吧。过一会儿发现好了，但 todesk 仍然连不上，怀疑我是不是没有把wifi自动连接打开 &lt;img src="https://linux.do/uploads/default/original/3X/2/e/2e09f3a3c7b27eacbabe9e9614b06b88d5b06343.png?v=15" title=":tieba_087:" class="emoji emoji-custom" alt=":tieba_087:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/7/f/d/7fd46455ced2fc68485b50f2fe24fba7dffab792.png" data-download-href="https://linux.do/uploads/default/7fd46455ced2fc68485b50f2fe24fba7dffab792" title="图片"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/7/f/d/7fd46455ced2fc68485b50f2fe24fba7dffab792.png" alt="图片" data-base62-sha1="iePGyoDdfHKLkI7p20jrDlSMOpY" width="616" height="500" data-dominant-color="F3F6FA"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://linux.do/images/emoji/twemoji/zzz.png?v=15" title=":zzz:" class="emoji only-emoji" alt=":zzz:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;5 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368120"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368120&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:39:15 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368120&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368120.rss"&gt;难受啊，不能摸鱼了 :sob:&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;还以为L站开两性话题了🌚&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[yeluo001]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;边刷L站边和人说话，然后突然眼睛瞟到“恋人”、“夫妻”、“扭曲”、“沦丧”，瞬间就精神了，定睛一看原来是看错了∑(O_O;)&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/3/4/9/3490660086155a255936139bd4d9f0f3517273fe.jpeg" data-download-href="https://linux.do/uploads/default/3490660086155a255936139bd4d9f0f3517273fe" title="IMG_1669"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/3/4/9/3490660086155a255936139bd4d9f0f3517273fe_2_690x132.jpeg" alt="IMG_1669" data-base62-sha1="7v0crvRpooMnDayLzIPYQeuzY4e" width="690" height="132" srcset="https://linux.do/uploads/default/optimized/4X/3/4/9/3490660086155a255936139bd4d9f0f3517273fe_2_690x132.jpeg, https://linux.do/uploads/default/optimized/4X/3/4/9/3490660086155a255936139bd4d9f0f3517273fe_2_1035x198.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/3/4/9/3490660086155a255936139bd4d9f0f3517273fe_2_1380x264.jpeg 2x" data-dominant-color="F8F8F8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;18 个帖子 - 14 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368093"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368093&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:29:50 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368093&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368093.rss"&gt;还以为L站开两性话题了🌚&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;发现Github贡献日历表一个好玩的玩法&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Shus]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;h2&gt;&lt;a name="p-11757840-h-1" class="anchor" href="https://linux.do#p-11757840-h-1" aria-label="标题链接"&gt;&lt;/a&gt;起源&lt;/h2&gt;
+&lt;p&gt;我今天刷到一位大佬的github的日历墙到1990年，我寻思着github不是2007年的产物吗，问了一下AI知道大概的伪造原理 &lt;img src="https://linux.do/images/emoji/twemoji/laughing.png?v=15" title=":laughing:" class="emoji" alt=":laughing:" loading="lazy" width="20" height="20"&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-11757840-h-2" class="anchor" href="https://linux.do#p-11757840-h-2" aria-label="标题链接"&gt;&lt;/a&gt;原理&lt;/h2&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/7/d/6/7d617dc535252b0104ef48fa7ecb224ebb25257f.png" data-download-href="https://linux.do/uploads/default/7d617dc535252b0104ef48fa7ecb224ebb25257f" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/7/d/6/7d617dc535252b0104ef48fa7ecb224ebb25257f_2_690x85.png" alt="image" data-base62-sha1="hTayAGW0nJjjxAY9VenuOSyadQz" width="690" height="85" srcset="https://linux.do/uploads/default/optimized/4X/7/d/6/7d617dc535252b0104ef48fa7ecb224ebb25257f_2_690x85.png, https://linux.do/uploads/default/optimized/4X/7/d/6/7d617dc535252b0104ef48fa7ecb224ebb25257f_2_1035x127.png 1.5x, https://linux.do/uploads/default/original/4X/7/d/6/7d617dc535252b0104ef48fa7ecb224ebb25257f.png 2x" data-dominant-color="E9E9EA"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/6/7/0/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89.png" data-download-href="https://linux.do/uploads/default/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/6/7/0/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89_2_690x122.png" alt="image" data-base62-sha1="eHfIo13noQo9Cn25nZbjuqJCq7f" width="690" height="122" srcset="https://linux.do/uploads/default/optimized/4X/6/7/0/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89_2_690x122.png, https://linux.do/uploads/default/optimized/4X/6/7/0/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89_2_1035x183.png 1.5x, https://linux.do/uploads/default/original/4X/6/7/0/67021e0cb7ec3fd7d3f6d0a673a42e95334ccb89.png 2x" data-dominant-color="F1F1F1"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;a name="p-11757840-h-3" class="anchor" href="https://linux.do#p-11757840-h-3" aria-label="标题链接"&gt;&lt;/a&gt;实现方法&lt;/h2&gt;
+&lt;p&gt;首先随便clone一个仓库下来，然后创建提交&lt;/p&gt;
+&lt;pre&gt;&lt;code class="lang-auto"&gt;git commit --allow-empty --date="2006-03-28T07:53:00" -m "Verified backdate to 2006"
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;随后强制推送&lt;/p&gt;
+&lt;pre&gt;&lt;code class="lang-auto"&gt;git push origin &amp;lt;your branches&amp;gt; -f
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;&lt;a name="p-11757840-h-4" class="anchor" href="https://linux.do#p-11757840-h-4" aria-label="标题链接"&gt;&lt;/a&gt;效果&lt;/h2&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/7/4/6/746e2a45e3743e76606b374bf07acc2f19cdc9a6.png" data-download-href="https://linux.do/uploads/default/746e2a45e3743e76606b374bf07acc2f19cdc9a6" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/7/4/6/746e2a45e3743e76606b374bf07acc2f19cdc9a6_2_534x500.png" alt="image" data-base62-sha1="gBZpGsFOgESu3moW8cxHJ2S3kHA" width="534" height="500" srcset="https://linux.do/uploads/default/optimized/4X/7/4/6/746e2a45e3743e76606b374bf07acc2f19cdc9a6_2_534x500.png, https://linux.do/uploads/default/optimized/4X/7/4/6/746e2a45e3743e76606b374bf07acc2f19cdc9a6_2_801x750.png 1.5x, https://linux.do/uploads/default/optimized/4X/7/4/6/746e2a45e3743e76606b374bf07acc2f19cdc9a6_2_1068x1000.png 2x" data-dominant-color="FBFCFC"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;11 个帖子 - 7 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368091"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368091&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:28:26 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368091&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368091.rss"&gt;发现Github贡献日历表一个好玩的玩法&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助：google one禁止访问&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[伊卡洛斯]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;我的google账号在没绑定国内的VISA卡之前，还是可以正常访问google one的，但是绑定了国内的VISA卡之后就限制地区了。我把关联的卡取消了，也新建了一个关联的卡，卡号都是一样的，但是地址给改成了我VPN当前的梯子地址，美国内华达州，退出重新登录之后还是限制，这个问题应该怎么解决呢？求助各位佬友&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;7 个帖子 - 7 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368083"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368083&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:26:31 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368083&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368083.rss"&gt;求助：google one禁止访问&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;gemini企业版上传文件出错：The location-level TP for `projects/733750064800/locations/global` is not READY; current state is FAILED_INITIALIZATION.&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[jiji262]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/7/5/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8.png" data-download-href="https://linux.do/uploads/default/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/d/7/5/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8_2_690x456.png" alt="image" data-base62-sha1="uJ8okwqdkBcuigMySJwi2ijTZWg" width="690" height="456" srcset="https://linux.do/uploads/default/optimized/4X/d/7/5/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8_2_690x456.png, https://linux.do/uploads/default/optimized/4X/d/7/5/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8_2_1035x684.png 1.5x, https://linux.do/uploads/default/optimized/4X/d/7/5/d75b5bf7c5563cc1f861e9f7ed6c4dee55cdb9c8_2_1380x912.png 2x" data-dominant-color="F6F4F4"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="lang-auto"&gt;{
+  "error": {
+    "code": 400,
+    "message": "The location-level TP for `projects/733750064800/locations/global` is not READY; current state is FAILED_INITIALIZATION.",
+    "status": "FAILED_PRECONDITION"
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+            &lt;p&gt;&lt;small&gt;1 个帖子 - 1 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368066"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368066&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:22:30 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368066&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368066.rss"&gt;gemini企业版上传文件出错：The location-level TP for `projects/733750064800/locations/global` is not READY; current state is FAILED_INITIALIZATION.&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;kiro还有将近3000刀的余额，佬们狠狠蹬&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[_Curry]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;福利羊毛&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/7/2/c/72c604c7bcbddc2cdd57e84802f13dfd27df9c24.png" data-download-href="https://linux.do/uploads/default/72c604c7bcbddc2cdd57e84802f13dfd27df9c24" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/7/2/c/72c604c7bcbddc2cdd57e84802f13dfd27df9c24.png" alt="image" data-base62-sha1="gnkGrUDmwNBYUfXDBDXjaeeKo8A" width="579" height="492"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+baseurl：&lt;a href="https://api.mortis.edu.kg" rel="noopener nofollow ugc"&gt;https://api.mortis.edu.kg&lt;/a&gt;&lt;br&gt;
+key：sk-TlgEp2TtG5lD2tp7juxuYb87XFt5pkl1v6YwOZ2U79tW0k9AOVBb0-7hT9zc0fp0&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;37 个帖子 - 26 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368063"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368063&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:22:10 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368063&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368063.rss"&gt;kiro还有将近3000刀的余额，佬们狠狠蹬&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;把CLIProxyAPI给antigraviti中转的生图gemini-3-pro-image-preview做成MCP&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[kinda]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;资源荟萃&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;gemini-3-pro-image-preview和G3这些模型额度是分开的,CLIProxyAPI中转给CC用后感觉gemini-3-pro-image-preview实在太浪费了,干脆就做成MCP了效果如下:&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/9/b/2/9b2eb0f30a59405b30649f0c646d416b9e48df96.png" data-download-href="https://linux.do/uploads/default/9b2eb0f30a59405b30649f0c646d416b9e48df96" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/9/b/2/9b2eb0f30a59405b30649f0c646d416b9e48df96_2_252x499.png" alt="image" data-base62-sha1="m8O2GIS3SOX9dX7UOlFhjhtwaLs" width="252" height="499" srcset="https://linux.do/uploads/default/optimized/4X/9/b/2/9b2eb0f30a59405b30649f0c646d416b9e48df96_2_252x499.png, https://linux.do/uploads/default/optimized/4X/9/b/2/9b2eb0f30a59405b30649f0c646d416b9e48df96_2_378x748.png 1.5x, https://linux.do/uploads/default/optimized/4X/9/b/2/9b2eb0f30a59405b30649f0c646d416b9e48df96_2_504x998.png 2x" data-dominant-color="222222"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/6/2/9/6298e7bf10b8959fab716bdaed731e1cc714960a.jpeg" data-download-href="https://linux.do/uploads/default/6298e7bf10b8959fab716bdaed731e1cc714960a" title="c23e837be125afea216272eb6bc3a000"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/6/2/9/6298e7bf10b8959fab716bdaed731e1cc714960a_2_690x447.jpeg" alt="c23e837be125afea216272eb6bc3a000" data-base62-sha1="e4eobAm69b4eAhiSMHgEgz5Eitc" width="690" height="447" srcset="https://linux.do/uploads/default/optimized/4X/6/2/9/6298e7bf10b8959fab716bdaed731e1cc714960a_2_690x447.jpeg, https://linux.do/uploads/default/optimized/4X/6/2/9/6298e7bf10b8959fab716bdaed731e1cc714960a_2_1035x670.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/6/2/9/6298e7bf10b8959fab716bdaed731e1cc714960a_2_1380x894.jpeg 2x" data-dominant-color="FDC059"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;地址:&lt;/p&gt;&lt;aside class="onebox githubrepo" data-onebox-src="https://github.com/sfz009900/geminiimagemcp_public"&gt;
+  &lt;header class="source"&gt;
+
+      &lt;a href="https://github.com/sfz009900/geminiimagemcp_public" target="_blank" rel="noopener nofollow ugc"&gt;github.com&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;div class="github-row" data-github-private-repo="false"&gt;
+  &lt;img width="690" height="344" src="https://linux.do/uploads/default/optimized/4X/1/0/8/10860be358dcbb56dff837833ffdddef2b2dc406_2_690x344.png" class="thumbnail" data-dominant-color="F3F6F2"&gt;
+
+  &lt;h3&gt;&lt;a href="https://github.com/sfz009900/geminiimagemcp_public" target="_blank" rel="noopener nofollow ugc"&gt;GitHub - sfz009900/geminiimagemcp_public: geminiimagemcp_public&lt;/a&gt;&lt;/h3&gt;
+
+    &lt;p&gt;&lt;span class="github-repo-description"&gt;geminiimagemcp_public&lt;/span&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;claude code里配置:&lt;br&gt;
+把OPENAI_API_KEY换成CLIProxyAPI中转的KEY就行了,然后index.js换成你对应的路径&lt;/p&gt;
+&lt;pre&gt;&lt;code class="lang-auto"&gt;{
+  "mcpServers": {
+    "gemini-image": {
+      "command": "node",
+      "args": ["d:/task/myself/nodejs/geminiimagemcp/src/index.js"],
+      "env": {
+        "OPENAI_BASE_URL": "http://127.0.0.1:8317",
+        "OPENAI_API_KEY": "&amp;lt;YOUR_KEY&amp;gt;",
+        "OPENAI_MODEL": "gemini-3-pro-image-preview"
+      }
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对了推荐个免费的PC端语音输入软件LazyTyper挺方便的我现在发帖这些都是用它&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368062"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368062&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:22:04 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368062&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368062.rss"&gt;把CLIProxyAPI给antigraviti中转的生图gemini-3-pro-image-preview做成MCP&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;尝试安装 done-hub，有个基础的问题请教一下&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[pangpang string]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;这个done-hub没有自己的部署说明，都是参考one-hub的，&lt;br&gt;
+docker run -d -p 3000:3000 &lt;br&gt;
+–name one-hub &lt;br&gt;
+–restart always &lt;br&gt;
+-e TZ=Asia/Shanghai &lt;br&gt;
+-e USER_TOKEN_SECRET=“user_token_secret” &lt;br&gt;
+-e SESSION_SECRET=“session_secret” &lt;br&gt;
+-v /data/one-hub:/data &lt;/p&gt;&lt;aside class="onebox allowlistedgeneric" data-onebox-src="https://github.com/martialbe/one-hub/pkgs/container/one-api"&gt;
+  &lt;header class="source"&gt;
+      &lt;img src="https://linux.do/uploads/default/original/4X/b/a/d/bad3e5f9ad67c1ddf145107ce7032ac1d7b22563.svg" class="site-icon" alt="" data-dominant-color="" width="32" height="32"&gt;
+
+      &lt;a href="https://github.com/martialbe/one-hub/pkgs/container/one-api" target="_blank" rel="noopener nofollow ugc"&gt;GitHub&lt;/a&gt;
+  &lt;/header&gt;
+
+  &lt;article class="onebox-body"&gt;
+    &lt;img width="500" height="500" src="https://linux.do/uploads/default/original/2X/3/337b7cc06184984e148c075df20ef009e0e6ecaa.png" class="thumbnail onebox-avatar" alt="" data-dominant-color="E1E1E1"&gt;
+
+&lt;h3&gt;&lt;a href="https://github.com/martialbe/one-hub/pkgs/container/one-api" target="_blank" rel="noopener nofollow ugc"&gt;Build software better, together&lt;/a&gt;&lt;/h3&gt;
+
+  &lt;p&gt;GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.&lt;/p&gt;
+
+
+  &lt;/article&gt;
+
+  &lt;div class="onebox-metadata"&gt;
+    
+    
+  &lt;/div&gt;
+
+  &lt;div style="clear: both"&gt;&lt;/div&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;在这个里面的 token 和 secret 是指什么的token 和secret？&lt;br&gt;
+是我在部署的时候，就得先获得一个 账号的token 和 secret，还是在这里随便写一个？随便写一个 这个有个规范吗？还是只是随便当个私钥？&lt;/p&gt;
+&lt;p&gt;不是特别明白，请教各位佬了！&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;8 个帖子 - 5 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368025"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368025&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:12:52 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368025&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368025.rss"&gt;尝试安装 done-hub，有个基础的问题请教一下&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;感觉还是尽量别用antihub进行大规模的分享&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[huanmeng]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;以下仅为我个人观点&lt;br&gt;
+虽然我是第一个祸害的就是了，之前分享那一点额度时已经发现佬的站有短暂失联的情况，所以后来都不敢分享，今天用着用着antihub发现突然用不了，就知道有人做了同样的事。&lt;br&gt;
+顺便问问还没有知道antihub的那个beta版本怎么搭建？搞半天搞不懂&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;3 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368018"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368018&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:09:26 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368018&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368018.rss"&gt;感觉还是尽量别用antihub进行大规模的分享&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助！有没有低价的国内的云服务器，带宽大一些的&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[西瓜汁]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;搞一个玩免流，最好是100上下行的，国内的机器，国外不要，求一个！&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/2/f/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce.jpeg" data-download-href="https://linux.do/uploads/default/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce" title="微信图片_20251227180215_124_110"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/2/f/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce_2_325x500.jpeg" alt="微信图片_20251227180215_124_110" data-base62-sha1="2HKvbLcNRsBSLOssENdMh2Um3AW" width="325" height="500" srcset="https://linux.do/uploads/default/optimized/4X/1/2/f/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce_2_325x500.jpeg, https://linux.do/uploads/default/optimized/4X/1/2/f/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce_2_487x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/1/2/f/12f666489d87a9be6d54d39d8c6dfd4d5fc349ce_2_650x1000.jpeg 2x" data-dominant-color="CACACA"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;1 个帖子 - 1 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368017"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368017&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:09:21 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368017&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368017.rss"&gt;求助！有没有低价的国内的云服务器，带宽大一些的&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Claude code模型混用吗？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Junqiweng]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;Claude code 提出一个代码审查的问题，让他检查代码。选用的是gemini-3-pro模型，cc-switch的模型设置如下：&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/0/a/80a22000739c2f04d81dc1b1d6f30184fdc3f367.png" data-download-href="https://linux.do/uploads/default/80a22000739c2f04d81dc1b1d6f30184fdc3f367" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/8/0/a/80a22000739c2f04d81dc1b1d6f30184fdc3f367_2_690x137.png" alt="image" data-base62-sha1="ilWsYQHw2In7WduZ9pyYnbVEnCD" width="690" height="137" srcset="https://linux.do/uploads/default/optimized/4X/8/0/a/80a22000739c2f04d81dc1b1d6f30184fdc3f367_2_690x137.png, https://linux.do/uploads/default/optimized/4X/8/0/a/80a22000739c2f04d81dc1b1d6f30184fdc3f367_2_1035x205.png 1.5x, https://linux.do/uploads/default/original/4X/8/0/a/80a22000739c2f04d81dc1b1d6f30184fdc3f367.png 2x" data-dominant-color="F9F9F9"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;一顿操作下来，反而是gpt5.2调用了100多次。&lt;br&gt;
+&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/3/e/e/3eeb298be1edf9d6515b1474a2cb0fca4bb86d5b.png" data-download-href="https://linux.do/uploads/default/3eeb298be1edf9d6515b1474a2cb0fca4bb86d5b" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/3/e/e/3eeb298be1edf9d6515b1474a2cb0fca4bb86d5b.png" alt="image" data-base62-sha1="8YBr2boGV0Y1lbl6kHP6tT8dXF9" width="364" height="299"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;有大佬知道这是咋回事吗？&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 2 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368015"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368015&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:08:53 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368015&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368015.rss"&gt;Claude code模型混用吗？&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;有没有佬知道为什么Windsurf鼠标悬浮上去就有解析，而反重力没有 反重力怎么开启啊&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[doushabao]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/a/0/2/a020ccc616e088ae33175882a2591ac41bac46e8.png" data-download-href="https://linux.do/uploads/default/a020ccc616e088ae33175882a2591ac41bac46e8" title="image"&gt;&lt;img src="https://linux.do/uploads/default/original/4X/a/0/2/a020ccc616e088ae33175882a2591ac41bac46e8.png" alt="image" data-base62-sha1="mQyFsAH2DcwsyoOBjF85snhtEuY" width="690" height="258" data-dominant-color="293344"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;10 个帖子 - 3 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368010"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368010&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:06:15 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368010&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368010.rss"&gt;有没有佬知道为什么Windsurf鼠标悬浮上去就有解析，而反重力没有 反重力怎么开启啊&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;悲，用了四年的电报账号无了:distorted_face:&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[VS丶CODE]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;今天突发奇想，打算把家里的备用机通过SmsForwarder传出短信和通知。在配置TG机器人的时候，突然就被强制退出了账号，而且不止这一台设备，所有登录这个账号的设备都退了。&lt;/p&gt;
+&lt;p&gt;搜了下这种情况，说是被风控了，现在也接不到短信验证码（86注册的），发了邮件也没人回，看来大概率是无了&lt;img src="https://linux.do/images/emoji/twemoji/melting_face.png?v=15" title=":melting_face:" class="emoji" alt=":melting_face:" loading="lazy" width="20" height="20"&gt;。&lt;/p&gt;
+&lt;p&gt;之前总是看别人账号被封的从来没在意过，毕竟这个账号也算得上是个老号，而且之前还开过会员，万万想不到这事也落在了自己头上。&lt;/p&gt;
+&lt;p&gt;目前开了个新号，gg接码，用了webshare的廉价家宽，也换回官方客户端了。又给老杜交了良民税，验证码的钱也给了，还额外开了一个月会员。正在回忆自己之前加了什么群，打算一点点加回来。但愿这次活久一点。&lt;/p&gt;
+&lt;p&gt;另：佬们有没有家宽车，预算不高，需求也不高。&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;23 个帖子 - 12 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1368002"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1368002&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 10:04:33 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1368002&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1368002.rss"&gt;悲，用了四年的电报账号无了:distorted_face:&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;有氧拳击3还挺好玩的，菜狗打到彩杯了🥳&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[debug]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;有氧拳击3挺好玩的，就是如果一次性玩太多会感觉脱力，人体是真节能，摄入一点热量，就得锻炼一堆，所以为什么人不能是永动机呢，遵循能量守恒定律吗这&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/7/9/8791053418ce155da1998dd75729c90bdfa43cef.jpeg" data-download-href="https://linux.do/uploads/default/8791053418ce155da1998dd75729c90bdfa43cef" title="IMG_20251227_161039"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/8/7/9/8791053418ce155da1998dd75729c90bdfa43cef_2_375x500.jpeg" alt="IMG_20251227_161039" data-base62-sha1="jlha73Ch1OkmxbK0eSEw4O8EtLp" width="375" height="500" srcset="https://linux.do/uploads/default/optimized/4X/8/7/9/8791053418ce155da1998dd75729c90bdfa43cef_2_375x500.jpeg, https://linux.do/uploads/default/optimized/4X/8/7/9/8791053418ce155da1998dd75729c90bdfa43cef_2_562x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/8/7/9/8791053418ce155da1998dd75729c90bdfa43cef_2_750x1000.jpeg 2x" data-dominant-color="82838D"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;7 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367979"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367979&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:56:14 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367979&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367979.rss"&gt;有氧拳击3还挺好玩的，菜狗打到彩杯了🥳&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;佬们，vibe code的时候都用的什么语言啊&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[fzsof]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;工作中大部分都是面向spring、go开发的多，感觉这两门语言vibe coding的体验都还可以，佬们，在vibe coding的时候都用的什么语言啊&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;17 个帖子 - 12 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367972"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367972&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:54:03 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367972&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367972.rss"&gt;佬们，vibe code的时候都用的什么语言啊&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;有没有佬建一个Linuxdo PT站&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[altail]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;在资源板块看到佬友们都是在使用几大网盘传资源，我对pt站了解的不是很深，之前有用过几个，有一台nas可以24h运行做种。站内也有挺多资源的，何不考虑做一个PT站实现人人为我我为人人，这和论坛的观念也是不谋而合的。&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;11 个帖子 - 9 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367968"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367968&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:51:43 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367968&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367968.rss"&gt;有没有佬建一个Linuxdo PT站&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;【开源】flymd安卓版发布~内置录音转文本/AI后处理功能&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[flynn]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;项目地址：&lt;a href="https://github.com/flyhunterl/flymd" rel="noopener nofollow ugc"&gt;飞速Markdown&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;这两天小说插件撸的差不多了（为了测试插件，写了20万字小说 &lt;img src="https://linux.do/images/emoji/twemoji/rofl.png?v=15" title=":rofl:" class="emoji" alt=":rofl:" loading="lazy" width="20" height="20"&gt;） 把安卓端做了&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;已适配插件&lt;/strong&gt;  如果有其他插件需要适配可以跟我说说/手机端主要还是阅读居多吧&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;WebDAV同步&lt;/li&gt;
+&lt;li&gt;内置的R2/S3图床/插入自动上传&lt;/li&gt;
+&lt;li&gt;Rag知识库&lt;/li&gt;
+&lt;li&gt;待办推送&lt;/li&gt;
+&lt;li&gt;待办日记（日记/待办）&lt;/li&gt;
+&lt;li&gt;typecho管理&lt;/li&gt;
+&lt;li&gt;AI助手&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/3/6/e/36ee21fa7f034699f3f305735f3e015ba0c8125a.jpeg" data-download-href="https://linux.do/uploads/default/36ee21fa7f034699f3f305735f3e015ba0c8125a" title="f36b718db6dd8d28607681b72398b5c7"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/3/6/e/36ee21fa7f034699f3f305735f3e015ba0c8125a_2_228x500.jpeg" alt="f36b718db6dd8d28607681b72398b5c7" data-base62-sha1="7PVYMK2ilg3q9LYr9nZb4RpcDvI" width="228" height="500" srcset="https://linux.do/uploads/default/optimized/4X/3/6/e/36ee21fa7f034699f3f305735f3e015ba0c8125a_2_228x500.jpeg, https://linux.do/uploads/default/optimized/4X/3/6/e/36ee21fa7f034699f3f305735f3e015ba0c8125a_2_342x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/3/6/e/36ee21fa7f034699f3f305735f3e015ba0c8125a_2_456x1000.jpeg 2x" data-dominant-color="E9E6DE"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;a name="p-11756413-ai-1" class="anchor" href="https://linux.do#p-11756413-ai-1" aria-label="标题链接"&gt;&lt;/a&gt;另外针对安卓的使用环境增加了录音/录音转文本 并AI处理同音字/常见错误的能力&lt;/h3&gt;
+&lt;p&gt;&lt;img src="https://linux.do/uploads/default/original/4X/a/b/b/abba7cb131049b761451429f436fd44e8feae7f7.gif" alt="录音转文字" data-base62-sha1="ovbc2odaUbGGL7wmWOhKP1qSG35" width="228" height="500" class="animated"&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;a name="p-11756413-h-2" class="anchor" href="https://linux.do#p-11756413-h-2" aria-label="标题链接"&gt;&lt;/a&gt;选中文本后提供一个富文本悬浮条用于插入连接/应用格式等&lt;/h3&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/d/6/8d6acc7ba608efdc926efa423b47a690ce78d33e.jpeg" data-download-href="https://linux.do/uploads/default/8d6acc7ba608efdc926efa423b47a690ce78d33e" title="73e9156d8d48f8a783e7a098a94d5081"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/8/d/6/8d6acc7ba608efdc926efa423b47a690ce78d33e_2_228x500.jpeg" alt="73e9156d8d48f8a783e7a098a94d5081" data-base62-sha1="kb28ASe3UU9t66lTFFH8Wy2KKiW" width="228" height="500" srcset="https://linux.do/uploads/default/optimized/4X/8/d/6/8d6acc7ba608efdc926efa423b47a690ce78d33e_2_228x500.jpeg, https://linux.do/uploads/default/optimized/4X/8/d/6/8d6acc7ba608efdc926efa423b47a690ce78d33e_2_342x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/8/d/6/8d6acc7ba608efdc926efa423b47a690ce78d33e_2_456x1000.jpeg 2x" data-dominant-color="DEDFE0"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;注意：如果没有选则外置库/卸载软件后文档会一同删除。被Tauri折腾惨了 SAF简直难搞&lt;/strong&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;5 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367952"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367952&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:46:25 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367952&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367952.rss"&gt;【开源】flymd安卓版发布~内置录音转文本/AI后处理功能&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;求助【随时跑路公益站】怎么在cc里使用？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[银]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;我使用配置了cc后发送就报错：&lt;br&gt;
+API Error: 400 {“error”:{“type”:“”,“message”:“{"__type":"&lt;em&gt;&lt;strong&gt;.&lt;/strong&gt;&lt;/em&gt;.***.codewhisperer#ValidationException","message":"Improperly formed request."} (request id:&lt;br&gt;
+20251227174046634242562eETMqmH5)”},“type”:“error”}&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/d/b/a/dba532e44a847616c43d30da1b09374dbd757086.jpeg" data-download-href="https://linux.do/uploads/default/dba532e44a847616c43d30da1b09374dbd757086" title="CleanShot 2025-12-27 at 17.43.07@2x"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/d/b/a/dba532e44a847616c43d30da1b09374dbd757086_2_689x489.jpeg" alt="CleanShot 2025-12-27 at 17.43.07@2x" data-base62-sha1="vl4vaPcQk8BS7FLHigR2qIFqJ0i" width="689" height="489" srcset="https://linux.do/uploads/default/optimized/4X/d/b/a/dba532e44a847616c43d30da1b09374dbd757086_2_689x489.jpeg, https://linux.do/uploads/default/optimized/4X/d/b/a/dba532e44a847616c43d30da1b09374dbd757086_2_1033x733.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/d/b/a/dba532e44a847616c43d30da1b09374dbd757086_2_1378x978.jpeg 2x" data-dominant-color="B9B8B8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/f/e/6/fe6354937c7ac5c79488651bb6e5d53812209681.jpeg" data-download-href="https://linux.do/uploads/default/fe6354937c7ac5c79488651bb6e5d53812209681" title="Ghostty 2025-12-27 17.40.16"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/f/e/6/fe6354937c7ac5c79488651bb6e5d53812209681_2_690x442.jpeg" alt="Ghostty 2025-12-27 17.40.16" data-base62-sha1="Aiq5H2wcpotwwdAsnp4JBSaEEiB" width="690" height="442" srcset="https://linux.do/uploads/default/optimized/4X/f/e/6/fe6354937c7ac5c79488651bb6e5d53812209681_2_690x442.jpeg, https://linux.do/uploads/default/optimized/4X/f/e/6/fe6354937c7ac5c79488651bb6e5d53812209681_2_1035x663.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/f/e/6/fe6354937c7ac5c79488651bb6e5d53812209681_2_1380x884.jpeg 2x" data-dominant-color="2A2B2F"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;17 个帖子 - 8 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367949"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367949&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:45:24 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367949&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367949.rss"&gt;求助【随时跑路公益站】怎么在cc里使用？&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;被苹果起诉的爆料人 Jon Prosser 再现身，发布 iPhone Fold 折叠屏手机渲染图&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[𝓵𝓮𝔃𝓲𝓼𝓱𝓮𝓷]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;前沿快讯&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/5/7/8/5784b80d479bf7b383da963a5e63b56146965d35.jpeg" data-download-href="https://linux.do/uploads/default/5784b80d479bf7b383da963a5e63b56146965d35" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/5/7/8/5784b80d479bf7b383da963a5e63b56146965d35_2_690x407.jpeg" alt="image" data-base62-sha1="cudT7djM7WoxGJwHbrsAi0LW3PL" width="690" height="407" srcset="https://linux.do/uploads/default/optimized/4X/5/7/8/5784b80d479bf7b383da963a5e63b56146965d35_2_690x407.jpeg, https://linux.do/uploads/default/optimized/4X/5/7/8/5784b80d479bf7b383da963a5e63b56146965d35_2_1035x610.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/5/7/8/5784b80d479bf7b383da963a5e63b56146965d35_2_1380x814.jpeg 2x" data-dominant-color="66625F"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/4/2/b/42bf843bb6eac8fe04666619dce39ca7a694afcb.jpeg" data-download-href="https://linux.do/uploads/default/42bf843bb6eac8fe04666619dce39ca7a694afcb" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/4/2/b/42bf843bb6eac8fe04666619dce39ca7a694afcb_2_690x456.jpeg" alt="image" data-base62-sha1="9wtPN1XnPZcHuGjkJgVRvIMPN3B" width="690" height="456" srcset="https://linux.do/uploads/default/optimized/4X/4/2/b/42bf843bb6eac8fe04666619dce39ca7a694afcb_2_690x456.jpeg, https://linux.do/uploads/default/optimized/4X/4/2/b/42bf843bb6eac8fe04666619dce39ca7a694afcb_2_1035x684.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/4/2/b/42bf843bb6eac8fe04666619dce39ca7a694afcb_2_1380x912.jpeg 2x" data-dominant-color="70787D"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/1/9/e/19ec8bdb87881f485f2ed9824498521c57b9c337.jpeg" data-download-href="https://linux.do/uploads/default/19ec8bdb87881f485f2ed9824498521c57b9c337" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/1/9/e/19ec8bdb87881f485f2ed9824498521c57b9c337_2_690x472.jpeg" alt="image" data-base62-sha1="3HkJyZWaycouE5JzsJkPrwen6zZ" width="690" height="472" srcset="https://linux.do/uploads/default/optimized/4X/1/9/e/19ec8bdb87881f485f2ed9824498521c57b9c337_2_690x472.jpeg, https://linux.do/uploads/default/optimized/4X/1/9/e/19ec8bdb87881f485f2ed9824498521c57b9c337_2_1035x708.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/1/9/e/19ec8bdb87881f485f2ed9824498521c57b9c337_2_1380x944.jpeg 2x" data-dominant-color="58524E"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/8/d/4/8d40e98c6b70752283dab9b8b46173a2af5c3ce4.jpeg" data-download-href="https://linux.do/uploads/default/8d40e98c6b70752283dab9b8b46173a2af5c3ce4" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/8/d/4/8d40e98c6b70752283dab9b8b46173a2af5c3ce4_2_690x462.jpeg" alt="image" data-base62-sha1="k9AoDbS84qcPTRNbBYeRmr6QKEs" width="690" height="462" srcset="https://linux.do/uploads/default/optimized/4X/8/d/4/8d40e98c6b70752283dab9b8b46173a2af5c3ce4_2_690x462.jpeg, https://linux.do/uploads/default/optimized/4X/8/d/4/8d40e98c6b70752283dab9b8b46173a2af5c3ce4_2_1035x693.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/8/d/4/8d40e98c6b70752283dab9b8b46173a2af5c3ce4_2_1380x924.jpeg 2x" data-dominant-color="595D61"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/9/8/6/9863f49da74fa2f7bab2868ea5b4cbb5832e9069.jpeg" data-download-href="https://linux.do/uploads/default/9863f49da74fa2f7bab2868ea5b4cbb5832e9069" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/9/8/6/9863f49da74fa2f7bab2868ea5b4cbb5832e9069_2_690x494.jpeg" alt="image" data-base62-sha1="lK6JddtKgg0yR31g8RpsuRbcqwh" width="690" height="494" srcset="https://linux.do/uploads/default/optimized/4X/9/8/6/9863f49da74fa2f7bab2868ea5b4cbb5832e9069_2_690x494.jpeg, https://linux.do/uploads/default/optimized/4X/9/8/6/9863f49da74fa2f7bab2868ea5b4cbb5832e9069_2_1035x741.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/9/8/6/9863f49da74fa2f7bab2868ea5b4cbb5832e9069_2_1380x988.jpeg 2x" data-dominant-color="F2F2F2"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/a/c/0/ac09c08bb11f131f6c87ac85b84cbdba49272b4c.jpeg" data-download-href="https://linux.do/uploads/default/ac09c08bb11f131f6c87ac85b84cbdba49272b4c" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/a/c/0/ac09c08bb11f131f6c87ac85b84cbdba49272b4c_2_690x437.jpeg" alt="image" data-base62-sha1="oxV1a7FBV1aQ5fGrXcsgvzWW0O0" width="690" height="437" srcset="https://linux.do/uploads/default/optimized/4X/a/c/0/ac09c08bb11f131f6c87ac85b84cbdba49272b4c_2_690x437.jpeg, https://linux.do/uploads/default/optimized/4X/a/c/0/ac09c08bb11f131f6c87ac85b84cbdba49272b4c_2_1035x655.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/a/c/0/ac09c08bb11f131f6c87ac85b84cbdba49272b4c_2_1380x874.jpeg 2x" data-dominant-color="898788"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;a href="https://www.ithome.com/0/908/465.htm" rel="noopener nofollow ugc"&gt;被苹果起诉的爆料人 Jon Prosser 再现身，发布 iPhone Fold 折叠屏手机渲染图 - IT之家&lt;/a&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;1 个帖子 - 1 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367943"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367943&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:43:43 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367943&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367943.rss"&gt;被苹果起诉的爆料人 Jon Prosser 再现身，发布 iPhone Fold 折叠屏手机渲染图&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Man笑了一下，于是:AI断联，网站断线&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[欣欣|林可欣]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/b/f/1/bf1f56b4f06b29107caebb458961a00329178602.jpeg" data-download-href="https://linux.do/uploads/default/bf1f56b4f06b29107caebb458961a00329178602" title="Screenshot_20251227_174055"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/b/f/1/bf1f56b4f06b29107caebb458961a00329178602_2_309x500.jpeg" alt="Screenshot_20251227_174055" data-base62-sha1="rgKl3PNx5QBmuiEQ2hVSUNbEH4e" width="309" height="500" srcset="https://linux.do/uploads/default/optimized/4X/b/f/1/bf1f56b4f06b29107caebb458961a00329178602_2_309x500.jpeg, https://linux.do/uploads/default/optimized/4X/b/f/1/bf1f56b4f06b29107caebb458961a00329178602_2_463x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/b/f/1/bf1f56b4f06b29107caebb458961a00329178602_2_618x1000.jpeg 2x" data-dominant-color="F7F7F8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+到这个分割线输出成功之后，戛然而止&lt;br&gt;
+刷新一下:&lt;br&gt;
+&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/f/2/a/f2a794d53140fa6fcfb58e46204ee0fe6b936742.jpeg" data-download-href="https://linux.do/uploads/default/f2a794d53140fa6fcfb58e46204ee0fe6b936742" title="Screenshot_20251227_174136"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/f/2/a/f2a794d53140fa6fcfb58e46204ee0fe6b936742_2_434x500.jpeg" alt="Screenshot_20251227_174136" data-base62-sha1="yCCAxfz2cg3kR2Zw98MBfSP6zpE" width="434" height="500" srcset="https://linux.do/uploads/default/optimized/4X/f/2/a/f2a794d53140fa6fcfb58e46204ee0fe6b936742_2_434x500.jpeg, https://linux.do/uploads/default/optimized/4X/f/2/a/f2a794d53140fa6fcfb58e46204ee0fe6b936742_2_651x750.jpeg 1.5x, https://linux.do/uploads/default/optimized/4X/f/2/a/f2a794d53140fa6fcfb58e46204ee0fe6b936742_2_868x1000.jpeg 2x" data-dominant-color="F7F6F8"&gt;&lt;/a&gt;&lt;/div&gt;&lt;br&gt;
+&lt;img src="https://linux.do/images/emoji/twemoji/distorted_face.png?v=15" title=":distorted_face:" class="emoji only-emoji" alt=":distorted_face:" loading="lazy" width="20" height="20"&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;10 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367939"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367939&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:43:24 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367939&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367939.rss"&gt;Man笑了一下，于是:AI断联，网站断线&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;Gemini做前端页面的能力在官网和antigravity的效果为什么差距那么大？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Aln]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;开发调优&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;h2&gt;&lt;a name="p-11756207-geminicanvas-1" class="anchor" href="https://linux.do#p-11756207-geminicanvas-1" aria-label="标题链接"&gt;&lt;/a&gt;如题，想知道为什么差距这么大，是官网的对gemini的canvas功能做了提示词优化吗？&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;这是官网生成的结果&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/6/7/a/67a05bec9e66711ef19d36cea0a31b7a09e3894b.png" data-download-href="https://linux.do/uploads/default/67a05bec9e66711ef19d36cea0a31b7a09e3894b" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/6/7/a/67a05bec9e66711ef19d36cea0a31b7a09e3894b_2_690x294.png" alt="image" data-base62-sha1="eMIKkesolGJiWfMkT81PfIjMouT" width="690" height="294" srcset="https://linux.do/uploads/default/optimized/4X/6/7/a/67a05bec9e66711ef19d36cea0a31b7a09e3894b_2_690x294.png, https://linux.do/uploads/default/optimized/4X/6/7/a/67a05bec9e66711ef19d36cea0a31b7a09e3894b_2_1035x441.png 1.5x, https://linux.do/uploads/default/optimized/4X/6/7/a/67a05bec9e66711ef19d36cea0a31b7a09e3894b_2_1380x588.png 2x" data-dominant-color="A8A9AB"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;相同的简单需求使用antigravity里面的gemini3-pro生成的&lt;/strong&gt;，里面重emoji，不使用svg图标，像是claude的风格。&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class="lightbox-wrapper"&gt;&lt;a class="lightbox" href="https://linux.do/uploads/default/original/4X/f/3/e/f3e0155e6233e138d336eb8f57ce517363378b06.png" data-download-href="https://linux.do/uploads/default/f3e0155e6233e138d336eb8f57ce517363378b06" title="image"&gt;&lt;img src="https://linux.do/uploads/default/optimized/4X/f/3/e/f3e0155e6233e138d336eb8f57ce517363378b06_2_690x328.png" alt="image" data-base62-sha1="yNq7yKiZBiXpYVEqUjYOrKOJnca" width="690" height="328" srcset="https://linux.do/uploads/default/optimized/4X/f/3/e/f3e0155e6233e138d336eb8f57ce517363378b06_2_690x328.png, https://linux.do/uploads/default/optimized/4X/f/3/e/f3e0155e6233e138d336eb8f57ce517363378b06_2_1035x492.png 1.5x, https://linux.do/uploads/default/optimized/4X/f/3/e/f3e0155e6233e138d336eb8f57ce517363378b06_2_1380x656.png 2x" data-dominant-color="1F293E"&gt;&lt;/a&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;5 个帖子 - 5 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367928"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367928&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:40:58 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367928&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367928.rss"&gt;Gemini做前端页面的能力在官网和antigravity的效果为什么差距那么大？&lt;/source&gt;
+        &lt;/item&gt;
+        &lt;item&gt;
+          &lt;title&gt;【月经贴】站内的claude code选择哪一家？&lt;/title&gt;
+          &lt;dc:creator&gt;&lt;![CDATA[Fengli88]]&gt;&lt;/dc:creator&gt;
+          &lt;category&gt;搞七捻三&lt;/category&gt;
+          &lt;description&gt;&lt;![CDATA[
+            &lt;p&gt;综合稳定性，缓存，不降智，佬友怎样选择呢？&lt;/p&gt;
+            &lt;p&gt;&lt;small&gt;6 个帖子 - 4 位参与者&lt;/small&gt;&lt;/p&gt;
+            &lt;p&gt;&lt;a href="https://linux.do/t/topic/1367913"&gt;阅读完整话题&lt;/a&gt;&lt;/p&gt;
+          ]]&gt;&lt;/description&gt;
+          &lt;link&gt;https://linux.do/t/topic/1367913&lt;/link&gt;
+          &lt;pubDate&gt;Sat, 27 Dec 2025 09:38:42 +0000&lt;/pubDate&gt;
+          &lt;discourse:topicPinned&gt;No&lt;/discourse:topicPinned&gt;
+          &lt;discourse:topicClosed&gt;No&lt;/discourse:topicClosed&gt;
+          &lt;discourse:topicArchived&gt;No&lt;/discourse:topicArchived&gt;
+          &lt;guid isPermaLink="false"&gt;linux.do-topic-1367913&lt;/guid&gt;
+          &lt;source url="https://linux.do/t/topic/1367913.rss"&gt;【月经贴】站内的claude code选择哪一家？&lt;/source&gt;
+        &lt;/item&gt;
+  &lt;/channel&gt;
+&lt;/rss&gt;
+</pre></body></html>

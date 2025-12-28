@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-static';
+
 /**
  * GET /api/config?key=categoryVersion
  * 获取全局配置
  */
 export async function GET(request: Request) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({ value: '0' });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');

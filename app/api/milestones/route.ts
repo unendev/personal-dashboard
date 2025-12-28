@@ -4,11 +4,16 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { CreateMilestoneInput } from '@/types/milestone';
 
+export const dynamic = 'force-static';
+
 /**
  * GET /api/milestones
  * 获取用户的里程碑列表（按时间倒序）
  */
 export async function GET(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({ milestones: [], total: 0 });
+  }
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -58,6 +63,9 @@ export async function GET(request: NextRequest) {
  * 创建新的里程碑记录
  */
 export async function POST(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

@@ -10,8 +10,13 @@ import { requireAuth, getUserId, isSuperAdmin } from '@/lib/auth-utils';
  * 3. API密钥认证（向后兼容）
  */
 
+export const dynamic = 'force-static';
+
 // GET /api/example-auth - 获取当前用户信息
 export async function GET(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     const authResult = await requireAuth(request);
     
@@ -69,6 +74,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/example-auth - 创建资源（需要认证）
 export async function POST(request: NextRequest) {
+  if (process.env.NEXT_CONFIG_WIDGET === 'true') {
+    return NextResponse.json({});
+  }
   try {
     // 使用便捷的getUserId函数
     const userId = await getUserId(request);
