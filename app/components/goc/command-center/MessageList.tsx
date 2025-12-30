@@ -147,6 +147,15 @@ export const MessageList = ({
                         <MarkdownView content={content} variant="goc" />
                       </div>
                     )}
+                    {/* Render reasoning from synced data */}
+                    {m.reasoning && (
+                       <ReasoningBlock 
+                         key={`reasoning-${m.id}`} 
+                         content={m.reasoning} 
+                         isStreaming={false} // Synced messages are always "done"
+                       />
+                    )}
+                    {/* 从同步数据渲染工具调用 */}
                     {toolCallsFromSync.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-2 border-t border-zinc-700/50">
                         {toolCallsFromSync.map((tc: any, idx: number) => (

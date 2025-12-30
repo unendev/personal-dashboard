@@ -12,40 +12,41 @@ export function useGocChat() {
   const roomId = room.id;
   const notes = useStorage((root) => root.notes);
   const sharedMessages = useStorage((root) => root.messages) as SharedMessage[] | null;
+  const aiConfig = useStorage((root) => root.aiConfig);
   const me = useSelf();
   const others = useOthers();
+  
+  // --- Liveblocks Mutations for AI Config ---
+  const updateAiConfig = useMutation(({ storage }, newConfig: Partial<typeof aiConfig>) => {
+    const currentConfig = storage.get('aiConfig');
+    if (currentConfig) {
+      currentConfig.update(newConfig);
+    }
+  }, []);
+
+  // Initialize AI config if it doesn't exist (only first user does this)
+  useEffect(() => {
+    if (me && !aiConfig?.controllerId) {
+      console.log(`[AI Config] I am the first user. Initializing AI config.`);
+      updateAiConfig({
+        provider: 'deepseek',
+        modelId: 'deepseek-chat',
+        aiMode: 'encyclopedia',
+        thinkingEnabled: true,
+        controllerId: me.id,
+      });
+    }
+  }, [me, aiConfig?.controllerId, updateAiConfig]);
+
 
   // --- Local State ---
-  const [aiMode, setAiMode] = useState<AIMode>('encyclopedia');
-  const [aiModeEnabled, setAiModeEnabled] = useState(true);
-  const [thinkingEnabled, setThinkingEnabled] = useState(true);
   const [lastSentNotes, setLastSentNotes] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
   
   // Local Message Timestamps mapping for stability
   const localMessageTimes = useRef<Map<string, number>>(new Map());
 
-  // --- Persistence ---
-  const [aiProvider, setAiProvider] = useState<AIProvider>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('goc_ai_provider') as AIProvider) || 'deepseek';
-    }
-    return 'deepseek';
-  });
-
-  const [aiModelId, setAiModelId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('goc_ai_model_id') || 'deepseek-chat';
-    }
-    return 'deepseek-chat';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('goc_ai_provider', aiProvider);
-      localStorage.setItem('goc_ai_model_id', aiModelId);
-    }
-  }, [aiProvider, aiModelId]);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // --- Liveblocks Sync Logic ---
   const syncMessageToLiveblocks = useMutation(
@@ -128,8 +129,16 @@ export function useGocChat() {
         : !syncedMessageIds.current.has(msg.id) || contentLength > lastLength;
       
       if (shouldSync) {
+        // Extract reasoning and tool calls
+        let reasoning = '';
         const toolCalls = msg.parts
-          ?.filter((p: any) => p.type?.startsWith('tool-'))
+          ?.filter((p: any) => {
+            if (p.type === 'reasoning') {
+              reasoning += p.text || '';
+              return false; // Don't include reasoning parts in toolCalls array
+            }
+            return p.type?.startsWith('tool-');
+          })
           .map((p: any) => ({
             toolName: p.type?.replace('tool-', '') || 'unknown',
             state: p.state || 'output-available',
@@ -140,12 +149,13 @@ export function useGocChat() {
           id: msg.id,
           role: msg.role as 'user' | 'assistant',
           content,
+          reasoning: reasoning || undefined,
           userName: msg.role === 'user' ? (me?.info?.name || 'Operator') : 'NEXUS AI',
           createdAt: msg.createdAt instanceof Date ? msg.createdAt.getTime() : (msg.createdAt || Date.now()),
           toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         });
         
-        lastSyncedLength.current.set(msg.id, contentLength);
+        lastSyncedLength.current.set(msg.id, contentLength + (reasoning?.length || 0));
         if (!isStreaming) {
           syncedMessageIds.current.add(msg.id);
         }
@@ -267,12 +277,12 @@ export function useGocChat() {
     
     const body: any = {
       players: playerList,
-      mode: aiMode,
-      provider: aiProvider,
-      modelId: aiModelId,
+      mode: aiConfig?.aiMode,
+      provider: aiConfig?.provider,
+      modelId: aiConfig?.modelId,
       roomId: roomId,
       currentPlayerName: me?.info?.name || 'Unknown',
-      enableThinking: thinkingEnabled,
+      enableThinking: aiConfig?.thinkingEnabled,
     };
     
     if (hasNotesChanged) {
@@ -295,12 +305,9 @@ export function useGocChat() {
     me,
     others,
     
-    // Config State
-    aiMode, setAiMode,
-    aiProvider, setAiProvider,
-    aiModelId, setAiModelId,
-    aiModeEnabled, setAiModeEnabled,
-    thinkingEnabled, setThinkingEnabled,
+    // Unified AI Config from Liveblocks
+    aiConfig,
+    updateAiConfig,
     
     // Actions
     handleSendMessage,

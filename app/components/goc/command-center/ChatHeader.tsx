@@ -8,29 +8,28 @@ import { MODEL_CONFIG, AIProvider, AIMode } from "@/app/hooks/goc/types";
 interface ChatHeaderProps {
   others: readonly any[];
   me: any;
-  aiProvider: AIProvider;
-  setAiProvider: (p: AIProvider) => void;
-  aiModelId: string;
-  setAiModelId: (id: string) => void;
-  aiMode: AIMode;
-  setAiMode: (m: AIMode) => void;
-  thinkingEnabled: boolean;
-  setThinkingEnabled: (e: boolean) => void;
+  aiConfig: any; // LiveObject<AIConfig>
+  updateAiConfig: (newConfig: Partial<any>) => void;
 }
 
 export const ChatHeader = ({
   others,
   me,
-  aiProvider,
-  setAiProvider,
-  aiModelId,
-  setAiModelId,
-  aiMode,
-  setAiMode,
-  thinkingEnabled,
-  setThinkingEnabled,
+  aiConfig,
+  updateAiConfig,
 }: ChatHeaderProps) => {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+
+  // Fallback in case aiConfig is not yet initialized
+  if (!aiConfig) {
+    return (
+      <div className="absolute top-0 left-0 w-full p-2 border-b border-zinc-800 z-10 bg-[#0a0a0a]/90 backdrop-blur flex items-center justify-center h-24">
+        <span className="text-zinc-500 text-xs">Initializing AI Configuration...</span>
+      </div>
+    );
+  }
+
+  const { provider, modelId, aiMode, thinkingEnabled } = aiConfig;
 
   return (
     <div className="absolute top-0 left-0 w-full p-2 border-b border-zinc-800 z-10 bg-[#0a0a0a]/90 backdrop-blur flex flex-col gap-2">
@@ -75,33 +74,32 @@ export const ChatHeader = ({
             onClick={() => setShowModelDropdown(!showModelDropdown)}
             className="px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-zinc-300 hover:border-cyan-600 transition-colors flex items-center gap-2"
           >
-            <span className="text-cyan-400 font-medium">{MODEL_CONFIG[aiProvider].label}</span>
+            <span className="text-cyan-400 font-medium">{MODEL_CONFIG[provider as AIProvider]?.label}</span>
             <span className="text-zinc-500">/</span>
-            <span>{MODEL_CONFIG[aiProvider].models.find(m => m.id === aiModelId)?.name || aiModelId}</span>
+            <span>{MODEL_CONFIG[provider as AIProvider]?.models.find(m => m.id === modelId)?.name || modelId}</span>
             <span className="text-zinc-600 text-[10px]">▼</span>
           </button>
           {showModelDropdown && (
             <div className="absolute top-full mt-1 left-0 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-20 min-w-[200px] overflow-hidden">
-              {(Object.keys(MODEL_CONFIG) as AIProvider[]).map(provider => (
-                <div key={provider}>
+              {(Object.keys(MODEL_CONFIG) as AIProvider[]).map(p => (
+                <div key={p}>
                   <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-zinc-500 bg-zinc-800/50 border-b border-zinc-800">
-                    {MODEL_CONFIG[provider].label}
+                    {MODEL_CONFIG[p].label}
                   </div>
-                  {MODEL_CONFIG[provider].models.map(model => (
+                  {MODEL_CONFIG[p].models.map(m => (
                     <button
-                      key={model.id}
+                      key={m.id}
                       onClick={() => {
-                        setAiProvider(provider);
-                        setAiModelId(model.id);
+                        updateAiConfig({ provider: p, modelId: m.id });
                         setShowModelDropdown(false);
                       }}
                       className={cn(
                         "w-full px-3 py-2 text-left text-xs hover:bg-zinc-800 transition-colors flex justify-between items-center",
-                        aiProvider === provider && aiModelId === model.id ? "text-cyan-400 bg-cyan-950/30" : "text-zinc-300"
+                        provider === p && modelId === m.id ? "text-cyan-400 bg-cyan-950/30" : "text-zinc-300"
                       )}
                     >
-                      <span>{model.name}</span>
-                      <span className="text-[10px] text-zinc-500">{model.desc}</span>
+                      <span>{m.name}</span>
+                      <span className="text-[10px] text-zinc-500">{m.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -111,11 +109,11 @@ export const ChatHeader = ({
         </div>
 
         {/* 思考开关 - 仅当模型支持时显示 */}
-        {MODEL_CONFIG[aiProvider].models.find(m => m.id === aiModelId)?.thinking && (
+        {MODEL_CONFIG[provider as AIProvider]?.models.find(m => m.id === modelId)?.thinking && (
           <>
             <div className="w-px h-5 bg-zinc-700" />
             <button
-              onClick={() => setThinkingEnabled(!thinkingEnabled)}
+              onClick={() => updateAiConfig({ thinkingEnabled: !thinkingEnabled })}
               className={cn(
                 "px-2 py-1 rounded text-[10px] font-medium transition-all border flex items-center gap-1 shadow-inner",
                 thinkingEnabled 
@@ -138,7 +136,7 @@ export const ChatHeader = ({
           <ModeButton 
             mode="encyclopedia" 
             current={aiMode} 
-            setMode={setAiMode} 
+            setMode={(m: AIMode) => updateAiConfig({ aiMode: m })} 
             icon={<FileText className="w-4 h-4" />}
             title="Encyclopedia" 
             desc="百科模式，深度讨论社科人文话题" 
@@ -147,7 +145,7 @@ export const ChatHeader = ({
           <ModeButton 
             mode="advisor" 
             current={aiMode} 
-            setMode={setAiMode} 
+            setMode={(m: AIMode) => updateAiConfig({ aiMode: m })} 
             icon={<Shield className="w-4 h-4" />}
             title="Advisor" 
             desc="战术顾问，提供实时决策支持" 
@@ -156,7 +154,7 @@ export const ChatHeader = ({
           <ModeButton 
             mode="interrogator" 
             current={aiMode} 
-            setMode={setAiMode} 
+            setMode={(m: AIMode) => updateAiConfig({ aiMode: m })} 
             icon={<HelpCircle className="w-4 h-4" />}
             title="Interrogator" 
             desc="情报收集，主动提问获取信息" 
@@ -165,7 +163,7 @@ export const ChatHeader = ({
           <ModeButton 
             mode="planner" 
             current={aiMode} 
-            setMode={setAiMode} 
+            setMode={(m: AIMode) => updateAiConfig({ aiMode: m })} 
             icon={<ClipboardList className="w-4 h-4" />}
             title="Planner" 
             desc="任务规划，创建结构化计划" 

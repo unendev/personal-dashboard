@@ -10,6 +10,16 @@ declare global {
 
     // The Storage tree for the room, for useStorage, useMutation, etc.
     Storage: {
+      // GOC AI Config: Centralized AI model settings for the room
+      aiConfig: LiveObject<{
+        provider: 'gemini' | 'deepseek' | string;
+        modelId: string;
+        aiMode: 'encyclopedia' | 'advisor' | 'interrogator' | 'planner';
+        thinkingEnabled: boolean;
+        // The user ID of the player who can control the settings
+        controllerId?: string; 
+      }>;
+
       todos: LiveList<{
         id: string;
         text: string;
@@ -22,6 +32,7 @@ declare global {
         id: string;
         role: 'user' | 'assistant' | 'system';
         content: string;
+        reasoning?: string; // For AI's thought process
         createdAt: number;
         userName?: string;
         userColor?: string;
