@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+        console.error('[Token API] Critical Error: NEXTAUTH_SECRET is not defined in environment variables.');
+        return NextResponse.json({ error: 'Server configuration error: Missing Secret' }, { status: 500 });
+    }
+
     // Generate JWT
     // Use the same secret as NextAuth to ensure compatibility if needed
     const token = await encode({
@@ -36,7 +42,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
       },
-      secret: process.env.NEXTAUTH_SECRET || '',
+      secret,
     });
 
     console.log('[Token API] Login successful, token generated');
