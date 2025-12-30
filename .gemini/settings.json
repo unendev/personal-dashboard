@@ -6,10 +6,6 @@
         "chrome-devtools-mcp",
         "@latest"
       ]
-    },
-    "Figma-Context-MCP": {
-      "type": "sse",
-      "url": "https://mcp.api-inference.modelscope.net/7050e070d34246/sse"
     }
   }
 }

@@ -37,14 +37,6 @@ export default function TacticalBoard() {
   const [outlineOpen, setOutlineOpen] = useState(true);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   
-  // 【修复】进入编辑模式时自动切换到"灵感"标签
-  useEffect(() => {
-    if (editingNoteId !== null && activeTab !== 'my') {
-      // 进入编辑模式时，自动切换到"灵感"（my 标签）
-      setActiveTab('my');
-    }
-  }, [editingNoteId]);
-
   // Safety Loading Check
   if (!todos || !notes || !playerNotes) {
     return <div className="h-full flex items-center justify-center text-zinc-500 font-mono text-sm">Loading Tactical Data...</div>;
@@ -423,16 +415,6 @@ export default function TacticalBoard() {
 
         {/* Notes Editor / Preview with Outline */}
         <div className="flex-1 flex overflow-hidden">
-          {/* 大纲面板 */}
-          {outlineOpen && (
-            <div className="w-48 border-r border-zinc-800 bg-zinc-900/30 overflow-y-auto custom-scrollbar">
-              <MarkdownOutline 
-                content={getTabContent()} 
-                className="text-xs"
-              />
-            </div>
-          )}
-
           {/* MD 编辑/预览区 */}
           <div 
             className="flex-1 relative group overflow-hidden"
@@ -447,7 +429,7 @@ export default function TacticalBoard() {
               className="absolute top-2 right-2 z-20 p-1.5 bg-zinc-800/50 hover:bg-zinc-700 rounded transition-colors"
               title="切换大纲"
             >
-              {outlineOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              {outlineOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
 
             {isCurrentlyEditing ? (
@@ -471,6 +453,16 @@ export default function TacticalBoard() {
               </div>
             )}
           </div>
+
+          {/* 大纲面板 (现在位于右侧) */}
+          {outlineOpen && (
+            <div className="w-48 border-l border-zinc-800 bg-zinc-900/30 overflow-y-auto custom-scrollbar">
+              <MarkdownOutline 
+                content={getTabContent()} 
+                className="text-xs"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

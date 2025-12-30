@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`🔍 Found ${tasksWithTags.length} tasks with legacy tag format.`);
-
+a a
     let processedCount = 0;
     let tagCreatedCount = 0;
     let linkCreatedCount = 0;

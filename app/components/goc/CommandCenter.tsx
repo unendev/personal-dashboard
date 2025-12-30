@@ -161,7 +161,11 @@ export default function CommandCenter() {
   const me = useSelf();
   const others = useOthers();
 
-  const [aiMode, setAiMode] = useState<AIMode>('advisor');
+  const [aiMode, setAiMode] = useState<AIMode>('encyclopedia');
+  
+  // 稳定化本地消息 ID 映射
+  const localMessageTimes = useRef<Map<string, number>>(new Map());
+
   const [aiProvider, setAiProvider] = useState<AIProvider>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('goc_ai_provider');
@@ -428,23 +432,32 @@ export default function CommandCenter() {
     const localIds = new Set(messages.map((m: any) => m.id));
     const sharedOnly = (sharedMessages || []).filter((m: any) => !localIds.has(m.id));
     
-    if (sharedOnly.length === 0 && messages.length === 0) return [];
-    if (sharedOnly.length === 0) return messages;
-    if (messages.length === 0) {
-      return sharedOnly.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
-    }
-    
     const now = Date.now();
     const allMessages = [
-      ...messages.map((m: any, idx: number) => ({
-        ...m,
-        createdAt: m.createdAt || (now - (messages.length - idx) * 1000),
-        _isLocal: true,
+      ...messages.map((m: any, idx: number) => {
+        if (!localMessageTimes.current.has(m.id)) {
+          localMessageTimes.current.set(m.id, m.createdAt instanceof Date ? m.createdAt.getTime() : (m.createdAt || (now - (messages.length - idx) * 10)));
+        }
+        return {
+          ...m,
+          createdAt: localMessageTimes.current.get(m.id),
+          _isLocal: true,
+        };
+      }),
+      ...sharedOnly.map((m: any) => ({ 
+        ...m, 
+        createdAt: typeof m.createdAt === 'number' ? m.createdAt : (m.createdAt instanceof Date ? m.createdAt.getTime() : now),
+        _isLocal: false 
       })),
-      ...sharedOnly.map((m: any) => ({ ...m, _isLocal: false })),
     ];
     
-    return allMessages.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
+    // 强制按时间排序，ID 辅助 tie-breaker
+    return allMessages.sort((a: any, b: any) => {
+      const aTime = a.createdAt || 0;
+      const bTime = b.createdAt || 0;
+      if (aTime !== bTime) return aTime - bTime;
+      return String(a.id).localeCompare(String(b.id));
+    });
   }, [messages, sharedMessages]);
 
 
@@ -452,7 +465,38 @@ export default function CommandCenter() {
     <div className="h-full flex flex-col bg-[#0a0a0a] relative">
       {/* Header */}
       <div className="absolute top-0 left-0 w-full p-2 border-b border-zinc-800 z-10 bg-[#0a0a0a]/90 backdrop-blur flex flex-col gap-2">
-        <h2 className="text-xl font-bold text-center text-cyan-400 tracking-widest">COMMAND CENTER</h2>
+        <div className="flex items-center justify-between px-4">
+          <div className="flex-1" />
+          <h2 className="text-xl font-bold text-center text-cyan-400 tracking-widest pl-12">COMMAND CENTER</h2>
+          <div className="flex-1 flex justify-end">
+            {/* 实时人数 */}
+            <div className="relative group cursor-default">
+              <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono border border-zinc-800 px-2 py-1 rounded-md bg-zinc-900/50 hover:border-zinc-700 transition-colors">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{others.length + 1} ONLINE</span>
+              </div>
+              {/* 玩家列表浮窗 */}
+              <div className="absolute top-full right-0 mt-2 p-3 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 min-w-[150px]">
+                <div className="text-[10px] uppercase text-zinc-500 font-bold mb-2 border-b border-zinc-800 pb-1 flex justify-between">
+                  <span>Operators</span>
+                  <span className="text-emerald-500">Active</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="text-xs text-cyan-400 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-cyan-400" />
+                    {me?.info?.name || "Me"} (You)
+                  </div>
+                  {others.map((u) => (
+                    <div key={u.connectionId} className="text-xs text-zinc-300 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-zinc-600" />
+                      {u.info?.name || "Unknown"}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         
         {/* Model & Mode - 单行紧凑布局 */}
         <div className="flex items-center justify-center gap-3 flex-wrap">
@@ -504,7 +548,7 @@ export default function CommandCenter() {
               <button
                 onClick={() => setThinkingEnabled(!thinkingEnabled)}
                 className={cn(
-                  "px-2 py-1 rounded text-[10px] font-medium transition-all border flex items-center gap-1",
+                  "px-2 py-1 rounded text-[10px] font-medium transition-all border flex items-center gap-1 shadow-inner",
                   thinkingEnabled 
                     ? "bg-purple-900/50 border-purple-600 text-purple-300" 
                     : "bg-zinc-800 border-zinc-700 text-zinc-500 hover:text-zinc-300"
@@ -523,30 +567,39 @@ export default function CommandCenter() {
           {/* Mode Switcher - 带 tooltip */}
           <div className="flex gap-1">
             <div className="relative group">
-              <button onClick={() => setAiMode('advisor')} className={cn("p-1.5 rounded transition-all", aiMode === 'advisor' ? "bg-cyan-900/50 text-cyan-400" : "text-zinc-500 hover:text-zinc-300")}>
+              <button onClick={() => setAiMode('encyclopedia')} className={cn("p-1.5 rounded transition-all", aiMode === 'encyclopedia' ? "bg-blue-900/50 text-blue-400 border border-blue-500/30" : "text-zinc-500 hover:text-zinc-300")}>
+                <FileText className="w-4 h-4" />
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center shadow-2xl">
+                <div className="text-xs font-bold text-blue-400 mb-1">Encyclopedia</div>
+                <div className="text-[10px] text-zinc-400 leading-tight">百科模式，深度讨论社科人文话题</div>
+              </div>
+            </div>
+            <div className="relative group">
+              <button onClick={() => setAiMode('advisor')} className={cn("p-1.5 rounded transition-all", aiMode === 'advisor' ? "bg-cyan-900/50 text-cyan-400 border border-cyan-500/30" : "text-zinc-500 hover:text-zinc-300")}>
                 <Shield className="w-4 h-4" />
               </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center shadow-2xl">
                 <div className="text-xs font-bold text-cyan-400 mb-1">Advisor</div>
-                <div className="text-[10px] text-zinc-400">战术顾问，提供实时决策支持</div>
+                <div className="text-[10px] text-zinc-400 leading-tight">战术顾问，提供实时决策支持</div>
               </div>
             </div>
             <div className="relative group">
-              <button onClick={() => setAiMode('interrogator')} className={cn("p-1.5 rounded transition-all", aiMode === 'interrogator' ? "bg-amber-900/50 text-amber-400" : "text-zinc-500 hover:text-zinc-300")}>
+              <button onClick={() => setAiMode('interrogator')} className={cn("p-1.5 rounded transition-all", aiMode === 'interrogator' ? "bg-amber-900/50 text-amber-400 border border-amber-500/30" : "text-zinc-500 hover:text-zinc-300")}>
                 <HelpCircle className="w-4 h-4" />
               </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center shadow-2xl">
                 <div className="text-xs font-bold text-amber-400 mb-1">Interrogator</div>
-                <div className="text-[10px] text-zinc-400">情报收集，主动提问获取信息</div>
+                <div className="text-[10px] text-zinc-400 leading-tight">情报收集，主动提问获取信息</div>
               </div>
             </div>
             <div className="relative group">
-              <button onClick={() => setAiMode('planner')} className={cn("p-1.5 rounded transition-all", aiMode === 'planner' ? "bg-emerald-900/50 text-emerald-400" : "text-zinc-500 hover:text-zinc-300")}>
+              <button onClick={() => setAiMode('planner')} className={cn("p-1.5 rounded transition-all", aiMode === 'planner' ? "bg-emerald-900/50 text-emerald-400 border border-emerald-500/30" : "text-zinc-500 hover:text-zinc-300")}>
                 <ClipboardList className="w-4 h-4" />
               </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-40 text-center shadow-2xl">
                 <div className="text-xs font-bold text-emerald-400 mb-1">Planner</div>
-                <div className="text-[10px] text-zinc-400">任务规划，创建结构化计划</div>
+                <div className="text-[10px] text-zinc-400 leading-tight">任务规划，创建结构化计划</div>
               </div>
             </div>
           </div>
@@ -668,9 +721,9 @@ export default function CommandCenter() {
               <div className="flex-shrink-0 relative group">
                 {avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatar} alt="" className="w-8 h-8 rounded-full border border-zinc-600" />
+                  <img src={avatar} alt="" className="w-8 h-8 rounded-full" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full border border-zinc-600 flex items-center justify-center text-sm font-bold text-zinc-400">
+                  <div className="w-8 h-8 flex items-center justify-center text-sm font-bold text-zinc-400">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                 )}

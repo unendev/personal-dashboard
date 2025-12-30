@@ -126,13 +126,16 @@ export async function POST(req: Request) {
       case 'planner':
         modeInstruction = `**Current Mode: Planner** - Create structured plans. Use tools to update notes and add todos.`;
         break;
+      case 'encyclopedia':
+        modeInstruction = `**Current Mode: Encyclopedia** - Provide deep insights into complex topics (social sciences, history, etc.). Encourage structured discussion and critical thinking.`;
+        break;
       default:
         modeInstruction = `**Current Mode: Tactical Advisor** - Provide real-time decision support.`;
         break;
     }
 
-    const systemPrompt = `You are an elite Game Operations Center (GOC) AI Tactical Advisor (Nexus AI).
-Your goal is to assist players. You have access to tools to read and update shared "Field Notes" and manage todos.
+    const systemPrompt = `You are an elite Game Operations Center (GOC) AI Tactical Advisor and Knowledge Curator (Nexus AI).
+Your goal is to assist players with games or complex discussions. You have access to tools to read and update shared "Field Notes" and manage todos.
 
 **Current Speaker:** ${currentPlayerName || 'Unknown'}
 (When the user asks for "my" personal notes/todos, use this name)
@@ -146,22 +149,38 @@ ${modeInstruction}
 1. You MUST reply in Chinese.
 2. Be a calm, professional co-pilot.
 3. For simple questions or greetings, respond directly without using tools.
-4. Use getNotes tool when you need context about the current situation.
+4. Use getNotes tool when you need context about the current situation (shared or personal notes).
 5. Only use updateNote or addTodo when explicitly requested or creating action items.
 6. When user asks for personal items (my notes, my todos), use the current speaker's name.
 `;
 
     const tools = {
       getNotes: tool({
-        description: 'Read the current shared Field Notes.',
+        description: 'Read the current shared Field Notes and all individual player notes.',
         inputSchema: z.object({}),
         execute: async () => {
           try {
-            let notesContent = '(No notes)';
+            let sharedNotes = '(No shared notes)';
+            let playerNotesSummary = '';
+            
             await liveblocks.mutateStorage(roomId, ({ root }: any) => {
-              notesContent = root.get('notes') || '(No notes)';
+              sharedNotes = root.get('notes') || '(No shared notes)';
+              
+              const pNotes = root.get('playerNotes');
+              if (pNotes) {
+                // pNotes is a LiveMap
+                const entries = Array.from(pNotes.entries());
+                if (entries.length > 0) {
+                  playerNotesSummary = entries.map(([id, data]: any) => {
+                    const name = (typeof data === 'object' && data?.name) ? data.name : `Player ${id.slice(-4)}`;
+                    const content = (typeof data === 'object' && data?.content) ? data.content : (typeof data === 'string' ? data : '');
+                    return `[${name}'s Personal Note]:\n${content}`;
+                  }).join('\n\n');
+                }
+              }
             });
-            const result = `Current Shared Field Notes:\n"""\n${notesContent}\n"""`;
+            
+            const result = `Current Shared Field Notes:\n"""\n${sharedNotes}\n"""\n\n${playerNotesSummary || 'No individual player notes available.'}`;
             await logToolCall(roomId, 'getNotes', {}, result);
             return result;
           } catch (error) {

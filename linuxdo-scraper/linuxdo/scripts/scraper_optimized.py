@@ -1,8 +1,8 @@
 # scraper_optimized.py - 优化版Linux.do爬虫（本地PC运行版）
 # 功能：爬取Linux.do论坛RSS，使用DeepSeek AI分析，存入Neon数据库
 # 使用方法：
-#   1. 确保已安装依赖: pip install playwright playwright-stealth asyncpg requests python-dotenv
-#   2. 安装浏览器: python -m playwright install chromium
+#   1. 确保已安装依赖: pip install drissionpage asyncpg requests python-dotenv
+#   2. 确保已安装 Chrome（系统浏览器）
 #   3. 配置 .env 文件（见下方配置说明）
 #   4. 运行: python scraper_optimized.py
 
@@ -12,8 +12,8 @@ import re
 import json
 import logging
 from datetime import datetime
-from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+from DrissionPage import ChromiumPage, ChromiumOptions
+from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
@@ -26,7 +26,9 @@ import asyncpg
 
 # 加载环境变量（从项目根目录）
 import pathlib
-env_path = pathlib.Path(__file__).parent.parent.parent / '.env'
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+SCRAPER_ROOT = SCRIPT_DIR.parents[2]
+env_path = SCRAPER_ROOT / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # 代理配置（如果不需要代理，设置为 None）
@@ -60,6 +62,10 @@ AI_REQUEST_DELAY = 3
 
 # 浏览器配置
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"  # 是否无头模式
+CF_CHALLENGE_TIMEOUT = int(os.getenv("CF_CHALLENGE_TIMEOUT", "90"))
+USER_DATA_DIR = os.getenv("USER_DATA_DIR")
+PROFILE_DIRECTORY = os.getenv("PROFILE_DIRECTORY")
+CHROME_PATH = os.getenv("CHROME_PATH")
 
 # =============================================================================
 # 日志配置
@@ -78,6 +84,9 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # 启动检查
 # =============================================================================
+
+def user_data_enabled():
+    return USER_DATA_DIR and USER_DATA_DIR.lower() != "none"
 
 def check_environment():
     """检查运行环境是否配置正确"""
@@ -111,6 +120,13 @@ def check_environment():
     logger.info(f"✓ 爬取数量: {POST_COUNT_LIMIT} 篇帖子")
     logger.info(f"✓ 浏览器模式: {'无头' if HEADLESS else '有界面'}")
     logger.info(f"✓ AI请求间隔: {AI_REQUEST_DELAY} 秒")
+    logger.info(f"✓ CF挑战等待: {CF_CHALLENGE_TIMEOUT} 秒")
+    if CHROME_PATH:
+        logger.info(f"✓ Chrome路径: {CHROME_PATH}")
+    if user_data_enabled():
+        logger.info(f"✓ 使用Chrome配置: {USER_DATA_DIR}")
+        if PROFILE_DIRECTORY:
+            logger.info(f"✓ Profile目录: {PROFILE_DIRECTORY}")
     logger.info("=" * 80)
     
     if issues:
@@ -130,12 +146,21 @@ def check_environment():
 # Cloudflare 挑战处理
 # =============================================================================
 
-async def wait_for_cloudflare_challenge(page, timeout=30):
+def get_page_html(page):
+    try:
+        return page.html
+    except Exception:
+        try:
+            return page.html()
+        except Exception:
+            return ""
+
+def wait_for_cloudflare_challenge(page, timeout=30):
     """
     等待 Cloudflare 挑战完成
     
     Args:
-        page: Playwright 页面对象
+        page: DrissionPage 页面对象
         timeout: 最大等待时间（秒）
     """
     start_time = time.time()
@@ -144,7 +169,10 @@ async def wait_for_cloudflare_challenge(page, timeout=30):
         # 检查是否存在 Cloudflare 挑战页面的特征
         try:
             # 检查页面标题是否包含 Cloudflare 相关内容
-            title = await page.title()
+            try:
+                title = page.title
+            except Exception:
+                title = ""
             
             # Cloudflare 挑战页面的常见标题
             cf_indicators = [
@@ -152,24 +180,77 @@ async def wait_for_cloudflare_challenge(page, timeout=30):
                 "Checking your browser",
                 "Please wait",
                 "Attention Required",
-                "DDoS protection"
+                "DDoS protection",
+                "请稍候",
             ]
-            
-            is_cf_challenge = any(indicator.lower() in title.lower() for indicator in cf_indicators)
+
+            is_cf_title = any(indicator.lower() in title.lower() for indicator in cf_indicators)
+            html = get_page_html(page)
+            is_cf_html = "challenge-platform" in html or "turnstile" in html
+            is_cf_challenge = is_cf_title or is_cf_html
             
             if not is_cf_challenge:
                 # 没有检测到 Cloudflare 挑战，可以继续
                 return True
             
             logger.info(f"⏳ 检测到 Cloudflare 挑战，等待中... ({int(time.time() - start_time)}s)")
-            await asyncio.sleep(2)
+            time.sleep(2)
             
         except Exception as e:
             logger.warning(f"⚠️ 检查 Cloudflare 状态时出错: {e}")
-            await asyncio.sleep(1)
+            time.sleep(1)
     
     logger.warning(f"⚠️ Cloudflare 挑战等待超时 ({timeout}s)，继续执行...")
     return False
+
+def _try_call(obj, names, *args, **kwargs):
+    for name in names:
+        if hasattr(obj, name):
+            try:
+                getattr(obj, name)(*args, **kwargs)
+                return True
+            except Exception:
+                continue
+    return False
+
+def build_browser_page():
+    options = ChromiumOptions()
+
+    _try_call(options, ["auto_port"])
+
+    if CHROME_PATH:
+        set_ok = _try_call(options, ["set_browser_path"], CHROME_PATH)
+        if not set_ok:
+            set_ok = _try_call(options, ["set_paths"], browser_path=CHROME_PATH)
+        if not set_ok:
+            logger.warning("⚠️ 无法设置CHROME_PATH，使用默认Chrome路径")
+
+    if user_data_enabled():
+        _try_call(options, ["set_user_data_path", "set_user_data_dir"], USER_DATA_DIR)
+        if PROFILE_DIRECTORY:
+            _try_call(options, ["set_argument"], f"--profile-directory={PROFILE_DIRECTORY}")
+
+    if HEADLESS:
+        if not _try_call(options, ["set_headless"], True):
+            _try_call(options, ["set_argument"], "--headless=new")
+
+    if USE_PROXY:
+        if not _try_call(options, ["set_proxy"], PROXY_URL):
+            _try_call(options, ["set_argument"], f"--proxy-server={PROXY_URL}")
+
+    # 基础反检测参数
+    for arg in [
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-blink-features=AutomationControlled",
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--disable-site-isolation-trials",
+        "--disable-web-security",
+        "--window-size=1920,1080",
+    ]:
+        _try_call(options, ["set_argument"], arg)
+
+    return ChromiumPage(options)
 
 # =============================================================================
 # 重试装饰器
@@ -361,154 +442,102 @@ def analyze_single_post_with_deepseek(post):
 async def fetch_post_replies(page, post_url, post_title):
     """
     访问帖子详情页并提取真实评论
-    
+
     Args:
-        page: Playwright页面对象
+        page: DrissionPage 页面对象
         post_url: 帖子URL
         post_title: 帖子标题（用于日志）
-    
+
     Returns:
         dict: 包含楼主内容和评论列表的字典
     """
     try:
         logger.info(f"  ⏳ 访问帖子: {post_title[:40]}...")
-        # 使用 load 等待页面加载完成（比 networkidle 更宽松，避免持续请求导致超时）
-        # networkidle 要求500ms内无网络请求，某些网站可能永远达不到
-        try:
-            await page.goto(post_url, wait_until="load", timeout=60000)
-        except Exception as goto_error:
-            # 如果 load 也超时，尝试 domcontentloaded（更宽松）
-            logger.warning(f"    ⚠️ load 超时，尝试 domcontentloaded: {goto_error}")
-            await page.goto(post_url, wait_until="domcontentloaded", timeout=30000)
-        
-        # 额外等待JS渲染（Discourse论坛需要JS动态加载内容）
+        page.get(post_url)
+
+        wait_for_cloudflare_challenge(page, timeout=CF_CHALLENGE_TIMEOUT)
         await asyncio.sleep(3)
-        
-        # 等待关键元素出现（增加到20秒，给JS更多时间）
-        try:
-            await page.wait_for_selector('.topic-post', timeout=20000, state="visible")
-            logger.info(f"    ✓ 页面加载成功")
-        except Exception as e:
-            logger.warning(f"    ⚠️ 等待.topic-post超时: {e}")
-            # 尝试额外等待并重试
-            logger.info(f"    ⏳ 额外等待5秒后重试...")
+
+        html = get_page_html(page)
+        soup = BeautifulSoup(html, "lxml")
+        posts_elements = soup.select(".topic-post")
+
+        if not posts_elements:
+            logger.warning("    ⚠️ 未找到.topic-post，额外等待5秒后重试...")
             await asyncio.sleep(5)
-            try:
-                await page.wait_for_selector('.topic-post', timeout=15000, state="visible")
-                logger.info(f"    ✓ 重试成功，找到.topic-post")
-            except:
-                # 尝试备用选择器
-                try:
-                    await page.wait_for_selector('article', timeout=10000, state="visible")
-                    logger.info(f"    ✓ 找到article元素（备用方案）")
-                except:
-                    logger.error(f"    ✗ 页面结构异常，无法找到帖子内容")
-                    # 保存页面快照用于调试
-                    try:
-                        html = await page.content()
-                        debug_file = f"../debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-                        with open(debug_file, 'w', encoding='utf-8') as f:
-                            f.write(html)
-                        logger.info(f"    📄 已保存页面HTML到: {debug_file}")
-                    except:
-                        pass
-                    return None
-        
-        # 提取所有帖子容器（Discourse标准结构）
-        posts_elements = await page.query_selector_all('.topic-post')
-        
-        if not posts_elements or len(posts_elements) == 0:
-            logger.warning(f"    ⚠️ 未找到.topic-post容器，尝试备用方案")
-            # 备用方案：尝试article标签
-            posts_elements = await page.query_selector_all('article')
-            if not posts_elements or len(posts_elements) == 0:
-                logger.error(f"    ✗ 备用方案也失败")
+            html = get_page_html(page)
+            soup = BeautifulSoup(html, "lxml")
+            posts_elements = soup.select(".topic-post")
+
+        if not posts_elements:
+            posts_elements = soup.select("article")
+            if not posts_elements:
+                logger.error("    ❌ 页面结构异常，无法找到帖子内容")
+                debug_file = f"../debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                with open(debug_file, "w", encoding="utf-8") as f:
+                    f.write(html)
+                logger.info(f"    📄 已保存页面HTML到: {debug_file}")
                 return None
-            logger.info(f"    ✓ 使用article标签作为备用")
-        
-        logger.info(f"    ✓ 找到 {len(posts_elements)} 个帖子（1楼主 + {len(posts_elements)-1}评论）")
-        
-        # 提取楼主内容（第一个.topic-post）
-        main_post_elem = posts_elements[0]
+            logger.info("    ✓ 使用article标签作为备用")
+
+        logger.info(f"    ✅ 找到 {len(posts_elements)} 个帖子（1楼主 + {len(posts_elements)-1}评论）")
+
         main_content = ""
-        
-        try:
-            content_elem = await main_post_elem.query_selector('.cooked')
-            if content_elem:
-                main_content = await content_elem.text_content()
-                main_content = main_content.strip()
-        except:
-            pass
-        
-        # 提取评论（从第2个开始）
+        main_post_elem = posts_elements[0]
+        content_elem = main_post_elem.select_one(".cooked")
+        if content_elem:
+            main_content = content_elem.get_text(strip=True)
+
         comments = []
-        for i in range(1, len(posts_elements)):
+        for i, reply_elem in enumerate(posts_elements[1:], start=1):
             try:
-                reply_elem = posts_elements[i]
-                
-                # 提取作者
-                author = ""
-                author_elem = await reply_elem.query_selector('.username')
-                if author_elem:
-                    author = (await author_elem.text_content()).strip()
-                
-                # 提取内容
-                content = ""
-                content_elem = await reply_elem.query_selector('.cooked')
-                if content_elem:
-                    content = (await content_elem.text_content()).strip()
-                
-                # 提取点赞数
+                author_elem = reply_elem.select_one(".username")
+                author = author_elem.get_text(strip=True) if author_elem else ""
+
+                content_elem = reply_elem.select_one(".cooked")
+                content = content_elem.get_text(strip=True) if content_elem else ""
+
                 likes = 0
-                try:
-                    likes_elem = await reply_elem.query_selector('.likes')
-                    if likes_elem:
-                        likes_text = await likes_elem.text_content()
-                        likes = int(''.join(filter(str.isdigit, likes_text)) or '0')
-                except:
-                    pass
-                
-                # 提取时间
+                likes_elem = reply_elem.select_one(".likes")
+                if likes_elem:
+                    likes_text = likes_elem.get_text(strip=True)
+                    likes = int("".join(filter(str.isdigit, likes_text)) or "0")
+
                 time_str = ""
-                try:
-                    time_elem = await reply_elem.query_selector('.post-date')
-                    if time_elem:
-                        time_str = await time_elem.get_attribute('title') or ""
-                except:
-                    pass
-                
-                if content:  # 只保存有内容的评论
+                time_elem = reply_elem.select_one(".post-date")
+                if time_elem:
+                    time_str = time_elem.get("title") or ""
+
+                if content:
                     comments.append({
-                        'author': author,
-                        'content': content,
-                        'likes': likes,
-                        'time': time_str
+                        "author": author,
+                        "content": content,
+                        "likes": likes,
+                        "time": time_str,
                     })
-            
             except Exception as e:
                 logger.warning(f"      ⚠️ 提取评论{i}失败: {e}")
                 continue
-        
-        logger.info(f"    ✓ 成功提取 {len(comments)} 条评论")
-        
+
+        logger.info(f"    ✅ 成功提取 {len(comments)} 条评论")
+
         return {
-            'main_content': main_content,
-            'comments': comments,
-            'total_replies': len(comments)
+            "main_content": main_content,
+            "comments": comments,
+            "total_replies": len(comments),
         }
-    
+
     except Exception as e:
         logger.error(f"    ❌ 访问帖子详情页失败: {e}")
         import traceback
         logger.error(f"    详细错误:\n{traceback.format_exc()}")
-        # 保存页面HTML用于调试
         try:
-            html = await page.content()
+            html = get_page_html(page)
             debug_file = f"linuxdo/debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-            with open(debug_file, 'w', encoding='utf-8') as f:
+            with open(debug_file, "w", encoding="utf-8") as f:
                 f.write(html)
             logger.info(f"    📄 已保存页面HTML到: {debug_file}")
-        except:
+        except Exception:
             pass
         return None
 
@@ -517,7 +546,7 @@ async def fetch_posts_with_replies(page, posts):
     为每个帖子抓取真实评论
     
     Args:
-        page: Playwright页面对象
+        page: DrissionPage 页面对象
         posts: 帖子列表
     
     Returns:
@@ -568,249 +597,185 @@ async def fetch_linuxdo_posts():
     """爬取Linux.do帖子"""
     logger.info("🚀 开始爬取Linux.do帖子...")
     
-    async with async_playwright() as p:
-        browser = None
+    page = None
+    try:
+        page = build_browser_page()
+
+        # 预热：访问首页建立会话
+        logger.info(f"⏳ 访问首页预热: {WARM_UP_URL}")
+        page.get(WARM_UP_URL)
+
+        # 检测并等待 Cloudflare 挑战
+        wait_for_cloudflare_challenge(page, timeout=CF_CHALLENGE_TIMEOUT)
+
+        logger.info("✓ 预热完成")
+        await asyncio.sleep(3)
+
+        # 访问RSS源
+        logger.info(f"⏳ 访问RSS源: {RSS_URL}")
+        page.get(RSS_URL)
+        await asyncio.sleep(2)
+
+        # 获取RSS内容
+        rss_text = get_page_html(page)
+
+        # 保存调试文件
+        debug_filename = f"debug_rss_content_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        with open(debug_filename, "w", encoding="utf-8") as f:
+            f.write(rss_text)
+        logger.info(f"✓ 已保存调试文件: {debug_filename} ({len(rss_text)} 字符)")
+
+        # 解析RSS内容
+        all_posts = []
+        logger.info("⏳ 解析RSS内容...")
+
+        # 方式1：直接解析XML
         try:
-            # 启动浏览器（增强配置以绕过 Cloudflare）
-            launch_options = {
-                "headless": HEADLESS,
-                "args": [
-                    '--no-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',  # 隐藏自动化特征
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    '--disable-site-isolation-trials',
-                    '--disable-web-security',
-                    '--window-size=1920,1080',  # 设置真实窗口大小
-                ]
-            }
-            if USE_PROXY:
-                launch_options["proxy"] = {"server": PROXY_URL}
-            
-            browser = await p.chromium.launch(**launch_options)
-            
-            # 创建上下文（增强真实浏览器指纹）
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                viewport={"width": 1920, "height": 1080},  # 真实视口大小
-                locale="zh-CN",
-                timezone_id="Asia/Shanghai",
-                permissions=["geolocation"],
-                geolocation={"latitude": 39.9042, "longitude": 116.4074},  # 北京坐标
-                color_scheme="light",
-                extra_http_headers={
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "DNT": "1",
-                    "Connection": "keep-alive",
-                    "Upgrade-Insecure-Requests": "1",
-                    "Sec-Fetch-Dest": "document",
-                    "Sec-Fetch-Mode": "navigate",
-                    "Sec-Fetch-Site": "none",
-                    "Sec-Fetch-User": "?1",
-                    "Cache-Control": "max-age=0",
-                }
-            )
-            
-            # 注入 JavaScript 以隐藏自动化特征
-            await context.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                });
-                
-                // 覆盖 plugins
-                Object.defineProperty(navigator, 'plugins', {
-                    get: () => [1, 2, 3, 4, 5]
-                });
-                
-                // 覆盖 languages
-                Object.defineProperty(navigator, 'languages', {
-                    get: () => ['zh-CN', 'zh', 'en']
-                });
-                
-                // Chrome 对象
-                window.chrome = {
-                    runtime: {}
-                };
-            """)
-            
-            # 应用反爬虫策略
-            await stealth_async(context)
-            page = await context.new_page()
+            root = ET.fromstring(rss_text)
+            items = root.findall('.//channel/item')
+            logger.info(f"✓ 找到 {len(items)} 个帖子")
 
-            # 预热：访问首页建立会话（增强 Cloudflare 处理）
-            logger.info(f"⏳ 访问首页预热: {WARM_UP_URL}")
-            await page.goto(WARM_UP_URL, wait_until="domcontentloaded", timeout=60000)
-            
-            # 检测并等待 Cloudflare 挑战
-            await wait_for_cloudflare_challenge(page, timeout=30)
-            
-            logger.info("✓ 预热完成")
-            await asyncio.sleep(3)
+            for i, item in enumerate(items[:POST_COUNT_LIMIT]):
+                title = item.find('title')
+                link = item.find('link')
+                description = item.find('description')
 
-            # 访问RSS源
-            logger.info(f"⏳ 访问RSS源: {RSS_URL}")
-            await page.goto(RSS_URL, wait_until="networkidle", timeout=120000)
-            await asyncio.sleep(2)
+                if title is not None and link is not None:
+                    title_text = title.text
+                    link_text = link.text
+                    description_text = description.text if description is not None else ""
 
-            # 获取RSS内容
-            rss_text = await page.evaluate("document.documentElement.outerHTML")
-            
-            # 保存调试文件
-            debug_filename = f"debug_rss_content_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-            with open(debug_filename, 'w', encoding='utf-8') as f:
-                f.write(rss_text)
-            logger.info(f"✓ 已保存调试文件: {debug_filename} ({len(rss_text)} 字符)")
-
-            # 解析RSS内容
-            all_posts = []
-            logger.info("⏳ 解析RSS内容...")
-
-            # 方式1：直接解析XML
-            try:
-                root = ET.fromstring(rss_text)
-                items = root.findall('.//channel/item')
-                logger.info(f"✓ 找到 {len(items)} 个帖子")
-                
-                for i, item in enumerate(items[:POST_COUNT_LIMIT]):
-                    title = item.find('title')
-                    link = item.find('link')
-                    description = item.find('description')
-                    
-                    if title is not None and link is not None:
-                        title_text = title.text
-                        link_text = link.text
-                        description_text = description.text if description is not None else ""
-                        
-                        match = re.search(r'/t/[^/]+/(\d+)', link_text)
-                        if match:
-                            topic_id = match.group(1)
-                            all_posts.append({
-                                "title": title_text,
-                                "link": link_text,
-                                "id": topic_id,
-                                "description": description_text
-                            })
-                        
-            except ET.ParseError:
-                # 方式2：从HTML中提取XML
-                logger.info("⏳ 尝试从HTML中提取XML...")
-                try:
-                    from bs4 import BeautifulSoup
-                    import html
-                    
-                    soup = BeautifulSoup(rss_text, 'html.parser')
-                    pre_tag = soup.find('pre')
-                    
-                    if pre_tag:
-                        xml_content = html.unescape(pre_tag.get_text())
-                        root = ET.fromstring(xml_content)
-                        items = root.findall('.//channel/item')
-                        
-                        for i, item in enumerate(items[:POST_COUNT_LIMIT]):
-                            title = item.find('title')
-                            link = item.find('link')
-                            description = item.find('description')
-                            
-                            if title is not None and link is not None:
-                                match = re.search(r'/t/[^/]+/(\d+)', link.text)
-                                if match:
-                                    all_posts.append({
-                                        "title": title.text,
-                                        "link": link.text,
-                                        "id": match.group(1),
-                                        "description": description.text if description is not None else ""
-                                    })
-                                    
-                except Exception as e2:
-                    logger.error(f"❌ HTML提取失败: {e2}")
-
-            # 方式3：正则表达式提取（兜底方案）
-            if not all_posts:
-                logger.info("⏳ 使用正则表达式提取（兜底方案）...")
-                title_pattern = r'<title>([^<]+)</title>'
-                link_pattern = r'<link>([^<]+)</link>'
-                titles = re.findall(title_pattern, rss_text)
-                links = re.findall(link_pattern, rss_text)
-
-                for i, (title, link) in enumerate(zip(titles, links)):
-                    if i >= POST_COUNT_LIMIT:
-                        break
-                    match = re.search(r'/t/[^/]+/(\d+)', link)
+                    match = re.search(r'/t/[^/]+/(\d+)', link_text)
                     if match:
+                        topic_id = match.group(1)
                         all_posts.append({
-                            "title": title,
-                            "link": link,
-                            "id": match.group(1),
-                            "description": ""
+                            "title": title_text,
+                            "link": link_text,
+                            "id": topic_id,
+                            "description": description_text,
                         })
-            
-            logger.info(f"✓ 成功解析 {len(all_posts)} 篇帖子")
-            
-            if not all_posts:
-                logger.error("❌ 未能解析到任何帖子")
-                return []
-            
-            # 处理帖子内容
-            posts_with_content = []
-            for i, post in enumerate(all_posts):
-                rss_content = post.get('description', '')
 
-                if rss_content:
-                    # 提取互动数据："X 个帖子 - Y 位参与者"
-                    replies_count = 0
-                    participants_count = 0
-                    try:
-                        match = re.search(r'(\d+)\s*个帖子\s*-\s*(\d+)\s*位参与者', rss_content)
-                        if match:
-                            replies_count = int(match.group(1))
-                            participants_count = int(match.group(2))
-                    except Exception:
-                        pass
+        except ET.ParseError:
+            # 方式2：从HTML中提取XML
+            logger.info("⏳ 尝试从HTML中提取XML...")
+            try:
+                from bs4 import BeautifulSoup
+                import html
 
-                    # 清理HTML标签，并移除互动统计语句
-                    clean_content = re.sub(r'<[^>]+>', ' ', rss_content)
-                    clean_content = re.sub(r'\d+\s*个帖子\s*-\s*\d+\s*位参与者', '', clean_content)
-                    clean_content = ' '.join(clean_content.split())
+                soup = BeautifulSoup(rss_text, 'html.parser')
+                pre_tag = soup.find('pre')
 
-                    if len(clean_content.strip()) > 10:
-                        post['content'] = clean_content
-                        post['replies_count'] = replies_count
-                        post['participants_count'] = participants_count
-                        logger.info(f"  [{i+1}/{len(all_posts)}] {post['title'][:50]}... ({len(clean_content)} 字符)")
-                    else:
-                        post['content'] = f"帖子标题：{post['title']}"
+                if pre_tag:
+                    xml_content = html.unescape(pre_tag.get_text())
+                    root = ET.fromstring(xml_content)
+                    items = root.findall('.//channel/item')
+
+                    for i, item in enumerate(items[:POST_COUNT_LIMIT]):
+                        title = item.find('title')
+                        link = item.find('link')
+                        description = item.find('description')
+
+                        if title is not None and link is not None:
+                            match = re.search(r'/t/[^/]+/(\d+)', link.text)
+                            if match:
+                                all_posts.append({
+                                    "title": title.text,
+                                    "link": link.text,
+                                    "id": match.group(1),
+                                    "description": description.text if description is not None else "",
+                                })
+
+            except Exception as e2:
+                logger.error(f"❌ HTML提取失败: {e2}")
+
+        # 方式3：正则表达式提取（兜底方案）
+        if not all_posts:
+            logger.info("⏳ 使用正则表达式提取（兜底方案）...")
+            title_pattern = r'<title>([^<]+)</title>'
+            link_pattern = r'<link>([^<]+)</link>'
+            titles = re.findall(title_pattern, rss_text)
+            links = re.findall(link_pattern, rss_text)
+
+            for i, (title, link) in enumerate(zip(titles, links)):
+                if i >= POST_COUNT_LIMIT:
+                    break
+                match = re.search(r'/t/[^/]+/(\d+)', link)
+                if match:
+                    all_posts.append({
+                        "title": title,
+                        "link": link,
+                        "id": match.group(1),
+                        "description": "",
+                    })
+
+        logger.info(f"✓ 成功解析 {len(all_posts)} 篇帖子")
+
+        if not all_posts:
+            logger.error("❌ 未能解析到任何帖子")
+            return []
+
+        # 处理帖子内容
+        posts_with_content = []
+        for i, post in enumerate(all_posts):
+            rss_content = post.get('description', '')
+
+            if rss_content:
+                # 提取互动数据："X 个帖子 - Y 位参与者"
+                replies_count = 0
+                participants_count = 0
+                try:
+                    match = re.search(r'(\d+)\s*个帖子\s*-\s*(\d+)\s*位参与者', rss_content)
+                    if match:
+                        replies_count = int(match.group(1))
+                        participants_count = int(match.group(2))
+                except Exception:
+                    pass
+
+                # 清理HTML标签，并移除互动统计语句
+                clean_content = re.sub(r'<[^>]+>', ' ', rss_content)
+                clean_content = re.sub(r'\d+\s*个帖子\s*-\s*\d+\s*位参与者', '', clean_content)
+                clean_content = ' '.join(clean_content.split())
+
+                if len(clean_content.strip()) > 10:
+                    post['content'] = clean_content
+                    post['replies_count'] = replies_count
+                    post['participants_count'] = participants_count
+                    logger.info(f"  [{i+1}/{len(all_posts)}] {post['title'][:50]}... ({len(clean_content)} 字符)")
                 else:
                     post['content'] = f"帖子标题：{post['title']}"
-                
-                posts_with_content.append(post)
+            else:
+                post['content'] = f"帖子标题：{post['title']}"
 
-                if i < len(all_posts) - 1:
-                    await asyncio.sleep(1)
+            posts_with_content.append(post)
 
-            logger.info(f"✓ 获取到 {len(posts_with_content)} 篇帖子（仅RSS描述）")
-            
-            # 新增：访问每个帖子详情页抓取真实评论
-            posts_with_replies = await fetch_posts_with_replies(page, posts_with_content)
-            
-            return posts_with_replies
+            if i < len(all_posts) - 1:
+                await asyncio.sleep(1)
 
-        except Exception as e:
-            logger.error(f"❌ 爬取失败: {e}")
-            # 尝试保存错误截图
+        logger.info(f"✓ 获取到 {len(posts_with_content)} 篇帖子（仅RSS描述）")
+
+        # 新增：访问每个帖子详情页抓取真实评论
+        posts_with_replies = await fetch_posts_with_replies(page, posts_with_content)
+
+        return posts_with_replies
+
+    except Exception as e:
+        logger.error(f"❌ 爬取失败: {e}")
+        try:
+            if page:
+                html = get_page_html(page)
+                debug_file = f"linuxdo/debug_page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                with open(debug_file, "w", encoding="utf-8") as f:
+                    f.write(html)
+                logger.info(f"📄 已保存页面HTML到: {debug_file}")
+        except Exception:
+            pass
+        raise e
+    finally:
+        if page:
             try:
-                if browser:
-                    page = await browser.new_page()
-                    screenshot_path = f"error_screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-                    await page.screenshot(path=screenshot_path)
-                    logger.info(f"✓ 已保存错误截图: {screenshot_path}")
-            except:
+                page.quit()
+            except Exception:
                 pass
-            raise e
-        finally:
-            if browser:
-                await browser.close()
 
 # =============================================================================
 # 数据库操作
@@ -1068,7 +1033,3 @@ async def main():
 if __name__ == "__main__":
     success = asyncio.run(main())
     exit(0 if success else 1)
-
-
-
-

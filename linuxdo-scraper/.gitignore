@@ -62,3 +62,7 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# Playwright
+playwright-profile-default/
+debug_rss_content_*.html
