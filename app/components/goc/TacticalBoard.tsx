@@ -387,14 +387,16 @@ export default function TacticalBoard() {
                
                const noteData = getNoteData(userId);
                
-               // Priority: Persisted Name > Online User Name > User ID
+               // 优先使用持久化的名字
                let label = noteData.name;
                
+               // 如果持久化名字不存在，尝试从在线用户中实时获取
                if (!label) {
-                 const onlineUser = others.find(u => u.info?.name && u.id === userId); // Assuming u.id is accessible or u.info.id
-                 if (onlineUser) label = onlineUser.info?.name;
+                 const onlineUser = others.find(u => u.id === userId);
+                 if (onlineUser?.info?.name) label = onlineUser.info.name;
                }
                
+               // 如果都找不到，回退到 ID
                if (!label) label = `User ${userId.slice(-4)}`;
                
                return (
