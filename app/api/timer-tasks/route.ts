@@ -3,12 +3,20 @@ import { TimerDB } from '@/lib/timer-db';
 import { createTimerTaskSchema } from '@/lib/validations/timer-task';
 import { ZodError } from 'zod';
 import { getEffectiveDateString } from '@/lib/timer-utils';
+import { getToken } from 'next-auth/jwt';
 
 // GET /api/timer-tasks - 获取用户的所有任务
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'user-1'; // 默认用户ID
+    // 优先从 Token 获取用户 ID，实现真正的认证
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    const userId = token?.sub || searchParams.get('userId') || 'user-1'; // 默认用户ID
+    
+    if (token) {
+        console.log(`[API] Authenticated user: ${token.email} (${token.sub})`);
+    }
+
     const date = searchParams.get('date');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -65,8 +73,12 @@ export async function POST(request: NextRequest) {
       initialTimeInMinutes: validated.initialTime ? validated.initialTime / 60 : 0
     });
     
+    // 优先从 Token 获取用户 ID
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    const authUserId = token?.sub || 'user-1';
+
     const { 
-      userId = 'user-1', // 默认用户ID（应该从认证获取）
+      userId = authUserId, // 使用认证的用户ID作为默认值
       instanceTag, // 保留：向后兼容的实例标签字段
       instanceTagNames, // 新增：事务项名称数组
       isRunning, 
