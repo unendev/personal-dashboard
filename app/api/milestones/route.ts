@@ -4,7 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { CreateMilestoneInput } from '@/types/milestone';
 
-export const dynamic = 'force-static';
+import { milestoneSchema } from '@/types/milestone.d';
+
+// 获取里程碑列表
 
 /**
  * GET /api/milestones

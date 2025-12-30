@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { BiliUser } from '@/types/bili-user';
@@ -51,10 +51,9 @@ function writeConfig(users: BiliUser[]): boolean {
   }
 }
 
-export const dynamic = 'force-static';
+import { authOptions } from '@/lib/auth';
 
-// GET: 获取所有UP主配置
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (process.env.NEXT_CONFIG_WIDGET === 'true') {
     return NextResponse.json({ users: [] });
   }

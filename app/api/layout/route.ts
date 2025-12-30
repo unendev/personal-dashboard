@@ -8,8 +8,6 @@ function getUserId() {
   return 'user-1';
 }
 
-export const dynamic = 'force-static';
-
 export async function GET() {
   if (process.env.NEXT_CONFIG_WIDGET === 'true') {
     return NextResponse.json({});

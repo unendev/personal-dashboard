@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, getUserId, isSuperAdmin } from '@/lib/auth-utils';
 
-/**
- * 示例API路由 - 展示新的认证系统使用方法
- * 
- * 支持的认证方式：
- * 1. NextAuth.js 会话认证
- * 2. 超级管理员密钥认证（仅开发环境）
- * 3. API密钥认证（向后兼容）
- */
-
-export const dynamic = 'force-static';
-
-// GET /api/example-auth - 获取当前用户信息
 export async function GET(request: NextRequest) {
   if (process.env.NEXT_CONFIG_WIDGET === 'true') {
     return NextResponse.json({});
@@ -98,4 +86,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

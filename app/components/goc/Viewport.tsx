@@ -38,7 +38,7 @@ export default function Viewport() {
   const startCapture = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" },
+        video: { cursor: "always" } as MediaTrackConstraints,
         audio: false
       });
       

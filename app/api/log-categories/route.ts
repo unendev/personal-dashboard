@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // Type definitions for category structure
@@ -39,9 +39,9 @@ function convertToFrontendStructure(categories: DatabaseCategory[]): CategoryNod
   }));
 }
 
-export const dynamic = 'force-static';
+import { getUserId } from '@/lib/auth-utils';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (process.env.NEXT_CONFIG_WIDGET === 'true') {
     return NextResponse.json([]);
   }

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Button } from '@/app/components/ui/button'
-import { Paperclip, Hash, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { Paperclip } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TreasureData } from './TreasureInputModal'
 import { ImageUploadPreview } from './ImageUploadPreview'
@@ -10,7 +9,13 @@ import { SlashCommandPanel } from './SlashCommandPanel'
 import { MusicCardForm } from './MusicCardForm'
 import { PrimaryCategorySelector } from './PrimaryCategorySelector'
 import { TagInput } from './TagInput'
-import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag' // 【新增】
+import { HierarchicalTag } from '@/app/components/shared/HierarchicalTag'
+import { InputToolbar } from './InputToolbar'
+
+// Hooks
+import { useTreasureState } from '@/app/hooks/useTreasureState'
+import { useSlashCommands } from '@/app/hooks/useSlashCommands'
+import { useOssUpload } from '@/app/hooks/useOssUpload'
 
 interface DiscordStyleInputProps {
   onSubmit: (data: TreasureData) => Promise<void>
@@ -18,62 +23,43 @@ interface DiscordStyleInputProps {
   initialData?: TreasureData & { id?: string }
   mode?: 'create' | 'edit'
   lastTags?: string[]
-  recentTags?: string[] // 【新增】
-}
-
-interface UploadingImage {
-  id: string
-  file: File
-  progress: number
-}
-
-interface ImageWithPreview {
-  url: string
-  alt?: string
-  width?: number
-  height?: number
-  size?: number
-  originalUrl?: string  // 用于保存到数据库的原始 URL（不带签名）
-  previewUrl?: string   // 用于预览的签名 URL
+  recentTags?: string[]
 }
 
 export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'create', lastTags, recentTags }: DiscordStyleInputProps) {
-  const [content, setContent] = useState('')
-  const [images, setImages] = useState<ImageWithPreview[]>([])
-  const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([])
+  // 1. State Management
+  const { 
+    content, setContent,
+    images, setImages,
+    uploadingImages, setUploadingImages,
+    musicData, setMusicData,
+    primaryCategories, setPrimaryCategories,
+    topicTags, setTopicTags,
+    defaultTags, setDefaultTags
+  } = useTreasureState(initialData, mode, lastTags)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  
-  // 斜杠命令相关
-  const [activeCommand, setActiveCommand] = useState<string | null>(null)
-  const [commandSearch, setCommandSearch] = useState('')
-  
-  // 音乐卡片数据
-  const [musicData, setMusicData] = useState({
-    title: '',
-    artist: '',
-    album: '',
-    url: '',
-    coverUrl: ''
-  })
-  
-  // 标签系统
-  const [primaryCategories, setPrimaryCategories] = useState<string[]>([])
-  const [topicTags, setTopicTags] = useState<string[]>([])
-  const [defaultTags, setDefaultTags] = useState<string[]>([])  // 默认标签（来自上一条宝藏）
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
+
+  // 2. Logic Hooks
+  const { 
+    activeCommand, 
+    commandSearch, 
+    handleCommandChange, 
+    selectCommand, 
+    closeCommand,
+    setActiveCommand 
+  } = useSlashCommands()
   
+  const { upload } = useOssUpload()
+
+  // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  // 追踪初始化状态，防止编辑时重复初始化
-  const isInitializedRef = useRef(false)
-  const lastTreasureIdRef = useRef<string | undefined>(undefined)
-  // 追踪创建模式是否已初始化
-  const isCreateModeInitializedRef = useRef(false)
 
-  // 自动调整 textarea 高度
+  // Effects
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -81,463 +67,62 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     }
   }, [content])
 
-  // 获取标签建议
   useEffect(() => {
-    const fetchTagSuggestions = async () => {
-      try {
-        const response = await fetch('/api/treasures/tags')
-        if (response.ok) {
-          const tags = await response.json()
-          // tags 是 { name: string, count: number }[] 格式
-          setTagSuggestions(tags.map((t: { name: string }) => t.name))
-        }
-      } catch (error) {
-        console.error('Failed to fetch tag suggestions:', error)
-      }
-    }
-
-    fetchTagSuggestions()
+    setTimeout(() => textareaRef.current?.focus(), 100)
   }, [])
 
-  // 【新增】处理使用上次标签的逻辑
-  const handleUseLastTags = useCallback(() => {
-    if (!lastTags) return
-    const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
-    const primaryTags = lastTags.filter(tag => primaryCategoryList.includes(tag))
-    setPrimaryCategories(primaryTags)
-    setTopicTags(lastTags.filter(tag => !primaryCategoryList.includes(tag)))
-    setDefaultTags(lastTags)
-  }, [lastTags])
-
-  // 初始化编辑数据
   useEffect(() => {
-    if (initialData && mode === 'edit') {
-      const currentId = initialData.id || 'new'
-      
-      // 防止重复初始化同一个宝藏
-      if (lastTreasureIdRef.current === currentId && isInitializedRef.current) {
-        return
-      }
-      
-      // 记录当前初始化的宝藏 ID
-      lastTreasureIdRef.current = currentId
-      isInitializedRef.current = true
-      
-      // 构建完整的内容
-      let fullContent = ''
-      
-      if (initialData.title) {
-        fullContent += initialData.title + '\n\n'
-      }
-      
-      if (initialData.content) {
-        fullContent += initialData.content
-      }
-      
-      setContent(fullContent)
-      
-      // 初始化标签系统
-      const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
-      let initialPrimaryCategories: string[] = []
-
-      // 1. 优先从 theme 获取（现在支持多个）
-      if (initialData.theme && Array.isArray(initialData.theme)) {
-        // theme 是数组，转为首字母大写以匹配组件状态
-        initialPrimaryCategories = initialData.theme
-          .map(t => t.charAt(0).toUpperCase() + t.slice(1))
-          .filter(t => primaryCategoryList.includes(t))
-      }
-
-      // 2. 其次从 tags 获取（兼容旧数据）
-      if (initialPrimaryCategories.length === 0 && initialData.tags && initialData.tags.length > 0) {
-        const found = initialData.tags.filter(tag => primaryCategoryList.includes(tag))
-        if (found.length > 0) initialPrimaryCategories = found
-      }
-
-      if (initialPrimaryCategories.length > 0) {
-        setPrimaryCategories(initialPrimaryCategories)
-      }
-
-      // 设置主题标签（排除主要分类标签）
-      if (initialData.tags) {
-        const topicTagsList = initialData.tags.filter(tag => !primaryCategoryList.includes(tag))
-        setTopicTags(topicTagsList)
-      }
-      
-      // 设置图片（必须重置，即使为空数组）
-      if (initialData.images && initialData.images.length > 0) {
-        const mappedImages = initialData.images.map(img => ({
-          ...img,
-          url: img.url,
-          originalUrl: img.url,
-          previewUrl: img.url
-        }))
-        setImages(mappedImages)
-      } else {
-        setImages([])
-      }
-      
-      // 设置音乐数据
-      if (initialData.type === 'MUSIC' && initialData.musicTitle) {
-        setMusicData({
-          title: initialData.musicTitle || '',
-          artist: initialData.musicArtist || '',
-          album: initialData.musicAlbum || '',
-          url: initialData.musicUrl || '',
-          coverUrl: initialData.musicCoverUrl || ''
-        })
-        setActiveCommand('music')
-      }
-    } else if (!initialData) {
-      // 创建模式：只在首次挂载时初始化，防止 lastTags 变化导致用户输入被清空
-      if (isCreateModeInitializedRef.current) {
-        return
-      }
-      isCreateModeInitializedRef.current = true
-      
-      // 重置所有状态，lastTags 仅作为参考
-      setContent('')
-      setImages([])
-      setActiveCommand(null)
-      setMusicData({
-        title: '',
-        artist: '',
-        album: '',
-        url: '',
-        coverUrl: ''
-      })
-      
-      // 【修改】设置默认标签为参考，但不自动填入实际标签
-      if (lastTags && lastTags.length > 0) {
-        const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
-        const primaryTags = lastTags.filter(tag => primaryCategoryList.includes(tag))
-        const topicTagsList = lastTags.filter(tag => !primaryCategoryList.includes(tag))
-        
-        // 保存为参考，但不自动应用
-        if (primaryTags.length > 0) {
-          // 【修改】不自动设置 primaryCategories，保留参考
-          setDefaultTags([...primaryTags, ...topicTagsList])
-        } else {
-          setDefaultTags(topicTagsList)
-        }
-        
-        // 实际标签为空
-        setPrimaryCategories([])
-        setTopicTags([])
-      } else {
-        setPrimaryCategories([])
-        setDefaultTags([])
-        setTopicTags([])
-      }
-    }
-  }, [initialData?.id, mode, lastTags])
-
-  // 自动聚焦
-  useEffect(() => {
-    setTimeout(() => {
-      textareaRef.current?.focus()
-    }, 100)
+    fetch('/api/treasures/tags')
+      .then(res => res.ok ? res.json() : [])
+      .then(tags => setTagSuggestions(tags.map((t: any) => t.name)))
+      .catch(console.error)
   }, [])
 
-  // 检测斜杠命令
-  const detectSlashCommand = (text: string, cursorPos: number) => {
-    const beforeCursor = text.slice(0, cursorPos)
-    const lastSlash = beforeCursor.lastIndexOf('/')
-    
-    if (lastSlash === -1) return null
-    
-    // 检查 / 前是否是空格或行首
-    if (lastSlash > 0 && !/\s/.test(beforeCursor[lastSlash - 1])) {
-      return null
-    }
-    
-    const command = beforeCursor.slice(lastSlash + 1)
-    return command
-  }
-
-  // 提取标签
-  const extractTags = (text: string): string[] => {
-    const tagRegex = /#(\w+)/g
-    const matches = text.match(tagRegex)
-    return matches ? matches.map(tag => tag.slice(1)) : []
-  }
-
-  // 提取标题（第一行非空文本）
-  const extractTitle = (text: string): string => {
-    const lines = text.split('\n').filter(line => line.trim())
-    return lines[0] || '未命名'
-  }
-
-  // 处理内容变化
+  // Handlers
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value
     setContent(newContent)
-    
-    // 检测斜杠命令
-    const cursorPos = e.target.selectionStart
-    const command = detectSlashCommand(newContent, cursorPos)
-    
-    if (command !== null) {
-      setCommandSearch(command)
-      setActiveCommand('search')
-    } else {
-      setActiveCommand(null)
-      setCommandSearch('')
-    }
+    handleCommandChange(newContent, e.target.selectionStart)
   }
 
-  // 图片粘贴
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items
-    if (!items) return
-    
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault()
-        const file = item.getAsFile()
-        if (file) {
-          await uploadImage(file)
-        }
-      }
-    }
-  }
-
-  // 处理文件选择
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const imageFiles = files.filter(f => f.type.startsWith('image/'))
-    
-    for (const file of imageFiles) {
-      await uploadImage(file)
-    }
-    
-    // 清空 input，允许重复选择同一个文件
-    e.target.value = ''
-  }
-
-  // 图片拖拽
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    
-    const files = Array.from(e.dataTransfer?.files || [])
-    const imageFiles = files.filter(f => f.type.startsWith('image/'))
-    
-    for (const file of imageFiles) {
-      await uploadImage(file)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  // 上传图片到 OSS
-  const uploadImage = async (file: File) => {
-    const uploadId = Math.random().toString(36).substr(2, 9)
-    
-    // 添加到上传列表
-    setUploadingImages(prev => [...prev, {
-      id: uploadId,
-      file,
-      progress: 0
-    }])
-
-    try {
-      // 1. 获取上传签名（传递文件信息）
-      const signatureUrl = new URL('/api/upload/oss/signature', window.location.origin)
-      signatureUrl.searchParams.set('filename', file.name)
-      signatureUrl.searchParams.set('contentType', file.type)
-      
-      const signatureRes = await fetch(signatureUrl.toString())
-      if (!signatureRes.ok) {
-        const errorData = await signatureRes.json()
-        throw new Error(`获取上传签名失败: ${errorData.error || signatureRes.statusText}${errorData.missingVariables ? '\n缺失环境变量: ' + errorData.missingVariables.join(', ') : ''}`)
-      }
-      
-      const signatureData = await signatureRes.json()
-      console.log('OSS Signature data:', signatureData)
-      
-      // 检查是否配置了 OSS
-      if (signatureData.error) {
-        console.warn('OSS 未配置，详情:', signatureData)
-        // 使用本地预览作为降级方案
-        const mockUrl = URL.createObjectURL(file)
-        setImages(prev => [...prev, {
-          url: mockUrl,  // 用于预览
-          originalUrl: mockUrl,  // 降级时也保存为 originalUrl
-          alt: file.name,
-          size: file.size
-        }])
-        setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
-        alert(`OSS 配置问题: ${signatureData.error}\n${signatureData.missingVariables ? '缺失: ' + signatureData.missingVariables.join(', ') : ''}`)
-        return
-      }
-
-      // 2. 构建表单数据
-      const formData = new FormData()
-      formData.append('key', signatureData.key)
-      formData.append('policy', signatureData.policy)
-      formData.append('OSSAccessKeyId', signatureData.accessKeyId)
-      formData.append('signature', signatureData.signature)
-      formData.append('success_action_status', '200')
-      formData.append('file', file)
-
-      // 3. 上传到 OSS
-      const xhr = new XMLHttpRequest()
-      
-      // 监听上传进度
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100)
-          setUploadingImages(prev => 
-            prev.map(img => 
-              img.id === uploadId ? { ...img, progress } : img
-            )
-          )
-        }
-      })
-
-      // 上传完成
-      await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200 || xhr.status === 204) {
-            resolve()
-          } else {
-            console.error('OSS upload failed:', xhr.status, xhr.responseText)
-            reject(new Error(`OSS上传失败: ${xhr.status}`))
-          }
-        })
-        xhr.addEventListener('error', (e) => {
-          console.error('Network error during upload:', e)
-          reject(new Error('网络错误，请检查OSS配置'))
-        })
-        xhr.addEventListener('abort', () => reject(new Error('上传取消')))
-        
-        console.log('Uploading to OSS:', signatureData.endpoint)
-        xhr.open('POST', signatureData.endpoint)
-        xhr.send(formData)
-      })
-
-      // 4. 获取文件 URL 并生成签名 URL
-      // 构建原始 URL
-      const baseUrl = (signatureData.cdnUrl || signatureData.endpoint).trim()
-      const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
-      const normalizedKey = signatureData.key.replace(/^\/+/, '')
-      const originalUrl = `${normalizedBaseUrl}/${normalizedKey}`
-      
-      console.log('=== 图片上传成功 ===')
-      console.log('Original URL:', originalUrl)
-      
-      // 5. 生成签名 URL 用于预览（私有 Bucket 需要签名访问）
-      try {
-        const signResponse = await fetch('/api/upload/oss/sign-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: originalUrl })
-        })
-        
-        if (!signResponse.ok) {
-          console.warn('生成签名 URL 失败，使用原始 URL')
-          // 如果签名失败，仍使用原始 URL（可能是公共读 Bucket）
-          setImages(prev => [...prev, {
-            url: originalUrl,  // 用于显示（ImageUploadPreview 组件使用）
-            originalUrl: originalUrl,  // 用于保存到数据库
-            alt: file.name,
-            size: file.size
-          }])
-        } else {
-          const { signedUrl } = await signResponse.json()
-          console.log('✅ 签名 URL:', signedUrl)
-          
-          setImages(prev => [...prev, {
-            url: signedUrl,  // 用于显示（ImageUploadPreview 组件使用）
-            originalUrl: originalUrl,  // 用于保存到数据库
-            alt: file.name,
-            size: file.size
-          }])
-        }
-      } catch (error) {
-        console.error('签名 URL 错误:', error)
-        // 降级使用原始 URL
-        setImages(prev => [...prev, {
-          url: originalUrl,
-          originalUrl: originalUrl,
-          alt: file.name,
-          size: file.size
-        }])
-      }
-      
-      console.log('===================')
-      
-
-      // 移除上传列表
-      setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
-    } catch (error) {
-      console.error('Upload failed:', error)
-      alert(`上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
-      setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
-    }
-  }
-
-  // 删除图片
-  const handleRemoveImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
-  }
-
-  // 选择斜杠命令
   const handleSelectCommand = (command: string) => {
     if (command === 'music') {
-      setActiveCommand('music')
-      // 移除输入框中的 /music
       const newContent = content.replace(/\/music\s*$/, '').trim()
       setContent(newContent)
+      // 需要手动设置 musicData 状态的触发（这里简化为 activeCommand 控制）
     }
-    setCommandSearch('')
+    selectCommand(command)
   }
 
-  // 处理键盘事件
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Ctrl+Enter 提交
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      handleSubmit()
-    }
+  const handleUploadFiles = async (files: File[]) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'))
     
-    // ESC 关闭命令面板或取消
-    if (e.key === 'Escape') {
-      if (activeCommand === 'search') {
-        setActiveCommand(null)
-        setCommandSearch('')
-      } else if (activeCommand === 'music') {
-        setActiveCommand(null)
-      } else {
-        onCancel()
+    for (const file of imageFiles) {
+      const uploadId = Math.random().toString(36).substr(2, 9)
+      
+      setUploadingImages(prev => [...prev, { id: uploadId, file, progress: 0 }])
+
+      try {
+        const result = await upload(file, {
+          onProgress: (progress) => {
+            setUploadingImages(prev => prev.map(img => img.id === uploadId ? { ...img, progress } : img))
+          }
+        })
+
+        setImages(prev => [...prev, {
+          url: result.signedUrl,
+          originalUrl: result.originalUrl,
+          alt: file.name,
+          size: file.size
+        }])
+      } catch (error) {
+        alert(`上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      } finally {
+        setUploadingImages(prev => prev.filter(img => img.id !== uploadId))
       }
     }
   }
 
-  // 验证是否可以提交
-  const canSubmit = (): boolean => {
-    // 1. 必须选择至少一个主要分类
-    if (primaryCategories.length === 0) return false
-    
-    // 2. 必须有内容或图片
-    if (!content.trim() && images.length === 0) return false
-    
-    // 3. 不能在上传中或提交中
-    if (isSubmitting || uploadingImages.length > 0) return false
-    
-    return true
-  }
-
-  // 提交
   const handleSubmit = async () => {
     if (!content.trim() && images.length === 0) return
     if (uploadingImages.length > 0) {
@@ -546,55 +131,32 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
     }
 
     setIsSubmitting(true)
-
-    // 保存当前内容，以便错误时恢复
     const savedContent = content
     const savedImages = images
     const savedMusicData = { ...musicData }
 
     try {
+      const extractTitle = (text: string) => text.split('\n').filter(line => line.trim())[0] || '未命名'
       const title = extractTitle(content)
-      
-      // 合并标签：仅包含主题标签（若为空则使用默认标签）
-      // 【修改】primaryCategories 不再加入 tags，而是作为 theme 字段
-      const finalTopicTags = topicTags.length > 0 ? topicTags : defaultTags
-      const tags = finalTopicTags
-      
-      console.log('📝 [提交] 准备提交宝藏:', { 
-        title, 
-        primaryCategories, 
-        topicTags, 
-        defaultTags,
-        finalTopicTags,
-        mergedTags: tags,
-        themes: primaryCategories.map(c => c.toLowerCase()),
-        imagesCount: images.length 
-      })
-      
-      // 移除第一行（作为标题）后的内容
-      const lines = content.split('\n')
-      const contentWithoutTitle = lines.slice(1).join('\n').trim()
+      const contentWithoutTitle = content.split('\n').slice(1).join('\n').trim()
       
       let type: TreasureData['type'] = 'TEXT'
       if (images.length > 0) type = 'IMAGE'
       if (activeCommand === 'music' && musicData.title) type = 'MUSIC'
 
-      // 提交时使用原始 URL（不带签名参数）
-      const imagesToSubmit = images.map(img => ({
-        url: img.originalUrl || img.url,  // 优先使用 originalUrl
-        alt: img.alt,
-        width: img.width,
-        height: img.height,
-        size: img.size
-      }))
-
       const data: TreasureData = {
         title,
-        content: contentWithoutTitle, // 不包含标题的内容
+        content: contentWithoutTitle,
         type,
-        tags,
-        theme: primaryCategories.length > 0 ? primaryCategories.map(c => c.toLowerCase()) : null, // 【修改】支持多个theme，作为数组
-        images: imagesToSubmit,
+        tags: topicTags.length > 0 ? topicTags : defaultTags,
+        theme: primaryCategories.length > 0 ? primaryCategories.map(c => c.toLowerCase()) : null,
+        images: images.map(img => ({
+          url: img.originalUrl || img.url,
+          alt: img.alt,
+          width: img.width,
+          height: img.height,
+          size: img.size
+        })),
         ...(type === 'MUSIC' && {
           musicTitle: musicData.title,
           musicArtist: musicData.artist,
@@ -604,103 +166,75 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
         })
       }
 
-      console.log('✅ [提交] 最终数据:', data)
       await onSubmit(data)
-      
-      // 提交成功后关闭（由父组件处理）
       onCancel()
     } catch (error) {
       console.error('Submit error:', error)
-      
-      // 网络错误时恢复内容
       setContent(savedContent)
       setImages(savedImages)
       setMusicData(savedMusicData)
-      
-      alert(`提交失败: ${error instanceof Error ? error.message : '未知错误'}\n\n您的内容已保存，请稍后重试`)
+      alert('提交失败，请稍后重试')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const charCount = content.length
-  const maxChars = 10000
+  const handleUseLastTags = () => {
+    if (!lastTags) return
+    const primaryCategoryList = ['Life', 'Knowledge', 'Thought', 'Root']
+    setPrimaryCategories(lastTags.filter(tag => primaryCategoryList.includes(tag)))
+    setTopicTags(lastTags.filter(tag => !primaryCategoryList.includes(tag)))
+    setDefaultTags(lastTags)
+  }
+
+  const canSubmit = primaryCategories.length > 0 && (!!content.trim() || images.length > 0) && !isSubmitting && uploadingImages.length === 0
 
   return (
     <div 
       ref={containerRef}
       className="space-y-4"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault(); setIsDragging(false);
+        handleUploadFiles(Array.from(e.dataTransfer?.files || []));
+      }}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
     >
-      {/* 主要分类选择 */}
-      <PrimaryCategorySelector
-        value={primaryCategories}
-        onChange={setPrimaryCategories}
-      />
+      <PrimaryCategorySelector value={primaryCategories} onChange={setPrimaryCategories} />
 
-      {/* 【新增】最近使用的标签 */}
       {recentTags && recentTags.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-700/50">
           <span className="text-sm text-gray-400 mr-1">最近使用:</span>
           {recentTags.map(tag => (
             <HierarchicalTag
-              key={tag}
-              tag={tag}
-              variant="default"
-              size="sm"
-              onClick={() => {
-                // 如果标签不存在，则添加
-                if (!topicTags.includes(tag)) {
-                  setTopicTags(prev => [...prev, tag])
-                }
-              }}
+              key={tag} tag={tag} variant="default" size="sm"
+              onClick={() => !topicTags.includes(tag) && setTopicTags(prev => [...prev, tag])}
             />
           ))}
         </div>
       )}
 
-      {/* 主题标签输入 */}
       <TagInput
         tags={topicTags}
         onChange={(newTags) => {
           setTopicTags(newTags)
-          // 用户输入时清空默认标签
-          if (newTags.length > 0 && defaultTags.length > 0) {
-            setDefaultTags([])
-          }
+          if (newTags.length > 0 && defaultTags.length > 0) setDefaultTags([])
         }}
         suggestions={tagSuggestions}
         maxTags={10}
         placeholderTags={topicTags.length === 0 ? defaultTags : []}
-        onPlaceholderFocus={() => {
-          // 点击输入框时立即清空默认标签，显示干净的输入框
-          setDefaultTags([])
-        }}
+        onPlaceholderFocus={() => setDefaultTags([])}
       />
 
-      {/* 使用上次标签按钮 */}
       {lastTags && lastTags.length > 0 && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleUseLastTags}
-            className="text-gray-400 hover:text-white hover:bg-gray-800"
-          >
-            使用上次标签
-          </Button>
+          <button onClick={handleUseLastTags} className="text-xs text-gray-400 hover:text-white underline">使用上次标签</button>
         </div>
       )}
 
-      {/* 输入区域 */}
-      <div className={cn(
-        "relative rounded-lg transition-all",
-        isDragging && "ring-2 ring-blue-400 bg-blue-900/50"
-      )}>
+      <div className={cn("relative rounded-lg transition-all", isDragging && "ring-2 ring-blue-400 bg-blue-900/50")}>
         {isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-blue-900/90 backdrop-blur-sm rounded-lg z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-900/90 backdrop-blur-sm rounded-lg z-10 pointer-events-none">
             <div className="text-center">
               <Paperclip className="h-12 w-12 text-blue-400 mx-auto mb-2" />
               <p className="text-blue-300 font-medium">释放以上传图片</p>
@@ -712,129 +246,63 @@ export function DiscordStyleInput({ onSubmit, onCancel, initialData, mode = 'cre
           ref={textareaRef}
           value={content}
           onChange={handleContentChange}
-          onPaste={handlePaste}
-          onKeyDown={handleKeyDown}
+          onPaste={(e) => {
+            const items = e.clipboardData?.items
+            if (items) handleUploadFiles(Array.from(items).filter(i => i.type.startsWith('image/')).map(i => i.getAsFile()!).filter(Boolean))
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSubmit(); }
+            if (e.key === 'Escape') {
+               if (activeCommand) closeCommand();
+               else onCancel();
+            }
+          }}
           placeholder="分享你的想法...&#10;&#10;💡 使用 / 调用特殊功能（如 /music）"
-          className={cn(
-            "w-full resize-none border-0 rounded-lg",
-            "bg-gray-800 focus:bg-gray-750",
-            "px-4 py-3 text-base leading-relaxed",
-            "text-white placeholder:text-gray-500",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500/50",
-            "transition-all"
-          )}
+          className="w-full resize-none border-0 rounded-lg bg-gray-800 focus:bg-gray-750 px-4 py-3 text-base leading-relaxed text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           style={{ minHeight: '120px' }}
-          maxLength={maxChars}
+          maxLength={10000}
         />
 
-        {/* 斜杠命令面板 */}
         {activeCommand === 'search' && commandSearch !== null && (
           <SlashCommandPanel
             search={commandSearch}
             onSelect={handleSelectCommand}
-            onClose={() => {
-              setActiveCommand(null)
-              setCommandSearch('')
-            }}
+            onClose={closeCommand}
           />
         )}
       </div>
 
-      {/* 音乐卡片表单 */}
       {activeCommand === 'music' && (
         <MusicCardForm
           data={musicData}
           onChange={setMusicData}
-          onClose={() => setActiveCommand(null)}
+          onClose={() => setActiveCommand(null)} // Close music card
         />
       )}
 
-      {/* 图片预览 */}
       {(images.length > 0 || uploadingImages.length > 0) && (
         <ImageUploadPreview
           images={images}
           uploadingImages={uploadingImages}
-          onRemove={handleRemoveImage}
+          onRemove={(index) => setImages(prev => prev.filter((_, i) => i !== index))}
         />
       )}
 
-      {/* 底部栏 */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-        {/* 隐藏的文件输入 */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        
-        <div className="flex items-center gap-4 text-sm text-gray-400">
-          {/* 图片选择按钮 */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={images.length >= 5}
-            className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-700 transition-colors",
-              images.length >= 5 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-            )}
-            title="选择图片"
-          >
-            <ImageIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">选择图片</span>
-          </button>
-          
-          <span className="flex items-center gap-1">
-            <Paperclip className="h-4 w-4" />
-            {images.length}/5
-          </span>
-          
-          <span className={cn(
-            "text-gray-400",
-            charCount > maxChars * 0.9 && "text-orange-400 font-medium"
-          )}>
-            {charCount}/{maxChars}
-          </span>
-        </div>
+      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={(e) => {
+         handleUploadFiles(Array.from(e.target.files || []));
+         e.target.value = '';
+      }} className="hidden" />
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="text-gray-400 hover:text-white hover:bg-gray-800"
-          >
-            取消
-          </Button>
-          
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit()}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>创建中...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                <span>创建宝藏</span>
-                <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-white/20 rounded text-xs ml-1">
-                  Ctrl+⏎
-                </kbd>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+      <InputToolbar
+        imagesCount={images.length}
+        charCount={content.length}
+        maxChars={10000}
+        isSubmitting={isSubmitting}
+        canSubmit={canSubmit}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+        onFileSelect={() => fileInputRef.current?.click()}
+      />
     </div>
   )
 }
-
-
-

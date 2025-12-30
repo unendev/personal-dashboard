@@ -3,12 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export const dynamic = 'force-static';
-
-export async function generateStaticParams() {
-  return [];
-}
-
 /**
  * GET /api/notes/[id] - 获取单篇笔记的完整内容
  */

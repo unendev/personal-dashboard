@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export const dynamic = 'force-static';
-
 /**
  * GET /api/config?key=categoryVersion
  * 获取全局配置

@@ -1,75 +1,9 @@
-/**
- * GOC (Game Operations Center) AI Chat API Route
- * 
- * ============================================================================
- * VERCEL AI SDK v5.0+ 重要规则 (避免再次踩坑)
- * ============================================================================
- * 
- * 1. 【路由配置】客户端必须使用 DefaultChatTransport 配置 API 路由：
- *    ```tsx
- *    import { DefaultChatTransport } from 'ai';
- *    const { messages, sendMessage } = useChat({
- *      transport: new DefaultChatTransport({ api: '/api/chat/goc' }),
- *    });
- *    ```
- *    ❌ 错误: useChat({ api: '/api/chat/goc' })  // v5 中这样写会被忽略！
- *    ✅ 正确: useChat({ transport: new DefaultChatTransport({ api: '/api/chat/goc' }) })
- * 
- * 2. 【发送消息】使用 sendMessage 替代 append：
- *    ❌ 错误: append({ role: 'user', content: 'Hello' })
- *    ✅ 正确: sendMessage({ text: 'Hello' }, { body: { customData } })
- * 
- * 3. 【工具定义】使用 inputSchema 替代 parameters：
- *    ❌ 错误: tool({ parameters: z.object({...}), execute: ... })
- *    ✅ 正确: tool({ inputSchema: z.object({...}), execute: ... })
- * 
- * 4. 【响应流】根据需求选择响应方法：
- *    - toTextStreamResponse(): 纯文本流（简单场景）
- *    - toUIMessageStreamResponse(): UI 消息流（带工具调用）
- *    - toDataStreamResponse(): 数据流（已废弃，避免使用）
- * 
- * 5. 【消息转换】使用 convertToModelMessages 转换客户端消息：
- *    ✅ 正确: const modelMessages = convertToModelMessages(messages);
- *    ❌ 错误: 手动过滤或转换消息（会破坏工具调用链）
- * 
- * 6. 【多步工具调用】使用 stopWhen 限制步骤数：
- *    ✅ 正确: streamText({ ..., stopWhen: stepCountIs(5) })
- *    ❌ 错误: 不设置 stopWhen（可能导致无限循环）
- * 
- * 7. 【工具调用结果】v5 中属性名变更：
- *    - args → input
- *    - result → output
- * 
- * 官方文档: https://sdk.vercel.ai/docs/migration-guides/migration-guide-5-0
- * ============================================================================
- */
-
-import { createGoogleGenerativeAI, GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { createDeepSeek } from '@ai-sdk/deepseek';
 import { streamText, tool, convertToModelMessages, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { Liveblocks } from "@liveblocks/node";
 import { LiveList, LiveMap } from "@liveblocks/client";
 import { env } from "@/lib/env";
-
-const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-const proxyConfig: any = {};
-
-if (!isProduction) {
-  const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY || 'http://127.0.0.1:10809';
-  proxyConfig.httpAgent = proxyUrl;
-  proxyConfig.httpsAgent = proxyUrl;
-}
-
-const google = createGoogleGenerativeAI({
-  apiKey: env.GOOGLE_AI_STUDIO_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY,
-  ...proxyConfig,
-});
-
-// 使用官方 DeepSeek SDK，原生支持流式 reasoning
-const deepseek = createDeepSeek({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
+import { getAIModel } from '@/lib/ai-provider';
 
 const liveblocks = new Liveblocks({
   secret: env.LIVEBLOCKS_SECRET_KEY as string,
@@ -98,7 +32,6 @@ async function logToolCall(roomId: string, toolName: string, args: any, result: 
     console.error('❌ Failed to log tool call:', error);
   }
 }
-
 
 export async function POST(req: Request) {
   const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -180,7 +113,11 @@ ${modeInstruction}
               }
             });
             
-            const result = `Current Shared Field Notes:\n"""\n${sharedNotes}\n"""\n\n${playerNotesSummary || 'No individual player notes available.'}`;
+            const result = `Current Shared Field Notes:\n"""
+${sharedNotes}
+"""
+
+${playerNotesSummary || 'No individual player notes available.'}`;
             await logToolCall(roomId, 'getNotes', {}, result);
             return result;
           } catch (error) {
@@ -197,14 +134,13 @@ ${modeInstruction}
         }),
         execute: async ({ target, content }) => {
           try {
-            // 如果 target 不是 "shared"，尝试通过玩家名找到玩家 ID
             let storageKey = target;
             if (target !== 'shared' && players) {
               const player = players.find((p: any) => 
                 p.name?.toLowerCase() === target.toLowerCase() || p.id === target
               );
               if (player) {
-                storageKey = player.id; // 使用玩家 ID 作为存储键
+                storageKey = player.id;
               }
             }
             
@@ -239,7 +175,6 @@ ${modeInstruction}
         }),
         execute: async ({ task, group, isPersonal, playerName }) => {
           try {
-            // 如果是个人任务，找到玩家 ID
             let ownerId = null;
             let ownerName = null;
             if (isPersonal && playerName && players) {
@@ -258,7 +193,7 @@ ${modeInstruction}
                 todos = new LiveList([]);
                 root.set('todos', todos);
               }
-              todos.push({ 
+              todos.push({
                 id: crypto.randomUUID(), 
                 text: task, 
                 completed: false,
@@ -281,55 +216,19 @@ ${modeInstruction}
       }),
     };
 
-
-    // 转换消息为模型格式
-    // convertToModelMessages 会自动处理：
-    // - UIMessage 格式转换（parts 数组 → 文本）
-    // - tool 消息和结果
-    // - 消息验证
-    // 官方文档: https://sdk.vercel.ai/docs/reference/ai-sdk-ui/convert-to-model-messages
     const modelMessages = convertToModelMessages(messages);
 
-    // 模型选择 - 根据 provider 和 modelId
-    let selectedModel: any;
-    let providerOptions: any = {};
-    const actualModelId = modelId || (provider === 'gemini' ? 'gemini-2.5-flash' : 'deepseek-chat');
+    // 使用统一的 getAIModel 逻辑
+    const { model: selectedModel, providerOptions } = getAIModel({
+      provider,
+      modelId,
+      enableThinking
+    });
     
-    console.log(`[GOC] Model: ${provider}/${actualModelId}, thinking: ${enableThinking}`);
-    
-    if (provider === 'gemini') {
-      selectedModel = google(actualModelId);
-      
-      // 只有当 enableThinking 为 true 时才启用思考
-      // 注意：Gemini 的 thinking 模式可能会导致非流式输出（API 限制）
-      if (enableThinking && (actualModelId.includes('gemini-3') || actualModelId.includes('gemini-2.5'))) {
-        const thinkingConfig: any = { includeThoughts: true };
-        
-        if (actualModelId.includes('gemini-3')) {
-          // 3.0 Pro: 使用 thinkingLevel
-          thinkingConfig.thinkingLevel = 'high';
-        } else if (actualModelId === 'gemini-2.5-flash') {
-          // 2.5 Flash: 需要 thinkingBudget 来启用思考
-          thinkingConfig.thinkingBudget = 8192;
-        }
-        // 2.5 Pro: 只需 includeThoughts: true
-        
-        providerOptions = {
-          google: { thinkingConfig } satisfies GoogleGenerativeAIProviderOptions,
-        };
-        
-        console.log(`[GOC] Gemini with thinking enabled`);
-      } else {
-        console.log(`[GOC] Gemini without thinking (should stream)`);
-      }
-    } else {
-      // DeepSeek 模型
-      selectedModel = deepseek(actualModelId);
-    }
+    console.log(`[GOC] Model initialized: ${provider}/${modelId || 'default'}`);
 
     const toolChoice = mode === 'planner' ? 'required' as const : 'auto' as const;
 
-    // 重要：streamText 会自动执行工具并继续生成
     const result = streamText({
       model: selectedModel,
       system: systemPrompt,
@@ -338,11 +237,8 @@ ${modeInstruction}
       toolChoice,
       stopWhen: stepCountIs(5),
       providerOptions,
-
     });
 
-    // 只有当 enableThinking 为 true 时才发送 reasoning
-    // 添加 Transfer-Encoding 和 Connection 头来确保流式传输正常工作
     return result.toUIMessageStreamResponse({
       sendReasoning: enableThinking === true,
       headers: {
