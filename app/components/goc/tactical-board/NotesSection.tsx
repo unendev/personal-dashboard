@@ -28,7 +28,7 @@ export const NotesSection = ({
   handleNoteChange
 }: NotesSectionProps) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [outlineOpen, setOutlineOpen] = useState(true);
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const isEditableTab = activeTab === 'shared' || activeTab === 'my';
