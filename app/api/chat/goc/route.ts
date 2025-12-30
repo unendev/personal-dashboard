@@ -229,15 +229,35 @@ ${playerNotesSummary || 'No individual player notes available.'}`;
 
     const toolChoice = mode === 'planner' ? 'required' as const : 'auto' as const;
 
-    const result = streamText({
-      model: selectedModel,
-      system: systemPrompt,
-      messages: modelMessages,
-      tools,
-      toolChoice,
-      stopWhen: stepCountIs(5),
-      providerOptions,
-    });
+        const result = streamText({
+
+          model: selectedModel,
+
+          system: systemPrompt,
+
+          messages: modelMessages,
+
+          tools,
+
+          toolChoice,
+
+          stopWhen: stepCountIs(5),
+
+          providerOptions,
+
+          async onFinish(result) {
+
+            console.log(`[GOC] Request ${requestId} finished. Reason: ${result.finishReason}`);
+
+            if (result.finishReason === 'error' && result.error) {
+
+               console.error(`[GOC] Stream Error for ${requestId}:`, result.error);
+
+            }
+
+          }
+
+        });
 
     return result.toUIMessageStreamResponse({
       sendReasoning: enableThinking === true,

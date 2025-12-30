@@ -187,11 +187,53 @@ export function useGocChat() {
     });
   }, [messages, sharedMessages]);
 
+  const [isCompressing, setIsCompressing] = useState(false);
+  
   // --- Send Message Handler ---
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const inputValue = inputRef.current?.value || '';
     if (!inputValue.trim() || isLoading) return;
+
+    // --- Context Management Strategy ---
+    const MAX_MESSAGES_BEFORE_COMPRESSION = 20;
+    const RECENT_MESSAGES_TO_KEEP = 10;
+    
+    let processedMessages = messages;
+
+    if (messages.length > MAX_MESSAGES_BEFORE_COMPRESSION) {
+      try {
+        setIsCompressing(true);
+        console.log(`[Chat Context] History too long (${messages.length}). Compressing...`);
+        
+        const systemMessage = messages.find(m => m.role === 'system');
+        const messagesToSummarize = messages.slice(systemMessage ? 1 : 0, -RECENT_MESSAGES_TO_KEEP);
+        const recentMessages = messages.slice(-RECENT_MESSAGES_TO_KEEP);
+
+        // Generate summary from the middle part of the conversation
+        const summary = await generateContextSummary(messagesToSummarize);
+        
+        const summaryMessage: CoreMessage = {
+          role: 'system',
+          content: `[Archived Context Summary]:\n${summary}`,
+        };
+        
+        // Reconstruct messages with summary
+        processedMessages = systemMessage 
+          ? [systemMessage, summaryMessage, ...recentMessages] 
+          : [summaryMessage, ...recentMessages];
+
+        console.log(`[Chat Context] Compression complete. New history length: ${processedMessages.length}`);
+      } catch (error) {
+        console.error("Context compression failed, falling back to truncation.", error);
+        // Fallback to simple truncation on error
+        const recentMessages = messages.slice(-RECENT_MESSAGES_TO_KEEP);
+        const systemMessage = messages.find(m => m.role === 'system');
+        processedMessages = systemMessage ? [systemMessage, ...recentMessages] : recentMessages;
+      } finally {
+        setIsCompressing(false);
+      }
+    }
 
     const trimmedInput = inputValue.trim();
     const hasAIPrefix = trimmedInput.startsWith('@AI') || trimmedInput.startsWith('@ai');
@@ -238,7 +280,7 @@ export function useGocChat() {
       setLastSentNotes(notes as string);
     }
 
-    sendMessage({ text: aiQuery }, { body });
+    sendMessage({ role: 'user', content: aiQuery }, { data: body, messages: processedMessages });
     
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -247,7 +289,8 @@ export function useGocChat() {
     // State
     displayMessages,
     status,
-    isLoading,
+    isLoading: isLoading || isCompressing, // Combine loading states
+    isCompressing,
     inputRef,
     me,
     others,

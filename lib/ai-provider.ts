@@ -15,11 +15,11 @@ if (!isProduction) {
 const google = createGoogleGenerativeAI({
   apiKey: env.GOOGLE_AI_STUDIO_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY,
   ...proxyConfig,
+  // 新增：添加30秒超时，防止请求挂起
+  fetch: (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(30000) }),
 });
 
-const deepseek = createDeepSeek({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
+console.log('[AI Provider] Proxy config:', proxyConfig);
 
 interface GetAIModelOptions {
   provider: 'gemini' | 'deepseek' | string;

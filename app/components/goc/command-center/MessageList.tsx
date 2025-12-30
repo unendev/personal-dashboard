@@ -30,15 +30,17 @@ export const MessageList = ({
   const handleScroll = () => {
     if (messagesContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-      isNearBottom.current = scrollHeight - scrollTop - clientHeight < 100;
+      // 增加一个阈值，比如 50px，避免过于敏感
+      isNearBottom.current = scrollHeight - scrollTop - clientHeight < 150;
     }
   };
   
+  // 仅当消息列表末尾项变化时，且用户在底部时，才触发滚动
   useEffect(() => {
     if (isNearBottom.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages[messages.length - 1]?.content, messages[messages.length - 1]?.parts?.length]); // 依赖最后一条消息的内容或parts长度
 
   // Helpers
   const isMyOwnMessage = (m: any) => {
