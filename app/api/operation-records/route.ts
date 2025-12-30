@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/auth-utils';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (process.env.NEXT_CONFIG_WIDGET === 'true') {
     return NextResponse.json([]);
   }
