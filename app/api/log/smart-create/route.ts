@@ -11,11 +11,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
-    // 1. 获取所有分类用于上下文 (限制数量以节省 token)
-    // 优先获取最近使用的分类或常用分类可能更好，但这里先获取全部（假设数量不多）
+    // 1. 获取所有分类用于上下文
     const categories = await prisma.logCategory.findMany({
       select: { name: true, parentId: true, id: true },
     });
+    
+    // 1.1 (新增) 获取最近的任务名用于上下文 (增强一致性)
+    // 获取最近 50 个不重复的任务名
+    const recentTasks = await prisma.timerTask.findMany({
+        where: { userId: 'user-1' }, // 暂时硬编码 user-1，后续应从 session 获取
+        orderBy: { updatedAt: 'desc' },
+        take: 100,
+        select: { name: true }
+    });
+    // 去重
+    const recentTaskNames = Array.from(new Set(recentTasks.map(t => t.name || '').filter(n => n.length > 2))).slice(0, 50);
+    const recentTaskContext = recentTaskNames.join(', ');
     
     // 构建分类路径映射
     const categoryMap = new Map(categories.map(c => [c.id, c]));
@@ -43,6 +54,7 @@ export async function POST(req: Request) {
     - User is creating a task log or timer task.
     - Today's date is: ${date || new Date().toISOString().split('T')[0]}
     - Existing Category Paths: [${categoryContext}]
+    - Recent Task Names (Use for reference/normalization): [${recentTaskContext}]
     
     Input Format Analysis:
     - The user input can be structured OR natural language.
@@ -53,7 +65,7 @@ export async function POST(req: Request) {
     
     Output JSON Schema:
     {
-      "name": "string", // Clean task name.
+      "name": "string", // Clean task name. Try to NORMALIZE to a Recent Task Name if the user input is a fuzzy match (e.g. "Adina Dev" -> "Adina Character Mod Dev").
       "parentName": "string", // Optional parent context.
       "categoryPath": "string", // Best match from context OR A NEW LOGICAL PATH if semantically distinct.
       "initialTime": number, // Seconds.
@@ -67,8 +79,9 @@ export async function POST(req: Request) {
        - If NO parentheses, map to existing paths if close.
        - **CRITICAL**: If the task implies a NEW context not in existing paths, generate a new logical path (e.g. "Work/NewProject"). The system will auto-create it.
     3. **Hierarchy**: Detect > or : for parent/child relationship.
-    4. **Cleanup**: The name should be the core task activity, stripped of time and category markers.
-    5. Return valid JSON only.
+    4. **Name Fallback**: If after parsing, the name is empty (e.g. input was "#Tag 1h" or "(Category) 30m"), use the first tag or the last part of the category path as the name.
+    5. **Cleanup**: The final 'name' should be the core task activity, stripped of time and category markers.
+    6. Return valid JSON only.
     `;
 
     const { model } = getAIModel({ provider: 'deepseek', modelId: 'deepseek-chat' });
