@@ -36,20 +36,28 @@ export async function POST(req: Request) {
 
   const { content } = await req.json();
   
-  const memo = await prisma.note.upsert({
-    where: { 
-      // Note table doesn't have a unique constraint on title+userId, so we find first or create
-      id: (await prisma.note.findFirst({
-        where: { userId: session.user.id, title: WIDGET_MEMO_TITLE }
-      }))?.id || 'new-memo-id'
-    },
-    update: { content },
-    create: {
-      userId: session.user.id,
-      title: WIDGET_MEMO_TITLE,
-      content,
-    },
+  // First, try to find an existing memo.
+  const existingMemo = await prisma.note.findFirst({
+    where: { userId: session.user.id, title: WIDGET_MEMO_TITLE },
+    orderBy: { createdAt: 'asc' } // Get the oldest one if duplicates exist
   });
 
-  return NextResponse.json(memo);
+  if (existingMemo) {
+    // If found, update it
+    const updatedMemo = await prisma.note.update({
+      where: { id: existingMemo.id },
+      data: { content },
+    });
+    return NextResponse.json(updatedMemo);
+  } else {
+    // If not found, create a new one
+    const newMemo = await prisma.note.create({
+      data: {
+        userId: session.user.id,
+        title: WIDGET_MEMO_TITLE,
+        content,
+      },
+    });
+    return NextResponse.json(newMemo);
+  }
 }

@@ -45,27 +45,30 @@ export async function POST(req: Request) {
     - Existing Category Paths: [${categoryContext}]
     
     Input Format Analysis:
-    - The user input often follows: "Task Name (Category) [Time Duration]"
-    - The user might also use nesting syntax: "Parent Task > Child Task" or "Parent Task: Child Task"
-    - Example: "Buy Milk (Life/Chores) 30m" -> Name: "Buy Milk", Category: "Life/Chores", Time: 1800s
-    - Example: "Project Alpha > Design UI 2h" -> ParentName: "Project Alpha", Name: "Design UI", Category: (Infer), Time: 7200s
-    - Example: "Refactor: Login Page" -> ParentName: "Refactor", Name: "Login Page"
+    - The user input can be structured OR natural language.
+    - **Natural Language**: "Read history book for 1 hour" -> Name: "Read history book", Category: (Match "Reading" or "Study"), Time: 3600s
+    - **Structured Shortcut**: "Task (Category) Time" -> Explicit override.
+    - **Nesting**: "Project > Task" or "Project: Task".
+    - **Omitted Name**: "(Category) Time" or "#Tag Time".
     
     Output JSON Schema:
     {
-      "name": "string", // Clean task name (Child name if nested)
-      "parentName": "string", // Optional. Name of the parent task if hierarchy is detected.
-      "categoryPath": "string", // Must be one of Existing Category Paths if a close match is found. Otherwise, suggest a new logical path.
-      "initialTime": number, // Duration in seconds. Default 0.
-      "instanceTags": string[] // Extract hashtags like "#Work" or inferred tags.
+      "name": "string", // Clean task name.
+      "parentName": "string", // Optional parent context.
+      "categoryPath": "string", // Best match from context OR A NEW LOGICAL PATH if semantically distinct.
+      "initialTime": number, // Seconds.
+      "instanceTags": string[] 
     }
     
     Instructions:
-    - If hierarchy is detected ('>' or ':'), split the name. The part BEFORE is parentName, AFTER is name.
-    - If the user explicitly provides a category in parentheses, try to match it to an existing path.
-    - If no category is provided, INFER it from the task name and existing paths.
-    - Parse time expressions like "10m", "1h", "1.5h", "30min" into seconds.
-    - Return ONLY valid JSON. No markdown formatting.
+    1. **Time Extraction**: Look for "1h", "30m", "1 hour", "20 mins". Remove this from the name.
+    2. **Category Matching**: 
+       - If `(Category)` is present, use it.
+       - If NO parentheses, map to existing paths if close.
+       - **CRITICAL**: If the task implies a NEW context not in existing paths, generate a new logical path (e.g. "Work/NewProject"). The system will auto-create it.
+    3. **Hierarchy**: Detect `>` or `:` for parent/child relationship.
+    4. **Cleanup**: The `name` should be the core task activity, stripped of time and category markers.
+    5. Return valid JSON only.
     `;
 
     const { model } = getAIModel({ provider: 'deepseek', modelId: 'deepseek-chat' });
@@ -84,6 +87,23 @@ export async function POST(req: Request) {
     } catch (e) {
         console.error('Failed to parse AI response JSON:', result.text);
         return NextResponse.json({ error: 'AI response invalid' }, { status: 500 });
+    }
+    
+    // 3.1 (新增) 智能回退任务名逻辑
+    if (!jsonResult.name || jsonResult.name.trim() === '') {
+        // 优先级 1: 使用第一个 Tag
+        if (jsonResult.instanceTags && jsonResult.instanceTags.length > 0) {
+            jsonResult.name = jsonResult.instanceTags[0];
+        } 
+        // 优先级 2: 使用分类路径的最后一部分
+        else if (jsonResult.categoryPath) {
+            const parts = jsonResult.categoryPath.split('/');
+            jsonResult.name = parts[parts.length - 1];
+        }
+        // 优先级 3: 默认值
+        else {
+            jsonResult.name = "未命名任务";
+        }
     }
 
     // 4. (新增) 如果识别到父任务名，查找父任务ID
