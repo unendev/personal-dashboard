@@ -6,7 +6,7 @@ import {
   RoomProvider,
   ClientSideSuspense,
 } from "@liveblocks/react/suspense";
-import { LiveList, LiveMap } from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export function Room({ children, roomId, userName }: { children: ReactNode; roomId: string; userName?: string }) {
   // 追踪房间元数据用于管理界面
@@ -65,6 +65,12 @@ export function Room({ children, roomId, userName }: { children: ReactNode; room
         id={roomId}
         initialPresence={{}}
         initialStorage={{
+          aiConfig: new LiveObject({
+            provider: "deepseek",
+            modelId: "deepseek-chat",
+            aiMode: "encyclopedia",
+            thinkingEnabled: true,
+          }),
           todos: new LiveList([]),
           notes: "## Mission Briefing\n\n- Objective: Survive\n- Day: 1",
           playerNotes: new LiveMap(),

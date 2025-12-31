@@ -20,7 +20,7 @@ async function ensureCategoryPath(categoryPath: string) {
     // Checking schema from memory: LogCategory { id, name, parentId ... } -> No userId.
     // So it is shared. This is fine for single user or shared system.
     
-    const existing = await prisma.logCategory.findFirst({
+    const existing: { id: string } | null = await prisma.logCategory.findFirst({
       where: {
         name: part,
         parentId: parentId
@@ -33,7 +33,7 @@ async function ensureCategoryPath(categoryPath: string) {
     } else {
       // Create new
       try {
-        const newCat = await prisma.logCategory.create({
+        const newCat: { id: string } = await prisma.logCategory.create({
           data: {
             name: part,
             parentId: parentId
@@ -43,7 +43,7 @@ async function ensureCategoryPath(categoryPath: string) {
         parentId = newCat.id;
       } catch (e) {
         // Handle race condition if created in parallel
-        const retry = await prisma.logCategory.findFirst({
+        const retry: { id: string } | null = await prisma.logCategory.findFirst({
             where: { name: part, parentId: parentId },
             select: { id: true }
         });

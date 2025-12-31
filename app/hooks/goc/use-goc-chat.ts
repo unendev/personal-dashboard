@@ -201,7 +201,14 @@ export function useGocChat() {
   }, [messages, sharedMessages]);
 
   const [isCompressing, setIsCompressing] = useState(false);
-  const aiModeEnabled = !!(aiConfig?.modelId && aiConfig?.provider);
+  const isAiConfigured = !!(aiConfig?.modelId && aiConfig?.provider);
+  const [aiModeEnabled, setAiModeEnabled] = useState(isAiConfigured);
+  
+  useEffect(() => {
+    if (!isAiConfigured) {
+      setAiModeEnabled(false);
+    }
+  }, [isAiConfigured]);
   
   // --- Send Message Handler ---
   const handleSendMessage = async (e?: React.FormEvent) => {
@@ -254,7 +261,7 @@ export function useGocChat() {
 
     const trimmedInput = inputValue.trim();
     const hasAIPrefix = trimmedInput.startsWith('@AI') || trimmedInput.startsWith('@ai');
-    const shouldSendToAI = aiModeEnabled || hasAIPrefix;
+    const shouldSendToAI = (aiModeEnabled && isAiConfigured) || hasAIPrefix;
     
     if (!shouldSendToAI) {
       const playerMsg: SharedMessage = {
@@ -307,7 +314,7 @@ export function useGocChat() {
     // Let's add the compressed messages to the body.
     body.messages = processedMessages;
     
-    sendMessage({ role: 'user', content: aiQuery }, { data: body });
+    sendMessage({ text: aiQuery }, { body });
     
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -325,6 +332,8 @@ export function useGocChat() {
     // Unified AI Config from Liveblocks
     aiConfig,
     updateAiConfig,
+    aiModeEnabled,
+    setAiModeEnabled,
     
     // Actions
     handleSendMessage,

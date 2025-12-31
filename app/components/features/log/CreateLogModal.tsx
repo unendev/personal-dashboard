@@ -13,6 +13,7 @@ interface CreateLogModalProps {
   onClose: () => void;
   onLogSaved?: () => void;
   onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string, parentId?: string) => Promise<void>;
+  onSmartCreate?: (input: string) => void;
   initialCategory?: string;
   selectedDate?: string;
 }
@@ -22,6 +23,7 @@ const CreateLogModal: React.FC<CreateLogModalProps> = ({
   onClose, 
   onLogSaved, 
   onAddToTimer,
+  onSmartCreate,
   initialCategory,
   selectedDate
 }) => {
@@ -66,8 +68,7 @@ const CreateLogModal: React.FC<CreateLogModalProps> = ({
         <div className="mt-3 md:mt-4 pb-4">
           {mode === 'smart' ? (
             <SmartCreateLogForm 
-                onAddToTimer={onAddToTimer}
-                selectedDate={selectedDate}
+                onSmartCreate={onSmartCreate}
                 onCancel={onClose}
             />
           ) : (

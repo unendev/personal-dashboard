@@ -24,11 +24,10 @@ export default function CommandCenter() {
     others,
     
     // Config State
-    aiMode, setAiMode,
-    aiProvider, setAiProvider,
-    aiModelId, setAiModelId,
-    aiModeEnabled, setAiModeEnabled,
-    thinkingEnabled, setThinkingEnabled,
+    aiConfig,
+    updateAiConfig,
+    aiModeEnabled,
+    setAiModeEnabled,
     
     // Actions
     handleSendMessage,
@@ -40,14 +39,8 @@ export default function CommandCenter() {
       <ChatHeader
         others={others}
         me={me}
-        aiProvider={aiProvider}
-        setAiProvider={setAiProvider}
-        aiModelId={aiModelId}
-        setAiModelId={setAiModelId}
-        aiMode={aiMode}
-        setAiMode={setAiMode}
-        thinkingEnabled={thinkingEnabled}
-        setThinkingEnabled={setThinkingEnabled}
+        aiConfig={aiConfig}
+        updateAiConfig={updateAiConfig}
       />
 
       <MessageList
