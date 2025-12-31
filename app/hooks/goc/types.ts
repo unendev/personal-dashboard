@@ -7,6 +7,7 @@ export interface SharedMessage {
   content: string;
   userName?: string;
   createdAt: number;
+  reasoning?: string;
   toolCalls?: Array<{
     toolName: string;
     state: string;
