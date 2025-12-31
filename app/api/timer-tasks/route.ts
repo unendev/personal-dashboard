@@ -134,6 +134,12 @@ export async function POST(request: NextRequest) {
       elapsedTime: taskDataToCreate.elapsedTime,
       elapsedTimeInMinutes: taskDataToCreate.elapsedTime / 60
     });
+
+    // 【服务端互斥】如果新任务是运行状态，暂停其他所有任务
+    if (taskDataToCreate.isRunning) {
+      console.log(`[API /timer-tasks] 检测到创建运行中任务，正在暂停用户 ${userId} 的其他任务...`);
+      await TimerDB.pauseAllRunningTasks(userId);
+    }
     
     const newTask = await TimerDB.addTask(taskDataToCreate);
 
@@ -186,6 +192,20 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+    }
+
+    // 【服务端互斥】如果请求将任务设为运行状态，暂停该用户其他所有任务
+    if (updates.isRunning === true) {
+      try {
+        const currentTask = await TimerDB.getTaskById(id);
+        if (currentTask) {
+          console.log(`[API /timer-tasks PUT] 检测到启动任务 ${id}，正在暂停用户 ${currentTask.userId} 的其他任务...`);
+          await TimerDB.pauseAllRunningTasks(currentTask.userId);
+        }
+      } catch (e) {
+        console.error('Failed to pause other tasks during update:', e);
+        // 继续执行，不阻断主流程
+      }
     }
 
     // 【乐观锁】如果提供了version，进行版本检查

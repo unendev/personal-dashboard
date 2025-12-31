@@ -15,6 +15,7 @@ import { LogPageHeader } from './sections/LogPageHeader';
 import { MobileTabNav } from './sections/MobileTabNav';
 import { TimerSection } from './sections/TimerSection';
 import { NotesSection } from './sections/NotesSection';
+import { LeftSidebar } from './sections/LeftSidebar';
 import { StatsSection } from './sections/StatsSection';
 import { ModalsManager } from './sections/ModalsManager';
 import { PrivacyLayer } from './sections/PrivacyLayer';
@@ -394,8 +395,8 @@ export default function LogPage() {
                 onSaveScrollPositionNow={timerOps.saveScrollPositionNow}
               />
 
-              {/* 笔记 */}
-              <NotesSection className="order-2 lg:order-1" />
+              {/* 左侧栏：笔记 + 待办 */}
+              <LeftSidebar className="order-2 lg:order-1" />
             </div>
 
             {/* 统计区域 - 显示在双栏下方 */}

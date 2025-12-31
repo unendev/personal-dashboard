@@ -548,6 +548,38 @@ export const TimerDB = {
     }
   },
 
+  // 暂停所有运行中的任务（并更新经过的时间）
+  pauseAllRunningTasks: async (userId: string): Promise<void> => {
+    try {
+      const runningTasks = await prisma.timerTask.findMany({
+        where: {
+          userId,
+          isRunning: true
+        }
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+
+      await prisma.$transaction(
+        runningTasks.map(task => {
+          const addedTime = task.startTime ? now - task.startTime : 0;
+          return prisma.timerTask.update({
+            where: { id: task.id },
+            data: {
+              isRunning: false,
+              isPaused: true,
+              startTime: null,
+              elapsedTime: task.elapsedTime + addedTime
+            }
+          });
+        })
+      );
+    } catch (error) {
+      console.error('Failed to pause all running tasks:', error);
+      throw error;
+    }
+  },
+
   // 停止所有运行中的任务
   stopAllRunningTasks: async (userId: string): Promise<void> => {
     try {
@@ -656,5 +688,3 @@ export const TimerDB = {
     }
   }
 };
-
-
