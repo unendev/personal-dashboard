@@ -245,7 +245,7 @@ ${playerNotesSummary || 'No individual player notes available.'}`;
 
           providerOptions,
 
-          async onFinish(result) {
+          async onFinish(result: any) { // Use 'any' to bypass strict type checking for this callback
 
             console.log(`[GOC] Request ${requestId} finished. Reason: ${result.finishReason}`);
 
