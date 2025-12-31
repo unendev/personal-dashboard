@@ -63,11 +63,11 @@ export async function POST(req: Request) {
     Instructions:
     1. **Time Extraction**: Look for "1h", "30m", "1 hour", "20 mins". Remove this from the name.
     2. **Category Matching**: 
-       - If `(Category)` is present, use it.
+       - If (Category) is present, use it.
        - If NO parentheses, map to existing paths if close.
        - **CRITICAL**: If the task implies a NEW context not in existing paths, generate a new logical path (e.g. "Work/NewProject"). The system will auto-create it.
-    3. **Hierarchy**: Detect `>` or `:` for parent/child relationship.
-    4. **Cleanup**: The `name` should be the core task activity, stripped of time and category markers.
+    3. **Hierarchy**: Detect > or : for parent/child relationship.
+    4. **Cleanup**: The name should be the core task activity, stripped of time and category markers.
     5. Return valid JSON only.
     `;
 
