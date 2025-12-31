@@ -20,8 +20,6 @@ import { StatsSection } from './sections/StatsSection';
 import { ModalsManager } from './sections/ModalsManager';
 import { PrivacyLayer } from './sections/PrivacyLayer';
 
-import { AIStatusLog, AIStatus } from './components/ui/AIStatusLog';
-
 export default function LogPage() {
   // ============ 认证 ============
   const { data: session, status } = useDevSession();
@@ -38,12 +36,6 @@ export default function LogPage() {
     pageState.fetchOperationRecords
   );
   const modals = useModalControls();
-
-  // ============ AI 状态管理 ============
-  const [aiStatus, setAiStatus] = React.useState<{ status: AIStatus; message: string; details?: string }>({
-    status: 'idle',
-    message: ''
-  });
   
   // ============ 访客模式 ============
   if (status === "unauthenticated" && process.env.NODE_ENV !== 'development') {

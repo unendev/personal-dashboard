@@ -12,7 +12,6 @@ interface QuickCreateData {
   initialTime: number;
   autoStart: boolean;
   date?: string;
-  parentId?: string; // Added parentId
 }
 
 /**
@@ -225,8 +224,7 @@ export function useTimerOperations(
         pausedTime: 0,
         order: newOrder,
         date: data.date || selectedDate,
-        userId: userId,
-        parentId: data.parentId // Added parentId
+        userId: userId
       };
 
       // 📝 [handleQuickCreate] 日志：发送到 API 的数据

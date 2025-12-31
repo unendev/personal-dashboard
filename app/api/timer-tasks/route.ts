@@ -4,54 +4,6 @@ import { createTimerTaskSchema } from '@/lib/validations/timer-task';
 import { ZodError } from 'zod';
 import { getEffectiveDateString } from '@/lib/timer-utils';
 import { getToken } from 'next-auth/jwt';
-import { prisma } from '@/lib/prisma'; // Added import
-
-// Helper: Ensure category path exists in LogCategory table
-async function ensureCategoryPath(categoryPath: string) {
-  if (!categoryPath || categoryPath === '未分类') return;
-  
-  const parts = categoryPath.split('/').map(p => p.trim()).filter(p => p);
-  let parentId: string | null = null;
-
-  for (const part of parts) {
-    // Try to find existing category at this level
-    // Note: This simple logic assumes global categories or checks specifically if your schema supports per-user categories.
-    // Looking at schema: LogCategory does NOT have userId. It is global?
-    // Checking schema from memory: LogCategory { id, name, parentId ... } -> No userId.
-    // So it is shared. This is fine for single user or shared system.
-    
-    const existing: { id: string } | null = await prisma.logCategory.findFirst({
-      where: {
-        name: part,
-        parentId: parentId
-      },
-      select: { id: true }
-    });
-
-    if (existing) {
-      parentId = existing.id;
-    } else {
-      // Create new
-      try {
-        const newCat: { id: string } = await prisma.logCategory.create({
-          data: {
-            name: part,
-            parentId: parentId
-          },
-          select: { id: true }
-        });
-        parentId = newCat.id;
-      } catch (e) {
-        // Handle race condition if created in parallel
-        const retry: { id: string } | null = await prisma.logCategory.findFirst({
-            where: { name: part, parentId: parentId },
-            select: { id: true }
-        });
-        if (retry) parentId = retry.id;
-      }
-    }
-  }
-}
 
 // GET /api/timer-tasks - 获取用户的所有任务
 export async function GET(request: NextRequest) {
@@ -190,13 +142,6 @@ export async function POST(request: NextRequest) {
     }
     
     const newTask = await TimerDB.addTask(taskDataToCreate);
-
-    // 【分类池同步】异步确保分类路径存在于 LogCategory 表中
-    if (newTask.categoryPath) {
-        ensureCategoryPath(newTask.categoryPath).catch(err => 
-            console.error('❌ [API /timer-tasks] 分类同步失败:', err)
-        );
-    }
 
     console.log('✅ [API /timer-tasks] 任务创建成功，ID:', newTask.id);
     
