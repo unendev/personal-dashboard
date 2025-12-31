@@ -13,6 +13,7 @@ export async function GET() {
 
   let memo = await prisma.note.findFirst({
     where: { userId: session.user.id, title: WIDGET_MEMO_TITLE },
+    orderBy: { createdAt: 'asc' },
   });
 
   if (!memo) {
