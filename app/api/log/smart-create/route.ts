@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { getAIModel } from '@/lib/ai-provider';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {

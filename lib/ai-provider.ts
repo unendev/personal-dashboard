@@ -19,6 +19,11 @@ const google = createGoogleGenerativeAI({
   fetch: (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(30000) }),
 });
 
+const deepseek = createDeepSeek({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  ...proxyConfig,
+});
+
 console.log('[AI Provider] Proxy config:', proxyConfig);
 
 interface GetAIModelOptions {
