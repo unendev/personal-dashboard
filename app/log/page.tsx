@@ -197,7 +197,8 @@ export default function LogPage() {
     category: string,
     date: string,
     initialTime?: number, 
-    instanceTagNames?: string
+    instanceTagNames?: string,
+    parentId?: string
   ) => {
     // 📝 [handleAddToTimer] 日志：接收到的参数
     console.log('📝 [handleAddToTimer] 接收到的参数:', {
@@ -206,6 +207,7 @@ export default function LogPage() {
       date,
       initialTime,
       instanceTagNames,
+      parentId,
       initialTimeType: typeof initialTime,
       initialTimeIsUndefined: initialTime === undefined,
       initialTimeIsNull: initialTime === null
@@ -224,13 +226,15 @@ export default function LogPage() {
         instanceTagNamesArray,
         finalInitialTime,
         finalInitialTimeInMinutes: finalInitialTime / 60,
+        parentId,
         willPassToHandleQuickCreate: {
           name: taskName,
           categoryPath: category,
           date: date,
           instanceTagNames: instanceTagNamesArray,
           initialTime: finalInitialTime,
-          autoStart: false
+          autoStart: false,
+          parentId
         }
       });
       
@@ -245,6 +249,7 @@ export default function LogPage() {
         instanceTagNames: instanceTagNamesArray,
         initialTime: finalInitialTime, // 使用传入的时长，默认为 0
         autoStart: false,
+        parentId
       }).catch((error) => {
         console.error('❌ [handleAddToTimer] 创建任务失败:', error);
         // 失败时显示错误提示，但不阻止模态框关闭

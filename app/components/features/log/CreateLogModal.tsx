@@ -12,7 +12,7 @@ interface CreateLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogSaved?: () => void;
-  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string, parentId?: string) => Promise<void>;
   initialCategory?: string;
   selectedDate?: string;
 }

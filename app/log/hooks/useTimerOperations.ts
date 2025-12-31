@@ -12,6 +12,7 @@ interface QuickCreateData {
   initialTime: number;
   autoStart: boolean;
   date?: string;
+  parentId?: string; // Added parentId
 }
 
 /**
@@ -216,15 +217,16 @@ export function useTimerOperations(
         categoryPath: data.categoryPath,
         instanceTag: data.instanceTagNames.join(',') || null,
         instanceTagNames: data.instanceTagNames,
-        elapsedTime: elapsedTimeForAPI, // 如果指定了 initialTime，则已运行时间等于初始时间
-        initialTime: data.initialTime, // 初始时长正确应用
+        elapsedTime: elapsedTimeForAPI, 
+        initialTime: data.initialTime,
         isRunning: false,
         startTime: null,
         isPaused: false,
         pausedTime: 0,
         order: newOrder,
         date: data.date || selectedDate,
-        userId: userId
+        userId: userId,
+        parentId: data.parentId // Added parentId
       };
 
       // 📝 [handleQuickCreate] 日志：发送到 API 的数据

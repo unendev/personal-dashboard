@@ -6,7 +6,7 @@ import { Textarea } from '@/app/components/ui/textarea';
 import { Loader2, Sparkles, Send, Keyboard } from 'lucide-react';
 
 interface SmartCreateLogFormProps {
-  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>;
+  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string, parentId?: string) => Promise<void>;
   selectedDate?: string;
   onCancel?: () => void;
 }
@@ -43,7 +43,7 @@ export default function SmartCreateLogForm({ onAddToTimer, selectedDate, onCance
       const data = await res.json();
       
       // 2. Submit to Timer
-      // data format: { name, categoryPath, initialTime, instanceTags }
+      // data format: { name, categoryPath, initialTime, instanceTags, parentId }
       
       const tagsString = data.instanceTags?.join(',') || '';
       
@@ -52,7 +52,8 @@ export default function SmartCreateLogForm({ onAddToTimer, selectedDate, onCance
         data.categoryPath || '未分类', // Fallback
         selectedDate || new Date().toISOString().split('T')[0],
         data.initialTime,
-        tagsString
+        tagsString,
+        data.parentId // Pass parentId
       );
       
       // Success (Modal will be closed by parent usually, but we clear input)

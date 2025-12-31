@@ -8,7 +8,7 @@ import { Button } from '@/app/components/ui/button'
 
 interface CreateLogFormWithCardsProps {
   onLogSaved?: () => void
-  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string) => Promise<void>
+  onAddToTimer?: (taskName: string, categoryPath: string, date: string, initialTime?: number, instanceTagNames?: string, parentId?: string) => Promise<void>
   initialCategory?: string // 初始分类路径（用于复制任务）
   selectedDate?: string;
 }
